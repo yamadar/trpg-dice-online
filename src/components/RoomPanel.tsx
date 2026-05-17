@@ -9,7 +9,7 @@ export function RoomPanel({ session }: { session: Session }) {
   const { t } = useI18n()
   const [codeInput, setCodeInput] = useState('')
   const [copied, setCopied] = useState(false)
-  const { status, role, roomCode, errorKind, players, playerId } = session
+  const { status, role, roomCode, players, playerId } = session
 
   const busy = status === 'connecting'
   const online = role !== 'offline'
@@ -39,15 +39,6 @@ export function RoomPanel({ session }: { session: Session }) {
   return (
     <section className="panel">
       <h2>{t('room.section')}</h2>
-
-      {errorKind && (
-        <p className="banner error" role="alert">
-          {errorKind === 'connect' ? t('room.error') : t('room.hostLost')}
-          <button type="button" className="link" onClick={session.clearError}>
-            ×
-          </button>
-        </p>
-      )}
 
       {!online && (
         <div className="room-setup">

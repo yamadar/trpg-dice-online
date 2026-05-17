@@ -51,6 +51,22 @@ export function SettingsMenu({ name, onChangeName }: Props) {
               <span>{t('lang.label')}</span>
               <LanguageToggle />
             </div>
+
+            <div className="settings-about">
+              <h3>{t('settings.about')}</h3>
+              <p className="about-title">{t('app.title')}</p>
+              <p className="about-line">{t('app.tagline')}</p>
+              <p className="about-line">
+                MIT License ·{' '}
+                <a
+                  href="https://github.com/yamadar/trpg-dice-online"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  GitHub
+                </a>
+              </p>
+            </div>
           </div>
         </>
       )}
