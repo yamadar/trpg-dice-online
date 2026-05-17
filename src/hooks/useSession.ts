@@ -9,7 +9,9 @@ import {
   type HostMessage,
   type Player,
   type Snapshot,
+  type TypingSignal,
 } from '../net/protocol'
+import { newMarkerId, type MarkerType, type SystemMarker } from '../feed/feed'
 import { getPlayerId, loadPlayerName, savePlayerName } from '../storage/player'
 
 export type Role = 'offline' | 'host' | 'client'
@@ -17,6 +19,18 @@ export type ErrorKind = 'connect' | 'hostLost' | null
 
 const MAX_HISTORY = 200
 const MAX_CHAT = 200
+const MAX_MARKERS = 100
+/** How long a "typing" signal stays live without a refresh. */
+const TYPING_TTL_MS = 4000
+/** Minimum gap between outgoing typing signals. */
+const TYPING_THROTTLE_MS = 2000
+/** How often stale typing signals are pruned. */
+const TYPING_PRUNE_MS = 1200
+
+interface TypingEntry {
+  name: string
+  at: number
+}
 
 export interface Session {
   playerId: string
@@ -33,17 +47,34 @@ export interface Session {
   players: Player[]
   history: RollResult[]
   chat: ChatMessage[]
+  markers: SystemMarker[]
+  /** Names of other players currently typing in chat. */
+  typingNames: string[]
   isGM: boolean
   roll: (result: RollResult) => void
   sendChat: (text: string) => void
-  clearHistory: () => void
+  /** Signal that the local player is typing (throttled internally). */
+  sendTyping: () => void
+  /** Clear the local feed view (rolls, chat and markers). */
+  clearFeed: () => void
 }
 
-function capStart<T>(list: T[], max: number): T[] {
-  return list.length > max ? list.slice(0, max) : list
-}
+/** Keep at most `max` items, dropping the oldest. */
 function capEnd<T>(list: T[], max: number): T[] {
   return list.length > max ? list.slice(list.length - max) : list
+}
+
+/** Merge two id-keyed, timestamped lists, de-duplicating and sorting oldest-first. */
+function mergeById<T extends { id: string; timestamp: number }>(
+  a: T[],
+  b: T[],
+  max: number,
+): T[] {
+  const map = new Map<string, T>()
+  for (const item of a) map.set(item.id, item)
+  for (const item of b) map.set(item.id, item)
+  const merged = [...map.values()].sort((m, n) => m.timestamp - n.timestamp)
+  return capEnd(merged, max)
 }
 
 /**
@@ -62,28 +93,47 @@ export function useSession(): Session {
   const [playersState, setPlayers] = useState<Player[]>([])
   const [history, setHistory] = useState<RollResult[]>([])
   const [chat, setChat] = useState<ChatMessage[]>([])
+  const [markers, setMarkers] = useState<SystemMarker[]>([])
+  const [typing, setTyping] = useState<Record<string, TypingEntry>>({})
 
   // Refs mirror state so PeerJS callbacks always read current values.
   const roleRef = useRef(role)
   const nameRef = useRef(name)
   const historyRef = useRef(history)
   const chatRef = useRef(chat)
+  const roomCodeRef = useRef(roomCode)
   useEffect(() => {
     roleRef.current = role
     nameRef.current = name
     historyRef.current = history
     chatRef.current = chat
+    roomCodeRef.current = roomCode
   })
 
+  /** True once a graceful room close was received, so the following
+   *  connection drop is not reported as an unexpected error. */
+  const gracefulCloseRef = useRef(false)
+  const lastTypingSentRef = useRef(0)
   /** Host only: connected clients keyed by their PeerJS peer id. */
   const peerPlayersRef = useRef(new Map<string, Player>())
   const roomRef = useRef<RoomManager | null>(null)
 
   const appendHistory = useCallback((result: RollResult) => {
-    setHistory((prev) => capStart([result, ...prev], MAX_HISTORY))
+    setHistory((prev) => capEnd([...prev, result], MAX_HISTORY))
   }, [])
   const appendChat = useCallback((message: ChatMessage) => {
     setChat((prev) => capEnd([...prev, message], MAX_CHAT))
+  }, [])
+  const addMarker = useCallback((type: MarkerType, extra?: Partial<SystemMarker>) => {
+    setMarkers((prev) =>
+      capEnd(
+        [...prev, { id: newMarkerId(), timestamp: Date.now(), type, ...extra }],
+        MAX_MARKERS,
+      ),
+    )
+  }, [])
+  const noteTyping = useCallback((signal: TypingSignal) => {
+    setTyping((prev) => ({ ...prev, [signal.playerId]: { name: signal.playerName, at: Date.now() } }))
   }, [])
 
   const selfPlayer = useCallback(
@@ -112,6 +162,13 @@ export function useSession(): Session {
           }
           roomRef.current?.sendTo(peerId, { t: 'welcome', snapshot })
           broadcastPlayers()
+          addMarker('playerJoined', { playerName: player.name })
+          roomRef.current?.broadcast({
+            t: 'notice',
+            event: 'playerJoined',
+            playerName: player.name,
+            timestamp: Date.now(),
+          })
           break
         }
         case 'rename': {
@@ -134,19 +191,35 @@ export function useSession(): Session {
           roomRef.current?.broadcast({ t: 'chat', message: msg.message })
           break
         }
+        case 'typing': {
+          noteTyping(msg.signal)
+          roomRef.current?.broadcast({ t: 'typing', signal: msg.signal })
+          break
+        }
       }
     },
-    [appendChat, appendHistory, broadcastPlayers, selfPlayer],
+    [addMarker, appendChat, appendHistory, broadcastPlayers, noteTyping, selfPlayer],
   )
+
+  const goOffline = useCallback(() => {
+    roomRef.current?.close()
+    roomRef.current = null
+    peerPlayersRef.current.clear()
+    setRole('offline')
+    setStatus('offline')
+    setRoomCode(null)
+    setTyping({})
+  }, [])
 
   // --- Client: handle a message from the host -----------------------------
   const handleHostMessage = useCallback(
     (msg: HostMessage) => {
       switch (msg.t) {
         case 'welcome':
+          // Keep the player's pre-join rolls/chat by merging the snapshot in.
           setPlayers(msg.snapshot.players)
-          setHistory(capStart(msg.snapshot.history, MAX_HISTORY))
-          setChat(capEnd(msg.snapshot.chat, MAX_CHAT))
+          setHistory((prev) => mergeById(prev, msg.snapshot.history, MAX_HISTORY))
+          setChat((prev) => mergeById(prev, msg.snapshot.chat, MAX_CHAT))
           break
         case 'players':
           setPlayers(msg.players)
@@ -157,26 +230,40 @@ export function useSession(): Session {
         case 'chat':
           appendChat(msg.message)
           break
+        case 'typing':
+          noteTyping(msg.signal)
+          break
+        case 'notice':
+          addMarker(msg.event, { playerName: msg.playerName, timestamp: msg.timestamp })
+          break
+        case 'roomClosed':
+          gracefulCloseRef.current = true
+          addMarker('gmClosed', { roomCode: roomCodeRef.current ?? undefined })
+          goOffline()
+          break
       }
     },
-    [appendChat, appendHistory],
+    [addMarker, appendChat, appendHistory, goOffline, noteTyping],
   )
 
   const handleClientDisconnect = useCallback(
     (peerId: string) => {
-      if (peerPlayersRef.current.delete(peerId)) broadcastPlayers()
+      const gone = peerPlayersRef.current.get(peerId)
+      if (peerPlayersRef.current.delete(peerId)) {
+        broadcastPlayers()
+        if (gone) {
+          addMarker('playerLeft', { playerName: gone.name })
+          roomRef.current?.broadcast({
+            t: 'notice',
+            event: 'playerLeft',
+            playerName: gone.name,
+            timestamp: Date.now(),
+          })
+        }
+      }
     },
-    [broadcastPlayers],
+    [addMarker, broadcastPlayers],
   )
-
-  const goOffline = useCallback(() => {
-    roomRef.current?.close()
-    roomRef.current = null
-    peerPlayersRef.current.clear()
-    setRole('offline')
-    setStatus('offline')
-    setRoomCode(null)
-  }, [])
 
   const ensureRoom = useCallback((): RoomManager => {
     if (roomRef.current) return roomRef.current
@@ -186,17 +273,25 @@ export function useSession(): Session {
       onClientDisconnect: handleClientDisconnect,
       onHostMessage: handleHostMessage,
       onError: (kind) => {
-        setErrorKind(kind)
-        if (kind === 'hostLost') goOffline()
+        if (kind === 'hostLost') {
+          // A graceful "room closed" was already handled — ignore the drop.
+          if (gracefulCloseRef.current) return
+          setErrorKind('hostLost')
+          addMarker('hostLost')
+          goOffline()
+        } else {
+          setErrorKind('connect')
+        }
       },
     })
     roomRef.current = mgr
     return mgr
-  }, [handleClientDisconnect, handleClientMessage, handleHostMessage, goOffline])
+  }, [addMarker, handleClientDisconnect, handleClientMessage, handleHostMessage, goOffline])
 
   // --- Public actions -----------------------------------------------------
   const createRoom = useCallback(async () => {
     setErrorKind(null)
+    gracefulCloseRef.current = false
     const mgr = ensureRoom()
     try {
       const code = await mgr.host()
@@ -204,32 +299,44 @@ export function useSession(): Session {
       setRole('host')
       setRoomCode(code)
       setPlayers([selfPlayer(true)])
+      addMarker('created', { roomCode: code })
     } catch {
       setErrorKind('connect')
       goOffline()
     }
-  }, [ensureRoom, goOffline, selfPlayer])
+  }, [addMarker, ensureRoom, goOffline, selfPlayer])
 
   const joinRoom = useCallback(
     async (code: string) => {
       setErrorKind(null)
+      gracefulCloseRef.current = false
       const mgr = ensureRoom()
       try {
         await mgr.join(code)
         setRole('client')
         setRoomCode(code)
+        addMarker('joined', { roomCode: code })
         mgr.sendToHost({ t: 'hello', player: selfPlayer(false) })
       } catch {
         // onError already surfaced the failure.
         goOffline()
       }
     },
-    [ensureRoom, goOffline, selfPlayer],
+    [addMarker, ensureRoom, goOffline, selfPlayer],
   )
 
   const leaveRoom = useCallback(() => {
-    goOffline()
-  }, [goOffline])
+    const currentRole = roleRef.current
+    if (currentRole === 'host') {
+      // Closing the room ends it for everyone: tell clients, then tear down.
+      roomRef.current?.broadcast({ t: 'roomClosed' })
+      addMarker('youClosed', { roomCode: roomCodeRef.current ?? undefined })
+      setTimeout(() => goOffline(), 300)
+    } else if (currentRole === 'client') {
+      addMarker('youLeft', { roomCode: roomCodeRef.current ?? undefined })
+      goOffline()
+    }
+  }, [addMarker, goOffline])
 
   const roll = useCallback(
     (result: RollResult) => {
@@ -270,7 +377,25 @@ export function useSession(): Session {
     [appendChat, playerId],
   )
 
-  const clearHistory = useCallback(() => setHistory([]), [])
+  const sendTyping = useCallback(() => {
+    const currentRole = roleRef.current
+    if (currentRole === 'offline') return
+    const now = Date.now()
+    if (now - lastTypingSentRef.current < TYPING_THROTTLE_MS) return
+    lastTypingSentRef.current = now
+    const signal: TypingSignal = { playerId, playerName: nameRef.current || '???' }
+    if (currentRole === 'host') {
+      roomRef.current?.broadcast({ t: 'typing', signal })
+    } else {
+      roomRef.current?.sendToHost({ t: 'typing', signal })
+    }
+  }, [playerId])
+
+  const clearFeed = useCallback(() => {
+    setHistory([])
+    setChat([])
+    setMarkers([])
+  }, [])
 
   const setName = useCallback(
     (next: string) => {
@@ -294,12 +419,34 @@ export function useSession(): Session {
 
   const clearError = useCallback(() => setErrorKind(null), [])
 
+  // Drop stale typing signals so the indicator clears on its own.
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTyping((prev) => {
+        const now = Date.now()
+        const next: Record<string, TypingEntry> = {}
+        let changed = false
+        for (const [id, entry] of Object.entries(prev)) {
+          if (now - entry.at < TYPING_TTL_MS) next[id] = entry
+          else changed = true
+        }
+        return changed ? next : prev
+      })
+    }, TYPING_PRUNE_MS)
+    return () => clearInterval(timer)
+  }, [])
+
   // Tear down the peer when the app unmounts.
   useEffect(() => () => roomRef.current?.close(), [])
 
   // Offline: the player list is just the current player, derived from name.
   const players: Player[] =
     role === 'offline' ? [{ id: playerId, name, isGM: false }] : playersState
+
+  // Self is excluded; stale entries are pruned by the interval above.
+  const typingNames = Object.entries(typing)
+    .filter(([id]) => id !== playerId)
+    .map(([, entry]) => entry.name)
 
   return {
     playerId,
@@ -316,9 +463,12 @@ export function useSession(): Session {
     players,
     history,
     chat,
+    markers,
+    typingNames,
     isGM: role === 'host',
     roll,
     sendChat,
-    clearHistory,
+    sendTyping,
+    clearFeed,
   }
 }

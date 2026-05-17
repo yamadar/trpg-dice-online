@@ -3,7 +3,7 @@ import type { TFn } from '../i18n/context'
 
 /**
  * Build the headline text for a roll, honouring the requirement wording:
- *  - damage:   "{value} damage"
+ *  - damage:   "{pattern} {value} damage" (or "{value} damage" when unnamed)
  *  - judgment: "Result of {pattern} check: {value}"
  *  - hidden (seen by non-GM): "{name} made a hidden roll"
  */
@@ -11,11 +11,14 @@ export function formatRollText(t: TFn, result: RollResult, canSeeValue: boolean)
   if (result.hidden && !canSeeValue) {
     return t('result.hiddenRoll', { name: result.playerName || '???' })
   }
+  const name = result.patternName.trim()
   if (result.kind === 'damage') {
-    return t('result.damage', { value: result.value })
+    return name
+      ? t('result.damageNamed', { name, value: result.value })
+      : t('result.damage', { value: result.value })
   }
   return t('result.judgment', {
-    name: result.patternName || t('pattern.unnamed'),
+    name: name || t('pattern.unnamed'),
     value: result.value,
   })
 }

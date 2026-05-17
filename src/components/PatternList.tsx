@@ -5,10 +5,11 @@ import { formatDiceSummary } from '../dice/format'
 interface Props {
   patterns: Pattern[]
   onLoad: (pattern: Pattern) => void
+  onQuickRoll: (pattern: Pattern) => void
   onDelete: (id: string) => void
 }
 
-export function PatternList({ patterns, onLoad, onDelete }: Props) {
+export function PatternList({ patterns, onLoad, onQuickRoll, onDelete }: Props) {
   const { t } = useI18n()
   return (
     <section className="panel">
@@ -24,11 +25,19 @@ export function PatternList({ patterns, onLoad, onDelete }: Props) {
               </span>
             </div>
             <div className="pattern-buttons">
+              <button type="button" className="primary" onClick={() => onQuickRoll(p)}>
+                {t('pattern.roll')}
+              </button>
               <button type="button" onClick={() => onLoad(p)}>
                 {t('pattern.load')}
               </button>
-              <button type="button" className="link danger" onClick={() => onDelete(p.id)}>
-                {t('pattern.delete')}
+              <button
+                type="button"
+                className="link danger"
+                aria-label={t('pattern.delete')}
+                onClick={() => onDelete(p.id)}
+              >
+                ×
               </button>
             </div>
           </li>
