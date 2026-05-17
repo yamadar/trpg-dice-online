@@ -18,8 +18,12 @@ TRPG セッション用のオンラインダイスローラーです。ダイス
 - **Modifier (B) / 補正** — apply a signed `+/-` modifier to the result.
 - **Kind (C) / 種類** — `damage` or `judgment`. Damage shows
   `{pattern} {value} damage`; judgment shows `Result of {pattern} check: {value}`.
-- **Patterns / パターン** — bundle A + B + C, name it, save it, and reload it
-  later (stored in your browser). Quick-roll a saved pattern in one click.
+- **Characters / キャラクター** — keep multiple player characters (name,
+  shared background, private memo, pattern list), switch between them, and
+  export / import them as JSON. Acting as a character shows the name as
+  `Character（Player）`.
+- **Patterns / パターン** — bundle A + B + C, name it, save it (per character),
+  and reload it later. Quick-roll a saved pattern in one click.
 - **History & Chat feed / 履歴とチャット** — rolls and chat share one
   chronological feed with an All / Rolls / Chat filter.
 - **Online rooms / オンラインルーム** — create a room to become the GM, or join
@@ -70,8 +74,8 @@ the `BASE_PATH` environment variable when hosting elsewhere.
 
 ## Documentation / ドキュメント
 
-The full requirements and implementation plan are in
-[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md).
+- Requirements and implementation plan: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Real-time translation API research: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## License / ライセンス
 
