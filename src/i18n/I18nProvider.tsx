@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { LANGS, translate, type Lang } from './translations'
 import { I18nContext, type I18nValue, type TFn } from './context'
 
@@ -25,8 +25,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
-    if (typeof document !== 'undefined') document.documentElement.lang = next
   }, [])
+
+  // Keep <html lang> in sync, including the initial detected language.
+  useEffect(() => {
+    document.documentElement.lang = lang
+  }, [lang])
 
   const t = useCallback<TFn>((key, params) => translate(lang, key, params), [lang])
 
