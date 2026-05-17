@@ -62,6 +62,8 @@ An SPA where players roll TRPG dice and share results with other players in real
   A filter switches between All / Rolls only / Chat only
 - 参加者ごとに固有の色を割り当て、フィードと参加者一覧で見分けやすくする
   Each participant gets a stable color so they are easy to tell apart
+- 表示のクリアは誤操作で行われないよう、確認ダイアログを必須とする
+  Clearing the feed requires a confirmation dialog to avoid accidental loss
 
 ### 3.7 オンライン共有 / Online sharing
 - ルームを作成・参加でき、ロール履歴・チャット・参加者一覧を共有する
@@ -184,3 +186,7 @@ Player colors are derived by hashing `playerId`, so all clients agree with no sy
   Review feedback: named damage text, combined history/chat feed with
   filters, typing indicator, player colors, graceful room close, dimmed
   past-room history, and pattern quick-roll.
+- v1.2 — レビュー反映: IME（日本語入力）変換中に送信ボタンを押した際の
+  二重送信・未クリア不具合を修正、表示クリアに確認ダイアログを追加。
+  Review feedback: fixed the IME (e.g. Japanese) send-button race that
+  double-sent and failed to clear the box; clearing the feed now confirms.

@@ -58,6 +58,11 @@ export function ActivityPanel({ session }: { session: Session }) {
     session.sendTyping()
   }
 
+  // Clearing the feed is destructive, so require a deliberate confirmation.
+  const clearFeed = () => {
+    if (window.confirm(t('feed.clearConfirm'))) session.clearFeed()
+  }
+
   const typing = session.typingNames
   const typingLine =
     typing.length === 0
@@ -83,7 +88,7 @@ export function ActivityPanel({ session }: { session: Session }) {
             ))}
           </div>
           {feed.length > 0 && (
-            <button type="button" className="link" onClick={session.clearFeed}>
+            <button type="button" className="link" onClick={clearFeed}>
               {t('feed.clear')}
             </button>
           )}
@@ -161,9 +166,19 @@ export function ActivityPanel({ session }: { session: Session }) {
             maxLength={300}
             placeholder={t('chat.placeholder')}
             onChange={(e) => onType(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && send()}
+            // Ignore Enter that only confirms an IME (e.g. Japanese) conversion.
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                e.preventDefault()
+                send()
+              }
+            }}
           />
-          <button type="button" onClick={send}>
+          {/* preventDefault on mousedown keeps focus on the input, so clicking
+              Send does not blur it and force-commit an in-progress IME
+              composition — that blur previously raced with the click and left
+              the message in the box (and a second click re-sent it). */}
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={send}>
             {t('chat.send')}
           </button>
         </div>
