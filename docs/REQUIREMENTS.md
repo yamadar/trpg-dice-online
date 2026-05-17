@@ -44,16 +44,24 @@ An SPA where players roll TRPG dice and share results with other players in real
 - A + B + C を 1 つのパターンとして扱う / A pattern bundles A, B and C
 - 名前を付けて保存できる / Can be saved with a name
 - 保存したパターンは一覧から呼び出して再利用できる / Saved patterns can be recalled and reused
+- 一覧からワンクリックで直接振れる（クイックロール）/ Quick-roll a saved pattern in one click
 - 保存先はブラウザの localStorage（個人ごと） / Stored per-browser in localStorage
 
 ### 3.5 ロールと出目の表記 / Roll output text
 - 出目 = ダイス合計 + 補正 / Result value = dice sum + modifier
-- 種類が `ダメージ`: 「`{出目}` ダメージ」/ "`{value}` damage"
+- 種類が `ダメージ`: 「`{パターン名}` `{出目}`ダメージ」（名前なしは「`{出目}`ダメージ」）
+  Damage: "`{pattern}` `{value}` damage" ("`{value}` damage" when unnamed)
 - 種類が `判定`: 「`{パターン名}` 判定の結果 `{出目}`」/ "Result of `{pattern name}` check: `{value}`"
 
-### 3.6 履歴 / History
+### 3.6 履歴とチャットの統合表示 / Combined history & chat feed
 - すべてのロール結果を時系列の履歴として残す / Every roll is kept in a chronological history
 - 履歴にはダイスの内訳（各目）も保持する / History keeps the individual die faces
+- 履歴とチャットは 1 つのフィードに時系列で統合表示する
+  History and chat are merged into a single chronological feed
+- 「すべて / 履歴のみ / チャットのみ」で表示を絞り込める
+  A filter switches between All / Rolls only / Chat only
+- 参加者ごとに固有の色を割り当て、フィードと参加者一覧で見分けやすくする
+  Each participant gets a stable color so they are easy to tell apart
 
 ### 3.7 オンライン共有 / Online sharing
 - ルームを作成・参加でき、ロール履歴・チャット・参加者一覧を共有する
@@ -72,8 +80,21 @@ An SPA where players roll TRPG dice and share results with other players in real
 
 ### 3.9 チャット / Chat
 - ルーム参加者でテキストチャットができる / Room members can exchange text messages
+- 他の参加者が入力中のとき、控えめに「入力中…」を表示する
+  Show a subtle "typing…" indicator while another player is typing
 
-### 3.10 多言語 / i18n
+### 3.10 ルームの退出・終了 / Leaving and closing a room
+- GM の退出はルームの終了を意味する。GM には確認を求め、各クライアントには
+  「GM がルームを閉じました」と通知する（接続エラー扱いにしない）。
+  The GM leaving closes the room: the GM is asked to confirm, and clients
+  are told "the GM closed the room" rather than seeing a connection error.
+- ルームの参加・退出はフィードにシステムメッセージとして記録する
+  Room join/leave events are recorded in the feed as system messages
+- 退出後も履歴は残すが、退出済みルームの記録だと分かるよう淡く表示する
+  After leaving, the feed is kept but past-room entries are dimmed so it
+  is clear they belong to a room the player is no longer in
+
+### 3.11 多言語 / i18n
 - UI を日本語 / English で切り替えられる / Toggle the UI between Japanese and English
 - 言語設定は localStorage に保存 / Language preference stored in localStorage
 - ロール結果はデータとして同期し、表示は閲覧者の言語で整形する
@@ -115,7 +136,16 @@ RollResult = { id, patternName, kind, diceType, diceCount,
                playerName, hidden, timestamp }
 ChatMessage = { id, playerId, playerName, text, timestamp }
 Player      = { id, name, isGM }
+
+// Local-only feed annotations (not synced); they record room events.
+MarkerType  = 'created'|'joined'|'youLeft'|'youClosed'
+            | 'gmClosed'|'hostLost'|'playerJoined'|'playerLeft'
+SystemMarker = { id, timestamp, type: MarkerType, roomCode?, playerName? }
+FeedItem    = roll | chat | system marker, merged and sorted by time
 ```
+
+参加者の色は `playerId` のハッシュから決まり、同期不要で全クライアントが一致する。
+Player colors are derived by hashing `playerId`, so all clients agree with no sync.
 
 ## 7. 実装プラン / Implementation Plan
 
@@ -132,12 +162,25 @@ Player      = { id, name, isGM }
 
 ## 8. 受け入れ条件 / Acceptance Criteria
 
-- [ ] 6 種類のダイス + D100 を個数指定で振れる
-- [ ] 補正と種類を設定でき、出目が正しく算出される
-- [ ] ダメージ / 判定で表記が要件どおり切り替わる
-- [ ] パターンを保存・呼び出しできる
-- [ ] ロール履歴が時系列で残る
-- [ ] ルームを作成・参加して履歴・チャットが共有される
-- [ ] GM の隠しロールが他プレイヤーに伏せられる
-- [ ] 日本語 / English を切り替えられる
-- [ ] GitHub Pages で公開され、ブラウザで動作する
+- [x] 6 種類のダイス + D100 を個数指定で振れる
+- [x] 補正と種類を設定でき、出目が正しく算出される
+- [x] ダメージ（パターン名つき）/ 判定で表記が要件どおり切り替わる
+- [x] パターンを保存・呼び出し・クイックロールできる
+- [x] 履歴とチャットが 1 つのフィードに統合され、絞り込みできる
+- [x] 入力中インジケータが表示される
+- [x] 参加者が色で見分けられる
+- [x] ルームを作成・参加して履歴・チャットが共有される
+- [x] GM がルームを閉じると全員へ正しく通知される
+- [x] 退出後の履歴が退出済みルームのものだと分かる
+- [x] GM の隠しロールが他プレイヤーに伏せられる
+- [x] 日本語 / English を切り替えられる
+- [x] GitHub Pages で公開され、ブラウザで動作する
+
+## 9. 改訂 / Revisions
+
+- v1.1 — レビュー反映: ダメージ表記にパターン名を追加、履歴とチャットの統合
+  フィード（絞り込み付き）、入力中インジケータ、参加者カラー、ルーム終了の
+  正しい通知、退出済み履歴の明示、クイックロール。
+  Review feedback: named damage text, combined history/chat feed with
+  filters, typing indicator, player colors, graceful room close, dimmed
+  past-room history, and pattern quick-roll.
