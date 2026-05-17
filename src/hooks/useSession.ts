@@ -4,6 +4,7 @@ import { RoomManager, type RoomStatus } from '../net/room'
 import {
   newChatId,
   redactRoll,
+  staleGhostPeerIds,
   type ChatMessage,
   type ClientMessage,
   type HostMessage,
@@ -26,6 +27,12 @@ const TYPING_TTL_MS = 4000
 const TYPING_THROTTLE_MS = 2000
 /** How often stale typing signals are pruned. */
 const TYPING_PRUNE_MS = 1200
+/** How often a client sends a liveness ping to the host. */
+const PING_INTERVAL_MS = 4000
+/** How often the host checks for clients that have gone silent. */
+const PRESENCE_CHECK_MS = 5000
+/** A client unheard from for this long is treated as disconnected. */
+const PRESENCE_TIMEOUT_MS = 13000
 
 interface TypingEntry {
   name: string
@@ -116,6 +123,8 @@ export function useSession(): Session {
   const lastTypingSentRef = useRef(0)
   /** Host only: connected clients keyed by their PeerJS peer id. */
   const peerPlayersRef = useRef(new Map<string, Player>())
+  /** Host only: last time each client peer was heard from. */
+  const lastSeenRef = useRef(new Map<string, number>())
   const roomRef = useRef<RoomManager | null>(null)
 
   const appendHistory = useCallback((result: RollResult) => {
@@ -151,9 +160,19 @@ export function useSession(): Session {
   // --- Host: handle a message from a client -------------------------------
   const handleClientMessage = useCallback(
     (peerId: string, msg: ClientMessage) => {
+      // Any message proves the client is still alive.
+      lastSeenRef.current.set(peerId, Date.now())
       switch (msg.t) {
         case 'hello': {
           const player: Player = { ...msg.player, isGM: false }
+          // Evict any ghost connection left by an earlier session of the
+          // same player (a drop without a clean "leave"), so a player is
+          // never listed twice.
+          for (const ghostId of staleGhostPeerIds(peerPlayersRef.current, player.id, peerId)) {
+            peerPlayersRef.current.delete(ghostId)
+            lastSeenRef.current.delete(ghostId)
+            roomRef.current?.dropClient(ghostId)
+          }
           peerPlayersRef.current.set(peerId, player)
           const snapshot: Snapshot = {
             players: [selfPlayer(true), ...peerPlayersRef.current.values()],
@@ -196,6 +215,9 @@ export function useSession(): Session {
           roomRef.current?.broadcast({ t: 'typing', signal: msg.signal })
           break
         }
+        case 'ping':
+          // Liveness already recorded above; nothing else to do.
+          break
       }
     },
     [addMarker, appendChat, appendHistory, broadcastPlayers, noteTyping, selfPlayer],
@@ -205,6 +227,7 @@ export function useSession(): Session {
     // Clear the roster first so the disconnect events fired while closing
     // do not produce a "player left" marker for every client.
     peerPlayersRef.current.clear()
+    lastSeenRef.current.clear()
     roomRef.current?.close()
     roomRef.current = null
     setRole('offline')
@@ -251,6 +274,7 @@ export function useSession(): Session {
   const handleClientDisconnect = useCallback(
     (peerId: string) => {
       const gone = peerPlayersRef.current.get(peerId)
+      lastSeenRef.current.delete(peerId)
       if (peerPlayersRef.current.delete(peerId)) {
         broadcastPlayers()
         if (gone) {
@@ -437,6 +461,26 @@ export function useSession(): Session {
     }, TYPING_PRUNE_MS)
     return () => clearInterval(timer)
   }, [])
+
+  // Presence: clients ping so the host can notice abrupt disconnects that
+  // WebRTC itself does not report (closed tab, lost network, reload).
+  useEffect(() => {
+    if (role === 'client') {
+      const timer = setInterval(() => {
+        roomRef.current?.sendToHost({ t: 'ping' })
+      }, PING_INTERVAL_MS)
+      return () => clearInterval(timer)
+    }
+    if (role === 'host') {
+      const timer = setInterval(() => {
+        const now = Date.now()
+        for (const [peerId, seen] of lastSeenRef.current) {
+          if (now - seen > PRESENCE_TIMEOUT_MS) roomRef.current?.dropClient(peerId)
+        }
+      }, PRESENCE_CHECK_MS)
+      return () => clearInterval(timer)
+    }
+  }, [role])
 
   // Tear down the peer when the app unmounts.
   useEffect(() => () => roomRef.current?.close(), [])

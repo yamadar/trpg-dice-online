@@ -163,6 +163,15 @@ export class RoomManager {
     if (conn?.open) conn.send(msg)
   }
 
+  /**
+   * Host: forcibly close a client's connection. Closing locally reliably
+   * emits 'close', which routes through onClientDisconnect — used to evict
+   * a stale ghost when WebRTC never reported the drop on its own.
+   */
+  dropClient(peerId: string): void {
+    this.connections.get(peerId)?.close()
+  }
+
   /** Client: send a message to the host. */
   sendToHost(msg: ClientMessage): void {
     if (this.hostConn?.open) this.hostConn.send(msg)

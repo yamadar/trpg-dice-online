@@ -45,6 +45,8 @@ An SPA where players roll TRPG dice and share results with other players in real
 - 名前を付けて保存できる / Can be saved with a name
 - 保存したパターンは一覧から呼び出して再利用できる / Saved patterns can be recalled and reused
 - 一覧からワンクリックで直接振れる（クイックロール）/ Quick-roll a saved pattern in one click
+- パターンの削除は誤操作防止のため確認ダイアログを必須とする
+  Deleting a pattern requires a confirmation dialog
 - 保存先はブラウザの localStorage（個人ごと） / Stored per-browser in localStorage
 
 ### 3.5 ロールと出目の表記 / Roll output text
@@ -95,6 +97,13 @@ An SPA where players roll TRPG dice and share results with other players in real
 - 退出後も履歴は残すが、退出済みルームの記録だと分かるよう淡く表示する
   After leaving, the feed is kept but past-room entries are dimmed so it
   is clear they belong to a room the player is no longer in
+- 「退出」を押さずに切断した場合（タブを閉じる・通信断・リロード等）も、
+  ハートビートで検知して参加者一覧から取り除く。同じプレイヤーが再参加した
+  際は古い接続を破棄し、二重表示しない。
+  Disconnects without pressing "leave" (closed tab, lost network, reload)
+  are detected by a heartbeat and removed from the player list. When the
+  same player rejoins, the stale connection is dropped so they are never
+  listed twice.
 
 ### 3.11 多言語 / i18n
 - UI を日本語 / English で切り替えられる / Toggle the UI between Japanese and English
@@ -190,3 +199,9 @@ Player colors are derived by hashing `playerId`, so all clients agree with no sy
   二重送信・未クリア不具合を修正、表示クリアに確認ダイアログを追加。
   Review feedback: fixed the IME (e.g. Japanese) send-button race that
   double-sent and failed to clear the box; clearing the feed now confirms.
+- v1.3 — レビュー反映: パターン削除に確認ダイアログを追加、未退出のまま
+  切断したユーザーが参加者一覧に残り再参加で二重表示される不具合を、
+  ハートビート検知と再参加時の重複排除で修正。
+  Review feedback: pattern deletion now confirms; fixed ghost players
+  that lingered after an ungraceful disconnect and duplicated on rejoin,
+  via a heartbeat and de-duplication of a player's stale connection.

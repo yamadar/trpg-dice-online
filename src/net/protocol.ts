@@ -34,6 +34,8 @@ export type ClientMessage =
   | { t: 'chat'; message: ChatMessage }
   | { t: 'rename'; name: string }
   | { t: 'typing'; signal: TypingSignal }
+  /** Periodic liveness signal so the host can detect dropped clients. */
+  | { t: 'ping' }
 
 /** Messages a host sends to clients. */
 export type HostMessage =
@@ -54,6 +56,23 @@ export type NetMessage = ClientMessage | HostMessage
 export function redactRoll(result: RollResult): RollResult {
   if (!result.hidden) return result
   return { ...result, faces: [], modifier: 0, value: 0 }
+}
+
+/**
+ * peerIds in `roster` that belong to the same player as `playerId` but
+ * under a connection other than `keepPeerId` — i.e. stale ghost entries
+ * left by an earlier connection of a player who is (re)joining now.
+ */
+export function staleGhostPeerIds(
+  roster: Map<string, Player>,
+  playerId: string,
+  keepPeerId: string,
+): string[] {
+  const ghosts: string[] = []
+  for (const [peerId, player] of roster) {
+    if (player.id === playerId && peerId !== keepPeerId) ghosts.push(peerId)
+  }
+  return ghosts
 }
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
