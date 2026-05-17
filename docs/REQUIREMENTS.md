@@ -149,6 +149,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   （設定からいつでも変更できる旨も案内する）。
   When no player name is set, entering one is required before the app can
   be used (with a note that it can be changed later in the settings).
+- 初回起動時に使い方をオーバーレイ表示するチュートリアルを出す。設定メニュー
+  からはいつでもヘルプとして再表示できる。
+  On first run, an overlay tutorial walks through how to use the app; it
+  can be reopened anytime from the settings menu as the in-app help.
 
 ## 4. 非機能要件 / Non-functional
 
@@ -277,3 +281,7 @@ The `lang` fields carry the source language for future real-time translation
   Require a player name on first run (name gate), let the GM name the
   room, and fix wrapping of the feed header (title, filter, clear) on
   mobile.
+- v1.7 — 初回チュートリアル（オーバーレイ式の使い方ガイド）を追加し、設定
+  メニューから「使い方」としていつでも再表示できるようにした。
+  Add a first-run overlay tutorial that walks through the app, reopenable
+  anytime from the settings menu as the in-app help.

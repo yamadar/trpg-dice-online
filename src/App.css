@@ -769,3 +769,71 @@
   color: var(--text-h);
   font-weight: 600;
 }
+
+/* --- tutorial / help overlay --- */
+.tutorial {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.tutorial-card {
+  position: relative;
+  width: 360px;
+  max-width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 24px 20px;
+  text-align: center;
+}
+.tutorial-skip {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+.tutorial-icon {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+.tutorial-card h2 {
+  font-size: 1.2rem;
+  margin: 12px 0 8px;
+}
+.tutorial-body {
+  color: var(--text-dim);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  min-height: 4.8em;
+}
+.tutorial-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 16px 0;
+}
+.tutorial-dots .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.tutorial-dots .dot.active {
+  background: var(--accent);
+}
+.tutorial-nav {
+  display: flex;
+  gap: 8px;
+}
+.tutorial-nav button {
+  flex: 1;
+}
+
+.settings-help-btn {
+  width: 100%;
+  margin-top: 4px;
+}

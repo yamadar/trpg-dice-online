@@ -25,6 +25,30 @@ const ja: Dict = {
   'gate.start': 'はじめる',
   'gate.nameHint': 'プレイヤー名は設定からいつでも変更できます。',
 
+  'settings.help': '使い方を見る',
+  'tutorial.skip': 'スキップ',
+  'tutorial.next': '次へ',
+  'tutorial.back': '戻る',
+  'tutorial.done': 'はじめる',
+  'tutorial.welcome.title': 'TRPG オンラインダイスへようこそ',
+  'tutorial.welcome.body':
+    '仲間とダイスを振り、出目・履歴・チャットをリアルタイムに共有できます。',
+  'tutorial.dice.title': 'ダイスを振る',
+  'tutorial.dice.body':
+    '画面下のドックの「ダイス」から、個数・種類・補正・用途を選んで振ります。出目は履歴に残ります。',
+  'tutorial.character.title': 'キャラクター',
+  'tutorial.character.body':
+    '「キャラ」からキャラクターを作成・切り替えできます。キャラクターとして振ると、名前に（プレイヤー名）が付きます。',
+  'tutorial.patterns.title': 'パターン',
+  'tutorial.patterns.body':
+    'よく使うダイスの組み合わせは「パターン」に名前を付けて保存し、ワンタップで振れます。',
+  'tutorial.room.title': 'ルームで共有',
+  'tutorial.room.body':
+    '「ルーム」からルームを作成（GM になる）するか、コードを入力して参加します。履歴・チャット・参加者が全員に共有されます。',
+  'tutorial.settings.title': '設定とヘルプ',
+  'tutorial.settings.body':
+    'プレイヤー名や言語の変更、このガイドの再表示は、右上の設定（⚙）から行えます。',
+
   'player.section': 'プレイヤー',
   'player.name': 'プレイヤー名',
   'player.namePlaceholder': 'あなたの名前',
@@ -150,6 +174,30 @@ const en: Dict = {
 
   'gate.start': 'Start',
   'gate.nameHint': 'You can change your player name anytime in Settings.',
+
+  'settings.help': 'How to use',
+  'tutorial.skip': 'Skip',
+  'tutorial.next': 'Next',
+  'tutorial.back': 'Back',
+  'tutorial.done': 'Get started',
+  'tutorial.welcome.title': 'Welcome to TRPG Online Dice',
+  'tutorial.welcome.body':
+    'Roll dice with your party and share results, history and chat in real time.',
+  'tutorial.dice.title': 'Roll dice',
+  'tutorial.dice.body':
+    'Open "Dice" in the bottom dock, pick the count, type, modifier and kind, then roll. Every roll is kept in the history.',
+  'tutorial.character.title': 'Characters',
+  'tutorial.character.body':
+    'Open "Character" to create and switch characters. Rolling as a character shows your name as "Character（Player）".',
+  'tutorial.patterns.title': 'Patterns',
+  'tutorial.patterns.body':
+    'Save dice combinations you use often as named "Patterns" and roll them with one tap.',
+  'tutorial.room.title': 'Share in a room',
+  'tutorial.room.body':
+    'From "Room", create a room (as GM) or join one with a code. History, chat and the player list are shared with everyone.',
+  'tutorial.settings.title': 'Settings & help',
+  'tutorial.settings.body':
+    'Change your player name or language, and reopen this guide, from Settings (⚙) at the top right.',
 
   'player.section': 'Player',
   'player.name': 'Player name',

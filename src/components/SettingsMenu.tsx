@@ -5,13 +5,14 @@ import { LanguageToggle } from './LanguageToggle'
 interface Props {
   name: string
   onChangeName: (name: string) => void
+  onOpenHelp: () => void
 }
 
 /**
- * Low-frequency controls (player name, language) tucked behind a header
- * button so they do not take up permanent screen space.
+ * Low-frequency controls (player name, language, help) tucked behind a
+ * header button so they do not take up permanent screen space.
  */
-export function SettingsMenu({ name, onChangeName }: Props) {
+export function SettingsMenu({ name, onChangeName, onOpenHelp }: Props) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
 
@@ -51,6 +52,17 @@ export function SettingsMenu({ name, onChangeName }: Props) {
               <span>{t('lang.label')}</span>
               <LanguageToggle />
             </div>
+
+            <button
+              type="button"
+              className="settings-help-btn"
+              onClick={() => {
+                setOpen(false)
+                onOpenHelp()
+              }}
+            >
+              {t('settings.help')}
+            </button>
 
             <div className="settings-about">
               <h3>{t('settings.about')}</h3>
