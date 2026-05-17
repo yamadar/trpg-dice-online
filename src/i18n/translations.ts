@@ -12,6 +12,15 @@ const ja: Dict = {
   'settings.title': '設定',
   'settings.open': '設定',
   'settings.close': '閉じる',
+  'settings.about': 'このアプリについて',
+
+  'dock.room': 'ルーム',
+  'dock.character': 'キャラ',
+  'dock.dice': 'ダイス',
+  'dock.patterns': 'パターン',
+
+  'status.offline': 'オフライン',
+  'status.noCharacter': 'PL 本人',
 
   'player.section': 'プレイヤー',
   'player.name': 'プレイヤー名',
@@ -124,6 +133,15 @@ const en: Dict = {
   'settings.title': 'Settings',
   'settings.open': 'Settings',
   'settings.close': 'Close',
+  'settings.about': 'About',
+
+  'dock.room': 'Room',
+  'dock.character': 'Character',
+  'dock.dice': 'Dice',
+  'dock.patterns': 'Patterns',
+
+  'status.offline': 'Offline',
+  'status.noCharacter': 'As player',
 
   'player.section': 'Player',
   'player.name': 'Player name',

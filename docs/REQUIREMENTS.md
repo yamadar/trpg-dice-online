@@ -132,6 +132,17 @@ An SPA where players roll TRPG dice and share results with other players in real
   Low-frequency controls (player name, language) live in a settings menu
 - キャラクターの背景情報・メモは折りたたみ可能にする
   Character background and memo are collapsible
+- 履歴＆チャットを主画面とし、画面の大半を占有する。最小限の状態
+  （ルーム・キャラクター・参加者数）はヘッダーに常時表示する。
+  History & chat is the dominant, always-visible view; the header keeps a
+  minimal status (room, character, player count).
+- ルーム／キャラクター／ダイス／パターンはボトムドックから必要時に
+  シート（オンデマンドのパネル）として開く。モバイルではボトムシート、
+  デスクトップでは中央モーダルとして表示する。
+  Room / character / dice / patterns open on demand from a bottom dock as
+  a sheet — a bottom sheet on mobile, a centered modal on desktop.
+- サイト名・ライセンス・GitHub リンクは設定メニューの下部に格納する
+  The site name, license and GitHub link are tucked into the settings menu
 
 ## 4. 非機能要件 / Non-functional
 
@@ -247,3 +258,10 @@ The `lang` fields carry the source language for future real-time translation
   background / memo / export / import, per-character patterns) and an
   app-like UI (1-10 count buttons, modifier stepper, settings menu).
   `lang` fields are carried on shared data in preparation for translation.
+- v1.5 — モバイル向けにアプリシェル化。履歴＆チャットを主画面とし、ルーム・
+  キャラクター・ダイス・パターンをボトムドックからシートで開く方式に変更。
+  サイト名・ライセンス・GitHub リンクを設定メニューへ移動。
+  Reshape the layout into an app shell for mobile: history & chat is the
+  main view, and room / character / dice / patterns open from a bottom
+  dock as sheets. The site name, license and GitHub link move into the
+  settings menu.
