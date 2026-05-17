@@ -202,9 +202,11 @@ export function useSession(): Session {
   )
 
   const goOffline = useCallback(() => {
+    // Clear the roster first so the disconnect events fired while closing
+    // do not produce a "player left" marker for every client.
+    peerPlayersRef.current.clear()
     roomRef.current?.close()
     roomRef.current = null
-    peerPlayersRef.current.clear()
     setRole('offline')
     setStatus('offline')
     setRoomCode(null)
