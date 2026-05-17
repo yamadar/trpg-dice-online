@@ -21,12 +21,19 @@ export interface Snapshot {
   chat: ChatMessage[]
 }
 
+/** A "someone is typing" signal carrying who is typing. */
+export interface TypingSignal {
+  playerId: string
+  playerName: string
+}
+
 /** Messages a client sends to the host. */
 export type ClientMessage =
   | { t: 'hello'; player: Player }
   | { t: 'roll'; result: RollResult }
   | { t: 'chat'; message: ChatMessage }
   | { t: 'rename'; name: string }
+  | { t: 'typing'; signal: TypingSignal }
 
 /** Messages a host sends to clients. */
 export type HostMessage =
@@ -34,6 +41,9 @@ export type HostMessage =
   | { t: 'players'; players: Player[] }
   | { t: 'roll'; result: RollResult }
   | { t: 'chat'; message: ChatMessage }
+  | { t: 'typing'; signal: TypingSignal }
+  | { t: 'notice'; event: 'playerJoined' | 'playerLeft'; playerName: string; timestamp: number }
+  | { t: 'roomClosed' }
 
 export type NetMessage = ClientMessage | HostMessage
 
