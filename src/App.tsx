@@ -5,8 +5,10 @@ import { useSession } from './hooks/useSession'
 import { useCharacters } from './characters/useCharacters'
 import { rollPattern } from './dice/roll'
 import type { Pattern } from './dice/types'
+import { isTutorialSeen, markTutorialSeen } from './storage/tutorial'
 import { StatusBar } from './components/StatusBar'
 import { NameGate } from './components/NameGate'
+import { Tutorial } from './components/Tutorial'
 import { SettingsMenu } from './components/SettingsMenu'
 import { Dock, type SheetId } from './components/Dock'
 import { Sheet } from './components/Sheet'
@@ -31,6 +33,7 @@ function App() {
   const [draft, setDraft] = useState<Draft>(DEFAULT_DRAFT)
   const [notice, setNotice] = useState<string | null>(null)
   const [openSheet, setOpenSheet] = useState<SheetId | null>(null)
+  const [showTutorial, setShowTutorial] = useState(() => !isTutorialSeen())
 
   const { updateIdentity } = session
   const activeName = characters.activeCharacter?.name
@@ -116,6 +119,7 @@ function App() {
         <SettingsMenu
           name={session.name}
           onChangeName={(next) => updateIdentity({ name: next })}
+          onOpenHelp={() => setShowTutorial(true)}
         />
       </header>
 
@@ -167,6 +171,16 @@ function App() {
 
       {!session.name.trim() && (
         <NameGate onSubmit={(next) => updateIdentity({ name: next })} />
+      )}
+
+      {/* Tutorial waits until a player name exists so it never overlaps the gate. */}
+      {showTutorial && session.name.trim() && (
+        <Tutorial
+          onClose={() => {
+            setShowTutorial(false)
+            markTutorialSeen()
+          }}
+        />
       )}
     </div>
   )
