@@ -6,6 +6,7 @@ import { useCharacters } from './characters/useCharacters'
 import { rollPattern } from './dice/roll'
 import type { Pattern } from './dice/types'
 import { StatusBar } from './components/StatusBar'
+import { NameGate } from './components/NameGate'
 import { SettingsMenu } from './components/SettingsMenu'
 import { Dock, type SheetId } from './components/Dock'
 import { Sheet } from './components/Sheet'
@@ -108,6 +109,7 @@ function App() {
       <header className="app-header">
         <StatusBar
           roomCode={session.roomCode}
+          roomName={session.roomName}
           playerCount={session.players.length}
           characterName={characters.activeCharacter?.name ?? ''}
         />
@@ -161,6 +163,10 @@ function App() {
         <div className="toast" role="status">
           {notice}
         </div>
+      )}
+
+      {!session.name.trim() && (
+        <NameGate onSubmit={(next) => updateIdentity({ name: next })} />
       )}
     </div>
   )

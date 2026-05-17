@@ -22,6 +22,9 @@ const ja: Dict = {
   'status.offline': 'オフライン',
   'status.noCharacter': 'PL 本人',
 
+  'gate.start': 'はじめる',
+  'gate.nameHint': 'プレイヤー名は設定からいつでも変更できます。',
+
   'player.section': 'プレイヤー',
   'player.name': 'プレイヤー名',
   'player.namePlaceholder': 'あなたの名前',
@@ -102,6 +105,8 @@ const ja: Dict = {
 
   'room.section': 'ルーム',
   'room.offline': 'オフライン（あなただけ）',
+  'room.name': 'ルーム名',
+  'room.namePlaceholder': '例: 金曜の冒険',
   'room.create': 'ルームを作成（GM になる）',
   'room.join': 'ルームに参加',
   'room.codePlaceholder': 'ルームコード',
@@ -142,6 +147,9 @@ const en: Dict = {
 
   'status.offline': 'Offline',
   'status.noCharacter': 'As player',
+
+  'gate.start': 'Start',
+  'gate.nameHint': 'You can change your player name anytime in Settings.',
 
   'player.section': 'Player',
   'player.name': 'Player name',
@@ -223,6 +231,8 @@ const en: Dict = {
 
   'room.section': 'Room',
   'room.offline': 'Offline (just you)',
+  'room.name': 'Room name',
+  'room.namePlaceholder': 'e.g. Friday adventure',
   'room.create': 'Create room (become GM)',
   'room.join': 'Join room',
   'room.codePlaceholder': 'Room code',

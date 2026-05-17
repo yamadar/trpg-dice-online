@@ -2,6 +2,7 @@ import { useI18n } from '../i18n/useI18n'
 
 interface Props {
   roomCode: string | null
+  roomName: string
   playerCount: number
   characterName: string
 }
@@ -10,14 +11,15 @@ interface Props {
  * The minimal always-visible status: which room you are in, how many
  * players are present, and which character you are acting as.
  */
-export function StatusBar({ roomCode, playerCount, characterName }: Props) {
+export function StatusBar({ roomCode, roomName, playerCount, characterName }: Props) {
   const { t } = useI18n()
+  const roomLabel = roomCode ? roomName.trim() || roomCode : t('status.offline')
   return (
     <div className="statusbar">
       <span className="stat">
         <span className="stat-key">{t('room.section')}</span>
         <span className="stat-value">
-          {roomCode ?? t('status.offline')}
+          {roomLabel}
           {roomCode && ` · ${t('room.players')} ${playerCount}`}
         </span>
       </span>
