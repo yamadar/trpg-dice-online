@@ -3,12 +3,23 @@ import { loadString, saveString } from './local'
 const ID_KEY = 'trpg-dice.playerId'
 const NAME_KEY = 'trpg-dice.playerName'
 
-/** A stable per-browser player id, created on first use. */
+/**
+ * A per-tab player id, kept in sessionStorage so it survives reloads but
+ * stays distinct between tabs. Two tabs (or two people) are two players,
+ * each with their own identity and color.
+ */
 export function getPlayerId(): string {
-  let id = loadString(ID_KEY, '')
-  if (!id) {
-    id = `usr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
-    saveString(ID_KEY, id)
+  try {
+    const existing = sessionStorage.getItem(ID_KEY)
+    if (existing) return existing
+  } catch {
+    /* sessionStorage may be unavailable */
+  }
+  const id = `usr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+  try {
+    sessionStorage.setItem(ID_KEY, id)
+  } catch {
+    /* ignore */
   }
   return id
 }

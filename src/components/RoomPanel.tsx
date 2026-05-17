@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { normalizeRoomCode, type Player } from '../net/protocol'
+import { playerColor } from '../players/colors'
 import type { Session } from '../hooks/useSession'
 
 export function RoomPanel({ session }: { session: Session }) {
@@ -26,6 +27,12 @@ export function RoomPanel({ session }: { session: Session }) {
     } catch {
       /* clipboard may be blocked */
     }
+  }
+
+  // The GM is also the host: leaving closes the room for everyone, so confirm.
+  const handleLeave = () => {
+    if (role === 'host' && !window.confirm(t('room.leaveConfirmGM'))) return
+    session.leaveRoom()
   }
 
   return (
@@ -74,7 +81,7 @@ export function RoomPanel({ session }: { session: Session }) {
             </button>
           </div>
           <p className="hint">{t('room.shareHint')}</p>
-          <button type="button" className="danger" onClick={session.leaveRoom}>
+          <button type="button" className="danger" onClick={handleLeave}>
             {t('room.leave')}
           </button>
         </div>
@@ -87,7 +94,10 @@ export function RoomPanel({ session }: { session: Session }) {
         <ul>
           {players.map((p: Player) => (
             <li key={p.id}>
-              <span className="player-name">{p.name || t('player.anon')}</span>
+              <span className="player-dot" style={{ background: playerColor(p.id) }} />
+              <span className="player-name" style={{ color: playerColor(p.id) }}>
+                {p.name || t('player.anon')}
+              </span>
               {p.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
               {p.id === playerId && <span className="badge you">{t('room.youBadge')}</span>}
             </li>

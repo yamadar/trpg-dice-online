@@ -16,17 +16,21 @@ TRPG セッション用のオンラインダイスローラーです。ダイス
   (`D4, D6, D8, D10, D12, D20, D100`). `D100` rolls two d10 as digits, where
   `00` reads as 100.
 - **Modifier (B) / 補正** — apply a signed `+/-` modifier to the result.
-- **Kind (C) / 種類** — `damage` or `judgment`. Damage shows `{value} damage`;
-  judgment shows `Result of {pattern} check: {value}`.
+- **Kind (C) / 種類** — `damage` or `judgment`. Damage shows
+  `{pattern} {value} damage`; judgment shows `Result of {pattern} check: {value}`.
 - **Patterns / パターン** — bundle A + B + C, name it, save it, and reload it
-  later (stored in your browser).
-- **History / 履歴** — every roll is kept in a chronological log.
+  later (stored in your browser). Quick-roll a saved pattern in one click.
+- **History & Chat feed / 履歴とチャット** — rolls and chat share one
+  chronological feed with an All / Rolls / Chat filter.
 - **Online rooms / オンラインルーム** — create a room to become the GM, or join
   one with a 6-character code. History, chat and the player list are shared
-  peer-to-peer.
+  peer-to-peer; joining keeps your pre-join rolls.
 - **GM hidden rolls / GM の隠しロール** — the GM can hide a roll's value; other
   players only see that a hidden roll happened.
-- **Chat / チャット** — text chat for everyone in the room.
+- **Player colors & typing indicator / 参加者カラーと入力中表示** — every
+  participant gets a stable color, and a subtle indicator shows who is typing.
+- **Room awareness / ルーム状況** — join/leave events appear in the feed, and
+  closing the room as GM notifies every player gracefully.
 - **Bilingual / 多言語** — switch the UI between Japanese and English.
 
 ## How online sharing works / オンライン共有の仕組み

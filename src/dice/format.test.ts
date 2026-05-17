@@ -26,8 +26,16 @@ function roll(over: Partial<RollResult>): RollResult {
 }
 
 describe('formatRollText', () => {
-  it('formats a damage roll', () => {
-    expect(formatRollText(en, roll({ kind: 'damage', value: 12 }), true)).toBe('12 damage')
+  it('formats a named damage roll with the pattern name', () => {
+    const r = roll({ kind: 'damage', patternName: 'Fireball', value: 12 })
+    expect(formatRollText(en, r, true)).toBe('Fireball: 12 damage')
+    expect(formatRollText(ja, r, true)).toBe('Fireball 12ダメージ')
+  })
+
+  it('formats an unnamed damage roll without a name', () => {
+    const r = roll({ kind: 'damage', patternName: '', value: 8 })
+    expect(formatRollText(en, r, true)).toBe('8 damage')
+    expect(formatRollText(ja, r, true)).toBe('8ダメージ')
   })
 
   it('formats a judgment roll with the pattern name', () => {
@@ -43,7 +51,7 @@ describe('formatRollText', () => {
   })
 
   it('shows the value of a hidden roll to the GM', () => {
-    const r = roll({ hidden: true, kind: 'damage', value: 9 })
+    const r = roll({ hidden: true, kind: 'damage', patternName: '', value: 9 })
     expect(formatRollText(en, r, true)).toBe('9 damage')
   })
 })

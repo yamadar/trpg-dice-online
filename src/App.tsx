@@ -10,8 +10,7 @@ import { PlayerBar } from './components/PlayerBar'
 import { RoomPanel } from './components/RoomPanel'
 import { DiceRoller, type Draft } from './components/DiceRoller'
 import { PatternList } from './components/PatternList'
-import { HistoryPanel } from './components/HistoryPanel'
-import { ChatPanel } from './components/ChatPanel'
+import { ActivityPanel } from './components/ActivityPanel'
 
 const DEFAULT_DRAFT: Draft = {
   name: '',
@@ -43,6 +42,19 @@ function App() {
       session.roll(result)
     },
     [draft, session, t],
+  )
+
+  // Quick-roll a saved pattern directly, without loading it into the builder.
+  const handleQuickRoll = useCallback(
+    (p: Pattern) => {
+      const result = rollPattern(
+        p,
+        { id: session.playerId, name: session.name || t('common.you') },
+        false,
+      )
+      session.roll(result)
+    },
+    [session, t],
   )
 
   const handleSave = useCallback(() => {
@@ -84,11 +96,15 @@ function App() {
             onRoll={handleRoll}
             onSave={handleSave}
           />
-          <PatternList patterns={patterns} onLoad={handleLoad} onDelete={deletePattern} />
+          <PatternList
+            patterns={patterns}
+            onLoad={handleLoad}
+            onQuickRoll={handleQuickRoll}
+            onDelete={deletePattern}
+          />
         </div>
         <div className="col">
-          <HistoryPanel history={session.history} isGM={session.isGM} onClear={session.clearHistory} />
-          <ChatPanel chat={session.chat} playerId={session.playerId} onSend={session.sendChat} />
+          <ActivityPanel session={session} />
         </div>
       </main>
 
