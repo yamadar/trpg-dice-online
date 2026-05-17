@@ -45,6 +45,8 @@ An SPA where players roll TRPG dice and share results with other players in real
 - 名前を付けて保存できる / Can be saved with a name
 - 保存したパターンは一覧から呼び出して再利用できる / Saved patterns can be recalled and reused
 - 一覧からワンクリックで直接振れる（クイックロール）/ Quick-roll a saved pattern in one click
+- 一覧内でパターンを並び替えできる。順序は書き出し／読み込みでも保たれる。
+  Patterns can be reordered; the order is kept through export / import.
 - パターンの削除は誤操作防止のため確認ダイアログを必須とする
   Deleting a pattern requires a confirmation dialog
 - 保存先はブラウザの localStorage（個人ごと） / Stored per-browser in localStorage
@@ -124,8 +126,13 @@ An SPA where players roll TRPG dice and share results with other players in real
 - 背景情報はルーム内に共有される。メモは端末内のみで共有されない
   The background is shared with the room; the memo never leaves the device
 - パターンはキャラクターごとに保持される / Patterns belong to a character
-- 各キャラクターは JSON ファイルとして書き出し・読み込みできる
-  Each character can be exported to / imported from a JSON file
+- 各キャラクターは JSON ファイルとして書き出し・読み込みできる。書き出し時に
+  非公開のメモを含めるかを選べる（既定は含めない）。
+  Each character can be exported to / imported from a JSON file; the export
+  can optionally include the private memo (off by default).
+- 参加者一覧では各参加者の行を開いてキャラクターの詳細（名前・背景）を閲覧できる
+  In the player list, each row expands to show that player's character
+  details (name and background)
 
 ### 3.13 アプリ的な UI / App-like UI
 - ダイスの個数は 1〜10 をボタンで選ぶ。補正はステッパー（−／＋）で選ぶ
@@ -285,3 +292,10 @@ The `lang` fields carry the source language for future real-time translation
   メニューから「使い方」としていつでも再表示できるようにした。
   Add a first-run overlay tutorial that walks through the app, reopenable
   anytime from the settings menu as the in-app help.
+- v1.8 — UI の細部改善: 参加者数をアイコン表示、長いルーム名／キャラクター名の
+  省略表示、パターンの並び替え、書き出し時のメモ含有オプション（既定 OFF）、
+  閉じるボタンの×を SVG 化、「表示をクリア」の控えめ化、参加者詳細の展開閲覧。
+  UI refinements: icon for the player count, truncation of long room /
+  character names, pattern reordering, an optional memo in the export
+  (off by default), an SVG close icon, a quieter "clear view" button, and
+  expandable participant details.

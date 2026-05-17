@@ -14,8 +14,8 @@ const sample: Character = {
 }
 
 describe('exportCharacterJSON / parseCharacterImport', () => {
-  it('round-trips a character (the id is dropped, fields preserved)', () => {
-    const parsed = parseCharacterImport(exportCharacterJSON(sample))
+  it('round-trips a character (id dropped, memo kept only when opted in)', () => {
+    const parsed = parseCharacterImport(exportCharacterJSON(sample, true))
     expect(parsed).not.toBeNull()
     expect(parsed).toEqual({
       name: 'Garon',
@@ -24,6 +24,27 @@ describe('exportCharacterJSON / parseCharacterImport', () => {
       lang: 'en',
       patterns: sample.patterns,
     })
+  })
+
+  it('excludes the memo by default', () => {
+    const parsed = parseCharacterImport(exportCharacterJSON(sample))
+    expect(parsed?.memo).toBe('')
+    // everything else is still exported
+    expect(parsed?.name).toBe('Garon')
+    expect(parsed?.patterns).toEqual(sample.patterns)
+  })
+
+  it('preserves the pattern order through export and import', () => {
+    const multi: Character = {
+      ...sample,
+      patterns: [
+        { id: 'a', name: 'first', kind: 'damage', diceType: 'D6', diceCount: 1, modifier: 0 },
+        { id: 'b', name: 'second', kind: 'judgment', diceType: 'D20', diceCount: 1, modifier: 0 },
+        { id: 'c', name: 'third', kind: 'damage', diceType: 'D8', diceCount: 2, modifier: 1 },
+      ],
+    }
+    const parsed = parseCharacterImport(exportCharacterJSON(multi))
+    expect(parsed?.patterns.map((p) => p.name)).toEqual(['first', 'second', 'third'])
   })
 
   it('rejects non-JSON input', () => {
