@@ -73,6 +73,25 @@ export function RoomPanel({ session }: { session: Session }) {
             </button>
           </div>
           <p className="hint">{t('room.shareHint')}</p>
+          {role === 'host' ? (
+            <label className="field">
+              <span>{t('room.name')}</span>
+              <input
+                type="text"
+                value={session.roomName}
+                maxLength={40}
+                placeholder={t('room.namePlaceholder')}
+                onChange={(e) => session.setRoomName(e.target.value)}
+              />
+            </label>
+          ) : (
+            session.roomName.trim() && (
+              <div className="field">
+                <span>{t('room.name')}</span>
+                <p className="room-name-display">{session.roomName}</p>
+              </div>
+            )
+          )}
           <button type="button" className="danger" onClick={handleLeave}>
             {t('room.leave')}
           </button>

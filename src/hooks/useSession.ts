@@ -53,6 +53,10 @@ export interface Session {
   role: Role
   status: RoomStatus
   roomCode: string | null
+  /** GM-chosen room name ('' when unnamed). */
+  roomName: string
+  /** Set the room name (host only; broadcast to clients). */
+  setRoomName: (name: string) => void
   errorKind: ErrorKind
   clearError: () => void
   createRoom: () => Promise<void>
@@ -106,6 +110,7 @@ export function useSession(): Session {
   const [role, setRole] = useState<Role>('offline')
   const [status, setStatus] = useState<RoomStatus>('offline')
   const [roomCode, setRoomCode] = useState<string | null>(null)
+  const [roomName, setRoomNameState] = useState('')
   const [errorKind, setErrorKind] = useState<ErrorKind>(null)
   const [playersState, setPlayers] = useState<Player[]>([])
   const [history, setHistory] = useState<RollResult[]>([])
@@ -124,11 +129,13 @@ export function useSession(): Session {
   const historyRef = useRef(history)
   const chatRef = useRef(chat)
   const roomCodeRef = useRef(roomCode)
+  const roomNameRef = useRef(roomName)
   useEffect(() => {
     roleRef.current = role
     historyRef.current = history
     chatRef.current = chat
     roomCodeRef.current = roomCode
+    roomNameRef.current = roomName
   })
 
   /** True once a graceful room close was received, so the following
@@ -199,6 +206,7 @@ export function useSession(): Session {
             players: [selfPlayer(true), ...peerPlayersRef.current.values()],
             history: historyRef.current.map(redactRoll),
             chat: chatRef.current,
+            roomName: roomNameRef.current,
           }
           roomRef.current?.sendTo(peerId, { t: 'welcome', snapshot })
           broadcastPlayers()
@@ -255,6 +263,8 @@ export function useSession(): Session {
     setRole('offline')
     setStatus('offline')
     setRoomCode(null)
+    roomNameRef.current = ''
+    setRoomNameState('')
     setTyping({})
   }, [])
 
@@ -267,6 +277,12 @@ export function useSession(): Session {
           setPlayers(msg.snapshot.players)
           setHistory((prev) => mergeById(prev, msg.snapshot.history, MAX_HISTORY))
           setChat((prev) => mergeById(prev, msg.snapshot.chat, MAX_CHAT))
+          roomNameRef.current = msg.snapshot.roomName
+          setRoomNameState(msg.snapshot.roomName)
+          break
+        case 'roomName':
+          roomNameRef.current = msg.name
+          setRoomNameState(msg.name)
           break
         case 'players':
           setPlayers(msg.players)
@@ -347,6 +363,8 @@ export function useSession(): Session {
       peerPlayersRef.current.clear()
       setRole('host')
       setRoomCode(code)
+      roomNameRef.current = ''
+      setRoomNameState('')
       setPlayers([selfPlayer(true)])
       addMarker('created', { roomCode: code })
     } catch {
@@ -492,6 +510,15 @@ export function useSession(): Session {
     [resyncIdentity],
   )
 
+  /** Host: name (or rename) the room and broadcast it to clients. */
+  const setRoomName = useCallback((name: string) => {
+    roomNameRef.current = name
+    setRoomNameState(name)
+    if (roleRef.current === 'host') {
+      roomRef.current?.broadcast({ t: 'roomName', name })
+    }
+  }, [])
+
   const clearError = useCallback(() => setErrorKind(null), [])
 
   // Drop stale typing signals so the indicator clears on its own.
@@ -553,6 +580,8 @@ export function useSession(): Session {
     role,
     status,
     roomCode,
+    roomName,
+    setRoomName,
     errorKind,
     clearError,
     createRoom,

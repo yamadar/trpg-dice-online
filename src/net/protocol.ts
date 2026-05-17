@@ -30,6 +30,8 @@ export interface Snapshot {
   players: Player[]
   history: RollResult[]
   chat: ChatMessage[]
+  /** GM-chosen room name ('' if the room is unnamed). */
+  roomName: string
 }
 
 /** A "someone is typing" signal carrying who is typing. */
@@ -64,6 +66,7 @@ export type HostMessage =
   | { t: 'chat'; message: ChatMessage }
   | { t: 'typing'; signal: TypingSignal }
   | { t: 'notice'; event: 'playerJoined' | 'playerLeft'; playerName: string; timestamp: number }
+  | { t: 'roomName'; name: string }
   | { t: 'roomClosed' }
 
 export type NetMessage = ClientMessage | HostMessage

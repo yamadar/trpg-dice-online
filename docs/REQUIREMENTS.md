@@ -71,6 +71,8 @@ An SPA where players roll TRPG dice and share results with other players in real
 - ルームを作成・参加でき、ロール履歴・チャット・参加者一覧を共有する
   Create / join a room and share roll history, chat, and the player list
 - ルーム作成者が GM 兼ホストになる / The room creator becomes GM and P2P host
+- GM はルームに名前を付けられ、ルーム名は参加者全員に共有される
+  The GM can name the room; the room name is shared with all players
 - ルーム未参加でもローカル単体で利用できる（オフラインモード）
   Works standalone offline when not in a room
 
@@ -143,6 +145,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   a sheet — a bottom sheet on mobile, a centered modal on desktop.
 - サイト名・ライセンス・GitHub リンクは設定メニューの下部に格納する
   The site name, license and GitHub link are tucked into the settings menu
+- プレイヤー名が未設定の場合は入力を必須とし、入力するまで利用を開始できない
+  （設定からいつでも変更できる旨も案内する）。
+  When no player name is set, entering one is required before the app can
+  be used (with a note that it can be changed later in the settings).
 
 ## 4. 非機能要件 / Non-functional
 
@@ -265,3 +271,9 @@ The `lang` fields carry the source language for future real-time translation
   main view, and room / character / dice / patterns open from a bottom
   dock as sheets. The site name, license and GitHub link move into the
   settings menu.
+- v1.6 — プレイヤー名の入力を初回必須化（名前ゲート）、GM がルームに名前を
+  付けられる機能、モバイルでのフィードヘッダー（タイトル・絞り込み・クリア）の
+  折り返し改善。
+  Require a player name on first run (name gate), let the GM name the
+  room, and fix wrapping of the feed header (title, filter, clear) on
+  mobile.
