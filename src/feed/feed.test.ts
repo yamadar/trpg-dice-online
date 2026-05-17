@@ -21,7 +21,7 @@ function roll(id: string, at: number): RollResult {
 }
 
 function chat(id: string, at: number): ChatMessage {
-  return { id, playerId: 'p1', playerName: 'A', text: 'hi', timestamp: at }
+  return { id, playerId: 'p1', playerName: 'A', text: 'hi', timestamp: at, lang: 'ja' }
 }
 
 function marker(id: string, at: number): SystemMarker {

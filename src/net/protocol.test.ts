@@ -72,7 +72,14 @@ describe('redactRoll', () => {
 })
 
 describe('staleGhostPeerIds', () => {
-  const player = (id: string, name: string): Player => ({ id, name, isGM: false })
+  const player = (id: string, name: string): Player => ({
+    id,
+    name,
+    isGM: false,
+    characterName: '',
+    background: '',
+    lang: 'ja',
+  })
 
   it('finds an earlier connection of a rejoining player', () => {
     const roster = new Map([

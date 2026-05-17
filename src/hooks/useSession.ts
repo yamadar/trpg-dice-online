@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RollResult } from '../dice/types'
+import type { Lang } from '../i18n/translations'
 import { RoomManager, type RoomStatus } from '../net/room'
 import {
   newChatId,
@@ -8,11 +9,13 @@ import {
   type ChatMessage,
   type ClientMessage,
   type HostMessage,
+  type Identity,
   type Player,
   type Snapshot,
   type TypingSignal,
 } from '../net/protocol'
 import { newMarkerId, type MarkerType, type SystemMarker } from '../feed/feed'
+import { composeName } from '../players/identity'
 import { getPlayerId, loadPlayerName, savePlayerName } from '../storage/player'
 
 export type Role = 'offline' | 'host' | 'client'
@@ -41,8 +44,12 @@ interface TypingEntry {
 
 export interface Session {
   playerId: string
+  /** Player (person) name. */
   name: string
-  setName: (name: string) => void
+  /** Composed display name: "Character（Player）" or just the player. */
+  displayName: string
+  /** Update any part of the local player's identity (and re-sync it). */
+  updateIdentity: (patch: Partial<Identity>) => void
   role: Role
   status: RoomStatus
   roomCode: string | null
@@ -93,6 +100,9 @@ export function useSession(): Session {
   const playerId = useMemo(() => getPlayerId(), [])
 
   const [name, setNameState] = useState<string>(loadPlayerName)
+  const [characterName, setCharacterNameState] = useState('')
+  const [background, setBackgroundState] = useState('')
+  const [lang, setLangState] = useState<Lang>('ja')
   const [role, setRole] = useState<Role>('offline')
   const [status, setStatus] = useState<RoomStatus>('offline')
   const [roomCode, setRoomCode] = useState<string | null>(null)
@@ -103,15 +113,19 @@ export function useSession(): Session {
   const [markers, setMarkers] = useState<SystemMarker[]>([])
   const [typing, setTyping] = useState<Record<string, TypingEntry>>({})
 
-  // Refs mirror state so PeerJS callbacks always read current values.
-  const roleRef = useRef(role)
+  // Identity refs are written directly by updateIdentity so a re-sync can
+  // read the new values synchronously.
   const nameRef = useRef(name)
+  const characterNameRef = useRef(characterName)
+  const backgroundRef = useRef(background)
+  const langRef = useRef(lang)
+  // These refs mirror state so PeerJS callbacks always read current values.
+  const roleRef = useRef(role)
   const historyRef = useRef(history)
   const chatRef = useRef(chat)
   const roomCodeRef = useRef(roomCode)
   useEffect(() => {
     roleRef.current = role
-    nameRef.current = name
     historyRef.current = history
     chatRef.current = chat
     roomCodeRef.current = roomCode
@@ -146,7 +160,14 @@ export function useSession(): Session {
   }, [])
 
   const selfPlayer = useCallback(
-    (asGM: boolean): Player => ({ id: playerId, name: nameRef.current, isGM: asGM }),
+    (asGM: boolean): Player => ({
+      id: playerId,
+      name: nameRef.current,
+      isGM: asGM,
+      characterName: characterNameRef.current,
+      background: backgroundRef.current,
+      lang: langRef.current,
+    }),
     [playerId],
   )
 
@@ -181,19 +202,20 @@ export function useSession(): Session {
           }
           roomRef.current?.sendTo(peerId, { t: 'welcome', snapshot })
           broadcastPlayers()
-          addMarker('playerJoined', { playerName: player.name })
+          const shown = composeName(player.name, player.characterName)
+          addMarker('playerJoined', { playerName: shown })
           roomRef.current?.broadcast({
             t: 'notice',
             event: 'playerJoined',
-            playerName: player.name,
+            playerName: shown,
             timestamp: Date.now(),
           })
           break
         }
-        case 'rename': {
+        case 'identity': {
           const existing = peerPlayersRef.current.get(peerId)
           if (existing) {
-            peerPlayersRef.current.set(peerId, { ...existing, name: msg.name })
+            peerPlayersRef.current.set(peerId, { ...existing, ...msg.identity })
             broadcastPlayers()
           }
           break
@@ -278,11 +300,12 @@ export function useSession(): Session {
       if (peerPlayersRef.current.delete(peerId)) {
         broadcastPlayers()
         if (gone) {
-          addMarker('playerLeft', { playerName: gone.name })
+          const shown = composeName(gone.name, gone.characterName)
+          addMarker('playerLeft', { playerName: shown })
           roomRef.current?.broadcast({
             t: 'notice',
             event: 'playerLeft',
-            playerName: gone.name,
+            playerName: shown,
             timestamp: Date.now(),
           })
         }
@@ -386,9 +409,10 @@ export function useSession(): Session {
       const message: ChatMessage = {
         id: newChatId(),
         playerId,
-        playerName: nameRef.current || '???',
+        playerName: composeName(nameRef.current, characterNameRef.current) || '???',
         text: trimmed,
         timestamp: Date.now(),
+        lang: langRef.current,
       }
       const currentRole = roleRef.current
       if (currentRole === 'host') {
@@ -409,7 +433,10 @@ export function useSession(): Session {
     const now = Date.now()
     if (now - lastTypingSentRef.current < TYPING_THROTTLE_MS) return
     lastTypingSentRef.current = now
-    const signal: TypingSignal = { playerId, playerName: nameRef.current || '???' }
+    const signal: TypingSignal = {
+      playerId,
+      playerName: composeName(nameRef.current, characterNameRef.current) || '???',
+    }
     if (currentRole === 'host') {
       roomRef.current?.broadcast({ t: 'typing', signal })
     } else {
@@ -423,24 +450,46 @@ export function useSession(): Session {
     setMarkers([])
   }, [])
 
-  const setName = useCallback(
-    (next: string) => {
-      setNameState(next)
-      nameRef.current = next
-      savePlayerName(next)
-      const currentRole = roleRef.current
-      if (currentRole === 'host') {
-        const list: Player[] = [
-          { id: playerId, name: next, isGM: true },
-          ...peerPlayersRef.current.values(),
-        ]
-        setPlayers(list)
-        roomRef.current?.broadcast({ t: 'players', players: list })
-      } else if (currentRole === 'client') {
-        roomRef.current?.sendToHost({ t: 'rename', name: next })
+  /** Re-publish the local identity after it changed. */
+  const resyncIdentity = useCallback(() => {
+    const currentRole = roleRef.current
+    if (currentRole === 'host') {
+      broadcastPlayers()
+    } else if (currentRole === 'client') {
+      roomRef.current?.sendToHost({
+        t: 'identity',
+        identity: {
+          name: nameRef.current,
+          characterName: characterNameRef.current,
+          background: backgroundRef.current,
+          lang: langRef.current,
+        },
+      })
+    }
+  }, [broadcastPlayers])
+
+  const updateIdentity = useCallback(
+    (patch: Partial<Identity>) => {
+      if (patch.name !== undefined) {
+        nameRef.current = patch.name
+        setNameState(patch.name)
+        savePlayerName(patch.name)
       }
+      if (patch.characterName !== undefined) {
+        characterNameRef.current = patch.characterName
+        setCharacterNameState(patch.characterName)
+      }
+      if (patch.background !== undefined) {
+        backgroundRef.current = patch.background
+        setBackgroundState(patch.background)
+      }
+      if (patch.lang !== undefined) {
+        langRef.current = patch.lang
+        setLangState(patch.lang)
+      }
+      resyncIdentity()
     },
-    [playerId],
+    [resyncIdentity],
   )
 
   const clearError = useCallback(() => setErrorKind(null), [])
@@ -485,9 +534,11 @@ export function useSession(): Session {
   // Tear down the peer when the app unmounts.
   useEffect(() => () => roomRef.current?.close(), [])
 
-  // Offline: the player list is just the current player, derived from name.
+  // Offline: the player list is just the current player.
   const players: Player[] =
-    role === 'offline' ? [{ id: playerId, name, isGM: false }] : playersState
+    role === 'offline'
+      ? [{ id: playerId, name, isGM: false, characterName, background, lang }]
+      : playersState
 
   // Self is excluded; stale entries are pruned by the interval above.
   const typingNames = Object.entries(typing)
@@ -497,7 +548,8 @@ export function useSession(): Session {
   return {
     playerId,
     name,
-    setName,
+    displayName: composeName(name, characterName),
+    updateIdentity,
     role,
     status,
     roomCode,
