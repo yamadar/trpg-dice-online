@@ -35,8 +35,11 @@ export class RoomManager {
   private connections = new Map<string, DataConnection>()
   /** Client: the single connection to the host. */
   private hostConn: DataConnection | null = null
+  private readonly cb: RoomCallbacks
 
-  constructor(private readonly cb: RoomCallbacks) {}
+  constructor(cb: RoomCallbacks) {
+    this.cb = cb
+  }
 
   get isActive(): boolean {
     return this.role !== null

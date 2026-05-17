@@ -52,26 +52,28 @@ function capEnd<T>(list: T[], max: number): T[] {
  * host-authoritative P2P room.
  */
 export function useSession(): Session {
-  const playerId = useMemo(getPlayerId, [])
+  const playerId = useMemo(() => getPlayerId(), [])
 
   const [name, setNameState] = useState<string>(loadPlayerName)
   const [role, setRole] = useState<Role>('offline')
   const [status, setStatus] = useState<RoomStatus>('offline')
   const [roomCode, setRoomCode] = useState<string | null>(null)
   const [errorKind, setErrorKind] = useState<ErrorKind>(null)
-  const [players, setPlayers] = useState<Player[]>([])
+  const [playersState, setPlayers] = useState<Player[]>([])
   const [history, setHistory] = useState<RollResult[]>([])
   const [chat, setChat] = useState<ChatMessage[]>([])
 
   // Refs mirror state so PeerJS callbacks always read current values.
   const roleRef = useRef(role)
-  roleRef.current = role
   const nameRef = useRef(name)
-  nameRef.current = name
   const historyRef = useRef(history)
-  historyRef.current = history
   const chatRef = useRef(chat)
-  chatRef.current = chat
+  useEffect(() => {
+    roleRef.current = role
+    nameRef.current = name
+    historyRef.current = history
+    chatRef.current = chat
+  })
 
   /** Host only: connected clients keyed by their PeerJS peer id. */
   const peerPlayersRef = useRef(new Map<string, Player>())
@@ -174,8 +176,7 @@ export function useSession(): Session {
     setRole('offline')
     setStatus('offline')
     setRoomCode(null)
-    setPlayers([{ id: playerId, name: nameRef.current, isGM: false }])
-  }, [playerId])
+  }, [])
 
   const ensureRoom = useCallback((): RoomManager => {
     if (roomRef.current) return roomRef.current
@@ -293,15 +294,12 @@ export function useSession(): Session {
 
   const clearError = useCallback(() => setErrorKind(null), [])
 
-  // Offline player list reflects the current name.
-  useEffect(() => {
-    if (role === 'offline') {
-      setPlayers([{ id: playerId, name, isGM: false }])
-    }
-  }, [role, name, playerId])
-
   // Tear down the peer when the app unmounts.
   useEffect(() => () => roomRef.current?.close(), [])
+
+  // Offline: the player list is just the current player, derived from name.
+  const players: Player[] =
+    role === 'offline' ? [{ id: playerId, name, isGM: false }] : playersState
 
   return {
     playerId,

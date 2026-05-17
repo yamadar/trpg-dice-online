@@ -12,6 +12,7 @@ const ja: Dict = {
   'player.section': 'プレイヤー',
   'player.name': '名前',
   'player.namePlaceholder': '名前を入力',
+  'player.anon': '名無し',
 
   'dice.section': 'ダイスを振る',
   'dice.count': '個数',
@@ -79,6 +80,7 @@ const en: Dict = {
   'player.section': 'Player',
   'player.name': 'Name',
   'player.namePlaceholder': 'Enter your name',
+  'player.anon': 'Anonymous',
 
   'dice.section': 'Roll dice',
   'dice.count': 'Count',

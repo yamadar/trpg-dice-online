@@ -1,121 +1,110 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useCallback, useState } from 'react'
 import './App.css'
+import { useI18n } from './i18n/useI18n'
+import { useSession } from './hooks/useSession'
+import { usePatterns } from './hooks/usePatterns'
+import { rollPattern } from './dice/roll'
+import type { Pattern } from './dice/types'
+import { LanguageToggle } from './components/LanguageToggle'
+import { PlayerBar } from './components/PlayerBar'
+import { RoomPanel } from './components/RoomPanel'
+import { DiceRoller, type Draft } from './components/DiceRoller'
+import { PatternList } from './components/PatternList'
+import { HistoryPanel } from './components/HistoryPanel'
+import { ChatPanel } from './components/ChatPanel'
+
+const DEFAULT_DRAFT: Draft = {
+  name: '',
+  kind: 'damage',
+  diceType: 'D6',
+  diceCount: 1,
+  modifier: 0,
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { t } = useI18n()
+  const session = useSession()
+  const { patterns, addPattern, deletePattern } = usePatterns()
+  const [draft, setDraft] = useState<Draft>(DEFAULT_DRAFT)
+  const [notice, setNotice] = useState<string | null>(null)
+
+  const flash = useCallback((msg: string) => {
+    setNotice(msg)
+    setTimeout(() => setNotice(null), 2500)
+  }, [])
+
+  const handleRoll = useCallback(
+    (hidden: boolean) => {
+      const result = rollPattern(
+        draft,
+        { id: session.playerId, name: session.name || t('common.you') },
+        hidden,
+      )
+      session.roll(result)
+    },
+    [draft, session, t],
+  )
+
+  const handleSave = useCallback(() => {
+    if (!draft.name.trim()) {
+      flash(t('pattern.needName'))
+      return
+    }
+    addPattern({ ...draft, name: draft.name.trim() })
+  }, [draft, addPattern, flash, t])
+
+  const handleLoad = useCallback((p: Pattern) => {
+    setDraft({
+      name: p.name,
+      kind: p.kind,
+      diceType: p.diceType,
+      diceCount: p.diceCount,
+      modifier: p.modifier,
+    })
+  }, [])
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app">
+      <header className="app-header">
+        <div className="title-block">
+          <h1>{t('app.title')}</h1>
+          <p className="tagline">{t('app.tagline')}</p>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        <LanguageToggle />
+      </header>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      <main className="layout">
+        <div className="col">
+          <PlayerBar name={session.name} onChangeName={session.setName} />
+          <RoomPanel session={session} />
+          <DiceRoller
+            draft={draft}
+            onChange={setDraft}
+            isGM={session.isGM}
+            onRoll={handleRoll}
+            onSave={handleSave}
+          />
+          <PatternList patterns={patterns} onLoad={handleLoad} onDelete={deletePattern} />
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
+        <div className="col">
+          <HistoryPanel history={session.history} isGM={session.isGM} onClear={session.clearHistory} />
+          <ChatPanel chat={session.chat} playerId={session.playerId} onSend={session.sendChat} />
         </div>
-      </section>
+      </main>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <footer className="app-footer">
+        <span>TRPG Online Dice · MIT License</span>
+        <a href="https://github.com/yamadar/trpg-dice-online" target="_blank" rel="noreferrer">
+          GitHub
+        </a>
+      </footer>
+
+      {notice && (
+        <div className="toast" role="status">
+          {notice}
+        </div>
+      )}
+    </div>
   )
 }
 
