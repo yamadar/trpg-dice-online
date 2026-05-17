@@ -11,6 +11,13 @@ interface Props {
 
 export function PatternList({ patterns, onLoad, onQuickRoll, onDelete }: Props) {
   const { t } = useI18n()
+
+  // Deleting a saved pattern is permanent, so require a confirmation.
+  const handleDelete = (pattern: Pattern) => {
+    const name = pattern.name || t('pattern.unnamed')
+    if (window.confirm(t('pattern.deleteConfirm', { name }))) onDelete(pattern.id)
+  }
+
   return (
     <section className="panel">
       <h2>{t('pattern.section')}</h2>
@@ -35,7 +42,7 @@ export function PatternList({ patterns, onLoad, onQuickRoll, onDelete }: Props) 
                 type="button"
                 className="link danger"
                 aria-label={t('pattern.delete')}
-                onClick={() => onDelete(p.id)}
+                onClick={() => handleDelete(p)}
               >
                 ×
               </button>

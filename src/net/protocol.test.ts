@@ -4,6 +4,8 @@ import {
   normalizeRoomCode,
   peerIdForCode,
   redactRoll,
+  staleGhostPeerIds,
+  type Player,
 } from './protocol'
 import type { RollResult } from '../dice/types'
 
@@ -66,5 +68,39 @@ describe('redactRoll', () => {
   it('leaves a visible roll unchanged', () => {
     const roll = sampleRoll(false)
     expect(redactRoll(roll)).toBe(roll)
+  })
+})
+
+describe('staleGhostPeerIds', () => {
+  const player = (id: string, name: string): Player => ({ id, name, isGM: false })
+
+  it('finds an earlier connection of a rejoining player', () => {
+    const roster = new Map([
+      ['peerOld', player('alice', 'Alice')],
+      ['peerOther', player('bob', 'Bob')],
+    ])
+    expect(staleGhostPeerIds(roster, 'alice', 'peerNew')).toEqual(['peerOld'])
+  })
+
+  it('keeps the current connection of the joining player', () => {
+    const roster = new Map([['peerNew', player('alice', 'Alice')]])
+    expect(staleGhostPeerIds(roster, 'alice', 'peerNew')).toEqual([])
+  })
+
+  it('does not flag other players', () => {
+    const roster = new Map([
+      ['p1', player('bob', 'Bob')],
+      ['p2', player('carol', 'Carol')],
+    ])
+    expect(staleGhostPeerIds(roster, 'alice', 'peerNew')).toEqual([])
+  })
+
+  it('finds every stale connection of the same player', () => {
+    const roster = new Map([
+      ['g1', player('alice', 'Alice')],
+      ['g2', player('alice', 'Alice')],
+      ['cur', player('alice', 'Alice')],
+    ])
+    expect(staleGhostPeerIds(roster, 'alice', 'cur').sort()).toEqual(['g1', 'g2'])
   })
 })
