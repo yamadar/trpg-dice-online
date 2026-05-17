@@ -1,17 +1,28 @@
 import type { RollResult } from '../dice/types'
+import type { Lang } from '../i18n/translations'
 
 export interface Player {
   id: string
+  /** Player (person) name. */
   name: string
   isGM: boolean
+  /** Active character name, or '' when acting as the player directly. */
+  characterName: string
+  /** Active character's public background, or '' when none. */
+  background: string
+  /** The player's current UI language (for future translation). */
+  lang: Lang
 }
 
 export interface ChatMessage {
   id: string
   playerId: string
+  /** Composed display name ("Character（Player）" or just the player). */
   playerName: string
   text: string
   timestamp: number
+  /** Language the message was written in (for future translation). */
+  lang: Lang
 }
 
 /** Shared state a host sends to a newly joined client. */
@@ -27,12 +38,20 @@ export interface TypingSignal {
   playerName: string
 }
 
+/** A player's mutable identity: player name, active character, language. */
+export interface Identity {
+  name: string
+  characterName: string
+  background: string
+  lang: Lang
+}
+
 /** Messages a client sends to the host. */
 export type ClientMessage =
   | { t: 'hello'; player: Player }
   | { t: 'roll'; result: RollResult }
   | { t: 'chat'; message: ChatMessage }
-  | { t: 'rename'; name: string }
+  | { t: 'identity'; identity: Identity }
   | { t: 'typing'; signal: TypingSignal }
   /** Periodic liveness signal so the host can detect dropped clients. */
   | { t: 'ping' }

@@ -111,6 +111,28 @@ An SPA where players roll TRPG dice and share results with other players in real
 - ロール結果はデータとして同期し、表示は閲覧者の言語で整形する
   Rolls are synced as data; text is formatted in each viewer's language
 
+### 3.12 キャラクター / Characters
+- プレイヤー（人）とは別に「キャラクター」の概念を持つ / Characters are distinct from the player
+- キャラクターは 名前 / 背景情報（公開）/ メモ（非公開）/ パターン一覧 を持つ
+  A character has a name, public background, private memo, and pattern list
+- 複数のキャラクターを保持でき、操作するキャラクターを任意で切り替えられる
+  Multiple characters can be kept; the active one can be switched freely
+- キャラクターとして発言・ロールすると、名前は「{キャラ名}（{PL 名}）」と表記される
+  Acting as a character displays the name as "{character}（{player}）"
+- 背景情報はルーム内に共有される。メモは端末内のみで共有されない
+  The background is shared with the room; the memo never leaves the device
+- パターンはキャラクターごとに保持される / Patterns belong to a character
+- 各キャラクターは JSON ファイルとして書き出し・読み込みできる
+  Each character can be exported to / imported from a JSON file
+
+### 3.13 アプリ的な UI / App-like UI
+- ダイスの個数は 1〜10 をボタンで選ぶ。補正はステッパー（−／＋）で選ぶ
+  Dice count 1-10 is picked from buttons; the modifier uses a −／＋ stepper
+- 使用頻度の低い操作（プレイヤー名・言語）は設定メニュー内に格納する
+  Low-frequency controls (player name, language) live in a settings menu
+- キャラクターの背景情報・メモは折りたたみ可能にする
+  Character background and memo are collapsible
+
 ## 4. 非機能要件 / Non-functional
 
 - SPA（シングルページ） / Single-page application
@@ -141,12 +163,16 @@ authoritative shared state and relays events to everyone.
 DiceType   = 'D4'|'D6'|'D8'|'D10'|'D12'|'D20'|'D100'
 PatternKind = 'damage' | 'judgment'
 
+Lang        = 'ja' | 'en'
+
 Pattern    = { id, name, kind, diceType, diceCount, modifier }
 RollResult = { id, patternName, kind, diceType, diceCount,
                faces: number[], modifier, value, playerId,
                playerName, hidden, timestamp }
-ChatMessage = { id, playerId, playerName, text, timestamp }
-Player      = { id, name, isGM }
+ChatMessage = { id, playerId, playerName, text, timestamp, lang }
+// Player carries the active character's public info; memo is never synced.
+Player      = { id, name, isGM, characterName, background, lang }
+Character   = { id, name, background, memo, patterns: Pattern[], lang }
 
 // Local-only feed annotations (not synced); they record room events.
 MarkerType  = 'created'|'joined'|'youLeft'|'youClosed'
@@ -157,6 +183,11 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
 
 参加者の色は `playerId` のハッシュから決まり、同期不要で全クライアントが一致する。
 Player colors are derived by hashing `playerId`, so all clients agree with no sync.
+
+`lang` フィールドは将来のリアルタイム翻訳（`docs/TRANSLATION_API_RESEARCH.md`）に
+備えて原文の言語を保持するもので、現時点では挙動に影響しない。
+The `lang` fields carry the source language for future real-time translation
+(see `docs/TRANSLATION_API_RESEARCH.md`); they do not affect behaviour yet.
 
 ## 7. 実装プラン / Implementation Plan
 
@@ -185,6 +216,9 @@ Player colors are derived by hashing `playerId`, so all clients agree with no sy
 - [x] 退出後の履歴が退出済みルームのものだと分かる
 - [x] GM の隠しロールが他プレイヤーに伏せられる
 - [x] 日本語 / English を切り替えられる
+- [x] キャラクターを作成・切替・書き出し／読み込みできる
+- [x] キャラクターの名前・背景がルーム内で共有され、メモは共有されない
+- [x] ダイス個数 1〜10・補正をボタン／ステッパーで選べる
 - [x] GitHub Pages で公開され、ブラウザで動作する
 
 ## 9. 改訂 / Revisions
@@ -205,3 +239,11 @@ Player colors are derived by hashing `playerId`, so all clients agree with no sy
   Review feedback: pattern deletion now confirms; fixed ghost players
   that lingered after an ungraceful disconnect and duplicated on rejoin,
   via a heartbeat and de-duplication of a player's stale connection.
+- v1.4 — リアルタイム翻訳の API 調査（`docs/TRANSLATION_API_RESEARCH.md`）、
+  キャラクター管理（作成・切替・背景／メモ・書き出し／読み込み、パターンの
+  キャラクター単位化）、アプリ的な UI（個数 1〜10 ボタン・補正ステッパー・
+  設定メニュー）を追加。翻訳に備え `lang` フィールドを各データに付与。
+  Add translation-API research, character management (create / switch /
+  background / memo / export / import, per-character patterns) and an
+  app-like UI (1-10 count buttons, modifier stepper, settings menu).
+  `lang` fields are carried on shared data in preparation for translation.
