@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { normalizeRoomCode, type Player } from '../net/protocol'
 import { playerColor } from '../players/colors'
+import { composeName } from '../players/identity'
 import type { Session } from '../hooks/useSession'
 
 export function RoomPanel({ session }: { session: Session }) {
@@ -94,12 +95,15 @@ export function RoomPanel({ session }: { session: Session }) {
         <ul>
           {players.map((p: Player) => (
             <li key={p.id}>
-              <span className="player-dot" style={{ background: playerColor(p.id) }} />
-              <span className="player-name" style={{ color: playerColor(p.id) }}>
-                {p.name || t('player.anon')}
-              </span>
-              {p.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
-              {p.id === playerId && <span className="badge you">{t('room.youBadge')}</span>}
+              <div className="player-row">
+                <span className="player-dot" style={{ background: playerColor(p.id) }} />
+                <span className="player-name" style={{ color: playerColor(p.id) }}>
+                  {composeName(p.name, p.characterName) || t('player.anon')}
+                </span>
+                {p.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
+                {p.id === playerId && <span className="badge you">{t('room.youBadge')}</span>}
+              </div>
+              {p.background.trim() && <p className="player-background">{p.background}</p>}
             </li>
           ))}
         </ul>
