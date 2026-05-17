@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { CloseIcon } from './icons'
 
 interface Props {
   children: ReactNode
@@ -28,11 +29,11 @@ export function Sheet({ children, onClose }: Props) {
       <div className="sheet">
         <button
           type="button"
-          className="sheet-close"
+          className="sheet-close icon-x"
           aria-label={t('settings.close')}
           onClick={onClose}
         >
-          ×
+          <CloseIcon />
         </button>
         <div className="sheet-body">{children}</div>
       </div>

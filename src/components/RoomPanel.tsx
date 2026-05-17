@@ -9,6 +9,7 @@ export function RoomPanel({ session }: { session: Session }) {
   const { t } = useI18n()
   const [codeInput, setCodeInput] = useState('')
   const [copied, setCopied] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const { status, role, roomCode, players, playerId } = session
 
   const busy = status === 'connecting'
@@ -103,19 +104,57 @@ export function RoomPanel({ session }: { session: Session }) {
           {t('room.players')} ({players.length})
         </h3>
         <ul>
-          {players.map((p: Player) => (
-            <li key={p.id}>
-              <div className="player-row">
-                <span className="player-dot" style={{ background: playerColor(p.id) }} />
-                <span className="player-name" style={{ color: playerColor(p.id) }}>
+          {players.map((p: Player) => {
+            const color = playerColor(p.id)
+            const hasDetail = p.characterName.trim() !== '' || p.background.trim() !== ''
+            const expanded = expandedId === p.id
+            const rowInner = (
+              <>
+                <span className="player-dot" style={{ background: color }} />
+                <span className="player-name" style={{ color }}>
                   {composeName(p.name, p.characterName) || t('player.anon')}
                 </span>
                 {p.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
                 {p.id === playerId && <span className="badge you">{t('room.youBadge')}</span>}
-              </div>
-              {p.background.trim() && <p className="player-background">{p.background}</p>}
-            </li>
-          ))}
+                {hasDetail && (
+                  <span className="player-caret" aria-hidden="true">
+                    {expanded ? '▾' : '▸'}
+                  </span>
+                )}
+              </>
+            )
+            return (
+              <li key={p.id}>
+                {hasDetail ? (
+                  <button
+                    type="button"
+                    className="player-row"
+                    aria-expanded={expanded}
+                    onClick={() => setExpandedId(expanded ? null : p.id)}
+                  >
+                    {rowInner}
+                  </button>
+                ) : (
+                  <div className="player-row">{rowInner}</div>
+                )}
+                {hasDetail && expanded && (
+                  <div className="player-detail">
+                    {p.characterName.trim() && (
+                      <p>
+                        <span className="detail-key">{t('character.name')}</span>
+                        {p.characterName}
+                      </p>
+                    )}
+                    <p>
+                      <span className="detail-key">{t('player.name')}</span>
+                      {p.name || t('player.anon')}
+                    </p>
+                    {p.background.trim() && <p className="detail-bg">{p.background}</p>}
+                  </div>
+                )}
+              </li>
+            )
+          })}
         </ul>
       </div>
     </section>

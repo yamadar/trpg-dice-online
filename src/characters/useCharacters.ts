@@ -23,6 +23,8 @@ export interface UseCharacters {
   deleteCharacter: (id: string) => void
   addPattern: (characterId: string, pattern: Omit<Pattern, 'id'>) => void
   deletePattern: (characterId: string, patternId: string) => void
+  /** Move a pattern up (-1) or down (+1) within its character's list. */
+  movePattern: (characterId: string, patternId: string, direction: -1 | 1) => void
   /** Import a character from an exported-file string; returns success. */
   importCharacter: (text: string) => boolean
 }
@@ -104,6 +106,25 @@ export function useCharacters(): UseCharacters {
     })
   }, [])
 
+  const movePattern = useCallback(
+    (characterId: string, patternId: string, direction: -1 | 1) => {
+      setCharacters((prev) => {
+        const next = prev.map((c) => {
+          if (c.id !== characterId) return c
+          const from = c.patterns.findIndex((p) => p.id === patternId)
+          const to = from + direction
+          if (from < 0 || to < 0 || to >= c.patterns.length) return c
+          const patterns = [...c.patterns]
+          ;[patterns[from], patterns[to]] = [patterns[to], patterns[from]]
+          return { ...c, patterns }
+        })
+        saveCharacters(next)
+        return next
+      })
+    },
+    [],
+  )
+
   const importCharacter = useCallback(
     (text: string): boolean => {
       const imported = parseCharacterImport(text)
@@ -135,6 +156,7 @@ export function useCharacters(): UseCharacters {
     deleteCharacter,
     addPattern,
     deletePattern,
+    movePattern,
     importCharacter,
   }
 }

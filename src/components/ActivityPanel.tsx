@@ -88,7 +88,7 @@ export function ActivityPanel({ session }: { session: Session }) {
             ))}
           </div>
           {feed.length > 0 && (
-            <button type="button" className="link" onClick={clearFeed}>
+            <button type="button" className="link feed-clear" onClick={clearFeed}>
               {t('feed.clear')}
             </button>
           )}

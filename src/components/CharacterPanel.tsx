@@ -26,6 +26,7 @@ export function CharacterPanel({ characters }: Props) {
 
   const [showDetails, setShowDetails] = useState(false)
   const [importError, setImportError] = useState(false)
+  const [exportMemo, setExportMemo] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleCreate = () => {
@@ -43,7 +44,9 @@ export function CharacterPanel({ characters }: Props) {
 
   const handleExport = () => {
     if (!activeCharacter) return
-    const blob = new Blob([exportCharacterJSON(activeCharacter)], { type: 'application/json' })
+    const blob = new Blob([exportCharacterJSON(activeCharacter, exportMemo)], {
+      type: 'application/json',
+    })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -134,6 +137,14 @@ export function CharacterPanel({ characters }: Props) {
                   placeholder={t('character.memoPlaceholder')}
                   onChange={(e) => updateCharacter(activeCharacter.id, { memo: e.target.value })}
                 />
+              </label>
+              <label className="checkbox">
+                <input
+                  type="checkbox"
+                  checked={exportMemo}
+                  onChange={(e) => setExportMemo(e.target.checked)}
+                />
+                <span>{t('character.exportMemo')}</span>
               </label>
               <div className="char-actions">
                 <button type="button" onClick={handleExport}>

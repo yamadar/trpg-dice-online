@@ -1,6 +1,7 @@
 import { useI18n } from '../i18n/useI18n'
 import type { Pattern } from '../dice/types'
 import { formatDiceSummary } from '../dice/format'
+import { CloseIcon } from './icons'
 
 interface Props {
   /** Whether a character is active (patterns belong to a character). */
@@ -9,9 +10,17 @@ interface Props {
   onLoad: (pattern: Pattern) => void
   onQuickRoll: (pattern: Pattern) => void
   onDelete: (id: string) => void
+  onMove: (id: string, direction: -1 | 1) => void
 }
 
-export function PatternList({ hasCharacter, patterns, onLoad, onQuickRoll, onDelete }: Props) {
+export function PatternList({
+  hasCharacter,
+  patterns,
+  onLoad,
+  onQuickRoll,
+  onDelete,
+  onMove,
+}: Props) {
   const { t } = useI18n()
 
   // Deleting a saved pattern is permanent, so require a confirmation.
@@ -27,7 +36,7 @@ export function PatternList({ hasCharacter, patterns, onLoad, onQuickRoll, onDel
       {hasCharacter && patterns.length === 0 && <p className="hint">{t('pattern.none')}</p>}
       {hasCharacter && (
         <ul className="pattern-list">
-          {patterns.map((p) => (
+          {patterns.map((p, i) => (
             <li key={p.id}>
               <div className="pattern-info">
                 <span className="pattern-name">{p.name || t('pattern.unnamed')}</span>
@@ -36,6 +45,26 @@ export function PatternList({ hasCharacter, patterns, onLoad, onQuickRoll, onDel
                 </span>
               </div>
               <div className="pattern-buttons">
+                <div className="pattern-reorder">
+                  <button
+                    type="button"
+                    className="move-btn"
+                    aria-label={t('pattern.moveUp')}
+                    disabled={i === 0}
+                    onClick={() => onMove(p.id, -1)}
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    className="move-btn"
+                    aria-label={t('pattern.moveDown')}
+                    disabled={i === patterns.length - 1}
+                    onClick={() => onMove(p.id, 1)}
+                  >
+                    ▼
+                  </button>
+                </div>
                 <button type="button" className="primary" onClick={() => onQuickRoll(p)}>
                   {t('pattern.roll')}
                 </button>
@@ -44,11 +73,11 @@ export function PatternList({ hasCharacter, patterns, onLoad, onQuickRoll, onDel
                 </button>
                 <button
                   type="button"
-                  className="link danger"
+                  className="link danger icon-x"
                   aria-label={t('pattern.delete')}
                   onClick={() => handleDelete(p)}
                 >
-                  ×
+                  <CloseIcon />
                 </button>
               </div>
             </li>

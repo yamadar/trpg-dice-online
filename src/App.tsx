@@ -6,6 +6,7 @@ import { useCharacters } from './characters/useCharacters'
 import { rollPattern } from './dice/roll'
 import type { Pattern } from './dice/types'
 import { isTutorialSeen, markTutorialSeen } from './storage/tutorial'
+import { CloseIcon } from './components/icons'
 import { StatusBar } from './components/StatusBar'
 import { NameGate } from './components/NameGate'
 import { Tutorial } from './components/Tutorial'
@@ -105,6 +106,13 @@ function App() {
     [characters],
   )
 
+  const handleMovePattern = useCallback(
+    (patternId: string, dir: -1 | 1) => {
+      if (characters.activeId) characters.movePattern(characters.activeId, patternId, dir)
+    },
+    [characters],
+  )
+
   const toggleSheet = (id: SheetId) => setOpenSheet((cur) => (cur === id ? null : id))
 
   return (
@@ -126,8 +134,13 @@ function App() {
       {session.errorKind && (
         <p className="app-banner" role="alert">
           {session.errorKind === 'connect' ? t('room.error') : t('room.hostLost')}
-          <button type="button" className="link" onClick={session.clearError}>
-            ×
+          <button
+            type="button"
+            className="link icon-x"
+            aria-label={t('settings.close')}
+            onClick={session.clearError}
+          >
+            <CloseIcon />
           </button>
         </p>
       )}
@@ -158,6 +171,7 @@ function App() {
               onLoad={handleLoad}
               onQuickRoll={handleQuickRoll}
               onDelete={handleDeletePattern}
+              onMove={handleMovePattern}
             />
           )}
         </Sheet>

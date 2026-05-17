@@ -14,15 +14,18 @@ const FILE_VERSION = 1
 /** A character ready to be imported — everything but the (local) id. */
 export type CharacterImport = Omit<Character, 'id'>
 
-/** Serialize a character to a versioned JSON string for download. */
-export function exportCharacterJSON(character: Character): string {
+/**
+ * Serialize a character to a versioned JSON string for download.
+ * The private memo is excluded unless `includeMemo` is explicitly true.
+ */
+export function exportCharacterJSON(character: Character, includeMemo = false): string {
   const payload = {
     type: FILE_TYPE,
     version: FILE_VERSION,
     character: {
       name: character.name,
       background: character.background,
-      memo: character.memo,
+      memo: includeMemo ? character.memo : '',
       patterns: character.patterns,
       lang: character.lang,
     },
