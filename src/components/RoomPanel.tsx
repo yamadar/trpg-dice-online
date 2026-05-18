@@ -1,13 +1,21 @@
 import { useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
 import { normalizeRoomCode, type Player } from '../net/protocol'
 import { playerColor } from '../players/colors'
 import { composeName } from '../players/identity'
 import type { Session } from '../hooks/useSession'
 
-export function RoomPanel({ session }: { session: Session }) {
+interface Props {
+  session: Session
+  /** Room code from the URL (?room=CODE), used to prefill the join field. */
+  initialJoinCode: string
+  onNotice: (message: string) => void
+}
+
+export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   const { t } = useI18n()
-  const [codeInput, setCodeInput] = useState('')
+  const [codeInput, setCodeInput] = useState(() => normalizeRoomCode(initialJoinCode))
   const [copied, setCopied] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const { status, role, roomCode, players, playerId } = session
@@ -15,15 +23,20 @@ export function RoomPanel({ session }: { session: Session }) {
   const busy = status === 'connecting'
   const online = role !== 'offline'
 
+  // One toast after a burst of room-name edits settles, not per keystroke.
+  const notifyRoomName = useDebouncedCallback(() => onNotice(t('toast.roomName')), 800)
+
   const handleJoin = () => {
     const code = normalizeRoomCode(codeInput)
     if (code.length >= 4) void session.joinRoom(code)
   }
 
+  // Copy the full room link so it can be shared directly.
   const handleCopy = async () => {
     if (!roomCode) return
+    const link = `${window.location.origin}${window.location.pathname}?room=${roomCode}`
     try {
-      await navigator.clipboard.writeText(roomCode)
+      await navigator.clipboard.writeText(link)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch {
@@ -43,8 +56,13 @@ export function RoomPanel({ session }: { session: Session }) {
 
       {!online && (
         <div className="room-setup">
-          <button type="button" className="primary" disabled={busy} onClick={() => void session.createRoom()}>
-            {busy ? t('room.connecting') : t('room.create')}
+          <button
+            type="button"
+            className="primary"
+            disabled={busy}
+            onClick={() => void session.createRoom()}
+          >
+            {t('room.create')}
           </button>
           <div className="room-join">
             <input
@@ -57,10 +75,16 @@ export function RoomPanel({ session }: { session: Session }) {
               onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
             />
             <button type="button" disabled={busy || codeInput.length < 4} onClick={handleJoin}>
-              {t('room.join')}
+              {busy ? t('room.connecting') : t('room.join')}
             </button>
           </div>
-          <p className="hint">{t('room.offline')}</p>
+          {busy ? (
+            <p className="room-connecting" role="status">
+              {t('room.connecting')}
+            </p>
+          ) : (
+            <p className="hint">{t('room.offline')}</p>
+          )}
         </div>
       )}
 
@@ -82,7 +106,10 @@ export function RoomPanel({ session }: { session: Session }) {
                 value={session.roomName}
                 maxLength={40}
                 placeholder={t('room.namePlaceholder')}
-                onChange={(e) => session.setRoomName(e.target.value)}
+                onChange={(e) => {
+                  session.setRoomName(e.target.value)
+                  notifyRoomName()
+                }}
               />
             </label>
           ) : (

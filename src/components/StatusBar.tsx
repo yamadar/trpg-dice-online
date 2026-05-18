@@ -1,6 +1,8 @@
 import { useI18n } from '../i18n/useI18n'
+import type { RoomStatus } from '../net/room'
 
 interface Props {
+  status: RoomStatus
   roomCode: string | null
   roomName: string
   playerCount: number
@@ -8,13 +10,18 @@ interface Props {
 }
 
 /**
- * The minimal always-visible status: which room you are in, how many
- * players are present, and which character you are acting as. Long room
- * and character names are truncated so they never break the layout.
+ * The minimal always-visible status: which room you are in (or that a
+ * connection is in progress), how many players are present, and which
+ * character you are acting as. Long names are truncated.
  */
-export function StatusBar({ roomCode, roomName, playerCount, characterName }: Props) {
+export function StatusBar({ status, roomCode, roomName, playerCount, characterName }: Props) {
   const { t } = useI18n()
-  const roomLabel = roomCode ? roomName.trim() || roomCode : t('status.offline')
+  const roomLabel =
+    status === 'connecting'
+      ? t('room.connecting')
+      : roomCode
+        ? roomName.trim() || roomCode
+        : t('status.offline')
   return (
     <div className="statusbar">
       <span className="stat">

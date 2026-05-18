@@ -75,6 +75,10 @@ An SPA where players roll TRPG dice and share results with other players in real
 - ルーム作成者が GM 兼ホストになる / The room creator becomes GM and P2P host
 - GM はルームに名前を付けられ、ルーム名は参加者全員に共有される
   The GM can name the room; the room name is shared with all players
+- ルームごとに URL（`?room=コード`）を発行し、リンクの共有で参加できる
+  Each room has its own URL (`?room=CODE`); sharing the link lets others join
+- ルーム参加の試行中は「接続中」を表示する
+  While a join is in progress, a "connecting" indicator is shown
 - ルーム未参加でもローカル単体で利用できる（オフラインモード）
   Works standalone offline when not in a room
 
@@ -141,6 +145,11 @@ An SPA where players roll TRPG dice and share results with other players in real
   Low-frequency controls (player name, language) live in a settings menu
 - キャラクターの背景情報・メモは折りたたみ可能にする
   Character background and memo are collapsible
+- ルーム名・キャラクター名の変更やパターンの保存は Toast で通知する
+  Saving / changing room and character names and saving patterns is
+  confirmed with a toast
+- ページを離れる前（リロード・戻る・閉じる）に確認ダイアログを表示する
+  A confirmation is shown before the page is left (reload, back, close)
 - 履歴＆チャットを主画面とし、画面の大半を占有する。最小限の状態
   （ルーム・キャラクター・参加者数）はヘッダーに常時表示する。
   History & chat is the dominant, always-visible view; the header keeps a
@@ -304,3 +313,9 @@ The `lang` fields carry the source language for future real-time translation
   Rename the feed to match what it holds: "History & Chat" → "Dice &
   Chat", the "rolls" filter label to "Dice" (JA), and the clear
   confirmation text accordingly.
+- v1.10 — ルーム名・キャラクター名の変更とパターン保存の Toast 通知、ページ
+  離脱前の確認ダイアログ、ルームごとの URL（リンク共有・コピー）、ルーム参加中の
+  「接続中」表示を追加。
+  Add toasts for room/character name changes and pattern saves, a
+  confirmation before leaving the page, per-room URLs (shareable /
+  copyable link), and a "connecting" indicator while joining a room.

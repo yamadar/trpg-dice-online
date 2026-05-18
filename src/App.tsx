@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import { useI18n } from './i18n/useI18n'
 import { useSession } from './hooks/useSession'
@@ -27,13 +27,24 @@ const DEFAULT_DRAFT: Draft = {
   modifier: 0,
 }
 
+interface Notice {
+  text: string
+  kind: 'success' | 'error'
+}
+
+/** Room code passed in via the URL (?room=CODE), if any. */
+function roomCodeFromUrl(): string {
+  return new URLSearchParams(window.location.search).get('room') ?? ''
+}
+
 function App() {
   const { t, lang } = useI18n()
   const session = useSession()
   const characters = useCharacters()
   const [draft, setDraft] = useState<Draft>(DEFAULT_DRAFT)
-  const [notice, setNotice] = useState<string | null>(null)
-  const [openSheet, setOpenSheet] = useState<SheetId | null>(null)
+  const [notice, setNotice] = useState<Notice | null>(null)
+  const [initialJoinCode] = useState(roomCodeFromUrl)
+  const [openSheet, setOpenSheet] = useState<SheetId | null>(initialJoinCode ? 'room' : null)
   const [showTutorial, setShowTutorial] = useState(() => !isTutorialSeen())
 
   const { updateIdentity } = session
@@ -50,8 +61,31 @@ function App() {
     updateIdentity({ lang })
   }, [updateIdentity, lang])
 
-  const flash = useCallback((msg: string) => {
-    setNotice(msg)
+  // Reflect the current room in the URL so it can be shared / bookmarked.
+  const firstUrlSync = useRef(true)
+  useEffect(() => {
+    if (firstUrlSync.current) {
+      firstUrlSync.current = false
+      return
+    }
+    const base = window.location.pathname
+    const url = session.roomCode ? `${base}?room=${session.roomCode}` : base
+    window.history.replaceState(null, '', url)
+  }, [session.roomCode])
+
+  // Confirm before the page is left (reload, back, close) so the room
+  // connection and feed are not lost by accident.
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [])
+
+  const flash = useCallback((text: string, kind: 'success' | 'error' = 'success') => {
+    setNotice({ text, kind })
     setTimeout(() => setNotice(null), 2500)
   }, [])
 
@@ -77,14 +111,15 @@ function App() {
 
   const handleSave = useCallback(() => {
     if (!characters.activeId) {
-      flash(t('pattern.needCharacter'))
+      flash(t('pattern.needCharacter'), 'error')
       return
     }
     if (!draft.name.trim()) {
-      flash(t('pattern.needName'))
+      flash(t('pattern.needName'), 'error')
       return
     }
     characters.addPattern(characters.activeId, { ...draft, name: draft.name.trim() })
+    flash(t('toast.patternSaved'))
   }, [draft, characters, flash, t])
 
   // Loading a pattern into the builder opens the dice sheet to tweak/roll it.
@@ -119,6 +154,7 @@ function App() {
     <div className="app">
       <header className="app-header">
         <StatusBar
+          status={session.status}
           roomCode={session.roomCode}
           roomName={session.roomName}
           playerCount={session.players.length}
@@ -153,8 +189,12 @@ function App() {
 
       {openSheet && (
         <Sheet onClose={() => setOpenSheet(null)}>
-          {openSheet === 'room' && <RoomPanel session={session} />}
-          {openSheet === 'character' && <CharacterPanel characters={characters} />}
+          {openSheet === 'room' && (
+            <RoomPanel session={session} initialJoinCode={initialJoinCode} onNotice={flash} />
+          )}
+          {openSheet === 'character' && (
+            <CharacterPanel characters={characters} onNotice={flash} />
+          )}
           {openSheet === 'dice' && (
             <DiceRoller
               draft={draft}
@@ -178,8 +218,8 @@ function App() {
       )}
 
       {notice && (
-        <div className="toast" role="status">
-          {notice}
+        <div className={`toast ${notice.kind}`} role="status">
+          {notice.text}
         </div>
       )}
 
