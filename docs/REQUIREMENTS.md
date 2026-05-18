@@ -121,6 +121,15 @@ An SPA where players roll TRPG dice and share results with other players in real
 - 他プレイヤーには「GM が隠しロールを行いました」とだけ表示される
   Other players only see "The GM made a hidden roll"
 - GM 自身は自分の出目を確認できる / The GM still sees their own value
+- 「隠しロール」はパターンの属性として保存される。隠しロール属性を持つ
+  パターンでも、GM でないプレイヤーが使った場合はダイスは振れるが隠し
+  ロールにはならない。隠しロール属性はパターン一覧で GM のときだけ表示
+  され、GM でないときは表示されない。属性はキャラクターの書き出し／
+  読み込みでも保持される。
+  The hidden-roll flag is saved as a pattern attribute. A non-GM using a
+  hidden pattern still rolls, but the roll is not hidden. The attribute is
+  shown in the pattern list only to the GM, and is preserved through
+  character export / import.
 
 ### 3.9 チャット / Chat
 - ルーム参加者でテキストチャットができる / Room members can exchange text messages
@@ -465,3 +474,9 @@ The `lang` fields carry the source language for future real-time translation
   prefix ("@Bobby" no longer matches "Bob"); the lightbox arrow keys now
   preventDefault so the background does not scroll, and its key handler
   rebinds only when needed.
+- v1.24 — 隠しロール（GM）をパターンの属性として保存するようにした。GM の
+  ときだけパターン一覧に表示し、GM でないプレイヤーが使うと隠しロールに
+  ならない。属性はキャラクターの書き出し／読み込みでも保持される。
+  The GM hidden-roll flag is now stored on the pattern, shown in the
+  pattern list only to the GM, ignored when a non-GM rolls it, and kept
+  through character export / import.

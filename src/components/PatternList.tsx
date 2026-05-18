@@ -9,6 +9,8 @@ interface Props {
   /** Active character's name, for the empty-state message. */
   characterName: string
   patterns: Pattern[]
+  /** Whether the local player is the GM — the hidden-roll mark is GM-only. */
+  isGM: boolean
   onLoad: (pattern: Pattern) => void
   onQuickRoll: (pattern: Pattern) => void
   onDelete: (id: string) => void
@@ -19,6 +21,7 @@ export function PatternList({
   hasCharacter,
   characterName,
   patterns,
+  isGM,
   onLoad,
   onQuickRoll,
   onDelete,
@@ -46,7 +49,15 @@ export function PatternList({
           {patterns.map((p, i) => (
             <li key={p.id}>
               <div className="pattern-info">
-                <span className="pattern-name">{p.name || t('pattern.unnamed')}</span>
+                <span className="pattern-name">
+                  {p.name || t('pattern.unnamed')}
+                  {/* The hidden-roll mark is shown only to the GM. */}
+                  {isGM && p.hidden && (
+                    <span className="pattern-hidden" title={t('roll.hidden')}>
+                      🔒
+                    </span>
+                  )}
+                </span>
                 <span className="pattern-meta">
                   {formatDiceSummary(p.diceCount, p.diceType, p.modifier)} · {t(`kind.${p.kind}`)}
                 </span>

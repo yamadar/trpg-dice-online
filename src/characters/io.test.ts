@@ -9,7 +9,15 @@ const sample: Character = {
   memo: 'secret plan',
   lang: 'en',
   patterns: [
-    { id: 'p1', name: 'Slash', kind: 'damage', diceType: 'D8', diceCount: 2, modifier: 3 },
+    {
+      id: 'p1',
+      name: 'Slash',
+      kind: 'damage',
+      diceType: 'D8',
+      diceCount: 2,
+      modifier: 3,
+      hidden: true,
+    },
   ],
 }
 
@@ -38,13 +46,31 @@ describe('exportCharacterJSON / parseCharacterImport', () => {
     const multi: Character = {
       ...sample,
       patterns: [
-        { id: 'a', name: 'first', kind: 'damage', diceType: 'D6', diceCount: 1, modifier: 0 },
-        { id: 'b', name: 'second', kind: 'judgment', diceType: 'D20', diceCount: 1, modifier: 0 },
-        { id: 'c', name: 'third', kind: 'damage', diceType: 'D8', diceCount: 2, modifier: 1 },
+        { id: 'a', name: 'first', kind: 'damage', diceType: 'D6', diceCount: 1, modifier: 0, hidden: false },
+        { id: 'b', name: 'second', kind: 'judgment', diceType: 'D20', diceCount: 1, modifier: 0, hidden: false },
+        { id: 'c', name: 'third', kind: 'damage', diceType: 'D8', diceCount: 2, modifier: 1, hidden: false },
       ],
     }
     const parsed = parseCharacterImport(exportCharacterJSON(multi))
     expect(parsed?.patterns.map((p) => p.name)).toEqual(['first', 'second', 'third'])
+  })
+
+  it('keeps the hidden-roll flag through export and import', () => {
+    const parsed = parseCharacterImport(exportCharacterJSON(sample, true))
+    expect(parsed?.patterns[0].hidden).toBe(true)
+  })
+
+  it('defaults hidden to false for a pattern from a pre-hidden file', () => {
+    const parsed = parseCharacterImport(
+      JSON.stringify({
+        type: 'trpg-dice-character',
+        version: 1,
+        character: {
+          patterns: [{ id: 'a', name: 'old', kind: 'damage', diceType: 'D6', diceCount: 1, modifier: 0 }],
+        },
+      }),
+    )
+    expect(parsed?.patterns[0].hidden).toBe(false)
   })
 
   it('rejects non-JSON input', () => {

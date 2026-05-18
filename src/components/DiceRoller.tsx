@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { DICE_TYPES, PATTERN_KINDS, type Pattern } from '../dice/types'
 import { formatDiceSummary } from '../dice/format'
@@ -24,7 +23,6 @@ function clampModifier(value: number): number {
 
 export function DiceRoller({ draft, onChange, isGM, onRoll, onSave }: Props) {
   const { t } = useI18n()
-  const [hidden, setHidden] = useState(false)
   const set = (patch: Partial<Draft>) => onChange({ ...draft, ...patch })
 
   return (
@@ -122,15 +120,21 @@ export function DiceRoller({ draft, onChange, isGM, onRoll, onSave }: Props) {
         />
       </label>
 
+      {/* The hidden-roll flag lives on the pattern, but is only shown to
+          (and editable by) the GM. */}
       {isGM && (
         <label className="checkbox" title={t('roll.hiddenHint')}>
-          <input type="checkbox" checked={hidden} onChange={(e) => setHidden(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={draft.hidden}
+            onChange={(e) => set({ hidden: e.target.checked })}
+          />
           <span>{t('roll.hidden')}</span>
         </label>
       )}
 
       <div className="dice-actions">
-        <button type="button" className="primary big" onClick={() => onRoll(isGM && hidden)}>
+        <button type="button" className="primary big" onClick={() => onRoll(isGM && draft.hidden)}>
           {t('roll.button')}
         </button>
         <button type="button" onClick={onSave}>

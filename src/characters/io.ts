@@ -57,6 +57,8 @@ function parsePattern(raw: unknown): Pattern | null {
     diceType,
     diceCount: Number.isFinite(count) ? Math.max(1, Math.min(10, Math.floor(count))) : 1,
     modifier: Number.isFinite(modifier) ? Math.floor(modifier) : 0,
+    // Absent in files written before hidden patterns existed.
+    hidden: p.hidden === true,
   }
 }
 

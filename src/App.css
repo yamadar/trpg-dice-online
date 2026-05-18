@@ -593,6 +593,10 @@ button.player-row {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.pattern-hidden {
+  margin-left: 5px;
+  font-size: 0.85em;
+}
 .pattern-meta {
   font-size: 0.78rem;
   color: var(--text-dim);

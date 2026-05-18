@@ -25,6 +25,7 @@ const DEFAULT_DRAFT: Draft = {
   diceType: 'D6',
   diceCount: 1,
   modifier: 0,
+  hidden: false,
 }
 
 interface Notice {
@@ -114,7 +115,8 @@ function App() {
 
   const handleQuickRoll = useCallback(
     (p: Pattern) => {
-      const result = rollPattern(p, roller, false)
+      // A hidden pattern only rolls hidden for the GM; others roll it openly.
+      const result = rollPattern(p, roller, p.hidden && session.isGM)
       session.roll(result)
       setOpenSheet(null)
     },
@@ -154,6 +156,7 @@ function App() {
       diceType: p.diceType,
       diceCount: p.diceCount,
       modifier: p.modifier,
+      hidden: p.hidden,
     })
     setOpenSheet('dice')
   }, [])
@@ -239,6 +242,7 @@ function App() {
               hasCharacter={characters.activeCharacter !== null}
               characterName={characters.activeCharacter?.name ?? ''}
               patterns={characters.activeCharacter?.patterns ?? []}
+              isGM={session.isGM}
               onLoad={handleLoad}
               onQuickRoll={handleQuickRoll}
               onDelete={handleDeletePattern}
