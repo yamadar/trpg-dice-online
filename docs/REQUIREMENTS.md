@@ -520,3 +520,9 @@ The `lang` fields carry the source language for future real-time translation
   実装。選択は localStorage に保存し、起動時に適用する。
   Add six colour themes with a swatch picker in the settings menu; the
   choice is stored in localStorage and applied on startup.
+- v1.30 — チュートリアルを現行機能に合わせて更新。チャットと添付の説明を
+  ステップとして追加し、隠しロール・ルームコード変更・自動再接続・テーマ
+  などの記述を各ステップに反映した。
+  Refresh the tutorial for the current features: add a chat & attachments
+  step and mention hidden rolls, room-code change, auto-reconnect and
+  themes across the steps.
