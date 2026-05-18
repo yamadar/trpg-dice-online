@@ -497,3 +497,11 @@ The `lang` fields carry the source language for future real-time translation
   Refactor: split ActivityPanel into FeedList + ChatComposer and a
   useMentionAutocomplete hook; the feed now auto-scrolls to a new entry
   only when the player is already near the bottom.
+- v1.27 — レビューに基づく修正。ロール処理のダイス個数を 1〜10 に上限
+  クランプ。サイズ超過の画像（小さい寸法の大きな PNG 等）は拒否せず JPEG に
+  再エンコードして送れるようにした。Toast の自動消去タイマーを差し替え時に
+  クリアし、連続表示で前の Toast が早く消えないようにした。
+  Review-driven fixes: clamp the roll dice count to 1-10; an oversized
+  image (e.g. a large small-dimensioned PNG) is re-encoded to JPEG rather
+  than rejected; the toast timer is cleared on replacement so a rapid
+  second toast is not cut short.

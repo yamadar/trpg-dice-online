@@ -197,12 +197,18 @@ export function useSession(): Session {
     [playerId],
   )
 
+  /** Host: the full roster — the GM first, then every connected client. */
+  const buildRoster = useCallback(
+    (): Player[] => [selfPlayer(true), ...peerPlayersRef.current.values()],
+    [selfPlayer],
+  )
+
   /** Host: rebuild the player list (GM first) and push it to everyone. */
   const broadcastPlayers = useCallback(() => {
-    const list: Player[] = [selfPlayer(true), ...peerPlayersRef.current.values()]
+    const list = buildRoster()
     setPlayers(list)
     roomRef.current?.broadcast({ t: 'players', players: list })
-  }, [selfPlayer])
+  }, [buildRoster])
 
   // --- Host: handle a message from a client -------------------------------
   const handleClientMessage = useCallback(
@@ -222,7 +228,7 @@ export function useSession(): Session {
           }
           peerPlayersRef.current.set(peerId, player)
           const snapshot: Snapshot = {
-            players: [selfPlayer(true), ...peerPlayersRef.current.values()],
+            players: buildRoster(),
             history: historyRef.current.map(redactRoll),
             chat: chatRef.current,
             roomName: roomNameRef.current,
@@ -269,7 +275,7 @@ export function useSession(): Session {
           break
       }
     },
-    [addMarker, appendChat, appendHistory, broadcastPlayers, noteTyping, selfPlayer],
+    [addMarker, appendChat, appendHistory, broadcastPlayers, buildRoster, noteTyping],
   )
 
   const goOffline = useCallback(() => {

@@ -38,7 +38,8 @@ export function rollPattern(
   player: { id: string; name: string; characterName?: string; background?: string },
   hidden = false,
 ): RollResult {
-  const count = Math.max(1, Math.floor(pattern.diceCount))
+  // Clamp to the 1-10 range the UI and the import path both enforce.
+  const count = Math.max(1, Math.min(10, Math.floor(pattern.diceCount)))
   const faces = rollDice(pattern.diceType, count)
   const sum = faces.reduce((a, b) => a + b, 0)
   return {

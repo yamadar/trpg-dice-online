@@ -81,6 +81,15 @@ describe('rollPattern', () => {
     expect(r.faces.length).toBeGreaterThanOrEqual(1)
   })
 
+  it('caps the dice count at 10', () => {
+    const r = rollPattern(
+      { name: 'x', kind: 'damage', diceType: 'D6', diceCount: 99, modifier: 0 },
+      player,
+    )
+    expect(r.faces).toHaveLength(10)
+    expect(r.diceCount).toBe(10)
+  })
+
   it('carries player, kind and hidden flag', () => {
     const r = rollPattern(
       { name: 'secret', kind: 'judgment', diceType: 'D20', diceCount: 1, modifier: 0 },

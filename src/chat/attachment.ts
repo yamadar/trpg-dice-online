@@ -81,7 +81,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 /**
  * Downscale an image so it is cheap to send over P2P. Small images that
  * already fit are returned untouched; larger ones are redrawn on a canvas.
- * PNGs keep their alpha channel; everything else is re-encoded as JPEG.
+ * A PNG keeps its alpha channel when the result still fits the payload
+ * cap; an oversized PNG falls back to JPEG rather than being rejected.
  */
 async function downscaleImage(file: File): Promise<string> {
   const original = await readAsDataUrl(file)
@@ -96,8 +97,13 @@ async function downscaleImage(file: File): Promise<string> {
   const ctx = canvas.getContext('2d')
   if (!ctx) return original
   ctx.drawImage(img, 0, 0, fit.width, fit.height)
-  const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
-  return canvas.toDataURL(mime, 0.82)
+  // Keep PNG (lossless, alpha) only while it fits; otherwise JPEG, which
+  // compresses photos far smaller — better than rejecting the file.
+  if (file.type === 'image/png') {
+    const png = canvas.toDataURL('image/png')
+    if (dataUrlBytes(png) <= MAX_PAYLOAD_BYTES) return png
+  }
+  return canvas.toDataURL('image/jpeg', 0.82)
 }
 
 /**

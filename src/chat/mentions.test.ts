@@ -41,6 +41,10 @@ describe('resolveMentions', () => {
   it('does not flag @all when glued to more letters', () => {
     expect(resolveMentions('@alliance meeting', players).all).toBe(false)
   })
+
+  it('does not flag @all when glued to an underscore', () => {
+    expect(resolveMentions('@all_hands now', players).all).toBe(false)
+  })
 })
 
 describe('mentionQuery', () => {
