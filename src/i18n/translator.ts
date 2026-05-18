@@ -1,18 +1,15 @@
 /**
- * Free-text translation for chat messages. Two keyless, no-backend
- * services the player can switch between: the on-device Chrome
- * Translator API and the MyMemory REST API. Results are memoized by
- * (backend, from, to, text) so a message is translated once and so a
- * room export can carry the translations it already has.
+ * Free-text translation for chat messages. The on-device Chrome
+ * Translator API is tried first; the keyless MyMemory REST API is the
+ * fallback for when it is unavailable or fails. Results are memoized by
+ * (from, to, text) so a message is translated once and so a room export
+ * can carry the translations it already has.
  *
  * This is a display-layer utility — the domain and network layers only
  * ever handle the original text and its language.
  */
 
 import type { Lang } from './translations'
-
-/** Which translation service to use. */
-export type TranslationBackend = 'chrome' | 'mymemory'
 
 // The Chrome built-in Translator API is not yet in the standard DOM types.
 interface ChromeTranslator {
@@ -32,8 +29,8 @@ const results = new Map<string, string>()
 /** In-flight translations, so the same text is only requested once. */
 const inflight = new Map<string, Promise<string>>()
 
-function cacheKey(backend: TranslationBackend, from: Lang, to: Lang, text: string): string {
-  return `${backend}:${from}:${to}:${text}`
+function cacheKey(from: Lang, to: Lang, text: string): string {
+  return `${from}:${to}:${text}`
 }
 
 /** A translation that does not finish within this window is given up on. */
@@ -91,23 +88,30 @@ async function myMemoryTranslate(text: string, from: Lang, to: Lang): Promise<st
 }
 
 /**
- * Translate `text` from `from` to `to` with `backend`. Memoized; rejects
- * on failure so the caller can fall back to showing the original text.
+ * Resolve a translation, preferring the on-device Chrome translator and
+ * falling back to MyMemory when it is unavailable or fails. Rejects only
+ * when both backends fail, so the caller can fall back to the original.
  */
-export function translateText(
-  text: string,
-  from: Lang,
-  to: Lang,
-  backend: TranslationBackend,
-): Promise<string> {
+async function translateWithFallback(text: string, from: Lang, to: Lang): Promise<string> {
+  try {
+    return await withTimeout(chromeTranslate(text, from, to))
+  } catch {
+    return await withTimeout(myMemoryTranslate(text, from, to))
+  }
+}
+
+/**
+ * Translate `text` from `from` to `to`. Memoized; rejects when both
+ * backends fail so the caller can fall back to showing the original text.
+ */
+export function translateText(text: string, from: Lang, to: Lang): Promise<string> {
   if (from === to || text.trim() === '') return Promise.resolve(text)
-  const key = cacheKey(backend, from, to, text)
+  const key = cacheKey(from, to, text)
   const done = results.get(key)
   if (done !== undefined) return Promise.resolve(done)
   const pending = inflight.get(key)
   if (pending) return pending
-  const run = backend === 'chrome' ? chromeTranslate : myMemoryTranslate
-  const p = withTimeout(run(text, from, to))
+  const p = translateWithFallback(text, from, to)
     .then((out) => {
       results.set(key, out)
       inflight.delete(key)
@@ -122,22 +126,11 @@ export function translateText(
 }
 
 /** A cached translation, if one exists — read by the room export. */
-export function getCachedTranslation(
-  text: string,
-  from: Lang,
-  to: Lang,
-  backend: TranslationBackend,
-): string | undefined {
-  return results.get(cacheKey(backend, from, to, text))
+export function getCachedTranslation(text: string, from: Lang, to: Lang): string | undefined {
+  return results.get(cacheKey(from, to, text))
 }
 
 /** Pre-fill the cache — used when importing a room that carries translations. */
-export function seedTranslation(
-  text: string,
-  from: Lang,
-  to: Lang,
-  backend: TranslationBackend,
-  translated: string,
-): void {
-  results.set(cacheKey(backend, from, to, text), translated)
+export function seedTranslation(text: string, from: Lang, to: Lang, translated: string): void {
+  results.set(cacheKey(from, to, text), translated)
 }

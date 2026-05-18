@@ -28,7 +28,7 @@ export function SettingsMenu({
   onOpenHelp,
   onNotice,
 }: Props) {
-  const { t, autoTranslate, setAutoTranslate, translationBackend, setTranslationBackend } = useI18n()
+  const { t, autoTranslate, setAutoTranslate } = useI18n()
   const [open, setOpen] = useState(false)
   // Toast once the player-name edit settles (on blur or when the menu closes).
   const { markChanged, flush } = useFieldNotice(() => onNotice(t('toast.playerName')))
@@ -78,35 +78,18 @@ export function SettingsMenu({
               <span>{t('lang.label')}</span>
               <LanguageToggle />
             </div>
-            <label className="checkbox">
+            <label className="toggle-field">
+              <span>{t('translate.auto')}</span>
               <input
                 type="checkbox"
+                className="toggle"
                 checked={autoTranslate}
                 onChange={(e) => setAutoTranslate(e.target.checked)}
               />
-              <span>{t('translate.auto')}</span>
             </label>
-            {autoTranslate && (
-              <div className="field">
-                <span>{t('translate.backend')}</span>
-                <div className="lang-toggle" role="group" aria-label={t('translate.backend')}>
-                  {(['chrome', 'mymemory'] as const).map((b) => (
-                    <button
-                      key={b}
-                      type="button"
-                      className={b === translationBackend ? 'lang-btn active' : 'lang-btn'}
-                      aria-pressed={b === translationBackend}
-                      onClick={() => setTranslationBackend(b)}
-                    >
-                      {t(`translate.${b}`)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <label className="checkbox">
-              <input type="checkbox" checked={compact} onChange={onToggleCompact} />
+            <label className="toggle-field">
               <span>{t('feed.compact')}</span>
+              <input type="checkbox" className="toggle" checked={compact} onChange={onToggleCompact} />
             </label>
             <div className="field">
               <span>{t('theme.title')}</span>

@@ -14,12 +14,11 @@ import { strToU8, zipSync } from 'fflate'
 import type { LogEntry } from './roomLog'
 import type { ChatMessage, Player } from '../net/protocol'
 import type { Lang } from '../i18n/translations'
-import type { TranslationBackend } from '../i18n/translator'
 
 /** Marks our room-export archives. */
 const FILE_TYPE = 'trpg-dice-room-log'
-/** v3: adds cached chat translations alongside the player roster. */
-const FILE_VERSION = 3
+/** v4: cached chat translations no longer carry a backend tag. */
+const FILE_VERSION = 4
 
 /** Room identity stored in the manifest. */
 interface ExportRoom {
@@ -30,13 +29,12 @@ interface ExportRoom {
 /**
  * A cached chat translation carried in the export so a re-import shows
  * the same translations without re-translating. `text` with `from` /
- * `to` / `backend` is the translation cache key.
+ * `to` is the translation cache key.
  */
 export interface TranslationRecord {
   text: string
   from: Lang
   to: Lang
-  backend: TranslationBackend
   translated: string
 }
 

@@ -14,20 +14,18 @@ export interface TranslatedText {
  * Auto-translate `text` (written in `sourceLang`) into the current UI
  * language while auto-translation is on. Best-effort: on failure, when
  * off, or for same-language text, `translated` stays null and the caller
- * shows the original. Re-translates when the target language or the
- * chosen backend changes.
+ * shows the original. Re-translates when the target language changes.
  */
 export function useTranslatedText(text: string, sourceLang: Lang): TranslatedText {
-  const { lang, autoTranslate, translationBackend } = useI18n()
+  const { lang, autoTranslate } = useI18n()
   const active = autoTranslate && text.trim() !== '' && sourceLang !== lang
   const [translated, setTranslated] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
 
-  // Reset (and so re-translate) when the target language or backend changes.
-  const runKey = `${lang}:${translationBackend}`
-  const [prevRunKey, setPrevRunKey] = useState(runKey)
-  if (prevRunKey !== runKey) {
-    setPrevRunKey(runKey)
+  // Reset (and so re-translate) when the target language changes.
+  const [prevLang, setPrevLang] = useState(lang)
+  if (prevLang !== lang) {
+    setPrevLang(lang)
     setTranslated(null)
     setFailed(false)
   }
@@ -35,7 +33,7 @@ export function useTranslatedText(text: string, sourceLang: Lang): TranslatedTex
   useEffect(() => {
     if (!active || translated !== null || failed) return
     let cancelled = false
-    translateText(text, sourceLang, lang, translationBackend)
+    translateText(text, sourceLang, lang)
       .then((out) => {
         if (!cancelled) setTranslated(out)
       })
@@ -45,7 +43,7 @@ export function useTranslatedText(text: string, sourceLang: Lang): TranslatedTex
     return () => {
       cancelled = true
     }
-  }, [active, translated, failed, text, sourceLang, lang, translationBackend])
+  }, [active, translated, failed, text, sourceLang, lang])
 
   return { translated, translating: active && translated === null && !failed }
 }

@@ -28,9 +28,7 @@ const entries: LogEntry[] = [
   },
 ]
 
-const translations: TranslationRecord[] = [
-  { text: 'hi', from: 'en', to: 'ja', backend: 'mymemory', translated: 'やあ' },
-]
+const translations: TranslationRecord[] = [{ text: 'hi', from: 'en', to: 'ja', translated: 'やあ' }]
 
 /** Parse and assert success, so tests work with a non-null result. */
 function parsed(zip: Uint8Array) {
@@ -68,21 +66,31 @@ describe('parseRoomImport', () => {
   it('drops malformed translation records', () => {
     const manifest = {
       type: 'trpg-dice-room-log',
-      version: 3,
+      version: 4,
       room: { code: 'ABCDEF', name: '' },
       entries: [],
       translations: [
-        { text: 'ok', from: 'en', to: 'ja', backend: 'chrome', translated: 'よし' },
-        { text: 'bad-lang', from: 'fr', to: 'ja', backend: 'chrome', translated: 'x' },
-        { text: 'bad-backend', from: 'en', to: 'ja', backend: 'google', translated: 'x' },
-        { text: '', from: 'en', to: 'ja', backend: 'chrome', translated: 'x' },
-        { from: 'en', to: 'ja', backend: 'chrome', translated: 'x' },
+        { text: 'ok', from: 'en', to: 'ja', translated: 'よし' },
+        { text: 'bad-lang', from: 'fr', to: 'ja', translated: 'x' },
+        { text: 'no-translated', from: 'en', to: 'ja' },
+        { text: '', from: 'en', to: 'ja', translated: 'x' },
+        { from: 'en', to: 'ja', translated: 'x' },
       ],
     }
     const zip = zipSync({ 'room.json': strToU8(JSON.stringify(manifest)) })
-    expect(parsed(zip).translations).toEqual([
-      { text: 'ok', from: 'en', to: 'ja', backend: 'chrome', translated: 'よし' },
-    ])
+    expect(parsed(zip).translations).toEqual([{ text: 'ok', from: 'en', to: 'ja', translated: 'よし' }])
+  })
+
+  it('imports an older v3 archive, ignoring the per-record backend tag', () => {
+    const manifest = {
+      type: 'trpg-dice-room-log',
+      version: 3,
+      room: { code: 'ABCDEF', name: '' },
+      entries: [],
+      translations: [{ text: 'hi', from: 'en', to: 'ja', backend: 'mymemory', translated: 'やあ' }],
+    }
+    const zip = zipSync({ 'room.json': strToU8(JSON.stringify(manifest)) })
+    expect(parsed(zip).translations).toEqual([{ text: 'hi', from: 'en', to: 'ja', translated: 'やあ' }])
   })
 
   it('treats an older export without translations as having none', () => {
