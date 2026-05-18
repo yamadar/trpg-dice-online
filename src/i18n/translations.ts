@@ -139,6 +139,9 @@ const ja: Dict = {
   'marker.hostLost': 'GM との接続が切れました',
   'marker.playerJoined': '{name} が参加しました',
   'marker.playerLeft': '{name} が退出しました',
+  'marker.reconnecting': '接続が切れました。再接続しています…',
+  'marker.reconnected': 'ルームに再接続しました',
+  'marker.reconnectFailed': '再接続できませんでした',
 
   'room.section': 'ルーム',
   'room.offline': 'オフライン（あなただけ）',
@@ -310,6 +313,9 @@ const en: Dict = {
   'marker.hostLost': 'Lost connection to the GM',
   'marker.playerJoined': '{name} joined',
   'marker.playerLeft': '{name} left',
+  'marker.reconnecting': 'Connection lost. Reconnecting…',
+  'marker.reconnected': 'Reconnected to the room',
+  'marker.reconnectFailed': 'Could not reconnect',
 
   'room.section': 'Room',
   'room.offline': 'Offline (just you)',

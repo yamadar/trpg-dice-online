@@ -17,8 +17,13 @@ export interface RoomCallbacks {
   onClientDisconnect: (peerId: string) => void
   /** Client side: a message arrived from the host. */
   onHostMessage: (msg: HostMessage) => void
-  /** Connection failed or the host was lost. */
-  onError: (kind: 'connect' | 'hostLost') => void
+  /**
+   * Connection trouble:
+   * - `connect`  : an initial join attempt failed.
+   * - `hostLost` : a client lost its link to the host.
+   * - `peerLost` : a host lost its own peer (e.g. the tab was suspended).
+   */
+  onError: (kind: 'connect' | 'hostLost' | 'peerLost') => void
 }
 
 const CONNECT_TIMEOUT_MS = 12000
@@ -36,6 +41,8 @@ export class RoomManager {
   private connections = new Map<string, DataConnection>()
   /** Client: the single connection to the host. */
   private hostConn: DataConnection | null = null
+  /** True while close() is tearing down, so drops are not reported. */
+  private closing = false
   private readonly cb: RoomCallbacks
 
   constructor(cb: RoomCallbacks) {
@@ -46,9 +53,26 @@ export class RoomManager {
     return this.role !== null
   }
 
-  /** Create a room and return its code. Retries on room-code collision. */
-  async host(): Promise<string> {
+  /**
+   * Create a room and return its code.
+   * - With `preferredCode`, host exactly that code; a collision rejects
+   *   with `'unavailable-id'` so the caller can report it.
+   * - Without one, a random code is used, retrying on the rare collision.
+   */
+  async host(preferredCode?: string): Promise<string> {
+    this.closing = false
     this.cb.onStatus('connecting')
+    if (preferredCode) {
+      try {
+        await this.openHostPeer(preferredCode)
+        this.role = 'host'
+        this.cb.onStatus('connected')
+        return preferredCode
+      } catch (err) {
+        this.cb.onStatus('error')
+        throw err
+      }
+    }
     for (let attempt = 0; attempt < MAX_HOST_RETRIES; attempt++) {
       const code = generateRoomCode()
       try {
@@ -75,6 +99,7 @@ export class RoomManager {
         settled = true
         this.peer = peer
         peer.on('connection', (conn) => this.registerClientConnection(conn))
+        this.watchPeer(peer, 'peerLost')
         resolve()
       })
 
@@ -84,6 +109,27 @@ export class RoomManager {
           reject(err.type ?? err)
         }
       })
+    })
+  }
+
+  /**
+   * After a peer is open, keep it healthy: a lost signaling socket (the
+   * common result of a phone backgrounding the tab) is recovered in place
+   * via reconnect(), which keeps the same peer id. A peer that closes for
+   * good is reported so the session can rebuild the room.
+   */
+  private watchPeer(peer: Peer, lostKind: 'hostLost' | 'peerLost'): void {
+    peer.on('disconnected', () => {
+      if (!this.closing && !peer.destroyed) {
+        try {
+          peer.reconnect()
+        } catch {
+          /* already reconnecting */
+        }
+      }
+    })
+    peer.on('close', () => {
+      if (!this.closing) this.cb.onError(lostKind)
     })
   }
 
@@ -105,6 +151,7 @@ export class RoomManager {
 
   /** Join an existing room by code. */
   join(code: string): Promise<void> {
+    this.closing = false
     this.cb.onStatus('connecting')
     return new Promise<void>((resolve, reject) => {
       const peer = new Peer({ config: peerConfig })
@@ -129,6 +176,7 @@ export class RoomManager {
           this.peer = peer
           this.hostConn = conn
           this.role = 'client'
+          this.watchPeer(peer, 'hostLost')
           this.cb.onStatus('connected')
           resolve()
         })
@@ -136,7 +184,7 @@ export class RoomManager {
           this.cb.onHostMessage(data as HostMessage)
         })
         conn.on('close', () => {
-          if (settled) this.cb.onError('hostLost')
+          if (settled && !this.closing) this.cb.onError('hostLost')
         })
       })
 
@@ -180,6 +228,7 @@ export class RoomManager {
 
   /** Tear down all connections and the peer. */
   close(): void {
+    this.closing = true
     for (const conn of this.connections.values()) conn.close()
     this.connections.clear()
     this.hostConn?.close()

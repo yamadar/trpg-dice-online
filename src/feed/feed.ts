@@ -15,6 +15,9 @@ export type MarkerType =
   | 'hostLost'
   | 'playerJoined'
   | 'playerLeft'
+  | 'reconnecting'
+  | 'reconnected'
+  | 'reconnectFailed'
 
 export interface SystemMarker {
   id: string
