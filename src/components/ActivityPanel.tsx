@@ -39,7 +39,14 @@ export function ActivityPanel({ session, onNotice }: Props) {
   const [filter, setFilter] = useState<FeedFilter>('all')
   const [text, setText] = useState('')
   // The feed entry whose name was tapped, opening the player-detail card.
-  const [detail, setDetail] = useState<{ playerId: string; name: string } | null>(null)
+  // The character snapshot is taken from the tapped entry, so it shows the
+  // character used at that time even if the player has since switched.
+  const [detail, setDetail] = useState<{
+    playerId: string
+    name: string
+    characterName: string
+    background: string
+  } | null>(null)
   // A file picked but not yet sent, and the image shown in the lightbox.
   const [pending, setPending] = useState<ChatFile | null>(null)
   const [attaching, setAttaching] = useState(false)
@@ -162,7 +169,14 @@ export function ActivityPanel({ session, onNotice }: Props) {
                     type="button"
                     className="feed-name"
                     style={{ color }}
-                    onClick={() => setDetail({ playerId: m.playerId, name: m.playerName })}
+                    onClick={() =>
+                      setDetail({
+                        playerId: m.playerId,
+                        name: m.playerName,
+                        characterName: m.characterName ?? '',
+                        background: m.background ?? '',
+                      })
+                    }
                   >
                     {m.playerName}
                   </button>
@@ -187,7 +201,12 @@ export function ActivityPanel({ session, onNotice }: Props) {
                   className="feed-name"
                   style={{ color }}
                   onClick={() =>
-                    setDetail({ playerId: r.playerId, name: r.playerName || t('player.anon') })
+                    setDetail({
+                      playerId: r.playerId,
+                      name: r.playerName || t('player.anon'),
+                      characterName: r.characterName ?? '',
+                      background: r.background ?? '',
+                    })
                   }
                 >
                   {r.playerName || t('player.anon')}
@@ -280,7 +299,9 @@ export function ActivityPanel({ session, onNotice }: Props) {
           <PlayerDetailCard
             player={session.players.find((p) => p.id === detail.playerId) ?? null}
             playerId={detail.playerId}
-            fallbackName={detail.name}
+            displayName={detail.name}
+            characterName={detail.characterName}
+            background={detail.background}
             isSelf={detail.playerId === session.playerId}
           />
         </Sheet>
