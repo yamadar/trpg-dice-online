@@ -21,6 +21,7 @@ function sampleRoll(hidden: boolean): RollResult {
     value: 21,
     playerId: 'gm',
     playerName: 'GM',
+    isGM: true,
     characterName: '',
     background: '',
     hidden,

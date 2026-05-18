@@ -35,6 +35,8 @@ export interface ChatMessage {
   playerId: string
   /** Composed display name ("Character（Player）" or just the player). */
   playerName: string
+  /** Whether the sender was the GM — a snapshot, shown as a mark in the feed. */
+  isGM: boolean
   /** Active character name when the message was sent ('' if none). A
    *  snapshot, so tapping the name later shows that character, not the
    *  sender's current one. */

@@ -72,6 +72,8 @@ An SPA where players roll TRPG dice and share results with other players in real
   A filter switches between All / Rolls only / Chat only
 - 参加者ごとに固有の色を割り当て、フィードと参加者一覧で見分けやすくする
   Each participant gets a stable color so they are easy to tell apart
+- フィードの発言・ロールが GM のものなら、名前の横に GM マークを表示する
+  Feed entries from the GM show a GM mark next to the name
 - 表示のクリアは誤操作で行われないよう、確認ダイアログを必須とする
   Clearing the feed requires a confirmation dialog to avoid accidental loss
 - フィードの名前をタップすると、その発言・ロール時点のキャラクター名・
@@ -526,3 +528,7 @@ The `lang` fields carry the source language for future real-time translation
   Refresh the tutorial for the current features: add a chat & attachments
   step and mention hidden rolls, room-code change, auto-reconnect and
   themes across the steps.
+- v1.31 — フィードの発言・ロールに、送信者が GM かどうかのスナップショットを
+  持たせ、GM のものには名前の横に GM マークを表示するようにした。
+  Feed chat / roll entries now record whether the sender was the GM, and
+  show a GM mark beside the name for the GM's entries.

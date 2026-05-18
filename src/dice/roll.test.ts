@@ -90,16 +90,25 @@ describe('rollPattern', () => {
     expect(r.diceCount).toBe(10)
   })
 
-  it('carries player, kind and hidden flag', () => {
+  it('carries player, kind, hidden and GM flags', () => {
     const r = rollPattern(
       { name: 'secret', kind: 'judgment', diceType: 'D20', diceCount: 1, modifier: 0 },
-      { id: 'gm', name: 'GM' },
+      { id: 'gm', name: 'GM', isGM: true },
       true,
     )
     expect(r.playerId).toBe('gm')
     expect(r.playerName).toBe('GM')
     expect(r.kind).toBe('judgment')
     expect(r.hidden).toBe(true)
+    expect(r.isGM).toBe(true)
+  })
+
+  it('defaults isGM to false when not given', () => {
+    const r = rollPattern(
+      { name: 'x', kind: 'damage', diceType: 'D6', diceCount: 1, modifier: 0 },
+      { id: 'p', name: 'P' },
+    )
+    expect(r.isGM).toBe(false)
   })
 
   it('produces unique ids', () => {

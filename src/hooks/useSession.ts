@@ -622,6 +622,7 @@ export function useSession(): Session {
         id: newChatId(),
         playerId,
         playerName: composeName(nameRef.current, characterNameRef.current) || '???',
+        isGM: roleRef.current === 'host',
         characterName: characterNameRef.current,
         background: backgroundRef.current,
         text: trimmed,

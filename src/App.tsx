@@ -102,10 +102,11 @@ function App() {
     () => ({
       id: session.playerId,
       name: rollerName,
+      isGM: session.isGM,
       characterName: activeName ?? '',
       background: activeBackground ?? '',
     }),
-    [session.playerId, rollerName, activeName, activeBackground],
+    [session.playerId, session.isGM, rollerName, activeName, activeBackground],
   )
 
   const handleRoll = useCallback(

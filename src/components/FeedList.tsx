@@ -54,7 +54,7 @@ const FeedChatItem = memo(function FeedChatItem({
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
 }) {
-  const { lang } = useI18n()
+  const { t, lang } = useI18n()
   const own = m.playerId === playerId
   const color = playerColor(m.playerId)
   // Highlight the message for a player it @mentions (or for everyone when it
@@ -83,6 +83,7 @@ const FeedChatItem = memo(function FeedChatItem({
         >
           {m.playerName}
         </button>
+        {m.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
         <time>{new Date(m.timestamp).toLocaleTimeString(lang)}</time>
       </div>
       {m.text && <p className="chat-text">{m.text}</p>}
@@ -125,6 +126,7 @@ const FeedRollItem = memo(function FeedRollItem({
         >
           {r.playerName || t('player.anon')}
         </button>
+        {r.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
         <time>{new Date(r.timestamp).toLocaleTimeString(lang)}</time>
       </div>
       <p className="roll-text">{formatRollText(t, r, canSee)}</p>
