@@ -848,20 +848,65 @@ button.player-row {
   color: #fbbf24;
 }
 
-/* Compact dice & chat: denser feed items so more fits on screen. */
+/* Compact dice & chat: each entry on a single non-wrapping line —
+   [dot] name · content · time — so far more fits on screen.
+   min-width:0 down the flex chain lets the text ellipsize rather than
+   widen the whole panel. */
+.activity.compact,
+.activity.compact .feed,
+.activity.compact .feed-chat,
+.activity.compact .feed-roll {
+  min-width: 0;
+}
 .activity.compact .feed {
-  gap: 3px;
+  gap: 2px;
 }
 .activity.compact .feed-chat,
 .activity.compact .feed-roll {
-  padding: 3px 9px;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding: 2px 9px;
+  font-size: 0.82rem;
 }
+/* Unwrap the meta line so the name / dot / time join the one-line flow. */
 .activity.compact .feed-line {
-  font-size: 0.72rem;
+  display: contents;
+  font-size: 0.82rem;
 }
-.activity.compact .chat-text {
-  font-size: 0.9rem;
-  margin-top: 1px;
+.activity.compact .player-dot,
+.activity.compact .feed-name {
+  flex-shrink: 0;
+}
+.activity.compact .chat-text,
+.activity.compact .roll-text {
+  order: 2;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.activity.compact .feed-line time,
+.activity.compact .pending-tag {
+  order: 3;
+}
+/* The dice breakdown is dropped from the one-line view. */
+.activity.compact .roll-detail {
+  display: none;
+}
+/* Keep an attachment from breaking the single-line height. */
+.activity.compact .chat-thumb,
+.activity.compact .chat-file {
+  order: 2;
+  flex-shrink: 0;
+}
+.activity.compact .chat-thumb img {
+  max-height: 1.7em;
+  max-width: 52px;
 }
 
 .typing-line {
