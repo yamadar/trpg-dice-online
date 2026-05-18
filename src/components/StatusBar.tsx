@@ -7,14 +7,24 @@ interface Props {
   roomName: string
   playerCount: number
   characterName: string
+  onOpenRoom: () => void
+  onOpenCharacter: () => void
 }
 
 /**
  * The minimal always-visible status: which room you are in (or that a
  * connection is in progress), how many players are present, and which
- * character you are acting as. Long names are truncated.
+ * character you are acting as. Each item opens its panel when tapped.
  */
-export function StatusBar({ status, roomCode, roomName, playerCount, characterName }: Props) {
+export function StatusBar({
+  status,
+  roomCode,
+  roomName,
+  playerCount,
+  characterName,
+  onOpenRoom,
+  onOpenCharacter,
+}: Props) {
   const { t } = useI18n()
   const roomLabel =
     status === 'connecting'
@@ -24,7 +34,7 @@ export function StatusBar({ status, roomCode, roomName, playerCount, characterNa
         : t('status.offline')
   return (
     <div className="statusbar">
-      <span className="stat">
+      <button type="button" className="stat" onClick={onOpenRoom}>
         <span className="stat-key">{t('room.section')}</span>
         <span className="stat-value">{roomLabel}</span>
         {roomCode && (
@@ -32,11 +42,11 @@ export function StatusBar({ status, roomCode, roomName, playerCount, characterNa
             <span aria-hidden="true">👥</span> {playerCount}
           </span>
         )}
-      </span>
-      <span className="stat">
+      </button>
+      <button type="button" className="stat" onClick={onOpenCharacter}>
         <span className="stat-key">{t('character.section')}</span>
         <span className="stat-value">{characterName || t('status.noCharacter')}</span>
-      </span>
+      </button>
     </div>
   )
 }

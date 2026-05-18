@@ -20,7 +20,7 @@ const ja: Dict = {
   'dock.patterns': 'パターン',
 
   'status.offline': 'オフライン',
-  'status.noCharacter': 'PL 本人',
+  'status.noCharacter': 'なし（PL 本人）',
 
   'gate.start': 'はじめる',
   'gate.nameHint': 'プレイヤー名は設定からいつでも変更できます。',
@@ -151,6 +151,8 @@ const ja: Dict = {
   'room.connecting': '接続中…',
   'room.connected': '接続済み',
   'room.players': '参加者',
+  'room.expandAll': 'すべて開く',
+  'room.collapseAll': 'すべて閉じる',
   'room.gmBadge': 'GM',
   'room.youBadge': 'あなた',
   'room.shareHint': 'このリンクを仲間に共有してください',
@@ -179,7 +181,7 @@ const en: Dict = {
   'dock.patterns': 'Patterns',
 
   'status.offline': 'Offline',
-  'status.noCharacter': 'As player',
+  'status.noCharacter': 'None (as player)',
 
   'gate.start': 'Start',
   'gate.nameHint': 'You can change your player name anytime in Settings.',
@@ -310,6 +312,8 @@ const en: Dict = {
   'room.connecting': 'Connecting…',
   'room.connected': 'Connected',
   'room.players': 'Players',
+  'room.expandAll': 'Expand all',
+  'room.collapseAll': 'Collapse all',
   'room.gmBadge': 'GM',
   'room.youBadge': 'You',
   'room.shareHint': 'Share this link with your party',

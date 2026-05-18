@@ -160,6 +160,14 @@ An SPA where players roll TRPG dice and share results with other players in real
   （ルーム・キャラクター・参加者数）はヘッダーに常時表示する。
   History & chat is the dominant, always-visible view; the header keeps a
   minimal status (room, character, player count).
+- ヘッダーのルーム／キャラクター表示はタップでそれぞれのシートを開く。
+  キャラクター未選択時の表示は「なし（PL 本人）」とする。
+  Tapping the header's room / character status opens the matching sheet;
+  with no character it reads "None (as player)".
+- ルームシートの参加者詳細は開閉キャレットを目立たせ、全員の詳細を
+  一括で開閉するボタンを用意する。
+  The room sheet's participant detail uses a prominent toggle caret and a
+  button to expand / collapse every participant's detail at once.
 - ルーム／キャラクター／ダイス／パターンはボトムドックから必要時に
   シート（オンデマンドのパネル）として開く。モバイルではボトムシート、
   デスクトップでは中央モーダルとして表示する。
@@ -329,3 +337,9 @@ The `lang` fields carry the source language for future real-time translation
   空のとき、キャラクター単位で保存される旨を明示するメッセージに変更。
   Confirm before replacing a pattern of the same name and kind; the empty
   pattern list now states that patterns are stored per character.
+- v1.12 — ヘッダーのルーム／キャラクター表示をタップで各シートを開けるように
+  し、キャラクター未選択時の表示を「なし（PL 本人）」に変更。ルームシートの
+  参加者詳細の開閉キャレットを目立たせ、全員を一括で開閉するボタンを追加。
+  Make the header's room/character status open their sheets on tap, change
+  the no-character label to "None (as player)", give the participant detail
+  a prominent caret, and add an expand/collapse-all button.
