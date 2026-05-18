@@ -110,13 +110,13 @@ const ja: Dict = {
   'result.hiddenRoll': '{name} が隠しロールを行いました',
   'result.faces': '出目内訳',
 
-  'feed.section': '履歴 & チャット',
+  'feed.section': 'ダイス & チャット',
   'feed.all': 'すべて',
-  'feed.rolls': '履歴',
+  'feed.rolls': 'ダイス',
   'feed.chat': 'チャット',
   'feed.empty': 'まだ何もありません',
   'feed.clear': '表示をクリア',
-  'feed.clearConfirm': '履歴とチャットの表示をすべてクリアします。元に戻せません。よろしいですか？',
+  'feed.clearConfirm': 'ダイスとチャットの履歴の表示をすべてクリアします。元に戻せません。よろしいですか？',
 
   'typing.one': '{names} が入力中…',
   'typing.many': '{names} が入力中…',
@@ -263,7 +263,7 @@ const en: Dict = {
   'result.hiddenRoll': '{name} made a hidden roll',
   'result.faces': 'Dice faces',
 
-  'feed.section': 'History & Chat',
+  'feed.section': 'Dice & Chat',
   'feed.all': 'All',
   'feed.rolls': 'Rolls',
   'feed.chat': 'Chat',
