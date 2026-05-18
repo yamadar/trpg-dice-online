@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { useFieldNotice } from '../hooks/useFieldNotice'
 import { LanguageToggle } from './LanguageToggle'
+import { ThemeToggle } from './ThemeToggle'
 
 interface Props {
   name: string
@@ -65,6 +66,10 @@ export function SettingsMenu({ name, onChangeName, onOpenHelp, onNotice }: Props
             <div className="field">
               <span>{t('lang.label')}</span>
               <LanguageToggle />
+            </div>
+            <div className="field">
+              <span>{t('theme.title')}</span>
+              <ThemeToggle />
             </div>
 
             <button

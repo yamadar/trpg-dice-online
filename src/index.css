@@ -28,6 +28,93 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* --- colour themes ---------------------------------------------------
+   `:root` above is the default ("midnight"). Each theme below overrides
+   the colour custom properties; `applyTheme` selects one via data-theme.
+   The same selectors also tint the theme-picker swatches. */
+[data-theme='forest'] {
+  --bg: #121712;
+  --panel: #1a221b;
+  --panel-2: #232f26;
+  --border: #344135;
+  --text: #d7e0d8;
+  --text-dim: #93a397;
+  --text-h: #eef4ef;
+  --accent: #4ade80;
+  --accent-2: #16a34a;
+  --damage: #f87171;
+  --judgment: #38bdf8;
+  --gm: #fbbf24;
+  --ok: #34d399;
+  --danger: #ef4444;
+}
+[data-theme='ember'] {
+  --bg: #1a1410;
+  --panel: #241d16;
+  --panel-2: #31281e;
+  --border: #45392c;
+  --text: #e8ddcf;
+  --text-dim: #ab9d8a;
+  --text-h: #f7efe2;
+  --accent: #fb923c;
+  --accent-2: #ea580c;
+  --damage: #f87171;
+  --judgment: #60a5fa;
+  --gm: #facc15;
+  --ok: #34d399;
+  --danger: #ef4444;
+}
+[data-theme='rose'] {
+  --bg: #1a121a;
+  --panel: #241a26;
+  --panel-2: #312334;
+  --border: #463748;
+  --text: #e8dae6;
+  --text-dim: #ab95a9;
+  --text-h: #f7eef5;
+  --accent: #f472b6;
+  --accent-2: #db2777;
+  --damage: #fb7185;
+  --judgment: #60a5fa;
+  --gm: #fbbf24;
+  --ok: #34d399;
+  --danger: #ef4444;
+}
+[data-theme='daylight'] {
+  color-scheme: light;
+  --bg: #f1f3f8;
+  --panel: #ffffff;
+  --panel-2: #e7eaf2;
+  --border: #cfd4e1;
+  --text: #2f3342;
+  --text-dim: #677087;
+  --text-h: #161922;
+  --accent: #4f46e5;
+  --accent-2: #4338ca;
+  --damage: #dc2626;
+  --judgment: #2563eb;
+  --gm: #f59e0b;
+  --ok: #059669;
+  --danger: #dc2626;
+}
+[data-theme='parchment'] {
+  color-scheme: light;
+  --bg: #f2ebdc;
+  --panel: #faf4e6;
+  --panel-2: #e9e0cb;
+  --border: #d4c8ad;
+  --text: #3c3526;
+  --text-dim: #7c7058;
+  --text-h: #241f15;
+  --accent: #0f766e;
+  --accent-2: #115e59;
+  --damage: #b91c1c;
+  --judgment: #1d4ed8;
+  --gm: #d97706;
+  --ok: #047857;
+  --danger: #b91c1c;
+}
+
 * {
   box-sizing: border-box;
 }
