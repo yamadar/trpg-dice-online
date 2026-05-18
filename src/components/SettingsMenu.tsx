@@ -7,16 +7,27 @@ import { ThemeToggle } from './ThemeToggle'
 interface Props {
   name: string
   onChangeName: (name: string) => void
+  /** Feed-density preference — a display setting, so its toggle lives here. */
+  compact: boolean
+  onToggleCompact: () => void
   onOpenHelp: () => void
   /** Surfaces a toast, e.g. after the player name has been changed. */
   onNotice: (message: string) => void
 }
 
 /**
- * Low-frequency controls (player name, language, help) tucked behind a
- * header button so they do not take up permanent screen space.
+ * Low-frequency controls (player name, language, display preferences,
+ * help) tucked behind a header button so they do not take up permanent
+ * screen space.
  */
-export function SettingsMenu({ name, onChangeName, onOpenHelp, onNotice }: Props) {
+export function SettingsMenu({
+  name,
+  onChangeName,
+  compact,
+  onToggleCompact,
+  onOpenHelp,
+  onNotice,
+}: Props) {
   const { t, autoTranslate, setAutoTranslate, translationBackend, setTranslationBackend } = useI18n()
   const [open, setOpen] = useState(false)
   // Toast once the player-name edit settles (on blur or when the menu closes).
@@ -93,6 +104,10 @@ export function SettingsMenu({ name, onChangeName, onOpenHelp, onNotice }: Props
                 </div>
               </div>
             )}
+            <label className="checkbox">
+              <input type="checkbox" checked={compact} onChange={onToggleCompact} />
+              <span>{t('feed.compact')}</span>
+            </label>
             <div className="field">
               <span>{t('theme.title')}</span>
               <ThemeToggle />

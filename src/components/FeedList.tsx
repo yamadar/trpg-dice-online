@@ -6,6 +6,7 @@ import type { FeedItem, SystemMarker } from '../feed/feed'
 import type { ChatFile, ChatMessage } from '../net/protocol'
 import type { RollResult } from '../dice/types'
 import { playerColor } from '../players/colors'
+import { feedName } from '../players/identity'
 import { formatDiceSummary, formatRollText } from '../dice/format'
 import { ChatAttachment } from './ChatAttachment'
 
@@ -46,6 +47,7 @@ const FeedChatItem = memo(function FeedChatItem({
   message: m,
   archived,
   pending,
+  compact,
   playerId,
   onOpenDetail,
   onOpenImage,
@@ -54,6 +56,8 @@ const FeedChatItem = memo(function FeedChatItem({
   archived: boolean
   /** A message still queued for an offline GM — shown but not yet sent. */
   pending?: boolean
+  /** The compact feed shows just the character name, no player-color dot. */
+  compact: boolean
   playerId: string
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
@@ -90,7 +94,7 @@ const FeedChatItem = memo(function FeedChatItem({
             })
           }
         >
-          {m.playerName}
+          {feedName(m.playerName, m.characterName ?? '', compact)}
         </button>
         {m.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
         {autoTranslate && translated !== null && (
@@ -122,17 +126,21 @@ const FeedRollItem = memo(function FeedRollItem({
   roll: r,
   archived,
   isGM,
+  compact,
   onOpenDetail,
 }: {
   roll: RollResult
   archived: boolean
   isGM: boolean
+  /** The compact feed shows just the character name, no player-color dot. */
+  compact: boolean
   onOpenDetail: (target: FeedDetailTarget) => void
 }) {
   const { t, lang } = useI18n()
   const canSee = isGM || !r.hidden
   const isHidden = r.hidden && !canSee
   const color = playerColor(r.playerId)
+  const fullName = r.playerName || t('player.anon')
   return (
     <li className={`feed-roll roll ${isHidden ? 'hidden' : r.kind}${archived ? ' archived' : ''}`}>
       <div className="feed-line">
@@ -144,13 +152,13 @@ const FeedRollItem = memo(function FeedRollItem({
           onClick={() =>
             onOpenDetail({
               playerId: r.playerId,
-              name: r.playerName || t('player.anon'),
+              name: fullName,
               characterName: r.characterName ?? '',
               background: r.background ?? '',
             })
           }
         >
-          {r.playerName || t('player.anon')}
+          {feedName(fullName, r.characterName ?? '', compact)}
         </button>
         {r.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
         <time>{new Date(r.timestamp).toLocaleTimeString(lang)}</time>
@@ -174,6 +182,8 @@ interface Props {
   lastExitAt: number
   playerId: string
   isGM: boolean
+  /** Denser layout: one-line entries, no player-color dot, character name only. */
+  compact: boolean
   /** Whether more history can be paged in above the current oldest entry. */
   hasOlder: boolean
   onLoadOlder: () => void
@@ -189,6 +199,7 @@ export function FeedList({
   lastExitAt,
   playerId,
   isGM,
+  compact,
   hasOlder,
   onLoadOlder,
   pending,
@@ -233,6 +244,7 @@ export function FeedList({
               key={item.id}
               message={item.message}
               archived={archived}
+              compact={compact}
               playerId={playerId}
               onOpenDetail={onOpenDetail}
               onOpenImage={onOpenImage}
@@ -245,6 +257,7 @@ export function FeedList({
             roll={item.roll}
             archived={archived}
             isGM={isGM}
+            compact={compact}
             onOpenDetail={onOpenDetail}
           />
         )
@@ -255,6 +268,7 @@ export function FeedList({
           message={m}
           archived={false}
           pending
+          compact={compact}
           playerId={playerId}
           onOpenDetail={onOpenDetail}
           onOpenImage={onOpenImage}

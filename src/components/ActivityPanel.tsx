@@ -6,7 +6,6 @@ import { isImageType } from '../chat/attachment'
 import type { ChatFile, ChatMessage } from '../net/protocol'
 import type { RollResult } from '../dice/types'
 import { loadFullLog } from '../storage/roomLog'
-import { loadCompactFeed, saveCompactFeed } from '../storage/display'
 import { Sheet } from './Sheet'
 import { PlayerDetailCard } from './PlayerDetailCard'
 import { Lightbox } from './Lightbox'
@@ -28,6 +27,8 @@ const FEED_WINDOW = 200
 
 interface Props {
   session: Session
+  /** Denser feed layout; the toggle for it lives in the settings menu. */
+  compact: boolean
   /** Surfaces attachment errors as a toast. */
   onNotice: (message: string, kind?: 'success' | 'error') => void
 }
@@ -38,11 +39,9 @@ interface Props {
  * image lightbox. Older history (beyond the live window) is paged in from
  * the durable log on demand.
  */
-export function ActivityPanel({ session, onNotice }: Props) {
+export function ActivityPanel({ session, compact, onNotice }: Props) {
   const { t } = useI18n()
   const [filter, setFilter] = useState<FeedFilter>('all')
-  // Compact layout for the feed — denser items; persisted across sessions.
-  const [compact, setCompact] = useState(loadCompactFeed)
   // The feed entry whose name was tapped, opening the player-detail card.
   const [detail, setDetail] = useState<FeedDetailTarget | null>(null)
   // Index (within `images`) of the picture open in the lightbox.
@@ -130,12 +129,6 @@ export function ActivityPanel({ session, onNotice }: Props) {
     }
   }
 
-  const toggleCompact = () => {
-    const next = !compact
-    setCompact(next)
-    saveCompactFeed(next)
-  }
-
   const typing = session.typingNames
   const typingLine =
     typing.length === 0
@@ -167,14 +160,6 @@ export function ActivityPanel({ session, onNotice }: Props) {
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            className="link feed-compact"
-            aria-pressed={compact}
-            onClick={toggleCompact}
-          >
-            {t('feed.compact')}
-          </button>
           {feed.length > 0 && (
             <button type="button" className="link feed-clear" onClick={clearFeed}>
               {t('feed.clear')}
@@ -188,6 +173,7 @@ export function ActivityPanel({ session, onNotice }: Props) {
         lastExitAt={lastExitAt}
         playerId={session.playerId}
         isGM={session.isGM}
+        compact={compact}
         hasOlder={hasOlder}
         onLoadOlder={loadOlder}
         pending={pending}

@@ -6,6 +6,7 @@ import { useCharacters } from './characters/useCharacters'
 import { rollPattern } from './dice/roll'
 import type { Pattern } from './dice/types'
 import { isTutorialSeen, markTutorialSeen } from './storage/tutorial'
+import { loadCompactFeed, saveCompactFeed } from './storage/display'
 import { CloseIcon } from './components/icons'
 import { StatusBar } from './components/StatusBar'
 import { NameGate } from './components/NameGate'
@@ -47,6 +48,9 @@ function App() {
   const [initialJoinCode] = useState(roomCodeFromUrl)
   const [openSheet, setOpenSheet] = useState<SheetId | null>(null)
   const [showTutorial, setShowTutorial] = useState(() => !isTutorialSeen())
+  // Denser feed layout — a display preference, so its toggle sits in the
+  // settings menu while the feed itself consumes the value.
+  const [compact, setCompact] = useState(loadCompactFeed)
 
   const { updateIdentity, resumeRoom } = session
   const activeName = characters.activeCharacter?.name
@@ -192,6 +196,13 @@ function App() {
 
   const toggleSheet = (id: SheetId) => setOpenSheet((cur) => (cur === id ? null : id))
 
+  // Persist the feed-density preference as it is toggled.
+  const toggleCompact = () => {
+    const next = !compact
+    setCompact(next)
+    saveCompactFeed(next)
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -207,6 +218,8 @@ function App() {
         <SettingsMenu
           name={session.name}
           onChangeName={(next) => updateIdentity({ name: next })}
+          compact={compact}
+          onToggleCompact={toggleCompact}
           onOpenHelp={() => setShowTutorial(true)}
           onNotice={flash}
         />
@@ -237,7 +250,7 @@ function App() {
       )}
 
       <main className="app-main">
-        <ActivityPanel session={session} onNotice={flash} />
+        <ActivityPanel session={session} compact={compact} onNotice={flash} />
       </main>
 
       <Dock active={openSheet} onOpen={toggleSheet} />
