@@ -110,16 +110,28 @@ function App() {
   )
 
   const handleSave = useCallback(() => {
-    if (!characters.activeId) {
+    const characterId = characters.activeId
+    if (!characterId) {
       flash(t('pattern.needCharacter'), 'error')
       return
     }
-    if (!draft.name.trim()) {
+    const name = draft.name.trim()
+    if (!name) {
       flash(t('pattern.needName'), 'error')
       return
     }
-    characters.addPattern(characters.activeId, { ...draft, name: draft.name.trim() })
-    flash(t('toast.patternSaved'))
+    // A pattern with the same name and kind is treated as the same pattern.
+    const existing = characters.activeCharacter?.patterns.find(
+      (p) => p.name === name && p.kind === draft.kind,
+    )
+    if (existing) {
+      if (!window.confirm(t('pattern.replaceConfirm', { name }))) return
+      characters.updatePattern(characterId, existing.id, { ...draft, name })
+      flash(t('toast.patternUpdated'))
+    } else {
+      characters.addPattern(characterId, { ...draft, name })
+      flash(t('toast.patternSaved'))
+    }
   }, [draft, characters, flash, t])
 
   // Loading a pattern into the builder opens the dice sheet to tweak/roll it.
@@ -207,6 +219,7 @@ function App() {
           {openSheet === 'patterns' && (
             <PatternList
               hasCharacter={characters.activeCharacter !== null}
+              characterName={characters.activeCharacter?.name ?? ''}
               patterns={characters.activeCharacter?.patterns ?? []}
               onLoad={handleLoad}
               onQuickRoll={handleQuickRoll}

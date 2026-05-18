@@ -43,12 +43,18 @@ An SPA where players roll TRPG dice and share results with other players in real
 ### 3.4 パターン
 - A + B + C を 1 つのパターンとして扱う / A pattern bundles A, B and C
 - 名前を付けて保存できる / Can be saved with a name
+- 同名・同用途のパターンが既に存在する場合は、置き換える（更新する）かを確認する
+  If a pattern of the same name and kind exists, confirm before replacing it
 - 保存したパターンは一覧から呼び出して再利用できる / Saved patterns can be recalled and reused
 - 一覧からワンクリックで直接振れる（クイックロール）/ Quick-roll a saved pattern in one click
 - 一覧内でパターンを並び替えできる。順序は書き出し／読み込みでも保たれる。
   Patterns can be reordered; the order is kept through export / import.
 - パターンの削除は誤操作防止のため確認ダイアログを必須とする
   Deleting a pattern requires a confirmation dialog
+- パターンが無い場合は、そのキャラクターにパターンが無い旨と、パターンが
+  キャラクター単位であることを明示する
+  When empty, the list states that this character has no patterns and that
+  patterns are stored per character
 - 保存先はブラウザの localStorage（個人ごと） / Stored per-browser in localStorage
 
 ### 3.5 ロールと出目の表記 / Roll output text
@@ -319,3 +325,7 @@ The `lang` fields carry the source language for future real-time translation
   Add toasts for room/character name changes and pattern saves, a
   confirmation before leaving the page, per-room URLs (shareable /
   copyable link), and a "connecting" indicator while joining a room.
+- v1.11 — 同名・同用途のパターン保存時に置き換え確認を追加。パターン一覧が
+  空のとき、キャラクター単位で保存される旨を明示するメッセージに変更。
+  Confirm before replacing a pattern of the same name and kind; the empty
+  pattern list now states that patterns are stored per character.
