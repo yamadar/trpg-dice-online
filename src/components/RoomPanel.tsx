@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { useFieldNotice } from '../hooks/useFieldNotice'
 import { loadLastRoomCode } from '../storage/room'
+import { loadFullLog } from '../storage/roomLog'
+import { exportRoomLogJSON, roomLogFilename } from '../storage/roomExport'
 import { normalizeRoomCode, type Player } from '../net/protocol'
 import { playerColor } from '../players/colors'
 import { composeName } from '../players/identity'
@@ -55,6 +57,21 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   const handleLeave = () => {
     if (role === 'host' && !window.confirm(t('room.leaveConfirmGM'))) return
     session.leaveRoom()
+  }
+
+  // Save the room's full durable history (rolls, chat, attachments and
+  // markers) as a downloadable JSON file.
+  const handleExport = async () => {
+    if (!roomCode) return
+    const entries = await loadFullLog(roomCode)
+    const json = exportRoomLogJSON({ code: roomCode, name: session.roomName }, entries)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = roomLogFilename(roomCode)
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   // Only players with a character name or background have a detail to expand.
@@ -175,6 +192,9 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
               </div>
             )
           )}
+          <button type="button" onClick={() => void handleExport()}>
+            {t('room.exportHistory')}
+          </button>
           <button type="button" className="danger" onClick={handleLeave}>
             {t('room.leave')}
           </button>

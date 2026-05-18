@@ -80,6 +80,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   永続ログからオンデマンドに読み込める
   Older history beyond the display cap can be paged in on demand from the
   durable log with "Load older"
+- ルームの全履歴（ダイス・チャット・添付ファイル・各発言時のプレイヤー／
+  キャラクター情報）を JSON ファイルにエクスポートできる
+  The room's full history (rolls, chat, file attachments and the player /
+  character snapshot of each entry) can be exported to a JSON file
 - フィードの名前をタップすると、その発言・ロール時点のキャラクター名・
   プレイヤー名・背景情報をカードで表示する（PC・モバイル両対応）。表示は
   タップした項目のキャラクターのスナップショットで、その後プレイヤーが
@@ -574,3 +578,11 @@ The `lang` fields carry the source language for future real-time translation
   "Load older". The live window caps rolls / chat / markers separately, so
   it can have internal gaps — the full room log is loaded from the durable
   store in one go, with duplicates dropped when the feed is built.
+- v1.36 — ルームの全履歴を JSON ファイルにエクスポートできるようにした。
+  ルームパネルの「履歴をエクスポート」から、永続ログのダイス・チャット・
+  添付ファイル・マーカー（各発言時のプレイヤー／キャラクター情報を含む）を
+  versioned な 1 ファイルに書き出す。
+  The room's full history can now be exported to a JSON file. "Export
+  history" in the room panel writes the durable log — rolls, chat, file
+  attachments and markers, each with its player / character snapshot —
+  into a single versioned, self-contained file.
