@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { strToU8, zipSync } from 'fflate'
-import { buildRoomExport } from './roomExport'
+import { buildRoomExport, type TranslationRecord } from './roomExport'
 import { parseRoomImport } from './roomImport'
 import type { LogEntry } from './roomLog'
 import type { Player } from '../net/protocol'
@@ -28,6 +28,10 @@ const entries: LogEntry[] = [
   },
 ]
 
+const translations: TranslationRecord[] = [
+  { text: 'hi', from: 'en', to: 'ja', backend: 'mymemory', translated: 'やあ' },
+]
+
 /** Parse and assert success, so tests work with a non-null result. */
 function parsed(zip: Uint8Array) {
   const result = parseRoomImport(zip)
@@ -37,18 +41,59 @@ function parsed(zip: Uint8Array) {
 
 describe('parseRoomImport', () => {
   it('round-trips a built export back to its room and entries', () => {
-    const result = parsed(buildRoomExport({ code: 'ABCDEF', name: 'Session' }, players, entries, 1))
+    const result = parsed(
+      buildRoomExport({ code: 'ABCDEF', name: 'Session' }, players, entries, [], 1),
+    )
     expect(result.roomCode).toBe('ABCDEF')
     expect(result.roomName).toBe('Session')
     expect(result.entries.map((e) => e.kind)).toEqual(['marker', 'roll', 'chat', 'chat'])
+    expect(result.translations).toEqual([])
   })
 
   it('re-inlines a chat attachment from the archive as its original data URL', () => {
-    const result = parsed(buildRoomExport({ code: 'ABCDEF', name: '' }, players, entries, 1))
+    const result = parsed(buildRoomExport({ code: 'ABCDEF', name: '' }, players, entries, [], 1))
     const chat = result.entries.find((e) => (e.data as { id: string }).id === 'c2')
     const file = (chat?.data as { file: { dataUrl?: string; path?: string } }).file
     expect(file.dataUrl).toBe(HELLO_URL)
     expect(file.path).toBeUndefined()
+  })
+
+  it('round-trips cached chat translations', () => {
+    const result = parsed(
+      buildRoomExport({ code: 'ABCDEF', name: '' }, players, entries, translations, 1),
+    )
+    expect(result.translations).toEqual(translations)
+  })
+
+  it('drops malformed translation records', () => {
+    const manifest = {
+      type: 'trpg-dice-room-log',
+      version: 3,
+      room: { code: 'ABCDEF', name: '' },
+      entries: [],
+      translations: [
+        { text: 'ok', from: 'en', to: 'ja', backend: 'chrome', translated: 'よし' },
+        { text: 'bad-lang', from: 'fr', to: 'ja', backend: 'chrome', translated: 'x' },
+        { text: 'bad-backend', from: 'en', to: 'ja', backend: 'google', translated: 'x' },
+        { text: '', from: 'en', to: 'ja', backend: 'chrome', translated: 'x' },
+        { from: 'en', to: 'ja', backend: 'chrome', translated: 'x' },
+      ],
+    }
+    const zip = zipSync({ 'room.json': strToU8(JSON.stringify(manifest)) })
+    expect(parsed(zip).translations).toEqual([
+      { text: 'ok', from: 'en', to: 'ja', backend: 'chrome', translated: 'よし' },
+    ])
+  })
+
+  it('treats an older export without translations as having none', () => {
+    const manifest = {
+      type: 'trpg-dice-room-log',
+      version: 2,
+      room: { code: 'ABCDEF', name: '' },
+      entries: [],
+    }
+    const zip = zipSync({ 'room.json': strToU8(JSON.stringify(manifest)) })
+    expect(parsed(zip).translations).toEqual([])
   })
 
   it('returns null for bytes that are not a zip', () => {

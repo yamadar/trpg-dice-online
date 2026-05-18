@@ -9,16 +9,37 @@
 import { strFromU8, unzipSync } from 'fflate'
 import { normalizeRoomCode } from '../net/protocol'
 import type { LogEntry, LogKind } from './roomLog'
+import type { TranslationRecord } from './roomExport'
 
 /** A room export parsed and ready to restore. */
 export interface RoomImport {
   roomCode: string
   roomName: string
   entries: LogEntry[]
+  /** Cached chat translations carried in the archive (v3+), if any. */
+  translations: TranslationRecord[]
 }
 
 function isLogKind(value: unknown): value is LogKind {
   return value === 'roll' || value === 'chat' || value === 'marker'
+}
+
+/**
+ * Validate one cached-translation record from the manifest. Returns null
+ * if any field is missing or has an unexpected value, so a malformed
+ * record is dropped rather than seeded into the translation cache.
+ */
+function parseTranslation(raw: unknown): TranslationRecord | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const langOk = (v: unknown): v is TranslationRecord['from'] => v === 'ja' || v === 'en'
+  const backendOk = (v: unknown): v is TranslationRecord['backend'] =>
+    v === 'chrome' || v === 'mymemory'
+  if (typeof r.text !== 'string' || r.text === '') return null
+  if (typeof r.translated !== 'string') return null
+  if (!langOk(r.from) || !langOk(r.to)) return null
+  if (!backendOk(r.backend)) return null
+  return { text: r.text, from: r.from, to: r.to, backend: r.backend, translated: r.translated }
 }
 
 /** Encode raw bytes as a `data:` URL, chunked to avoid arg-count limits. */
@@ -101,9 +122,16 @@ export function parseRoomImport(zipBytes: Uint8Array): RoomImport | null {
     const entry = parseEntry(raw, files)
     if (entry) entries.push(entry)
   }
+  const rawTranslations = Array.isArray(m.translations) ? m.translations : []
+  const translations: TranslationRecord[] = []
+  for (const raw of rawTranslations) {
+    const tr = parseTranslation(raw)
+    if (tr) translations.push(tr)
+  }
   return {
     roomCode,
     roomName: typeof room.name === 'string' ? room.name : '',
     entries,
+    translations,
   }
 }

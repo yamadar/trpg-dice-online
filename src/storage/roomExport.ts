@@ -13,16 +13,31 @@
 import { strToU8, zipSync } from 'fflate'
 import type { LogEntry } from './roomLog'
 import type { ChatMessage, Player } from '../net/protocol'
+import type { Lang } from '../i18n/translations'
+import type { TranslationBackend } from '../i18n/translator'
 
 /** Marks our room-export archives. */
 const FILE_TYPE = 'trpg-dice-room-log'
-/** v2: ZIP archive with a player roster and attachments stored as files. */
-const FILE_VERSION = 2
+/** v3: adds cached chat translations alongside the player roster. */
+const FILE_VERSION = 3
 
 /** Room identity stored in the manifest. */
 interface ExportRoom {
   code: string
   name: string
+}
+
+/**
+ * A cached chat translation carried in the export so a re-import shows
+ * the same translations without re-translating. `text` with `from` /
+ * `to` / `backend` is the translation cache key.
+ */
+export interface TranslationRecord {
+  text: string
+  from: Lang
+  to: Lang
+  backend: TranslationBackend
+  translated: string
 }
 
 /**
@@ -89,6 +104,7 @@ export function buildRoomExport(
   room: ExportRoom,
   players: Player[],
   entries: LogEntry[],
+  translations: TranslationRecord[],
   exportedAt: number = Date.now(),
 ): Uint8Array<ArrayBuffer> {
   const split = extractAttachments(entries)
@@ -99,6 +115,7 @@ export function buildRoomExport(
     room,
     players,
     entries: split.entries,
+    translations,
   }
   const zip = zipSync({
     'room.json': strToU8(JSON.stringify(manifest, null, 2)),

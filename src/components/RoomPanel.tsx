@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { getCachedTranslation, seedTranslation } from '../i18n/translator'
 import { useFieldNotice } from '../hooks/useFieldNotice'
 import { loadLastRoomCode } from '../storage/room'
 import { loadFullLog } from '../storage/roomLog'
-import { buildRoomExport, roomExportFilename } from '../storage/roomExport'
+import { buildRoomExport, roomExportFilename, type TranslationRecord } from '../storage/roomExport'
 import { parseRoomImport } from '../storage/roomImport'
-import { normalizeRoomCode, type Player } from '../net/protocol'
+import { normalizeRoomCode, type ChatMessage, type Player } from '../net/protocol'
 import { playerColor } from '../players/colors'
 import { composeName } from '../players/identity'
 import type { Session } from '../hooks/useSession'
@@ -18,7 +19,7 @@ interface Props {
 }
 
 export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   // Prefill the join field with the URL code if any, else the last code
   // this player created or joined.
   const [codeInput, setCodeInput] = useState(
@@ -69,6 +70,11 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
           setImportError(true)
           return
         }
+        // Pre-fill the translation cache so restored chat shows the same
+        // translations without re-contacting a backend.
+        for (const tr of data.translations) {
+          seedTranslation(tr.text, tr.from, tr.to, tr.backend, tr.translated)
+        }
         void session.importRoom(data)
       })
       .catch(() => setImportError(true))
@@ -94,11 +100,35 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   }
 
   // Save the room's full durable history — the player roster, rolls,
-  // chat, attachments and markers — as a downloadable ZIP archive.
+  // chat, attachments, markers and any cached chat translations — as a
+  // downloadable ZIP archive.
   const handleExport = async () => {
     if (!roomCode) return
     const entries = await loadFullLog(roomCode)
-    const zip = buildRoomExport({ code: roomCode, name: session.roomName }, players, entries)
+    // Carry whatever chat translations are already cached so a re-import
+    // shows them without re-translating. Both backends are checked since
+    // the player can switch between them.
+    const translations: TranslationRecord[] = []
+    const seen = new Set<string>()
+    for (const entry of entries) {
+      if (entry.kind !== 'chat') continue
+      const chat = entry.data as ChatMessage
+      if (chat.text === '' || chat.lang === lang) continue
+      for (const backend of ['chrome', 'mymemory'] as const) {
+        const translated = getCachedTranslation(chat.text, chat.lang, lang, backend)
+        if (translated === undefined) continue
+        const key = `${backend}:${chat.lang}:${chat.text}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        translations.push({ text: chat.text, from: chat.lang, to: lang, backend, translated })
+      }
+    }
+    const zip = buildRoomExport(
+      { code: roomCode, name: session.roomName },
+      players,
+      entries,
+      translations,
+    )
     const blob = new Blob([zip], { type: 'application/zip' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

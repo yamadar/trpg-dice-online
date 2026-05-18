@@ -93,11 +93,12 @@ An SPA where players roll TRPG dice and share results with other players in real
   Older history beyond the display cap can be paged in on demand from the
   durable log with "Load older"
 - ルームの全履歴（参加者一覧、ダイス・チャット・添付ファイル、各発言時の
-  プレイヤー／キャラクター情報）を ZIP 書庫にエクスポートできる。書庫から
-  ルームの状態を復元できるだけの情報を含む
+  プレイヤー／キャラクター情報、キャッシュ済みのチャット翻訳）を ZIP 書庫に
+  エクスポートできる。書庫からルームの状態を復元できるだけの情報を含む
   The room's full history — the player roster, rolls, chat, file
-  attachments and the player / character snapshot of each entry — can be
-  exported to a ZIP archive holding everything needed to restore the room
+  attachments, the player / character snapshot of each entry and any
+  cached chat translations — can be exported to a ZIP archive holding
+  everything needed to restore the room
 - エクスポートした ZIP 書庫を読み込み、その内容でルームを復元できる
   （読み込んだ本人がホストとしてルームを再開する）
   An exported ZIP archive can be loaded back to restore the room — it
@@ -362,10 +363,10 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
 参加者の色は `playerId` のハッシュから決まり、同期不要で全クライアントが一致する。
 Player colors are derived by hashing `playerId`, so all clients agree with no sync.
 
-`lang` フィールドは将来のリアルタイム翻訳（`docs/TRANSLATION_API_RESEARCH.md`）に
-備えて原文の言語を保持するもので、現時点では挙動に影響しない。
-The `lang` fields carry the source language for future real-time translation
-(see `docs/TRANSLATION_API_RESEARCH.md`); they do not affect behaviour yet.
+`lang` フィールドは原文の言語を保持し、チャットの自動翻訳で原言語として
+使われる（`docs/TRANSLATION_API_RESEARCH.md`）。
+The `lang` fields carry the source language, used as the original language
+for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
 
 ## 7. 実装プラン / Implementation Plan
 
@@ -663,3 +664,12 @@ The `lang` fields carry the source language for future real-time translation
   translation; the original pulses while translating. Results are memoized
   by (backend, source, target, text). Translation lives entirely in the
   display layer and falls back to the original on failure.
+- v1.42 — ルームのエクスポート／インポートにチャット翻訳を含めた。書庫の
+  マニフェストを v3 に上げ、キャッシュ済みの翻訳結果（方式・原言語・訳言語・
+  原文・訳文）を保存する。インポート時に翻訳キャッシュへ復元するので、
+  再インポートしたルームは翻訳をやり直さずに同じ訳文を表示する。
+  Room export / import now carries chat translations. The archive
+  manifest is bumped to v3 and stores cached translation results
+  (backend, source / target language, original and translated text);
+  on import they reseed the translation cache, so a re-imported room
+  shows the same translations without re-translating.
