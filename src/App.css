@@ -23,6 +23,10 @@
   min-width: 0;
   display: flex;
   flex-wrap: wrap;
+  /* Align the two stat buttons on their text baseline so the room and
+     character labels sit at the same height (the 👥 count would otherwise
+     make the room button taller and shift its text). */
+  align-items: baseline;
   gap: 6px 14px;
 }
 .stat {
@@ -790,6 +794,11 @@ button.player-row {
   width: 40px;
   font-size: 1.1rem;
   line-height: 1;
+  /* Center the 📎 glyph instead of letting button padding push it right. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 0;
 }
 .attach-btn:disabled {
   opacity: 0.5;
