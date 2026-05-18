@@ -13,3 +13,15 @@ export function composeName(playerName: string, characterName?: string): string 
   if (!pl) return character
   return `${character}（${pl}）`
 }
+
+/**
+ * The name to show on a feed entry (roll or chat). The compact feed trades
+ * the full "Character（Player）" form for just the character name to keep
+ * each line short; when the actor has no character the plain player name
+ * (`composedName`) is kept either way.
+ */
+export function feedName(composedName: string, characterName: string, compact: boolean): string {
+  const character = characterName.trim()
+  if (compact && character) return character
+  return composedName
+}

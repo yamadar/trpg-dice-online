@@ -708,11 +708,6 @@ button.player-row {
   background: var(--accent-2);
   color: #fff;
 }
-/* The compact-mode toggle reads as active when on. */
-.feed-compact[aria-pressed='true'] {
-  color: var(--accent-2);
-  font-weight: 600;
-}
 
 .feed {
   list-style: none;
@@ -866,10 +861,11 @@ button.player-row {
   color: #fbbf24;
 }
 
-/* Compact dice & chat: each entry on a single non-wrapping line —
-   [dot] name · content · time — so far more fits on screen.
-   min-width:0 down the flex chain lets the text ellipsize rather than
-   widen the whole panel. */
+/* Compact dice & chat: a dense entry — name · content · time on one row.
+   The colored name already signals the player, so the dot is dropped; a
+   long message wraps under its first line rather than being truncated.
+   min-width:0 down the flex chain keeps a long word from widening the
+   whole panel. */
 .activity.compact,
 .activity.compact .feed,
 .activity.compact .feed-chat,
@@ -882,18 +878,23 @@ button.player-row {
 .activity.compact .feed-chat,
 .activity.compact .feed-roll {
   display: flex;
-  align-items: center;
+  /* Baseline keeps the name and time on the message's first line when it
+     wraps to two or more lines. */
+  align-items: baseline;
   flex-wrap: nowrap;
   gap: 8px;
-  padding: 2px 9px;
+  padding: 3px 9px;
   font-size: 0.82rem;
 }
-/* Unwrap the meta line so the name / dot / time join the one-line flow. */
+/* Unwrap the meta line so the name / time join the one-row flow. */
 .activity.compact .feed-line {
   display: contents;
   font-size: 0.82rem;
 }
-.activity.compact .player-dot,
+/* The player-color dot is redundant with the colored name in this view. */
+.activity.compact .player-dot {
+  display: none;
+}
 .activity.compact .feed-name {
   flex-shrink: 0;
 }
@@ -904,9 +905,6 @@ button.player-row {
   min-width: 0;
   margin: 0;
   font-size: 0.82rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .activity.compact .feed-line time,
 .activity.compact .pending-tag,

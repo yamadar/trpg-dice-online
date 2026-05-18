@@ -76,10 +76,14 @@ An SPA where players roll TRPG dice and share results with other players in real
   Feed entries from the GM show a GM mark next to the name
 - 表示のクリアは誤操作で行われないよう、確認ダイアログを必須とする
   Clearing the feed requires a confirmation dialog to avoid accidental loss
-- フィードは任意でコンパクト表示に切り替えられる（項目を詰めて表示）。設定は
-  ブラウザに保存される
-  The feed can optionally be switched to a compact, denser layout; the
-  choice is remembered in the browser
+- 設定メニューでフィードをコンパクト表示に切り替えられる。コンパクト時は
+  各エントリを 1 行（名前・内容・時刻）に詰め、プレイヤー色のドットと名前の
+  「（プレイヤー名）」を省いてキャラクター名のみを表示する。長い発言は折り返す。
+  設定はブラウザに保存される
+  The settings menu can switch the feed to a compact layout: each entry is
+  packed onto one row (name · content · time), the player-color dot is
+  dropped and the name shows only the character (no "（Player）"); a long
+  message wraps. The choice is remembered in the browser
 - 設定で自動翻訳をオンにすると、チャットを設定言語へ翻訳して表示する
   （Chrome 内蔵 Translator または MyMemory を選択）。各メッセージは原文に
   戻せ、翻訳中は原文にアニメーションを添える。翻訳は表示層で完結し、
@@ -673,3 +677,12 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   (backend, source / target language, original and translated text);
   on import they reseed the translation cache, so a re-imported room
   shows the same translations without re-translating.
+- v1.43 — コンパクト表示と画面整理の UI 調整。コンパクト表示の切り替えを
+  フィード見出しから設定メニューへ移し（表示設定としてまとめ、見出しは
+  フィルターに集中させる）、コンパクト時はプレイヤー色ドットと名前の
+  「（プレイヤー名）」を省いてキャラクター名のみとし、長い発言は折り返す。
+  UI tidy-up for the compact feed. The compact toggle moves from the feed
+  header into the settings menu (grouped with the other display settings,
+  leaving the header focused on the filter); compact entries drop the
+  player-color dot and the "（Player）" half of the name, keeping just the
+  character, and a long message now wraps instead of being truncated.

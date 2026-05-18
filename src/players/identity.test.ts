@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { composeName } from './identity'
+import { composeName, feedName } from './identity'
 
 describe('composeName', () => {
   it('returns the player name when there is no character', () => {
@@ -20,5 +20,21 @@ describe('composeName', () => {
     expect(composeName('', 'Garon')).toBe('Garon')
     expect(composeName('   ', 'Garon')).toBe('Garon')
     expect(composeName('', '')).toBe('')
+  })
+})
+
+describe('feedName', () => {
+  it('keeps the full composed name when not compact', () => {
+    expect(feedName('Garon（Alice）', 'Garon', false)).toBe('Garon（Alice）')
+  })
+
+  it('drops the player half, leaving the character, when compact', () => {
+    expect(feedName('Garon（Alice）', 'Garon', true)).toBe('Garon')
+  })
+
+  it('keeps the plain player name when there is no character', () => {
+    expect(feedName('Alice', '', false)).toBe('Alice')
+    expect(feedName('Alice', '', true)).toBe('Alice')
+    expect(feedName('Alice', '   ', true)).toBe('Alice')
   })
 })
