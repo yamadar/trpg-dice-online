@@ -102,16 +102,27 @@
   max-height: none;
 }
 
+/* The connection-error banner floats above open sheets (z-index 30) and
+   toasts (40) so a failed join is never hidden behind the room modal. */
 .app-banner {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: 100%;
+  max-width: 900px;
+  box-sizing: border-box;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 0.85rem;
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
+  background: #7f1d1d;
+  color: #fee2e2;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.5);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
 /* --- bottom dock --- */
