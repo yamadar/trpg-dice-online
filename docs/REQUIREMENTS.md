@@ -299,3 +299,8 @@ The `lang` fields carry the source language for future real-time translation
   character names, pattern reordering, an optional memo in the export
   (off by default), an SVG close icon, a quieter "clear view" button, and
   expandable participant details.
+- v1.9 — フィードの呼称を実態に合わせて変更: 「履歴 & チャット」→「ダイス &
+  チャット」、絞り込みの「履歴」→「ダイス」、クリア確認文も同様に更新。
+  Rename the feed to match what it holds: "History & Chat" → "Dice &
+  Chat", the "rolls" filter label to "Dice" (JA), and the clear
+  confirmation text accordingly.
