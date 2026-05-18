@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { strFromU8, unzipSync } from 'fflate'
-import { buildRoomExport, roomExportFilename } from './roomExport'
+import { buildRoomExport, roomExportFilename, type TranslationRecord } from './roomExport'
 import type { LogEntry } from './roomLog'
 import type { Player } from '../net/protocol'
 
@@ -28,28 +28,43 @@ const entries: LogEntry[] = [
   },
 ]
 
+const translations: TranslationRecord[] = [
+  { text: 'hi', from: 'en', to: 'ja', backend: 'mymemory', translated: 'やあ' },
+]
+
 function manifestOf(zip: Uint8Array) {
   return JSON.parse(strFromU8(unzipSync(zip)['room.json']))
 }
 
 describe('buildRoomExport', () => {
   it('packs a room.json manifest and the attachments into a zip', () => {
-    const files = unzipSync(buildRoomExport({ code: 'ABC', name: 'Session' }, players, entries, 999))
+    const files = unzipSync(
+      buildRoomExport({ code: 'ABC', name: 'Session' }, players, entries, [], 999),
+    )
     expect(Object.keys(files).sort()).toEqual(['attachments/c2.png', 'room.json'])
   })
 
   it('writes a versioned manifest carrying the player roster', () => {
-    const manifest = manifestOf(buildRoomExport({ code: 'ABC', name: 'Session' }, players, entries, 999))
+    const manifest = manifestOf(
+      buildRoomExport({ code: 'ABC', name: 'Session' }, players, entries, [], 999),
+    )
     expect(manifest.type).toBe('trpg-dice-room-log')
-    expect(manifest.version).toBe(2)
+    expect(manifest.version).toBe(3)
     expect(manifest.exportedAt).toBe(999)
     expect(manifest.room).toEqual({ code: 'ABC', name: 'Session' })
     expect(manifest.players).toEqual(players)
     expect(manifest.entries.map((e: LogEntry) => e.kind)).toEqual(['marker', 'roll', 'chat', 'chat'])
   })
 
+  it('carries cached chat translations in the manifest', () => {
+    const manifest = manifestOf(
+      buildRoomExport({ code: 'ABC', name: 'Session' }, players, entries, translations, 999),
+    )
+    expect(manifest.translations).toEqual(translations)
+  })
+
   it('moves attachment bytes into the archive, leaving a path reference', () => {
-    const files = unzipSync(buildRoomExport({ code: 'ABC', name: '' }, players, entries, 1))
+    const files = unzipSync(buildRoomExport({ code: 'ABC', name: '' }, players, entries, [], 1))
     const manifest = JSON.parse(strFromU8(files['room.json']))
     const withFile = manifest.entries.find((e: LogEntry) => (e.data as { id: string }).id === 'c2')
     expect(withFile.data.file).toEqual({
@@ -63,12 +78,14 @@ describe('buildRoomExport', () => {
 
   it('does not mutate the input entries', () => {
     const before = JSON.parse(JSON.stringify(entries))
-    buildRoomExport({ code: 'ABC', name: '' }, players, entries, 1)
+    buildRoomExport({ code: 'ABC', name: '' }, players, entries, [], 1)
     expect(entries).toEqual(before)
   })
 
   it('handles a room with no attachments', () => {
-    const files = unzipSync(buildRoomExport({ code: 'X', name: '' }, players, entries.slice(0, 3), 1))
+    const files = unzipSync(
+      buildRoomExport({ code: 'X', name: '' }, players, entries.slice(0, 3), [], 1),
+    )
     expect(Object.keys(files)).toEqual(['room.json'])
   })
 })
