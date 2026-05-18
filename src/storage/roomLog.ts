@@ -82,6 +82,32 @@ export async function appendLogEntry(
   }
 }
 
+/**
+ * Append many entries to a room's log in one transaction — used to seed
+ * the log when a room is restored from an imported export. Resolves once
+ * the write commits (or is abandoned), so the caller can rely on it.
+ */
+export async function appendLogEntries(roomCode: string, entries: LogEntry[]): Promise<void> {
+  if (!roomCode || entries.length === 0) return
+  const db = await openDb()
+  if (!db) return
+  await new Promise<void>((resolve) => {
+    try {
+      const store = db.transaction(STORE, 'readwrite').objectStore(STORE)
+      for (const e of entries) {
+        const id = (e.data as { id?: unknown }).id
+        if (typeof id !== 'string') continue
+        const record: LogRecord = { pk: `${roomCode}:${id}`, roomCode, at: e.at, kind: e.kind, data: e.data }
+        store.put(record)
+      }
+      store.transaction.oncomplete = () => resolve()
+      store.transaction.onerror = () => resolve()
+    } catch {
+      resolve()
+    }
+  })
+}
+
 /** One entry read back from the log. */
 export interface LogEntry {
   kind: LogKind

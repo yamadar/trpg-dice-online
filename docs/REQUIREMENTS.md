@@ -86,6 +86,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   The room's full history — the player roster, rolls, chat, file
   attachments and the player / character snapshot of each entry — can be
   exported to a ZIP archive holding everything needed to restore the room
+- エクスポートした ZIP 書庫を読み込み、その内容でルームを復元できる
+  （読み込んだ本人がホストとしてルームを再開する）
+  An exported ZIP archive can be loaded back to restore the room — it
+  reopens with the importer as its host
 - フィードの名前をタップすると、その発言・ロール時点のキャラクター名・
   プレイヤー名・背景情報をカードで表示する（PC・モバイル両対応）。表示は
   タップした項目のキャラクターのスナップショットで、その後プレイヤーが
@@ -596,3 +600,11 @@ The `lang` fields carry the source language for future real-time translation
   to restore a room. It holds a `room.json` with the player roster and
   all entries, plus an `attachments/` folder with each chat attachment as
   a real file — no base64 inlined in the JSON, and the archive compresses.
+- v1.38 — エクスポートした ZIP 書庫からルームを復元するインポート機能を追加。
+  オフライン時にルームパネルの「履歴をインポート」でファイルを選ぶと、書庫の
+  全エントリを永続ログへ書き戻してフィードに復元し、同じコードでルームを
+  ホストし直す。添付ファイルは書庫内の実ファイルから data URL に再構築する。
+  Add room import: an exported ZIP archive can be loaded back to restore
+  the room. Offline, "Import history" in the room panel seeds the durable
+  log with every entry, restores the feed, and re-hosts the same code;
+  attachments are rebuilt into data URLs from the archive's files.

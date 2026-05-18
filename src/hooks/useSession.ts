@@ -20,8 +20,9 @@ import { newMarkerId, type MarkerType, type SystemMarker } from '../feed/feed'
 import { composeName } from '../players/identity'
 import { getPlayerId, loadPlayerName, savePlayerName } from '../storage/player'
 import { saveLastRoomCode } from '../storage/room'
-import { appendLogEntry, clearRoomLog, loadRecentLog } from '../storage/roomLog'
+import { appendLogEntries, appendLogEntry, clearRoomLog, loadRecentLog } from '../storage/roomLog'
 import { clearActiveRoom, loadActiveRoom, saveActiveRoom } from '../storage/activeRoom'
+import type { RoomImport } from '../storage/roomImport'
 import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 
 export type Role = 'offline' | 'host' | 'client'
@@ -70,6 +71,8 @@ export interface Session {
   joinRoom: (code: string) => Promise<void>
   /** On startup, resume the room from the URL — re-host (GM) or re-join. */
   resumeRoom: (urlCode: string) => Promise<void>
+  /** Restore a room from a parsed export file by re-hosting it (offline only). */
+  importRoom: (data: RoomImport) => Promise<void>
   /** Host only: change the live room's code; clients migrate automatically. */
   changeRoomCode: (code: string) => Promise<void>
   leaveRoom: () => void
@@ -657,6 +660,49 @@ export function useSession(): Session {
     [joinRoom],
   )
 
+  /**
+   * Restore a room from a parsed export file: re-host its code, then seed
+   * the durable log and the feed with the imported history. Behaves like
+   * createRoom, but pre-populated rather than empty and without a fresh
+   * "created" marker (the imported entries carry the room's own history).
+   */
+  const importRoom = useCallback(
+    async (data: RoomImport) => {
+      setErrorKind(null)
+      gracefulCloseRef.current = false
+      intentionalLeaveRef.current = false
+      const code = normalizeRoomCode(data.roomCode)
+      if (code.length < 4) return
+      const mgr = ensureRoom()
+      try {
+        const hosted = await mgr.host(code)
+        peerPlayersRef.current.clear()
+        // Persist the imported history first, then show its recent window.
+        await appendLogEntries(hosted, data.entries)
+        const rolls = data.entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult)
+        const chats = data.entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage)
+        const marks = data.entries
+          .filter((e) => e.kind === 'marker')
+          .map((e) => e.data as SystemMarker)
+        setHistory(capEnd(rolls, MAX_HISTORY))
+        setChat(capEnd(chats, MAX_CHAT))
+        setMarkers(capEnd(marks, MAX_MARKERS))
+        setRole('host')
+        setRoomCode(hosted)
+        roomCodeRef.current = hosted
+        saveLastRoomCode(hosted)
+        saveActiveRoom({ code: hosted, role: 'host' })
+        roomNameRef.current = data.roomName
+        setRoomNameState(data.roomName)
+        setPlayers([selfPlayer(true)])
+      } catch (err) {
+        setErrorKind(err === 'unavailable-id' ? 'codeTaken' : 'connect')
+        goOffline()
+      }
+    },
+    [ensureRoom, goOffline, selfPlayer],
+  )
+
   const roll = useCallback(
     (result: RollResult) => {
       const currentRole = roleRef.current
@@ -849,6 +895,7 @@ export function useSession(): Session {
     createRoom,
     joinRoom,
     resumeRoom,
+    importRoom,
     changeRoomCode,
     leaveRoom,
     players,
