@@ -90,22 +90,29 @@ export interface LogEntry {
 }
 
 /**
- * Load the most recent `limit` entries of a room's log, oldest-first.
- * Used to restore the feed after a reload.
+ * Load up to `limit` entries strictly older than `beforeAt` (use Infinity
+ * for the most recent ones), returned oldest-first.
  */
-export async function loadRecentLog(roomCode: string, limit: number): Promise<LogEntry[]> {
+async function loadLog(roomCode: string, beforeAt: number, limit: number): Promise<LogEntry[]> {
   if (!roomCode || limit <= 0) return []
   const db = await openDb()
   if (!db) return []
   return new Promise((resolve) => {
     try {
+      const upperOpen = Number.isFinite(beforeAt)
+      const range = IDBKeyRange.bound(
+        [roomCode, -Infinity],
+        [roomCode, beforeAt],
+        false,
+        upperOpen,
+      )
       const out: LogEntry[] = []
       // 'prev' walks newest-first; collect `limit`, then reverse.
       const cursor = db
         .transaction(STORE, 'readonly')
         .objectStore(STORE)
         .index('byRoomAt')
-        .openCursor(roomRange(roomCode), 'prev')
+        .openCursor(range, 'prev')
       cursor.onsuccess = () => {
         const cur = cursor.result
         if (cur && out.length < limit) {
@@ -121,6 +128,16 @@ export async function loadRecentLog(roomCode: string, limit: number): Promise<Lo
       resolve([])
     }
   })
+}
+
+/** The most recent `limit` entries of a room's log, oldest-first. */
+export function loadRecentLog(roomCode: string, limit: number): Promise<LogEntry[]> {
+  return loadLog(roomCode, Infinity, limit)
+}
+
+/** The room's entire durable log, oldest-first. */
+export function loadFullLog(roomCode: string): Promise<LogEntry[]> {
+  return loadLog(roomCode, Infinity, Infinity)
 }
 
 /** Delete a room's entire durable log. */

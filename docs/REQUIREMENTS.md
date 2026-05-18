@@ -76,6 +76,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   Feed entries from the GM show a GM mark next to the name
 - 表示のクリアは誤操作で行われないよう、確認ダイアログを必須とする
   Clearing the feed requires a confirmation dialog to avoid accidental loss
+- 表示は直近のみだが、上限を超えて遡る古い履歴は「これより前を読み込む」で
+  永続ログからオンデマンドに読み込める
+  Older history beyond the display cap can be paged in on demand from the
+  durable log with "Load older"
 - フィードの名前をタップすると、その発言・ロール時点のキャラクター名・
   プレイヤー名・背景情報をカードで表示する（PC・モバイル両対応）。表示は
   タップした項目のキャラクターのスナップショットで、その後プレイヤーが
@@ -562,3 +566,11 @@ The `lang` fields carry the source language for future real-time translation
   the room and role, so on startup a GM re-hosts the same code and a
   player re-joins; the conversation is restored from the durable log, so a
   GM reload no longer loses the conversation.
+- v1.35 — 表示上限を超えた古い履歴を「これより前を読み込む」でオンデマンドに
+  読み込めるようにした。直近の表示窓はロール・チャット・マーカーを別々に
+  上限管理するため隙間が生じうるので、ルームの全履歴を永続ログから一括で
+  読み込む（重複はフィード生成時に除外）。
+  Older history beyond the display cap can now be paged in on demand with
+  "Load older". The live window caps rolls / chat / markers separately, so
+  it can have internal gaps — the full room log is loaded from the durable
+  store in one go, with duplicates dropped when the feed is built.

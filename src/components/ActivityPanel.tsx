@@ -1,9 +1,11 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
-import { buildFeed, isRoomExitMarker, type FeedFilter } from '../feed/feed'
+import { buildFeed, isRoomExitMarker, type FeedFilter, type SystemMarker } from '../feed/feed'
 import { isImageType } from '../chat/attachment'
-import type { ChatFile } from '../net/protocol'
+import type { ChatFile, ChatMessage } from '../net/protocol'
+import type { RollResult } from '../dice/types'
+import { loadFullLog } from '../storage/roomLog'
 import { Sheet } from './Sheet'
 import { PlayerDetailCard } from './PlayerDetailCard'
 import { Lightbox } from './Lightbox'
@@ -11,6 +13,17 @@ import { FeedList, type FeedDetailTarget } from './FeedList'
 import { ChatComposer } from './ChatComposer'
 
 const FILTERS: FeedFilter[] = ['all', 'rolls', 'chat', 'files']
+
+/** Room history paged in on demand from the durable log. */
+interface OlderEntries {
+  history: RollResult[]
+  chat: ChatMessage[]
+  markers: SystemMarker[]
+}
+const EMPTY_OLDER: OlderEntries = { history: [], chat: [], markers: [] }
+
+/** Only offer "load older" once the live window is plausibly full. */
+const FEED_WINDOW = 200
 
 interface Props {
   session: Session
@@ -21,7 +34,8 @@ interface Props {
 /**
  * The dominant view: filter controls, the roll + chat feed, the typing
  * line and the chat composer, plus the on-demand player-detail card and
- * image lightbox.
+ * image lightbox. Older history (beyond the live window) is paged in from
+ * the durable log on demand.
  */
 export function ActivityPanel({ session, onNotice }: Props) {
   const { t } = useI18n()
@@ -30,10 +44,30 @@ export function ActivityPanel({ session, onNotice }: Props) {
   const [detail, setDetail] = useState<FeedDetailTarget | null>(null)
   // Index (within `images`) of the picture open in the lightbox.
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  // Room history paged in from the durable log on demand. It overlaps the
+  // live window; buildFeed de-duplicates the two by entry id.
+  const [older, setOlder] = useState<OlderEntries>(EMPTY_OLDER)
+  const [reachedOldest, setReachedOldest] = useState(false)
+
+  // A room change (enter / leave / code change) resets the paged-in history.
+  // This adjusts state during render — the pattern React recommends over an
+  // effect for "reset some state when a prop changes".
+  const [olderRoom, setOlderRoom] = useState(session.roomCode)
+  if (olderRoom !== session.roomCode) {
+    setOlderRoom(session.roomCode)
+    setOlder(EMPTY_OLDER)
+    setReachedOldest(false)
+  }
 
   const feed = useMemo(
-    () => buildFeed(session.history, session.chat, session.markers, filter),
-    [session.history, session.chat, session.markers, filter],
+    () =>
+      buildFeed(
+        [...older.history, ...session.history],
+        [...older.chat, ...session.chat],
+        [...older.markers, ...session.markers],
+        filter,
+      ),
+    [older, session.history, session.chat, session.markers, filter],
   )
 
   // Image attachments in the feed, in order — the lightbox steps through these.
@@ -48,13 +82,13 @@ export function ActivityPanel({ session, onNotice }: Props) {
   }, [feed])
 
   // Items older than the most recent room exit belong to a room left behind.
-  const lastExitAt = useMemo(
-    () =>
-      session.markers
-        .filter((m) => isRoomExitMarker(m.type))
-        .reduce((max, m) => Math.max(max, m.timestamp), 0),
-    [session.markers],
-  )
+  const lastExitAt = useMemo(() => {
+    let max = 0
+    for (const m of [...older.markers, ...session.markers]) {
+      if (isRoomExitMarker(m.type)) max = Math.max(max, m.timestamp)
+    }
+    return max
+  }, [older.markers, session.markers])
 
   // openLightbox only changes when the image set does (i.e. when the feed
   // changes anyway), so memoized feed items are not re-rendered needlessly.
@@ -67,9 +101,30 @@ export function ActivityPanel({ session, onNotice }: Props) {
   )
   const closeLightbox = useCallback(() => setLightboxIndex(null), [])
 
+  // Page the full room history in from the durable log. The live window
+  // caps rolls / chat / markers separately, so it is not a clean tail — a
+  // marker can outlive the chat around it, leaving internal gaps an
+  // "older than X" cursor cannot fill. Rooms hold at most ~1000 entries,
+  // so loading the whole log in one go is both simple and exact.
+  const loadOlder = useCallback(async () => {
+    const code = session.roomCode
+    if (!code) return
+    const entries = await loadFullLog(code)
+    setOlder({
+      history: entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult),
+      chat: entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage),
+      markers: entries.filter((e) => e.kind === 'marker').map((e) => e.data as SystemMarker),
+    })
+    setReachedOldest(true)
+  }, [session.roomCode])
+
   // Clearing the feed is destructive, so require a deliberate confirmation.
   const clearFeed = () => {
-    if (window.confirm(t('feed.clearConfirm'))) session.clearFeed()
+    if (window.confirm(t('feed.clearConfirm'))) {
+      session.clearFeed()
+      setOlder(EMPTY_OLDER)
+      setReachedOldest(false)
+    }
   }
 
   const typing = session.typingNames
@@ -77,6 +132,10 @@ export function ActivityPanel({ session, onNotice }: Props) {
     typing.length === 0
       ? ''
       : t(typing.length === 1 ? 'typing.one' : 'typing.many', { names: typing.join(', ') })
+
+  // Older history can only come from a room's durable log, and only once
+  // the live window is full enough to plausibly have dropped entries.
+  const hasOlder = session.roomCode !== null && !reachedOldest && feed.length >= FEED_WINDOW
 
   return (
     <section className="panel activity">
@@ -109,6 +168,8 @@ export function ActivityPanel({ session, onNotice }: Props) {
         lastExitAt={lastExitAt}
         playerId={session.playerId}
         isGM={session.isGM}
+        hasOlder={hasOlder}
+        onLoadOlder={loadOlder}
         onOpenDetail={setDetail}
         onOpenImage={openLightbox}
       />

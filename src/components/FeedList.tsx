@@ -148,12 +148,24 @@ interface Props {
   lastExitAt: number
   playerId: string
   isGM: boolean
+  /** Whether more history can be paged in above the current oldest entry. */
+  hasOlder: boolean
+  onLoadOlder: () => void
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
 }
 
 /** The scrollable roll + chat timeline. */
-export function FeedList({ feed, lastExitAt, playerId, isGM, onOpenDetail, onOpenImage }: Props) {
+export function FeedList({
+  feed,
+  lastExitAt,
+  playerId,
+  isGM,
+  hasOlder,
+  onLoadOlder,
+  onOpenDetail,
+  onOpenImage,
+}: Props) {
   const { t } = useI18n()
   const listRef = useRef<HTMLUListElement>(null)
   // Whether the player is at the bottom — only then does a new entry scroll.
@@ -174,6 +186,13 @@ export function FeedList({ feed, lastExitAt, playerId, isGM, onOpenDetail, onOpe
   return (
     <ul className="feed" ref={listRef} onScroll={onScroll}>
       {feed.length === 0 && <li className="hint feed-empty">{t('feed.empty')}</li>}
+      {hasOlder && (
+        <li className="feed-load-older">
+          <button type="button" className="link" onClick={onLoadOlder}>
+            {t('feed.loadOlder')}
+          </button>
+        </li>
+      )}
       {feed.map((item) => {
         const archived = item.at < lastExitAt
         if (item.kind === 'system') {
