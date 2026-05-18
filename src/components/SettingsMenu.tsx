@@ -1,20 +1,30 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { useFieldNotice } from '../hooks/useFieldNotice'
 import { LanguageToggle } from './LanguageToggle'
 
 interface Props {
   name: string
   onChangeName: (name: string) => void
   onOpenHelp: () => void
+  /** Surfaces a toast, e.g. after the player name has been changed. */
+  onNotice: (message: string) => void
 }
 
 /**
  * Low-frequency controls (player name, language, help) tucked behind a
  * header button so they do not take up permanent screen space.
  */
-export function SettingsMenu({ name, onChangeName, onOpenHelp }: Props) {
+export function SettingsMenu({ name, onChangeName, onOpenHelp, onNotice }: Props) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
+  // Toast once the player-name edit settles (on blur or when the menu closes).
+  const { markChanged, flush } = useFieldNotice(() => onNotice(t('toast.playerName')))
+
+  // Closing the menu counts as finishing the edit.
+  useEffect(() => {
+    if (!open) flush()
+  }, [open, flush])
 
   return (
     <div className="settings">
@@ -45,7 +55,11 @@ export function SettingsMenu({ name, onChangeName, onOpenHelp }: Props) {
                 value={name}
                 maxLength={24}
                 placeholder={t('player.namePlaceholder')}
-                onChange={(e) => onChangeName(e.target.value)}
+                onChange={(e) => {
+                  onChangeName(e.target.value)
+                  markChanged()
+                }}
+                onBlur={flush}
               />
             </label>
             <div className="field">

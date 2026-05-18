@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
-import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
+import { useFieldNotice } from '../hooks/useFieldNotice'
 import { loadLastRoomCode } from '../storage/room'
 import { normalizeRoomCode, type Player } from '../net/protocol'
 import { playerColor } from '../players/colors'
@@ -30,8 +30,8 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   const busy = status === 'connecting'
   const online = role !== 'offline'
 
-  // One toast after a burst of room-name edits settles, not per keystroke.
-  const notifyRoomName = useDebouncedCallback(() => onNotice(t('toast.roomName')), 800)
+  // Toast once the room-name edit settles (on blur or when the sheet closes).
+  const roomNameNotice = useFieldNotice(() => onNotice(t('toast.roomName')))
 
   const handleJoin = () => {
     const code = normalizeRoomCode(codeInput)
@@ -158,8 +158,9 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
                 placeholder={t('room.namePlaceholder')}
                 onChange={(e) => {
                   session.setRoomName(e.target.value)
-                  notifyRoomName()
+                  roomNameNotice.markChanged()
                 }}
+                onBlur={roomNameNotice.flush}
               />
             </label>
           ) : (
