@@ -134,6 +134,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   （ライトボックス）を開く。画像以外はダウンロード用のチップで表示する。
   Image attachments show a thumbnail in the feed and open a fullscreen
   viewer (lightbox) on tap; non-images show a download chip.
+- ライトボックスは左右スワイプ・矢印キー・画面の前後ボタンで、フィード内の
+  他の画像へ移動できる。
+  The lightbox steps through the feed's other images via a horizontal
+  swipe, the arrow keys, or on-screen prev/next buttons.
 - フィードのフィルターに「ファイル」を追加し、添付付きメッセージのみを
   一覧表示できるようにする。
   The feed filter has a "Files" view listing only messages with an
@@ -435,3 +439,7 @@ The `lang` fields carry the source language for future real-time translation
   Each feed entry now stores the character name / background in use at the
   time, so tapping a name shows that character even after the sender
   switches; also tidied the attach-icon and status-bar alignment.
+- v1.21 — ライトボックスに前後の画像へ移動する操作（左右スワイプ・矢印
+  キー・画面上の前後ボタン）と画像枚数の表示を追加した。
+  Add prev/next navigation to the lightbox (swipe, arrow keys, on-screen
+  buttons) plus an image counter.

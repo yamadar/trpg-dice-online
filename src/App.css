@@ -915,6 +915,39 @@ button.player-row {
   background: var(--panel-2);
   color: var(--text-h);
 }
+.lightbox-count {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-h);
+  background: var(--panel-2);
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  line-height: 1;
+  border-radius: 10px;
+  background: var(--panel-2);
+  color: var(--text-h);
+}
+.lightbox-nav.prev {
+  left: 12px;
+}
+.lightbox-nav.next {
+  right: 12px;
+}
 
 /* --- toast --- */
 .toast {
