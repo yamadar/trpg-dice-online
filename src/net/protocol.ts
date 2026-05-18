@@ -99,6 +99,8 @@ export type HostMessage =
   | { t: 'roomName'; name: string }
   /** The GM changed the room code; clients must re-join under the new one. */
   | { t: 'roomCodeChanged'; code: string }
+  /** Periodic keepalive so a client can tell a quiet GM from an absent one. */
+  | { t: 'alive' }
   | { t: 'roomClosed' }
 
 export type NetMessage = ClientMessage | HostMessage

@@ -212,6 +212,12 @@ function App() {
         />
       </header>
 
+      {session.reconnecting && session.role === 'client' && (
+        <p className="app-banner reconnecting" role="status">
+          {t('room.gmOffline')}
+        </p>
+      )}
+
       {session.errorKind && (
         <p className="app-banner" role="alert">
           {session.errorKind === 'connect'

@@ -137,6 +137,9 @@ export function ActivityPanel({ session, onNotice }: Props) {
   // the live window is full enough to plausibly have dropped entries.
   const hasOlder = session.roomCode !== null && !reachedOldest && feed.length >= FEED_WINDOW
 
+  // Messages queued for an offline GM belong with chat — hidden in rolls view.
+  const pending = filter === 'all' || filter === 'chat' ? session.outbox : []
+
   return (
     <section className="panel activity">
       <div className="panel-head">
@@ -170,6 +173,7 @@ export function ActivityPanel({ session, onNotice }: Props) {
         isGM={session.isGM}
         hasOlder={hasOlder}
         onLoadOlder={loadOlder}
+        pending={pending}
         onOpenDetail={setDetail}
         onOpenImage={openLightbox}
       />

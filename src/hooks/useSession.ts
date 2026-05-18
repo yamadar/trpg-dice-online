@@ -31,6 +31,8 @@ export type ErrorKind = 'connect' | 'hostLost' | 'codeTaken' | null
 const MAX_HISTORY = 200
 const MAX_CHAT = 200
 const MAX_MARKERS = 100
+/** Cap on chat messages held for an offline GM. */
+const MAX_OUTBOX = 50
 /** How long a "typing" signal stays live without a refresh. */
 const TYPING_TTL_MS = 4000
 /** Minimum gap between outgoing typing signals. */
@@ -43,6 +45,8 @@ const PING_INTERVAL_MS = 4000
 const PRESENCE_CHECK_MS = 5000
 /** A client unheard from for this long is treated as disconnected. */
 const PRESENCE_TIMEOUT_MS = 13000
+/** A host unheard from for this long is treated as offline by a client. */
+const HOST_SILENCE_MS = 13000
 
 interface TypingEntry {
   name: string
@@ -80,6 +84,10 @@ export interface Session {
   history: RollResult[]
   chat: ChatMessage[]
   markers: SystemMarker[]
+  /** Chat sent while the GM was offline, not yet delivered (shown pending). */
+  outbox: ChatMessage[]
+  /** True while reconnecting to a dropped room — the GM-offline state. */
+  reconnecting: boolean
   /** Names of other players currently typing in chat. */
   typingNames: string[]
   isGM: boolean
@@ -131,6 +139,11 @@ export function useSession(): Session {
   const [chat, setChat] = useState<ChatMessage[]>([])
   const [markers, setMarkers] = useState<SystemMarker[]>([])
   const [typing, setTyping] = useState<Record<string, TypingEntry>>({})
+  // Chat composed while the GM is unreachable: queued to send on reconnect
+  // and shown as pending in the sender's own feed.
+  const [outbox, setOutbox] = useState<ChatMessage[]>([])
+  // Mirrors reconnectingRef for rendering — the GM-offline banner reads it.
+  const [reconnecting, setReconnecting] = useState(false)
 
   // Identity refs are written directly by updateIdentity so a re-sync can
   // read the new values synchronously.
@@ -144,12 +157,14 @@ export function useSession(): Session {
   const chatRef = useRef(chat)
   const roomCodeRef = useRef(roomCode)
   const roomNameRef = useRef(roomName)
+  const outboxRef = useRef(outbox)
   useEffect(() => {
     roleRef.current = role
     historyRef.current = history
     chatRef.current = chat
     roomCodeRef.current = roomCode
     roomNameRef.current = roomName
+    outboxRef.current = outbox
   })
 
   /** True once a graceful room close was received, so the following
@@ -168,6 +183,8 @@ export function useSession(): Session {
   /** Holds the latest connection-error handler for the RoomManager. */
   const connErrorRef = useRef<(kind: 'connect' | 'hostLost' | 'peerLost') => void>(() => {})
   const lastTypingSentRef = useRef(0)
+  /** Client: timestamp of the last message heard from the host. */
+  const lastHostMsgRef = useRef(0)
   /** Host only: connected clients keyed by their PeerJS peer id. */
   const peerPlayersRef = useRef(new Map<string, Player>())
   /** Host only: last time each client peer was heard from. */
@@ -286,13 +303,21 @@ export function useSession(): Session {
     [addMarker, appendChat, appendHistory, broadcastPlayers, buildRoster, noteTyping],
   )
 
+  /** Set the reconnecting flag — a ref for sync reads, state for rendering. */
+  const markReconnecting = useCallback((on: boolean) => {
+    reconnectingRef.current = on
+    setReconnecting(on)
+  }, [])
+
   const goOffline = useCallback(() => {
     // Stop any reconnect loop — going offline is final.
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current)
       reconnectTimerRef.current = null
     }
-    reconnectingRef.current = false
+    markReconnecting(false)
+    // Queued sends die with the room — there is nowhere to deliver them.
+    setOutbox([])
     // No longer in a room — a later reload should not try to resume it.
     clearActiveRoom()
     // Clear the roster first so the disconnect events fired while closing
@@ -307,11 +332,13 @@ export function useSession(): Session {
     roomNameRef.current = ''
     setRoomNameState('')
     setTyping({})
-  }, [])
+  }, [markReconnecting])
 
   // --- Client: handle a message from the host -----------------------------
   const handleHostMessage = useCallback(
     (msg: HostMessage) => {
+      // Any message proves the host is still reachable.
+      lastHostMsgRef.current = Date.now()
       switch (msg.t) {
         case 'welcome': {
           // Keep the player's pre-join rolls/chat by merging the snapshot in.
@@ -341,7 +368,7 @@ export function useSession(): Session {
           saveActiveRoom({ code: newCode, role: 'client' })
           addMarker('codeChanged', { roomCode: newCode })
           if (!reconnectingRef.current) {
-            reconnectingRef.current = true
+            markReconnecting(true)
             attemptReconnectRef.current('client', newCode, 1)
           }
           break
@@ -354,12 +381,21 @@ export function useSession(): Session {
           break
         case 'chat':
           appendChat(msg.message)
+          // A queued message that just echoed back is delivered now.
+          setOutbox((prev) =>
+            prev.some((m) => m.id === msg.message.id)
+              ? prev.filter((m) => m.id !== msg.message.id)
+              : prev,
+          )
           break
         case 'typing':
           noteTyping(msg.signal)
           break
         case 'notice':
           addMarker(msg.event, { playerName: msg.playerName, timestamp: msg.timestamp })
+          break
+        case 'alive':
+          // A keepalive; the timestamp recorded above is all it carries.
           break
         case 'roomClosed':
           gracefulCloseRef.current = true
@@ -368,7 +404,7 @@ export function useSession(): Session {
           break
       }
     },
-    [addMarker, appendChat, appendHistory, goOffline, noteTyping],
+    [addMarker, appendChat, appendHistory, goOffline, markReconnecting, noteTyping],
   )
 
   const handleClientDisconnect = useCallback(
@@ -470,7 +506,7 @@ export function useSession(): Session {
       clearTimeout(reconnectTimerRef.current)
       reconnectTimerRef.current = null
     }
-    reconnectingRef.current = false
+    markReconnecting(false)
     const currentRole = roleRef.current
     if (currentRole === 'host') {
       // Closing the room ends it for everyone: tell clients, then tear down.
@@ -481,7 +517,7 @@ export function useSession(): Session {
       addMarker('youLeft', { roomCode: roomCodeRef.current ?? undefined })
       goOffline()
     }
-  }, [addMarker, goOffline])
+  }, [addMarker, goOffline, markReconnecting])
 
   // --- Auto-reconnect after an unintentional disconnect -------------------
   // One attempt at re-establishing the room. The transport is rebuilt from
@@ -490,11 +526,11 @@ export function useSession(): Session {
   const attemptReconnect = useCallback(
     (role: 'host' | 'client', code: string, attempt: number) => {
       if (intentionalLeaveRef.current) {
-        reconnectingRef.current = false
+        markReconnecting(false)
         return
       }
       if (attempt > MAX_RECONNECT_ATTEMPTS) {
-        reconnectingRef.current = false
+        markReconnecting(false)
         addMarker('reconnectFailed', { roomCode: code })
         setErrorKind('hostLost')
         goOffline()
@@ -506,14 +542,14 @@ export function useSession(): Session {
       roomRef.current = null
       const mgr = ensureRoom()
       const succeed = () => {
-        reconnectingRef.current = false
+        markReconnecting(false)
         setErrorKind(null)
         setStatus('connected')
         addMarker('reconnected', { roomCode: code })
       }
       const retry = () => {
         if (intentionalLeaveRef.current) {
-          reconnectingRef.current = false
+          markReconnecting(false)
           return
         }
         reconnectTimerRef.current = setTimeout(
@@ -539,12 +575,16 @@ export function useSession(): Session {
           .then(() => {
             setRole('client')
             mgr.sendToHost({ t: 'hello', player: selfPlayer(false) })
+            // Flush messages queued while the GM was unreachable, in order.
+            for (const message of outboxRef.current) {
+              mgr.sendToHost({ t: 'chat', message })
+            }
             succeed()
           })
           .catch(retry)
       }
     },
-    [addMarker, ensureRoom, goOffline, selfPlayer],
+    [addMarker, ensureRoom, goOffline, markReconnecting, selfPlayer],
   )
 
   // Decide what to do when the RoomManager reports connection trouble.
@@ -569,11 +609,11 @@ export function useSession(): Session {
         goOffline()
         return
       }
-      reconnectingRef.current = true
+      markReconnecting(true)
       addMarker('reconnecting', { roomCode: code })
       attemptReconnectRef.current(role, code, 1)
     },
-    [addMarker, goOffline],
+    [addMarker, goOffline, markReconnecting],
   )
 
   // Keep the refs the RoomManager / retry timer call pointed at the latest.
@@ -651,13 +691,13 @@ export function useSession(): Session {
       if (resuming && pointer?.role === 'host') {
         // Re-host the same code; attemptReconnect retries while the broker
         // still holds the pre-reload peer id.
-        reconnectingRef.current = true
+        markReconnecting(true)
         attemptReconnectRef.current('host', code, 1)
       } else {
         void joinRoom(code)
       }
     },
-    [joinRoom],
+    [joinRoom, markReconnecting],
   )
 
   /**
@@ -742,7 +782,13 @@ export function useSession(): Session {
         appendChat(message)
         roomRef.current?.broadcast({ t: 'chat', message })
       } else if (currentRole === 'client') {
-        roomRef.current?.sendToHost({ t: 'chat', message })
+        // While the GM is unreachable, hold the message in the outbox and
+        // show it as pending; the reconnect flush sends it in order.
+        if (reconnectingRef.current) {
+          setOutbox((prev) => capEnd([...prev, message], MAX_OUTBOX))
+        } else {
+          roomRef.current?.sendToHost({ t: 'chat', message })
+        }
       } else {
         appendChat(message)
       }
@@ -771,6 +817,7 @@ export function useSession(): Session {
     setHistory([])
     setChat([])
     setMarkers([])
+    setOutbox([])
     // "Clear" also discards the room's durable log, so older entries are
     // not later resurfaced by an on-demand history load.
     void clearRoomLog(roomCodeRef.current)
@@ -846,17 +893,25 @@ export function useSession(): Session {
     return () => clearInterval(timer)
   }, [])
 
-  // Presence: clients ping so the host can notice abrupt disconnects that
-  // WebRTC itself does not report (closed tab, lost network, reload).
+  // Presence: a client pings so the host notices abrupt disconnects, and a
+  // host broadcasts keepalives so a client can tell a quiet GM from an
+  // absent one — WebRTC itself is slow to report a vanished peer.
   useEffect(() => {
     if (role === 'client') {
+      // A fresh connection counts as live until the first prolonged silence.
+      lastHostMsgRef.current = Date.now()
       const timer = setInterval(() => {
         roomRef.current?.sendToHost({ t: 'ping' })
+        if (!reconnectingRef.current && Date.now() - lastHostMsgRef.current > HOST_SILENCE_MS) {
+          connErrorRef.current('hostLost')
+        }
       }, PING_INTERVAL_MS)
       return () => clearInterval(timer)
     }
     if (role === 'host') {
       const timer = setInterval(() => {
+        // Keepalive so clients can tell a quiet GM from an absent one.
+        roomRef.current?.broadcast({ t: 'alive' })
         const now = Date.now()
         for (const [peerId, seen] of lastSeenRef.current) {
           if (now - seen > PRESENCE_TIMEOUT_MS) roomRef.current?.dropClient(peerId)
@@ -902,6 +957,8 @@ export function useSession(): Session {
     history,
     chat,
     markers,
+    outbox,
+    reconnecting,
     typingNames,
     isGM: role === 'host',
     roll,
