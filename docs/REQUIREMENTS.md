@@ -74,6 +74,12 @@ An SPA where players roll TRPG dice and share results with other players in real
   Each participant gets a stable color so they are easy to tell apart
 - 表示のクリアは誤操作で行われないよう、確認ダイアログを必須とする
   Clearing the feed requires a confirmation dialog to avoid accidental loss
+- フィードの名前をタップすると、そのプレイヤーのキャラクター名・プレイヤー名・
+  背景情報をカードで表示する（PC・モバイル両対応）。退出済みのプレイヤーは
+  記録された名前のみを表示する。
+  Tapping a name in the feed shows that player's character name, player name
+  and background in a card (works on desktop and mobile); for a player who
+  has left, only the name recorded on the entry is shown.
 
 ### 3.7 オンライン共有 / Online sharing
 - ルームを作成・参加でき、ロール履歴・チャット・参加者一覧を共有する
@@ -343,3 +349,7 @@ The `lang` fields carry the source language for future real-time translation
   Make the header's room/character status open their sheets on tap, change
   the no-character label to "None (as player)", give the participant detail
   a prominent caret, and add an expand/collapse-all button.
+- v1.13 — フィードのプレイヤー名をタップすると、そのプレイヤーの情報カード
+  （キャラクター名・プレイヤー名・背景情報）をシートで表示するようにした。
+  Tapping a player name in the feed opens a sheet card with that player's
+  character name, player name and background.

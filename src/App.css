@@ -444,6 +444,48 @@ button.player-row {
   color: var(--text-dim);
   white-space: pre-wrap;
 }
+
+/* --- player-detail card (tapping a feed name) --- */
+.player-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.player-card-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-card-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.player-card-fields div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.player-card-fields dt {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+.player-card-fields dd {
+  margin: 0;
+  word-break: break-word;
+}
+.player-card-bg {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--panel-2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
 .badge {
   font-size: 0.68rem;
   font-weight: 700;
@@ -610,6 +652,17 @@ button.player-row {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* The name is a button that opens the player-detail card. */
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  max-width: 60%;
+}
+.feed-name:hover {
+  text-decoration: underline;
 }
 
 .roll {

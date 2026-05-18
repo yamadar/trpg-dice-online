@@ -123,6 +123,9 @@ const ja: Dict = {
   'feed.empty': 'まだ何もありません',
   'feed.clear': '表示をクリア',
   'feed.clearConfirm': 'ダイスとチャットの履歴の表示をすべてクリアします。元に戻せません。よろしいですか？',
+  'feed.playerDetail': 'プレイヤー情報',
+  'feed.playerLeft': 'このプレイヤーは現在ルームにいません。',
+  'feed.noBackground': '背景情報は登録されていません。',
 
   'typing.one': '{names} が入力中…',
   'typing.many': '{names} が入力中…',
@@ -284,6 +287,9 @@ const en: Dict = {
   'feed.empty': 'Nothing here yet',
   'feed.clear': 'Clear view',
   'feed.clearConfirm': 'This clears all rolls and chat from your view and cannot be undone. Continue?',
+  'feed.playerDetail': 'Player info',
+  'feed.playerLeft': 'This player is not currently in the room.',
+  'feed.noBackground': 'No background has been set.',
 
   'typing.one': '{names} is typing…',
   'typing.many': '{names} are typing…',
