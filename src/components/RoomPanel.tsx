@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { useFieldNotice } from '../hooks/useFieldNotice'
 import { loadLastRoomCode } from '../storage/room'
 import { loadFullLog } from '../storage/roomLog'
 import { buildRoomExport, roomExportFilename } from '../storage/roomExport'
+import { parseRoomImport } from '../storage/roomImport'
 import { normalizeRoomCode, type Player } from '../net/protocol'
 import { playerColor } from '../players/colors'
 import { composeName } from '../players/identity'
@@ -27,6 +28,9 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   // Host-only field for changing the live room's code.
   const [newCode, setNewCode] = useState('')
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
+  // File-picker ref + error flag for importing a room from an export file.
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [importError, setImportError] = useState(false)
   const { status, role, roomCode, players, playerId } = session
 
   const busy = status === 'connecting'
@@ -38,6 +42,25 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   const handleJoin = () => {
     const code = normalizeRoomCode(codeInput)
     if (code.length >= 4) void session.joinRoom(code)
+  }
+
+  // Restore a room from an exported ZIP: parse it, then re-host the room.
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-importing the same file
+    if (!file) return
+    setImportError(false)
+    file
+      .arrayBuffer()
+      .then((buf) => {
+        const data = parseRoomImport(new Uint8Array(buf))
+        if (!data) {
+          setImportError(true)
+          return
+        }
+        void session.importRoom(data)
+      })
+      .catch(() => setImportError(true))
   }
 
   // Copy the full room link so it can be shared directly.
@@ -133,6 +156,21 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
             </p>
           ) : (
             <p className="hint">{t('room.codeCreateHint')}</p>
+          )}
+          <button type="button" disabled={busy} onClick={() => fileInputRef.current?.click()}>
+            {t('room.importHistory')}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".zip,application/zip"
+            hidden
+            onChange={handleImportFile}
+          />
+          {importError && (
+            <p className="banner error" role="alert">
+              {t('room.importError')}
+            </p>
           )}
         </div>
       )}
