@@ -109,6 +109,13 @@ An SPA where players roll TRPG dice and share results with other players in real
   待たず自動でそのルームへの参加を試みる
   Opening (or reloading) a URL with a `?room=CODE` automatically attempts
   to join that room without waiting for a manual tap
+- リロードからの復帰: そのタブが GM だったルームは、同じコードで自動的に
+  再ホストし、会話（履歴・チャット）を永続ログから復元する。参加者だった
+  場合は再参加する。タブ単位の判定なので、別タブや新規起動では復元しない。
+  Resuming after a reload: a room this tab was the GM of is automatically
+  re-hosted under the same code, with the conversation restored from the
+  durable log; a player tab simply re-joins. The decision is per-tab, so a
+  fresh tab does not resume.
 - ルーム参加の試行中は「接続中」を表示する
   While a join is in progress, a "connecting" indicator is shown
 - 意図しない切断（タブのバックグラウンド化・通信断など）は自動で同じルームへ
@@ -547,3 +554,11 @@ The `lang` fields carry the source language for future real-time translation
   Every roll / chat / marker is now also appended to a durable per-room
   IndexedDB log — the basis for reload restore, on-demand history and
   export. "Clear view" also clears that room's log.
+- v1.34 — リロードからの復帰を実装。タブ単位の sessionStorage に「どのルームに
+  どの役割で居たか」を保持し、起動時に GM だったルームは同じコードで再ホスト、
+  参加者だったルームは再参加する。会話は IndexedDB の永続ログから復元する。
+  GM がリロードしても会話が失われない。
+  Implement resume-after-reload: a per-tab sessionStorage pointer records
+  the room and role, so on startup a GM re-hosts the same code and a
+  player re-joins; the conversation is restored from the durable log, so a
+  GM reload no longer loses the conversation.

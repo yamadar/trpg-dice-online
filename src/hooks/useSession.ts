@@ -20,7 +20,8 @@ import { newMarkerId, type MarkerType, type SystemMarker } from '../feed/feed'
 import { composeName } from '../players/identity'
 import { getPlayerId, loadPlayerName, savePlayerName } from '../storage/player'
 import { saveLastRoomCode } from '../storage/room'
-import { appendLogEntry, clearRoomLog } from '../storage/roomLog'
+import { appendLogEntry, clearRoomLog, loadRecentLog } from '../storage/roomLog'
+import { clearActiveRoom, loadActiveRoom, saveActiveRoom } from '../storage/activeRoom'
 import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 
 export type Role = 'offline' | 'host' | 'client'
@@ -67,6 +68,8 @@ export interface Session {
   /** Create a room; with a code, host exactly that code (else random). */
   createRoom: (preferredCode?: string) => Promise<void>
   joinRoom: (code: string) => Promise<void>
+  /** On startup, resume the room from the URL — re-host (GM) or re-join. */
+  resumeRoom: (urlCode: string) => Promise<void>
   /** Host only: change the live room's code; clients migrate automatically. */
   changeRoomCode: (code: string) => Promise<void>
   leaveRoom: () => void
@@ -287,6 +290,8 @@ export function useSession(): Session {
       reconnectTimerRef.current = null
     }
     reconnectingRef.current = false
+    // No longer in a room — a later reload should not try to resume it.
+    clearActiveRoom()
     // Clear the roster first so the disconnect events fired while closing
     // do not produce a "player left" marker for every client.
     peerPlayersRef.current.clear()
@@ -330,6 +335,7 @@ export function useSession(): Session {
           setRoomCode(newCode)
           roomCodeRef.current = newCode
           saveLastRoomCode(newCode)
+          saveActiveRoom({ code: newCode, role: 'client' })
           addMarker('codeChanged', { roomCode: newCode })
           if (!reconnectingRef.current) {
             reconnectingRef.current = true
@@ -415,6 +421,7 @@ export function useSession(): Session {
         // Eagerly set the ref so the marker below is logged under this room.
         roomCodeRef.current = code
         saveLastRoomCode(code)
+        saveActiveRoom({ code, role: 'host' })
         roomNameRef.current = ''
         setRoomNameState('')
         setPlayers([selfPlayer(true)])
@@ -442,6 +449,7 @@ export function useSession(): Session {
         // Eagerly set the ref so the marker below is logged under this room.
         roomCodeRef.current = code
         saveLastRoomCode(code)
+        saveActiveRoom({ code, role: 'client' })
         addMarker('joined', { roomCode: code })
         mgr.sendToHost({ t: 'hello', player: selfPlayer(false) })
       } catch {
@@ -604,10 +612,49 @@ export function useSession(): Session {
         setRoomCode(code)
         roomCodeRef.current = code
         saveLastRoomCode(code)
+        saveActiveRoom({ code, role: 'host' })
         addMarker('codeChanged', { roomCode: code })
       }, 500)
     },
     [addMarker],
+  )
+
+  /**
+   * On startup, resume the room named by the URL `?room=` code. If this
+   * tab was the GM of that room (per the sessionStorage pointer), restore
+   * the feed from the durable log and re-host the same code; otherwise
+   * re-join it. Called once on mount.
+   */
+  const resumeRoom = useCallback(
+    async (urlCode: string) => {
+      const code = normalizeRoomCode(urlCode)
+      if (code.length < 4) return
+      const pointer = loadActiveRoom()
+      const resuming = pointer?.code === code
+      if (resuming) {
+        // Restore the recent feed from this room's durable log.
+        const entries = await loadRecentLog(code, 500)
+        const rolls = entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult)
+        const chats = entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage)
+        const marks = entries
+          .filter((e) => e.kind === 'marker')
+          .map((e) => e.data as SystemMarker)
+        if (rolls.length) setHistory(capEnd(rolls, MAX_HISTORY))
+        if (chats.length) setChat(capEnd(chats, MAX_CHAT))
+        if (marks.length) setMarkers(capEnd(marks, MAX_MARKERS))
+      }
+      setRoomCode(code)
+      roomCodeRef.current = code
+      if (resuming && pointer?.role === 'host') {
+        // Re-host the same code; attemptReconnect retries while the broker
+        // still holds the pre-reload peer id.
+        reconnectingRef.current = true
+        attemptReconnectRef.current('host', code, 1)
+      } else {
+        void joinRoom(code)
+      }
+    },
+    [joinRoom],
   )
 
   const roll = useCallback(
@@ -801,6 +848,7 @@ export function useSession(): Session {
     clearError,
     createRoom,
     joinRoom,
+    resumeRoom,
     changeRoomCode,
     leaveRoom,
     players,

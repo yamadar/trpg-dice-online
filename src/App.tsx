@@ -5,7 +5,6 @@ import { useSession } from './hooks/useSession'
 import { useCharacters } from './characters/useCharacters'
 import { rollPattern } from './dice/roll'
 import type { Pattern } from './dice/types'
-import { normalizeRoomCode } from './net/protocol'
 import { isTutorialSeen, markTutorialSeen } from './storage/tutorial'
 import { CloseIcon } from './components/icons'
 import { StatusBar } from './components/StatusBar'
@@ -49,7 +48,7 @@ function App() {
   const [openSheet, setOpenSheet] = useState<SheetId | null>(null)
   const [showTutorial, setShowTutorial] = useState(() => !isTutorialSeen())
 
-  const { updateIdentity, joinRoom } = session
+  const { updateIdentity, resumeRoom } = session
   const activeName = characters.activeCharacter?.name
   const activeBackground = characters.activeCharacter?.background
 
@@ -63,16 +62,15 @@ function App() {
     updateIdentity({ lang })
   }, [updateIdentity, lang])
 
-  // When the page is opened (or reloaded) with a ?room= code, attempt to
-  // join that room automatically instead of waiting for a manual tap. The
-  // ref guards against React StrictMode running the effect twice in dev.
-  const autoJoinDone = useRef(false)
+  // When the page is opened (or reloaded) with a ?room= code, resume that
+  // room automatically: re-host it if this tab was its GM, otherwise join.
+  // The ref guards against React StrictMode running the effect twice in dev.
+  const resumeDone = useRef(false)
   useEffect(() => {
-    if (autoJoinDone.current) return
-    autoJoinDone.current = true
-    const code = normalizeRoomCode(initialJoinCode)
-    if (code.length >= 4) void joinRoom(code)
-  }, [initialJoinCode, joinRoom])
+    if (resumeDone.current) return
+    resumeDone.current = true
+    void resumeRoom(initialJoinCode)
+  }, [initialJoinCode, resumeRoom])
 
   // Reflect the current room in the URL so it can be shared / bookmarked.
   const firstUrlSync = useRef(true)
