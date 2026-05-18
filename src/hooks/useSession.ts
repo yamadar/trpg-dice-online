@@ -19,6 +19,7 @@ import { newMarkerId, type MarkerType, type SystemMarker } from '../feed/feed'
 import { composeName } from '../players/identity'
 import { getPlayerId, loadPlayerName, savePlayerName } from '../storage/player'
 import { saveLastRoomCode } from '../storage/room'
+import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 
 export type Role = 'offline' | 'host' | 'client'
 export type ErrorKind = 'connect' | 'hostLost' | null
@@ -143,6 +144,18 @@ export function useSession(): Session {
   /** True once a graceful room close was received, so the following
    *  connection drop is not reported as an unexpected error. */
   const gracefulCloseRef = useRef(false)
+  /** True while the local player is deliberately leaving — suppresses the
+   *  auto-reconnect that an unintentional drop would otherwise start. */
+  const intentionalLeaveRef = useRef(false)
+  /** True while an auto-reconnect loop is in progress. */
+  const reconnectingRef = useRef(false)
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** Holds the latest attemptReconnect so the retry timer can recurse. */
+  const attemptReconnectRef = useRef<
+    (role: 'host' | 'client', code: string, attempt: number) => void
+  >(() => {})
+  /** Holds the latest connection-error handler for the RoomManager. */
+  const connErrorRef = useRef<(kind: 'connect' | 'hostLost' | 'peerLost') => void>(() => {})
   const lastTypingSentRef = useRef(0)
   /** Host only: connected clients keyed by their PeerJS peer id. */
   const peerPlayersRef = useRef(new Map<string, Player>())
@@ -256,6 +269,12 @@ export function useSession(): Session {
   )
 
   const goOffline = useCallback(() => {
+    // Stop any reconnect loop — going offline is final.
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current)
+      reconnectTimerRef.current = null
+    }
+    reconnectingRef.current = false
     // Clear the roster first so the disconnect events fired while closing
     // do not produce a "player left" marker for every client.
     peerPlayersRef.current.clear()
@@ -339,26 +358,19 @@ export function useSession(): Session {
       onClientMessage: handleClientMessage,
       onClientDisconnect: handleClientDisconnect,
       onHostMessage: handleHostMessage,
-      onError: (kind) => {
-        if (kind === 'hostLost') {
-          // A graceful "room closed" was already handled — ignore the drop.
-          if (gracefulCloseRef.current) return
-          setErrorKind('hostLost')
-          addMarker('hostLost')
-          goOffline()
-        } else {
-          setErrorKind('connect')
-        }
-      },
+      // Routed through a ref so the handler can be redefined freely without
+      // forcing a new RoomManager on every render.
+      onError: (kind) => connErrorRef.current(kind),
     })
     roomRef.current = mgr
     return mgr
-  }, [addMarker, handleClientDisconnect, handleClientMessage, handleHostMessage, goOffline])
+  }, [handleClientDisconnect, handleClientMessage, handleHostMessage])
 
   // --- Public actions -----------------------------------------------------
   const createRoom = useCallback(async () => {
     setErrorKind(null)
     gracefulCloseRef.current = false
+    intentionalLeaveRef.current = false
     const mgr = ensureRoom()
     try {
       const code = await mgr.host()
@@ -380,6 +392,7 @@ export function useSession(): Session {
     async (code: string) => {
       setErrorKind(null)
       gracefulCloseRef.current = false
+      intentionalLeaveRef.current = false
       const mgr = ensureRoom()
       try {
         await mgr.join(code)
@@ -397,6 +410,13 @@ export function useSession(): Session {
   )
 
   const leaveRoom = useCallback(() => {
+    // Mark this as deliberate so the connection drop does not auto-reconnect.
+    intentionalLeaveRef.current = true
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current)
+      reconnectTimerRef.current = null
+    }
+    reconnectingRef.current = false
     const currentRole = roleRef.current
     if (currentRole === 'host') {
       // Closing the room ends it for everyone: tell clients, then tear down.
@@ -408,6 +428,105 @@ export function useSession(): Session {
       goOffline()
     }
   }, [addMarker, goOffline])
+
+  // --- Auto-reconnect after an unintentional disconnect -------------------
+  // One attempt at re-establishing the room. The transport is rebuilt from
+  // scratch each time; on failure it schedules the next attempt with a
+  // growing backoff, and after MAX_RECONNECT_ATTEMPTS it gives up.
+  const attemptReconnect = useCallback(
+    (role: 'host' | 'client', code: string, attempt: number) => {
+      if (intentionalLeaveRef.current) {
+        reconnectingRef.current = false
+        return
+      }
+      if (attempt > MAX_RECONNECT_ATTEMPTS) {
+        reconnectingRef.current = false
+        addMarker('reconnectFailed', { roomCode: code })
+        setErrorKind('hostLost')
+        goOffline()
+        return
+      }
+      setStatus('connecting')
+      // Each attempt uses a fresh RoomManager so no stale peer lingers.
+      roomRef.current?.close()
+      roomRef.current = null
+      const mgr = ensureRoom()
+      const succeed = () => {
+        reconnectingRef.current = false
+        setErrorKind(null)
+        setStatus('connected')
+        addMarker('reconnected', { roomCode: code })
+      }
+      const retry = () => {
+        if (intentionalLeaveRef.current) {
+          reconnectingRef.current = false
+          return
+        }
+        reconnectTimerRef.current = setTimeout(
+          () => attemptReconnectRef.current(role, code, attempt + 1),
+          reconnectDelay(attempt),
+        )
+      }
+      if (role === 'host') {
+        mgr
+          .host(code)
+          .then(() => {
+            // Clients reconnect on their own and re-introduce themselves.
+            peerPlayersRef.current.clear()
+            lastSeenRef.current.clear()
+            setRole('host')
+            setPlayers([selfPlayer(true)])
+            succeed()
+          })
+          .catch(retry)
+      } else {
+        mgr
+          .join(code)
+          .then(() => {
+            setRole('client')
+            mgr.sendToHost({ t: 'hello', player: selfPlayer(false) })
+            succeed()
+          })
+          .catch(retry)
+      }
+    },
+    [addMarker, ensureRoom, goOffline, selfPlayer],
+  )
+
+  // Decide what to do when the RoomManager reports connection trouble.
+  const handleConnError = useCallback(
+    (kind: 'connect' | 'hostLost' | 'peerLost') => {
+      if (kind === 'connect') {
+        // Per-attempt failures during a reconnect loop are expected; the
+        // loop handles its own retries, so do not surface them.
+        if (!reconnectingRef.current) setErrorKind('connect')
+        return
+      }
+      // hostLost / peerLost: an established room dropped.
+      if (gracefulCloseRef.current) return // the GM closed it on purpose
+      if (intentionalLeaveRef.current) return // we are leaving on purpose
+      if (reconnectingRef.current) return // a reconnect loop is already running
+      const code = roomCodeRef.current
+      const role = roleRef.current
+      if (!code || (role !== 'host' && role !== 'client')) {
+        // Nothing to reconnect to — fall back to the plain error.
+        setErrorKind('hostLost')
+        addMarker('hostLost')
+        goOffline()
+        return
+      }
+      reconnectingRef.current = true
+      addMarker('reconnecting', { roomCode: code })
+      attemptReconnectRef.current(role, code, 1)
+    },
+    [addMarker, goOffline],
+  )
+
+  // Keep the refs the RoomManager / retry timer call pointed at the latest.
+  useEffect(() => {
+    attemptReconnectRef.current = attemptReconnect
+    connErrorRef.current = handleConnError
+  }, [attemptReconnect, handleConnError])
 
   const roll = useCallback(
     (result: RollResult) => {

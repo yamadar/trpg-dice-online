@@ -91,6 +91,12 @@ An SPA where players roll TRPG dice and share results with other players in real
   Each room has its own URL (`?room=CODE`); sharing the link lets others join
 - ルーム参加の試行中は「接続中」を表示する
   While a join is in progress, a "connecting" indicator is shown
+- 意図しない切断（タブのバックグラウンド化・通信断など）は自動で同じルームへ
+  再接続を試みる。バックオフ付きで数回試行し、履歴は保持する。「退出」を
+  押した意図的な切断では再接続しない。
+  An unintentional disconnect (a backgrounded tab, a network blip) auto-
+  reconnects to the same room with a backoff, keeping the feed; a
+  deliberate "leave" never reconnects.
 - ルーム未参加でもローカル単体で利用できる（オフラインモード）
   Works standalone offline when not in a room
 
@@ -396,3 +402,9 @@ The `lang` fields carry the source language for future real-time translation
   コードにするようにした（URL のコードがあればそちらを優先）。
   The room join field prefills with the last room code created or joined
   (a code from the URL still takes precedence).
+- v1.18 — 意図しない切断（タブのバックグラウンド化・通信断など）を検知し、
+  同じルームへ自動再接続するようにした。バックオフ付きで数回試行し、履歴は
+  保持される。「退出」を押した意図的な切断では再接続しない。
+  Detect unintentional disconnects (a backgrounded tab, a network blip)
+  and auto-reconnect to the same room with a backoff, keeping the feed; a
+  deliberate "leave" never triggers a reconnect.
