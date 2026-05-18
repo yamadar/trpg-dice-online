@@ -14,6 +14,22 @@ export interface Player {
   lang: Lang
 }
 
+/**
+ * A file attached to a chat message. The content travels inline as a
+ * base64 data URL because the app has no backend — there is nowhere to
+ * upload to, so attachments are sent over the same P2P channel as chat.
+ */
+export interface ChatFile {
+  /** Original file name, shown on the download chip. */
+  name: string
+  /** MIME type, e.g. "image/png"; an empty string when unknown. */
+  type: string
+  /** Original file size in bytes (before any image downscaling). */
+  size: number
+  /** File content as a base64 data URL. */
+  dataUrl: string
+}
+
 export interface ChatMessage {
   id: string
   playerId: string
@@ -23,6 +39,8 @@ export interface ChatMessage {
   timestamp: number
   /** Language the message was written in (for future translation). */
   lang: Lang
+  /** Optional attachment (image preview or downloadable file). */
+  file?: ChatFile
 }
 
 /** Shared state a host sends to a newly joined client. */

@@ -12,8 +12,13 @@ import { playerColor } from '../players/colors'
 import { formatDiceSummary, formatRollText } from '../dice/format'
 import { Sheet } from './Sheet'
 import { PlayerDetailCard } from './PlayerDetailCard'
+import { ChatAttachment } from './ChatAttachment'
+import { Lightbox } from './Lightbox'
+import { CloseIcon } from './icons'
+import type { ChatFile } from '../net/protocol'
+import { MAX_ATTACHMENT_BYTES, formatBytes, isImageType, readAttachment } from '../chat/attachment'
 
-const FILTERS: FeedFilter[] = ['all', 'rolls', 'chat']
+const FILTERS: FeedFilter[] = ['all', 'rolls', 'chat', 'files']
 
 function markerText(t: TFn, marker: SystemMarker): string {
   return t(`marker.${marker.type}`, {
@@ -22,14 +27,25 @@ function markerText(t: TFn, marker: SystemMarker): string {
   })
 }
 
+interface Props {
+  session: Session
+  /** Surfaces attachment errors as a toast. */
+  onNotice: (message: string, kind?: 'success' | 'error') => void
+}
+
 /** Combined roll history + chat timeline with a per-view filter. */
-export function ActivityPanel({ session }: { session: Session }) {
+export function ActivityPanel({ session, onNotice }: Props) {
   const { t, lang } = useI18n()
   const [filter, setFilter] = useState<FeedFilter>('all')
   const [text, setText] = useState('')
   // The feed entry whose name was tapped, opening the player-detail card.
   const [detail, setDetail] = useState<{ playerId: string; name: string } | null>(null)
+  // A file picked but not yet sent, and the image shown in the lightbox.
+  const [pending, setPending] = useState<ChatFile | null>(null)
+  const [attaching, setAttaching] = useState(false)
+  const [lightbox, setLightbox] = useState<ChatFile | null>(null)
   const listRef = useRef<HTMLUListElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const feed = useMemo(
     () => buildFeed(session.history, session.chat, session.markers, filter),
@@ -52,14 +68,35 @@ export function ActivityPanel({ session }: { session: Session }) {
   }, [feed.length])
 
   const send = () => {
-    if (!text.trim()) return
-    session.sendChat(text)
+    if (!text.trim() && !pending) return
+    session.sendChat(text, pending ?? undefined)
     setText('')
+    setPending(null)
   }
 
   const onType = (value: string) => {
     setText(value)
     session.sendTyping()
+  }
+
+  // Read a picked file into a sendable attachment (images are downscaled).
+  const handlePickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-picking the same file
+    if (!file) return
+    setAttaching(true)
+    try {
+      const result = await readAttachment(file)
+      if (result.ok) {
+        setPending(result.file)
+      } else if (result.error === 'tooLarge') {
+        onNotice(t('chat.attachTooLarge', { max: formatBytes(MAX_ATTACHMENT_BYTES) }), 'error')
+      } else {
+        onNotice(t('chat.attachFailed'), 'error')
+      }
+    } finally {
+      setAttaching(false)
+    }
   }
 
   // Clearing the feed is destructive, so require a deliberate confirmation.
@@ -131,7 +168,8 @@ export function ActivityPanel({ session }: { session: Session }) {
                   </button>
                   <time>{new Date(m.timestamp).toLocaleTimeString(lang)}</time>
                 </div>
-                <p className="chat-text">{m.text}</p>
+                {m.text && <p className="chat-text">{m.text}</p>}
+                {m.file && <ChatAttachment file={m.file} onOpenImage={setLightbox} />}
               </li>
             )
           }
@@ -175,28 +213,65 @@ export function ActivityPanel({ session }: { session: Session }) {
       </p>
 
       {filter !== 'rolls' && (
-        <div className="chat-input">
-          <input
-            type="text"
-            value={text}
-            maxLength={300}
-            placeholder={t('chat.placeholder')}
-            onChange={(e) => onType(e.target.value)}
-            // Ignore Enter that only confirms an IME (e.g. Japanese) conversion.
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                e.preventDefault()
-                send()
-              }
-            }}
-          />
-          {/* preventDefault on mousedown keeps focus on the input, so clicking
-              Send does not blur it and force-commit an in-progress IME
-              composition — that blur previously raced with the click and left
-              the message in the box (and a second click re-sent it). */}
-          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={send}>
-            {t('chat.send')}
-          </button>
+        <div className="chat-compose">
+          {pending && (
+            <div className="attach-pending">
+              {isImageType(pending.type) ? (
+                <img className="attach-pending-thumb" src={pending.dataUrl} alt={pending.name} />
+              ) : (
+                <span className="attach-pending-icon" aria-hidden="true">
+                  📎
+                </span>
+              )}
+              <span className="attach-pending-name">{pending.name}</span>
+              <button
+                type="button"
+                className="link icon-x attach-pending-remove"
+                aria-label={t('chat.removeAttachment')}
+                onClick={() => setPending(null)}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          )}
+          <div className="chat-input">
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="visually-hidden"
+              onChange={handlePickFile}
+            />
+            <button
+              type="button"
+              className="attach-btn"
+              aria-label={t('chat.attach')}
+              disabled={attaching}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              📎
+            </button>
+            <input
+              type="text"
+              value={text}
+              maxLength={300}
+              placeholder={t('chat.placeholder')}
+              onChange={(e) => onType(e.target.value)}
+              // Ignore Enter that only confirms an IME (e.g. Japanese) conversion.
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                  e.preventDefault()
+                  send()
+                }
+              }}
+            />
+            {/* preventDefault on mousedown keeps focus on the input, so clicking
+                Send does not blur it and force-commit an in-progress IME
+                composition — that blur previously raced with the click and left
+                the message in the box (and a second click re-sent it). */}
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={send}>
+              {t('chat.send')}
+            </button>
+          </div>
         </div>
       )}
 
@@ -210,6 +285,8 @@ export function ActivityPanel({ session }: { session: Session }) {
           />
         </Sheet>
       )}
+
+      {lightbox && <Lightbox file={lightbox} onClose={() => setLightbox(null)} />}
     </section>
   )
 }

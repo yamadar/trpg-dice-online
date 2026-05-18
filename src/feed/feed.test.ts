@@ -24,6 +24,13 @@ function chat(id: string, at: number): ChatMessage {
   return { id, playerId: 'p1', playerName: 'A', text: 'hi', timestamp: at, lang: 'ja' }
 }
 
+function chatWithFile(id: string, at: number): ChatMessage {
+  return {
+    ...chat(id, at),
+    file: { name: 'pic.png', type: 'image/png', size: 100, dataUrl: 'data:image/png;base64,AAAA' },
+  }
+}
+
 function marker(id: string, at: number): SystemMarker {
   return { id, timestamp: at, type: 'joined', roomCode: 'ABC123' }
 }
@@ -42,6 +49,16 @@ describe('buildFeed', () => {
   it('the chat filter hides rolls but keeps chat and markers', () => {
     const feed = buildFeed([roll('r', 30)], [chat('c', 10)], [marker('m', 20)], 'chat')
     expect(feed.map((i) => i.kind)).toEqual(['chat', 'system'])
+  })
+
+  it('the files filter keeps only chat messages with an attachment', () => {
+    const feed = buildFeed(
+      [roll('r', 30)],
+      [chat('c', 10), chatWithFile('cf', 15)],
+      [marker('m', 20)],
+      'files',
+    )
+    expect(feed.map((i) => i.id)).toEqual(['cf'])
   })
 
   it('orders deterministically when timestamps tie', () => {

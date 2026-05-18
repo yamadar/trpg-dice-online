@@ -196,7 +196,7 @@ function App() {
       )}
 
       <main className="app-main">
-        <ActivityPanel session={session} />
+        <ActivityPanel session={session} onNotice={flash} />
       </main>
 
       <Dock active={openSheet} onOpen={toggleSheet} />
