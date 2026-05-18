@@ -729,6 +729,12 @@ button.player-row {
 .feed-chat.own {
   background: rgba(139, 92, 246, 0.18);
 }
+/* A message that @mentions the local player (or @all). */
+.feed-chat.mentioned {
+  background: rgba(251, 191, 36, 0.14);
+  border-left: 3px solid #fbbf24;
+  padding-left: 7px;
+}
 .chat-text {
   font-size: 0.95rem;
   word-break: break-word;
@@ -766,6 +772,47 @@ button.player-row {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+/* @mention autocomplete, shown above the chat input. */
+.mention-suggest {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.mention-item {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.mention-item.active {
+  background: var(--accent);
+}
+.mention-handle {
+  font-weight: 700;
+}
+.mention-sub {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+.mention-item.active .mention-sub {
+  color: inherit;
 }
 .chat-input {
   display: flex;

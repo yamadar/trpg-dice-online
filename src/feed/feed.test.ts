@@ -32,6 +32,8 @@ function chat(id: string, at: number): ChatMessage {
     text: 'hi',
     timestamp: at,
     lang: 'ja',
+    mentions: [],
+    mentionsAll: false,
   }
 }
 

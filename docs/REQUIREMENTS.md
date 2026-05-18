@@ -142,6 +142,14 @@ An SPA where players roll TRPG dice and share results with other players in real
   一覧表示できるようにする。
   The feed filter has a "Files" view listing only messages with an
   attachment.
+- 「@ユーザー名」でそのユーザーを、「@all / @ALL」で全員をメンションでき、
+  対象ユーザーにはそのメッセージが強調表示される。メンションはプレイヤー
+  ID で保持し、名前変更や同名ユーザーがいても正しく扱う。入力中に「@」を
+  打つとユーザー名のサジェストを表示する。
+  "@username" mentions a user and "@all" / "@ALL" mentions everyone; the
+  message is highlighted for each mentioned user. Mentions are stored by
+  player id, so renames and duplicate names are handled correctly, and
+  typing "@" shows a username autocomplete.
 
 ### 3.10 ルームの退出・終了 / Leaving and closing a room
 - GM の退出はルームの終了を意味する。GM には確認を求め、各クライアントには
@@ -443,3 +451,9 @@ The `lang` fields carry the source language for future real-time translation
   キー・画面上の前後ボタン）と画像枚数の表示を追加した。
   Add prev/next navigation to the lightbox (swipe, arrow keys, on-screen
   buttons) plus an image counter.
+- v1.22 — チャットの @メンションを追加。「@ユーザー名」「@all」で対象に
+  メッセージを強調表示する。メンションはプレイヤー ID で保持し、入力中の
+  「@」でユーザー名のサジェストを出す。
+  Add chat @mentions: "@username" / "@all" highlight the message for the
+  target. Mentions are stored by player id and typing "@" autocompletes
+  usernames.
