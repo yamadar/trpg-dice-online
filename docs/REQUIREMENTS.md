@@ -226,6 +226,17 @@ An SPA where players roll TRPG dice and share results with other players in real
 Star topology: the GM is the host; all players connect to the GM, who holds the
 authoritative shared state and relays events to everyone.
 
+WebRTC の NAT 越えには STUN に加えて TURN（中継）サーバーを使う。公衆 Wi-Fi の
+対称型 NAT や UDP 遮断下でも接続できるよう、既定では Open Relay Project の無料
+公開 TURN を使用する。`VITE_TURN_*` ビルド変数で自前の TURN サーバーに差し替え
+られる（`.env.example` を参照）。TURN は通信を中継するだけでアプリのバックエンド
+ではないため、静的サイト構成は維持される。
+NAT traversal uses TURN relays in addition to STUN. By default the free public
+Open Relay Project TURN servers are used so players behind symmetric NAT or
+UDP-blocking public Wi-Fi can still connect; the `VITE_TURN_*` build variables
+swap in a self-owned TURN server (see `.env.example`). A TURN server only relays
+traffic, so the app stays a fully static site.
+
 ## 6. データモデル / Data Model
 
 ```ts
@@ -371,3 +382,9 @@ The `lang` fields carry the source language for future real-time translation
   Add chat file attachments: images show a thumbnail with a tap-to-open
   lightbox, other files show a download chip, and a "Files" feed filter is
   added. Images are downscaled before sending to keep the P2P payload small.
+- v1.15 — WebRTC に TURN サーバーを追加。既定で Open Relay Project の無料
+  公開 TURN を使い、対称型 NAT や UDP 遮断下（公衆 Wi-Fi 等）でも接続できる
+  ようにした。`VITE_TURN_*` で自前 TURN に差し替え可能。
+  Add a TURN server to the WebRTC config: the free public Open Relay Project
+  TURN is used by default so players behind symmetric NAT or UDP-blocking
+  Wi-Fi can connect; `VITE_TURN_*` swaps in a self-owned TURN server.

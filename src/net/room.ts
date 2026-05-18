@@ -5,6 +5,7 @@ import {
   type ClientMessage,
   type HostMessage,
 } from './protocol'
+import { peerConfig } from './ice'
 
 export type RoomStatus = 'offline' | 'connecting' | 'connected' | 'error'
 
@@ -67,7 +68,7 @@ export class RoomManager {
 
   private openHostPeer(code: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const peer = new Peer(peerIdForCode(code))
+      const peer = new Peer(peerIdForCode(code), { config: peerConfig })
       let settled = false
 
       peer.on('open', () => {
@@ -106,7 +107,7 @@ export class RoomManager {
   join(code: string): Promise<void> {
     this.cb.onStatus('connecting')
     return new Promise<void>((resolve, reject) => {
-      const peer = new Peer()
+      const peer = new Peer({ config: peerConfig })
       let settled = false
 
       const fail = (kind: 'connect' | 'hostLost') => {
