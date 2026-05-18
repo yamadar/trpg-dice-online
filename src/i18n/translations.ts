@@ -180,6 +180,8 @@ const ja: Dict = {
   'chat.attachFailed': 'ファイルを読み込めませんでした',
   'chat.download': 'ダウンロード',
   'lightbox.close': '閉じる',
+  'lightbox.prev': '前の画像',
+  'lightbox.next': '次の画像',
 
   'common.you': 'あなた',
 }
@@ -360,6 +362,8 @@ const en: Dict = {
   'chat.attachFailed': 'Could not read the file',
   'chat.download': 'Download',
   'lightbox.close': 'Close',
+  'lightbox.prev': 'Previous image',
+  'lightbox.next': 'Next image',
 
   'common.you': 'You',
 }

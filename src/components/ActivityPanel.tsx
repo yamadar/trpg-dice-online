@@ -47,10 +47,11 @@ export function ActivityPanel({ session, onNotice }: Props) {
     characterName: string
     background: string
   } | null>(null)
-  // A file picked but not yet sent, and the image shown in the lightbox.
+  // A file picked but not yet sent, and the index (within `images`) of the
+  // image currently open in the lightbox.
   const [pending, setPending] = useState<ChatFile | null>(null)
   const [attaching, setAttaching] = useState(false)
-  const [lightbox, setLightbox] = useState<ChatFile | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const listRef = useRef<HTMLUListElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -58,6 +59,23 @@ export function ActivityPanel({ session, onNotice }: Props) {
     () => buildFeed(session.history, session.chat, session.markers, filter),
     [session.history, session.chat, session.markers, filter],
   )
+
+  // Image attachments in the feed, in order — the lightbox steps through
+  // these with the arrow keys / swipes.
+  const images = useMemo(() => {
+    const list: ChatFile[] = []
+    for (const item of feed) {
+      if (item.kind === 'chat' && item.message.file && isImageType(item.message.file.type)) {
+        list.push(item.message.file)
+      }
+    }
+    return list
+  }, [feed])
+
+  const openLightbox = (file: ChatFile) => {
+    const i = images.indexOf(file)
+    setLightboxIndex(i >= 0 ? i : 0)
+  }
 
   // Items older than the most recent room exit belong to a room left behind.
   const lastExitAt = useMemo(
@@ -183,7 +201,7 @@ export function ActivityPanel({ session, onNotice }: Props) {
                   <time>{new Date(m.timestamp).toLocaleTimeString(lang)}</time>
                 </div>
                 {m.text && <p className="chat-text">{m.text}</p>}
-                {m.file && <ChatAttachment file={m.file} onOpenImage={setLightbox} />}
+                {m.file && <ChatAttachment file={m.file} onOpenImage={openLightbox} />}
               </li>
             )
           }
@@ -307,7 +325,14 @@ export function ActivityPanel({ session, onNotice }: Props) {
         </Sheet>
       )}
 
-      {lightbox && <Lightbox file={lightbox} onClose={() => setLightbox(null)} />}
+      {lightboxIndex !== null && images[lightboxIndex] && (
+        <Lightbox
+          images={images}
+          index={lightboxIndex}
+          onIndexChange={setLightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </section>
   )
 }
