@@ -24,6 +24,12 @@ export interface Pattern {
   diceType: DiceType
   diceCount: number
   modifier: number
+  /**
+   * Whether this is a GM hidden roll. The flag is stored on the pattern,
+   * but it only takes effect when the roller is the GM — a non-GM using a
+   * hidden pattern rolls normally (the value is visible to everyone).
+   */
+  hidden: boolean
 }
 
 /** The outcome of rolling a pattern once. */
