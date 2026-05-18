@@ -20,6 +20,7 @@ import { newMarkerId, type MarkerType, type SystemMarker } from '../feed/feed'
 import { composeName } from '../players/identity'
 import { getPlayerId, loadPlayerName, savePlayerName } from '../storage/player'
 import { saveLastRoomCode } from '../storage/room'
+import { appendLogEntry, clearRoomLog } from '../storage/roomLog'
 import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 
 export type Role = 'offline' | 'host' | 'client'
@@ -167,19 +168,20 @@ export function useSession(): Session {
   const lastSeenRef = useRef(new Map<string, number>())
   const roomRef = useRef<RoomManager | null>(null)
 
+  // The in-memory feed is capped for rendering; every entry is also
+  // appended to the durable per-room log so the full history survives.
   const appendHistory = useCallback((result: RollResult) => {
     setHistory((prev) => capEnd([...prev, result], MAX_HISTORY))
+    void appendLogEntry(roomCodeRef.current, 'roll', result)
   }, [])
   const appendChat = useCallback((message: ChatMessage) => {
     setChat((prev) => capEnd([...prev, message], MAX_CHAT))
+    void appendLogEntry(roomCodeRef.current, 'chat', message)
   }, [])
   const addMarker = useCallback((type: MarkerType, extra?: Partial<SystemMarker>) => {
-    setMarkers((prev) =>
-      capEnd(
-        [...prev, { id: newMarkerId(), timestamp: Date.now(), type, ...extra }],
-        MAX_MARKERS,
-      ),
-    )
+    const marker: SystemMarker = { id: newMarkerId(), timestamp: Date.now(), type, ...extra }
+    setMarkers((prev) => capEnd([...prev, marker], MAX_MARKERS))
+    void appendLogEntry(roomCodeRef.current, 'marker', marker)
   }, [])
   const noteTyping = useCallback((signal: TypingSignal) => {
     setTyping((prev) => ({ ...prev, [signal.playerId]: { name: signal.playerName, at: Date.now() } }))
@@ -303,14 +305,20 @@ export function useSession(): Session {
   const handleHostMessage = useCallback(
     (msg: HostMessage) => {
       switch (msg.t) {
-        case 'welcome':
+        case 'welcome': {
           // Keep the player's pre-join rolls/chat by merging the snapshot in.
           setPlayers(msg.snapshot.players)
           setHistory((prev) => mergeById(prev, msg.snapshot.history, MAX_HISTORY))
           setChat((prev) => mergeById(prev, msg.snapshot.chat, MAX_CHAT))
           roomNameRef.current = msg.snapshot.roomName
           setRoomNameState(msg.snapshot.roomName)
+          // Record the snapshot in the durable log (put() upserts, so a
+          // re-welcome does not duplicate entries).
+          const code = roomCodeRef.current
+          for (const roll of msg.snapshot.history) void appendLogEntry(code, 'roll', roll)
+          for (const message of msg.snapshot.chat) void appendLogEntry(code, 'chat', message)
           break
+        }
         case 'roomName':
           roomNameRef.current = msg.name
           setRoomNameState(msg.name)
@@ -404,6 +412,8 @@ export function useSession(): Session {
         peerPlayersRef.current.clear()
         setRole('host')
         setRoomCode(code)
+        // Eagerly set the ref so the marker below is logged under this room.
+        roomCodeRef.current = code
         saveLastRoomCode(code)
         roomNameRef.current = ''
         setRoomNameState('')
@@ -429,6 +439,8 @@ export function useSession(): Session {
         await mgr.join(code)
         setRole('client')
         setRoomCode(code)
+        // Eagerly set the ref so the marker below is logged under this room.
+        roomCodeRef.current = code
         saveLastRoomCode(code)
         addMarker('joined', { roomCode: code })
         mgr.sendToHost({ t: 'hello', player: selfPlayer(false) })
@@ -666,6 +678,9 @@ export function useSession(): Session {
     setHistory([])
     setChat([])
     setMarkers([])
+    // "Clear" also discards the room's durable log, so older entries are
+    // not later resurfaced by an on-demand history load.
+    void clearRoomLog(roomCodeRef.current)
   }, [])
 
   /** Re-publish the local identity after it changed. */
