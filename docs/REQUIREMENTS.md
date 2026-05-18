@@ -505,3 +505,9 @@ The `lang` fields carry the source language for future real-time translation
   image (e.g. a large small-dimensioned PNG) is re-encoded to JPEG rather
   than rejected; the toast timer is cleared on replacement so a rapid
   second toast is not cut short.
+- v1.28 — UI 調整。ルーム作成ボタンは幅が狭いとき「（GM になる）」の直前で
+  改行する。ダイスの個数選択を 5×2 のグリッドにし、用途（ダメージ／判定）の
+  ボタン幅を揃えた。
+  UI tweaks: the create-room button now wraps before "(become GM)" on
+  narrow widths; the dice-count picker is a 5×2 grid; the two roll-kind
+  buttons share an equal width.

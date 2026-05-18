@@ -31,7 +31,7 @@ export function DiceRoller({ draft, onChange, isGM, onRoll, onSave }: Props) {
 
       <div className="field">
         <span>{t('dice.count')}</span>
-        <div className="chip-row" role="group" aria-label={t('dice.count')}>
+        <div className="chip-row chip-grid-5" role="group" aria-label={t('dice.count')}>
           {COUNTS.map((n) => (
             <button
               key={n}
@@ -91,7 +91,7 @@ export function DiceRoller({ draft, onChange, isGM, onRoll, onSave }: Props) {
 
         <div className="field">
           <span>{t('dice.kind')}</span>
-          <div className="chip-row" role="group" aria-label={t('dice.kind')}>
+          <div className="chip-row chip-grid-2" role="group" aria-label={t('dice.kind')}>
             {PATTERN_KINDS.map((k) => (
               <button
                 key={k}
