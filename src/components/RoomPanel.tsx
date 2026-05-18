@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { useFieldNotice } from '../hooks/useFieldNotice'
 import { loadLastRoomCode } from '../storage/room'
@@ -38,6 +38,17 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
 
   // Toast once the room-name edit settles (on blur or when the sheet closes).
   const roomNameNotice = useFieldNotice(() => onNotice(t('toast.roomName')))
+
+  // A committed room-code change is worth a toast on top of the feed
+  // marker. roomCode only goes code→code on a real change (host action).
+  const prevRoomCodeRef = useRef(roomCode)
+  useEffect(() => {
+    const prev = prevRoomCodeRef.current
+    prevRoomCodeRef.current = roomCode
+    if (prev && roomCode && prev !== roomCode && role === 'host') {
+      onNotice(t('toast.roomCodeChanged'))
+    }
+  }, [roomCode, role, onNotice, t])
 
   const handleJoin = () => {
     const code = normalizeRoomCode(codeInput)
@@ -119,7 +130,12 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
 
   return (
     <section className="panel">
-      <h2>{t('room.section')}</h2>
+      <h2>
+        <span className="panel-icon" aria-hidden="true">
+          👥
+        </span>
+        {t('room.section')}
+      </h2>
 
       {!online && (
         <div className="room-setup">

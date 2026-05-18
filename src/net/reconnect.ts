@@ -1,9 +1,9 @@
 /**
  * How many times an unintentional disconnect is retried before giving up.
- * High enough to ride out a fairly long GM outage (with the 5s-capped
- * backoff, roughly a minute and a half of retrying).
+ * High enough to ride out a long GM outage — with the 5s-capped backoff,
+ * roughly five minutes of retrying.
  */
-export const MAX_RECONNECT_ATTEMPTS = 15
+export const MAX_RECONNECT_ATTEMPTS = 60
 
 /**
  * Backoff in milliseconds before reconnect attempt `attempt` (1-based).

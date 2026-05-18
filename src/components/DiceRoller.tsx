@@ -27,7 +27,12 @@ export function DiceRoller({ draft, onChange, isGM, onRoll, onSave }: Props) {
 
   return (
     <section className="panel">
-      <h2>{t('dice.section')}</h2>
+      <h2>
+        <span className="panel-icon" aria-hidden="true">
+          🎲
+        </span>
+        {t('dice.section')}
+      </h2>
 
       <div className="field">
         <span>{t('dice.count')}</span>
