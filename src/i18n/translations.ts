@@ -120,6 +120,7 @@ const ja: Dict = {
   'feed.all': 'すべて',
   'feed.rolls': 'ダイス',
   'feed.chat': 'チャット',
+  'feed.files': 'ファイル',
   'feed.empty': 'まだ何もありません',
   'feed.clear': '表示をクリア',
   'feed.clearConfirm': 'ダイスとチャットの履歴の表示をすべてクリアします。元に戻せません。よろしいですか？',
@@ -164,6 +165,12 @@ const ja: Dict = {
 
   'chat.placeholder': 'メッセージを入力',
   'chat.send': '送信',
+  'chat.attach': 'ファイルを添付',
+  'chat.removeAttachment': '添付を取り消す',
+  'chat.attachTooLarge': 'ファイルが大きすぎます（最大 {max}）',
+  'chat.attachFailed': 'ファイルを読み込めませんでした',
+  'chat.download': 'ダウンロード',
+  'lightbox.close': '閉じる',
 
   'common.you': 'あなた',
 }
@@ -284,6 +291,7 @@ const en: Dict = {
   'feed.all': 'All',
   'feed.rolls': 'Rolls',
   'feed.chat': 'Chat',
+  'feed.files': 'Files',
   'feed.empty': 'Nothing here yet',
   'feed.clear': 'Clear view',
   'feed.clearConfirm': 'This clears all rolls and chat from your view and cannot be undone. Continue?',
@@ -328,6 +336,12 @@ const en: Dict = {
 
   'chat.placeholder': 'Type a message',
   'chat.send': 'Send',
+  'chat.attach': 'Attach a file',
+  'chat.removeAttachment': 'Remove attachment',
+  'chat.attachTooLarge': 'The file is too large (max {max})',
+  'chat.attachFailed': 'Could not read the file',
+  'chat.download': 'Download',
+  'lightbox.close': 'Close',
 
   'common.you': 'You',
 }

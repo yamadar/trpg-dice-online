@@ -35,7 +35,7 @@ export function newMarkerId(): string {
   return `mk-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-export type FeedFilter = 'all' | 'rolls' | 'chat'
+export type FeedFilter = 'all' | 'rolls' | 'chat' | 'files'
 
 export type FeedItem =
   | { kind: 'roll'; id: string; at: number; roll: RollResult }
@@ -44,8 +44,10 @@ export type FeedItem =
 
 /**
  * Merge rolls, chat and system markers into a single timeline ordered
- * oldest-first. The filter hides rolls or chat; system markers always
- * stay visible because they give context to every view.
+ * oldest-first. The filter hides rolls or chat; system markers stay
+ * visible for the all / rolls / chat views because they give context.
+ * The "files" view is a focused gallery: only chat messages that carry
+ * an attachment, with no rolls or markers.
  */
 export function buildFeed(
   history: RollResult[],
@@ -54,18 +56,21 @@ export function buildFeed(
   filter: FeedFilter,
 ): FeedItem[] {
   const items: FeedItem[] = []
-  if (filter !== 'chat') {
+  if (filter === 'all' || filter === 'rolls') {
     for (const roll of history) {
       items.push({ kind: 'roll', id: roll.id, at: roll.timestamp, roll })
     }
   }
   if (filter !== 'rolls') {
     for (const message of chat) {
+      if (filter === 'files' && !message.file) continue
       items.push({ kind: 'chat', id: message.id, at: message.timestamp, message })
     }
   }
-  for (const marker of markers) {
-    items.push({ kind: 'system', id: marker.id, at: marker.timestamp, marker })
+  if (filter !== 'files') {
+    for (const marker of markers) {
+      items.push({ kind: 'system', id: marker.id, at: marker.timestamp, marker })
+    }
   }
   items.sort((a, b) => a.at - b.at || a.id.localeCompare(b.id))
   return items

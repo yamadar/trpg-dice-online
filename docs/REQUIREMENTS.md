@@ -106,6 +106,18 @@ An SPA where players roll TRPG dice and share results with other players in real
 - ルーム参加者でテキストチャットができる / Room members can exchange text messages
 - 他の参加者が入力中のとき、控えめに「入力中…」を表示する
   Show a subtle "typing…" indicator while another player is typing
+- チャットにファイルを添付できる。バックエンドを持たないため、ファイルは
+  base64 データ URL として P2P 経路で送信する。画像は送信前に縮小する。
+  Files can be attached to chat; with no backend they travel as base64 data
+  URLs over the P2P channel, and images are downscaled before sending.
+- 画像の添付はフィードにサムネイルで表示し、タップで全画面ビューア
+  （ライトボックス）を開く。画像以外はダウンロード用のチップで表示する。
+  Image attachments show a thumbnail in the feed and open a fullscreen
+  viewer (lightbox) on tap; non-images show a download chip.
+- フィードのフィルターに「ファイル」を追加し、添付付きメッセージのみを
+  一覧表示できるようにする。
+  The feed filter has a "Files" view listing only messages with an
+  attachment.
 
 ### 3.10 ルームの退出・終了 / Leaving and closing a room
 - GM の退出はルームの終了を意味する。GM には確認を求め、各クライアントには
@@ -353,3 +365,9 @@ The `lang` fields carry the source language for future real-time translation
   （キャラクター名・プレイヤー名・背景情報）をシートで表示するようにした。
   Tapping a player name in the feed opens a sheet card with that player's
   character name, player name and background.
+- v1.14 — チャットにファイル添付を追加。画像はサムネイル表示・タップで
+  ライトボックス、画像以外はダウンロード用チップで表示する。フィードに
+  「ファイル」フィルターを追加。画像は送信前に縮小し、P2P 経路の負荷を抑える。
+  Add chat file attachments: images show a thumbnail with a tap-to-open
+  lightbox, other files show a download chip, and a "Files" feed filter is
+  added. Images are downscaled before sending to keep the P2P payload small.
