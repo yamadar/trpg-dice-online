@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
+import { loadLastRoomCode } from '../storage/room'
 import { normalizeRoomCode, type Player } from '../net/protocol'
 import { playerColor } from '../players/colors'
 import { composeName } from '../players/identity'
@@ -15,7 +16,11 @@ interface Props {
 
 export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   const { t } = useI18n()
-  const [codeInput, setCodeInput] = useState(() => normalizeRoomCode(initialJoinCode))
+  // Prefill the join field with the URL code if any, else the last code
+  // this player created or joined.
+  const [codeInput, setCodeInput] = useState(
+    () => normalizeRoomCode(initialJoinCode) || normalizeRoomCode(loadLastRoomCode()),
+  )
   const [copied, setCopied] = useState(false)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
   const { status, role, roomCode, players, playerId } = session

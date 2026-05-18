@@ -392,3 +392,7 @@ The `lang` fields carry the source language for future real-time translation
   前面に出るようにした。参加失敗時にバナーがモーダルの背後に隠れない。
   Pin the connection-error banner to the top of the screen above open
   sheets so a failed join is no longer hidden behind the room modal.
+- v1.17 — ルーム参加コード入力欄の初期値を、最後に作成・参加したルーム
+  コードにするようにした（URL のコードがあればそちらを優先）。
+  The room join field prefills with the last room code created or joined
+  (a code from the URL still takes precedence).
