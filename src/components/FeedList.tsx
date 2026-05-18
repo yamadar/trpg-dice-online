@@ -1,5 +1,6 @@
-import { memo, useEffect, useRef } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { useTranslatedText } from '../i18n/useTranslatedText'
 import type { TFn } from '../i18n/context'
 import type { FeedItem, SystemMarker } from '../feed/feed'
 import type { ChatFile, ChatMessage } from '../net/protocol'
@@ -57,12 +58,17 @@ const FeedChatItem = memo(function FeedChatItem({
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
 }) {
-  const { t, lang } = useI18n()
+  const { t, lang, autoTranslate } = useI18n()
   const own = m.playerId === playerId
   const color = playerColor(m.playerId)
   // Highlight the message for a player it @mentions (or for everyone when it
   // is an @all). Id-based, so the highlight survives a rename.
   const mentionsMe = (m.mentionsAll ?? false) || (m.mentions ?? []).includes(playerId)
+  // Auto-translation: show the original, swap in the translation when it is
+  // ready, and let the reader flip back to the original.
+  const { translated, translating } = useTranslatedText(m.text, m.lang)
+  const [showOriginal, setShowOriginal] = useState(false)
+  const showTranslation = autoTranslate && translated !== null && !showOriginal
   return (
     <li
       className={`feed-chat${own ? ' own' : ''}${mentionsMe ? ' mentioned' : ''}${
@@ -87,13 +93,26 @@ const FeedChatItem = memo(function FeedChatItem({
           {m.playerName}
         </button>
         {m.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
+        {autoTranslate && translated !== null && (
+          <button
+            type="button"
+            className="link chat-trans-toggle"
+            onClick={() => setShowOriginal((v) => !v)}
+          >
+            {showOriginal ? t('chat.viewTranslation') : t('chat.viewOriginal')}
+          </button>
+        )}
         {pending ? (
           <span className="pending-tag">{t('chat.pending')}</span>
         ) : (
           <time>{new Date(m.timestamp).toLocaleTimeString(lang)}</time>
         )}
       </div>
-      {m.text && <p className="chat-text">{m.text}</p>}
+      {m.text && (
+        <p className={`chat-text${translating ? ' translating' : ''}`}>
+          {showTranslation ? translated : m.text}
+        </p>
+      )}
       {m.file && <ChatAttachment file={m.file} onOpenImage={onOpenImage} />}
     </li>
   )

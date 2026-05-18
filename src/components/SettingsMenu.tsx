@@ -17,7 +17,7 @@ interface Props {
  * header button so they do not take up permanent screen space.
  */
 export function SettingsMenu({ name, onChangeName, onOpenHelp, onNotice }: Props) {
-  const { t } = useI18n()
+  const { t, autoTranslate, setAutoTranslate, translationBackend, setTranslationBackend } = useI18n()
   const [open, setOpen] = useState(false)
   // Toast once the player-name edit settles (on blur or when the menu closes).
   const { markChanged, flush } = useFieldNotice(() => onNotice(t('toast.playerName')))
@@ -67,6 +67,32 @@ export function SettingsMenu({ name, onChangeName, onOpenHelp, onNotice }: Props
               <span>{t('lang.label')}</span>
               <LanguageToggle />
             </div>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={autoTranslate}
+                onChange={(e) => setAutoTranslate(e.target.checked)}
+              />
+              <span>{t('translate.auto')}</span>
+            </label>
+            {autoTranslate && (
+              <div className="field">
+                <span>{t('translate.backend')}</span>
+                <div className="lang-toggle" role="group" aria-label={t('translate.backend')}>
+                  {(['chrome', 'mymemory'] as const).map((b) => (
+                    <button
+                      key={b}
+                      type="button"
+                      className={b === translationBackend ? 'lang-btn active' : 'lang-btn'}
+                      aria-pressed={b === translationBackend}
+                      onClick={() => setTranslationBackend(b)}
+                    >
+                      {t(`translate.${b}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="field">
               <span>{t('theme.title')}</span>
               <ThemeToggle />

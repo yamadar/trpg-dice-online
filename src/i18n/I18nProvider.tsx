@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { LANGS, translate, type Lang } from './translations'
 import { I18nContext, type I18nValue, type TFn } from './context'
+import type { TranslationBackend } from './translator'
+import {
+  loadAutoTranslate,
+  loadTranslationBackend,
+  saveAutoTranslate,
+  saveTranslationBackend,
+} from '../storage/translation'
 
 const STORAGE_KEY = 'trpg-dice.lang'
 
@@ -17,6 +24,8 @@ function detectInitialLang(): Lang {
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(detectInitialLang)
+  const [autoTranslate, setAutoState] = useState(loadAutoTranslate)
+  const [translationBackend, setBackendState] = useState<TranslationBackend>(loadTranslationBackend)
 
   const setLang = useCallback((next: Lang) => {
     setLangState(next)
@@ -27,6 +36,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const setAutoTranslate = useCallback((on: boolean) => {
+    setAutoState(on)
+    saveAutoTranslate(on)
+  }, [])
+
+  const setTranslationBackend = useCallback((backend: TranslationBackend) => {
+    setBackendState(backend)
+    saveTranslationBackend(backend)
+  }, [])
+
   // Keep <html lang> in sync, including the initial detected language.
   useEffect(() => {
     document.documentElement.lang = lang
@@ -34,7 +53,18 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback<TFn>((key, params) => translate(lang, key, params), [lang])
 
-  const value = useMemo<I18nValue>(() => ({ lang, setLang, t }), [lang, setLang, t])
+  const value = useMemo<I18nValue>(
+    () => ({
+      lang,
+      setLang,
+      t,
+      autoTranslate,
+      setAutoTranslate,
+      translationBackend,
+      setTranslationBackend,
+    }),
+    [lang, setLang, t, autoTranslate, setAutoTranslate, translationBackend, setTranslationBackend],
+  )
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }

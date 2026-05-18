@@ -816,6 +816,24 @@ button.player-row {
   word-break: break-word;
   margin-top: 2px;
 }
+/* Chat being auto-translated: the original text pulses until the result lands. */
+@keyframes chat-translating {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.chat-text.translating {
+  animation: chat-translating 1.1s ease-in-out infinite;
+}
+/* The small toggle between a translated message and its original. */
+.chat-trans-toggle {
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
 
 .feed-system {
   display: flex;
@@ -891,7 +909,8 @@ button.player-row {
   text-overflow: ellipsis;
 }
 .activity.compact .feed-line time,
-.activity.compact .pending-tag {
+.activity.compact .pending-tag,
+.activity.compact .chat-trans-toggle {
   order: 3;
 }
 /* The dice breakdown is dropped from the one-line view. */

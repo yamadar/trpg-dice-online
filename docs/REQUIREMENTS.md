@@ -80,6 +80,14 @@ An SPA where players roll TRPG dice and share results with other players in real
   ブラウザに保存される
   The feed can optionally be switched to a compact, denser layout; the
   choice is remembered in the browser
+- 設定で自動翻訳をオンにすると、チャットを設定言語へ翻訳して表示する
+  （Chrome 内蔵 Translator または MyMemory を選択）。各メッセージは原文に
+  戻せ、翻訳中は原文にアニメーションを添える。翻訳は表示層で完結し、
+  失敗時は原文にフォールバックする
+  With auto-translate on, chat is translated into the UI language (using
+  the on-device Chrome Translator or MyMemory); each message flips back to
+  its original, the original animates while translating, and translation
+  stays in the display layer with an original-text fallback on failure
 - 表示は直近のみだが、上限を超えて遡る古い履歴は「これより前を読み込む」で
   永続ログからオンデマンドに読み込める
   Older history beyond the display cap can be paged in on demand from the
@@ -643,3 +651,15 @@ The `lang` fields carry the source language for future real-time translation
   modal titles carry their icons; the dice & chat feed gained a compact
   layout toggle; and editing character details or changing the room code
   now also raises a toast.
+- v1.41 — チャットの自動翻訳を追加。設定で自動翻訳の ON/OFF と翻訳方式
+  （Chrome 内蔵 Translator API / MyMemory、いずれもキー・バックエンド不要）を
+  選べる。受信した各チャットを設定言語へ翻訳し、原文と訳文を切り替えられる。
+  翻訳中は原文に脈動アニメーションを表示。翻訳結果は (方式,原言語,訳言語,原文)
+  でメモ化する。翻訳は表示層で完結し、失敗時は原文にフォールバックする。
+  Add chat auto-translation. Settings toggle auto-translate on/off and
+  choose the backend (the on-device Chrome Translator API or MyMemory —
+  both keyless and backend-free). Each received chat message is translated
+  into the UI language and can be flipped between original and
+  translation; the original pulses while translating. Results are memoized
+  by (backend, source, target, text). Translation lives entirely in the
+  display layer and falls back to the original on failure.
