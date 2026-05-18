@@ -388,3 +388,7 @@ The `lang` fields carry the source language for future real-time translation
   Add a TURN server to the WebRTC config: the free public Open Relay Project
   TURN is used by default so players behind symmetric NAT or UDP-blocking
   Wi-Fi can connect; `VITE_TURN_*` swaps in a self-owned TURN server.
+- v1.16 — 接続エラーのバナーを画面上部に固定表示し、ルームのシートより
+  前面に出るようにした。参加失敗時にバナーがモーダルの背後に隠れない。
+  Pin the connection-error banner to the top of the screen above open
+  sheets so a failed join is no longer hidden behind the room modal.
