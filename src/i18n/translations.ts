@@ -45,22 +45,25 @@ const ja: Dict = {
   'tutorial.done': 'はじめる',
   'tutorial.welcome.title': 'TRPG オンラインダイスへようこそ',
   'tutorial.welcome.body':
-    '仲間とダイスを振り、出目・履歴・チャットをリアルタイムに共有できます。',
+    '仲間とダイスを振り、出目・履歴・チャットをリアルタイムに共有できます。インストール不要、ルームに入らずローカルでも使えます。',
   'tutorial.dice.title': 'ダイスを振る',
   'tutorial.dice.body':
-    '画面下のドックの「ダイス」から、個数・種類・補正・用途を選んで振ります。出目は履歴に残ります。',
+    '下部ドックの「ダイス」から、個数・ダイス・補正・用途を選んで振ります。出目は履歴に残り、GM は「隠しロール」で出目を伏せて振れます。',
   'tutorial.character.title': 'キャラクター',
   'tutorial.character.body':
-    '「キャラ」からキャラクターを作成・切り替えできます。キャラクターとして振ると、名前に（プレイヤー名）が付きます。',
+    '「キャラ」でキャラクターを作成・切り替えできます。背景情報やメモを設定でき、キャラクターはファイルに書き出し／読み込みできます。',
   'tutorial.patterns.title': 'パターン',
   'tutorial.patterns.body':
-    'よく使うダイスの組み合わせは「パターン」に名前を付けて保存し、ワンタップで振れます。',
+    'よく使うダイスは「パターン」に名前を付けて保存し、一覧からワンタップで振れます。GM はパターンに隠しロールを設定できます。',
   'tutorial.room.title': 'ルームで共有',
   'tutorial.room.body':
-    '「ルーム」からルームを作成（GM になる）するか、コードを入力して参加します。履歴・チャット・参加者が全員に共有されます。',
+    '「ルーム」でルームを作成（GM になる）するか、コードで参加します。GM はルームコードを指定・変更でき、通信が切れても自動で再接続します。',
+  'tutorial.chat.title': 'チャットと添付',
+  'tutorial.chat.body':
+    'フィードでチャットができ、画像やファイルも添付できます。「@名前」で相手にメッセージを強調表示でき、フィードの名前をタップすると相手の情報を確認できます。',
   'tutorial.settings.title': '設定とヘルプ',
   'tutorial.settings.body':
-    'プレイヤー名や言語の変更、このガイドの再表示は、右上の設定（⚙）から行えます。',
+    'プレイヤー名・言語・カラーテーマの変更や、このガイドの再表示は、右上の設定（⚙）から行えます。',
 
   'player.section': 'プレイヤー',
   'player.name': 'プレイヤー名',
@@ -237,22 +240,25 @@ const en: Dict = {
   'tutorial.done': 'Get started',
   'tutorial.welcome.title': 'Welcome to TRPG Online Dice',
   'tutorial.welcome.body':
-    'Roll dice with your party and share results, history and chat in real time.',
+    'Roll dice with your party and share rolls, history and chat in real time. No install needed, and it works locally even without a room.',
   'tutorial.dice.title': 'Roll dice',
   'tutorial.dice.body':
-    'Open "Dice" in the bottom dock, pick the count, type, modifier and kind, then roll. Every roll is kept in the history.',
+    'Open "Dice" in the bottom dock, choose the count, die, modifier and kind, then roll. Every roll is kept in the history, and as GM you can make a hidden roll.',
   'tutorial.character.title': 'Characters',
   'tutorial.character.body':
-    'Open "Character" to create and switch characters. Rolling as a character shows your name as "Character（Player）".',
+    'Open "Character" to create and switch characters, each with a background and a private memo. Characters can be exported and imported as files.',
   'tutorial.patterns.title': 'Patterns',
   'tutorial.patterns.body':
-    'Save dice combinations you use often as named "Patterns" and roll them with one tap.',
+    'Save dice you use often as named "Patterns" and roll them with one tap from the list. As GM you can mark a pattern as a hidden roll.',
   'tutorial.room.title': 'Share in a room',
   'tutorial.room.body':
-    'From "Room", create a room (as GM) or join one with a code. History, chat and the player list are shared with everyone.',
+    'From "Room", create a room (become GM) or join with a code. The GM can choose or change the room code, and a dropped connection reconnects automatically.',
+  'tutorial.chat.title': 'Chat & attachments',
+  'tutorial.chat.body':
+    'Chat in the feed and attach images or files. Use "@name" to flag a message for someone, and tap a name in the feed to open that player profile.',
   'tutorial.settings.title': 'Settings & help',
   'tutorial.settings.body':
-    'Change your player name or language, and reopen this guide, from Settings (⚙) at the top right.',
+    'Change your player name, language and colour theme, and reopen this guide, from Settings (⚙) at the top right.',
 
   'player.section': 'Player',
   'player.name': 'Player name',
