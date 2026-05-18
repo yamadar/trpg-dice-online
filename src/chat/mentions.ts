@@ -21,8 +21,8 @@ export interface ResolvedMentions {
   all: boolean
 }
 
-/** Matches `@all` (any case) not glued to another letter/number. */
-const ALL_PATTERN = /@all(?![\p{L}\p{N}])/iu
+/** Matches `@all` (any case) not glued to another name character. */
+const ALL_PATTERN = /@all(?![\p{L}\p{N}_])/iu
 
 /** Escape a string so it can be used literally inside a RegExp. */
 function escapeRegExp(s: string): string {

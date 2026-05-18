@@ -85,9 +85,13 @@ function App() {
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [])
 
+  // Clear the previous dismissal timer first, so a quick second toast is
+  // not cut short by the earlier one's timer.
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const flash = useCallback((text: string, kind: 'success' | 'error' = 'success') => {
     setNotice({ text, kind })
-    setTimeout(() => setNotice(null), 2500)
+    clearTimeout(noticeTimerRef.current)
+    noticeTimerRef.current = setTimeout(() => setNotice(null), 2500)
   }, [])
 
   const rollerName = session.displayName || t('common.you')
