@@ -206,8 +206,12 @@ An SPA where players roll TRPG dice and share results with other players in real
 ### 3.13 アプリ的な UI / App-like UI
 - ダイスの個数は 1〜10 をボタンで選ぶ。補正はステッパー（−／＋）で選ぶ
   Dice count 1-10 is picked from buttons; the modifier uses a −／＋ stepper
-- 使用頻度の低い操作（プレイヤー名・言語）は設定メニュー内に格納する
-  Low-frequency controls (player name, language) live in a settings menu
+- 使用頻度の低い操作（プレイヤー名・言語・テーマ）は設定メニュー内に格納する
+  Low-frequency controls (player name, language, theme) live in a settings menu
+- 設定からカラーテーマを選べる。6 テーマ（暗色 4・明色 2）を用意し、選択は
+  ブラウザに保存する。
+  A colour theme can be picked in the settings — six themes (four dark,
+  two light), and the choice is saved per browser.
 - キャラクターの背景情報・メモは折りたたみ可能にする
   Character background and memo are collapsible
 - プレイヤー名・キャラクター名・ルーム名の変更やパターンの保存は Toast で
@@ -511,3 +515,8 @@ The `lang` fields carry the source language for future real-time translation
   UI tweaks: the create-room button now wraps before "(become GM)" on
   narrow widths; the dice-count picker is a 5×2 grid; the two roll-kind
   buttons share an equal width.
+- v1.29 — カラーテーマを 6 種類（ミッドナイト／フォレスト／エンバー／ローズ／
+  デイライト／パーチメント）追加し、設定メニューにスウォッチ式の切り替え UI を
+  実装。選択は localStorage に保存し、起動時に適用する。
+  Add six colour themes with a swatch picker in the settings menu; the
+  choice is stored in localStorage and applied on startup.
