@@ -46,6 +46,8 @@ export interface RollResult {
   value: number
   playerId: string
   playerName: string
+  /** Whether the roller was the GM — a snapshot, shown as a mark in the feed. */
+  isGM: boolean
   /** Active character name when the roll was made ('' if none). A snapshot,
    *  so tapping the name later shows the character used at that time. */
   characterName: string

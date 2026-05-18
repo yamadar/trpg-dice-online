@@ -35,7 +35,13 @@ function newId(): string {
 /** Execute a pattern: roll its dice, apply the modifier, build a RollResult. */
 export function rollPattern(
   pattern: Pick<Pattern, 'name' | 'kind' | 'diceType' | 'diceCount' | 'modifier'>,
-  player: { id: string; name: string; characterName?: string; background?: string },
+  player: {
+    id: string
+    name: string
+    isGM?: boolean
+    characterName?: string
+    background?: string
+  },
   hidden = false,
 ): RollResult {
   // Clamp to the 1-10 range the UI and the import path both enforce.
@@ -53,6 +59,7 @@ export function rollPattern(
     value: sum + pattern.modifier,
     playerId: player.id,
     playerName: player.name,
+    isGM: player.isGM ?? false,
     characterName: player.characterName ?? '',
     background: player.background ?? '',
     hidden,
