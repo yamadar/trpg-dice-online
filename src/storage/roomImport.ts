@@ -27,19 +27,17 @@ function isLogKind(value: unknown): value is LogKind {
 /**
  * Validate one cached-translation record from the manifest. Returns null
  * if any field is missing or has an unexpected value, so a malformed
- * record is dropped rather than seeded into the translation cache.
+ * record is dropped rather than seeded into the translation cache. A
+ * `backend` tag from an older (v3) archive is simply ignored.
  */
 function parseTranslation(raw: unknown): TranslationRecord | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
   const langOk = (v: unknown): v is TranslationRecord['from'] => v === 'ja' || v === 'en'
-  const backendOk = (v: unknown): v is TranslationRecord['backend'] =>
-    v === 'chrome' || v === 'mymemory'
   if (typeof r.text !== 'string' || r.text === '') return null
   if (typeof r.translated !== 'string') return null
   if (!langOk(r.from) || !langOk(r.to)) return null
-  if (!backendOk(r.backend)) return null
-  return { text: r.text, from: r.from, to: r.to, backend: r.backend, translated: r.translated }
+  return { text: r.text, from: r.from, to: r.to, translated: r.translated }
 }
 
 /** Encode raw bytes as a `data:` URL, chunked to avoid arg-count limits. */

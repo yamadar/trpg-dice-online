@@ -73,7 +73,7 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
         // Pre-fill the translation cache so restored chat shows the same
         // translations without re-contacting a backend.
         for (const tr of data.translations) {
-          seedTranslation(tr.text, tr.from, tr.to, tr.backend, tr.translated)
+          seedTranslation(tr.text, tr.from, tr.to, tr.translated)
         }
         void session.importRoom(data)
       })
@@ -106,22 +106,19 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
     if (!roomCode) return
     const entries = await loadFullLog(roomCode)
     // Carry whatever chat translations are already cached so a re-import
-    // shows them without re-translating. Both backends are checked since
-    // the player can switch between them.
+    // shows them without re-translating.
     const translations: TranslationRecord[] = []
     const seen = new Set<string>()
     for (const entry of entries) {
       if (entry.kind !== 'chat') continue
       const chat = entry.data as ChatMessage
       if (chat.text === '' || chat.lang === lang) continue
-      for (const backend of ['chrome', 'mymemory'] as const) {
-        const translated = getCachedTranslation(chat.text, chat.lang, lang, backend)
-        if (translated === undefined) continue
-        const key = `${backend}:${chat.lang}:${chat.text}`
-        if (seen.has(key)) continue
-        seen.add(key)
-        translations.push({ text: chat.text, from: chat.lang, to: lang, backend, translated })
-      }
+      const translated = getCachedTranslation(chat.text, chat.lang, lang)
+      if (translated === undefined) continue
+      const key = `${chat.lang}:${chat.text}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      translations.push({ text: chat.text, from: chat.lang, to: lang, translated })
     }
     const zip = buildRoomExport(
       { code: roomCode, name: session.roomName },

@@ -84,14 +84,16 @@ An SPA where players roll TRPG dice and share results with other players in real
   packed onto one row (name · content · time), the player-color dot is
   dropped and the name shows only the character (no "（Player）"); a long
   message wraps. The choice is remembered in the browser
-- 設定で自動翻訳をオンにすると、チャットを設定言語へ翻訳して表示する
-  （Chrome 内蔵 Translator または MyMemory を選択）。各メッセージは原文に
-  戻せ、翻訳中は原文にアニメーションを添える。翻訳は表示層で完結し、
-  失敗時は原文にフォールバックする
-  With auto-translate on, chat is translated into the UI language (using
-  the on-device Chrome Translator or MyMemory); each message flips back to
-  its original, the original animates while translating, and translation
-  stays in the display layer with an original-text fallback on failure
+- 設定で自動翻訳をオンにすると、チャットを設定言語へ翻訳して表示する。
+  翻訳は端末内の Chrome Translator を優先し、使えない場合は MyMemory へ
+  自動でフォールバックする。各メッセージは原文に戻せ、翻訳中は原文に
+  アニメーションを添える。翻訳は表示層で完結し、両方式とも失敗した場合は
+  原文を表示する
+  With auto-translate on, chat is translated into the UI language. The
+  on-device Chrome Translator is preferred and MyMemory is the automatic
+  fallback when it is unavailable. Each message flips back to its
+  original, the original animates while translating, and translation
+  stays in the display layer, showing the original if both backends fail
 - 表示は直近のみだが、上限を超えて遡る古い履歴は「これより前を読み込む」で
   永続ログからオンデマンドに読み込める
   Older history beyond the display cap can be paged in on demand from the
@@ -686,3 +688,14 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   leaving the header focused on the filter); compact entries drop the
   player-color dot and the "（Player）" half of the name, keeping just the
   character, and a long message now wraps instead of being truncated.
+- v1.44 — 翻訳方式の手動切り替えを廃止し、端末内の Chrome Translator を主、
+  MyMemory を自動フォールバックとする構成にした。翻訳結果のメモ化キーから
+  方式を外し、エクスポート書庫のマニフェストを v4 へ（翻訳結果から方式タグを
+  削除、v3 書庫も引き続き読み込める）。設定の自動翻訳・コンパクト表示は
+  ON/OFF のトグルスイッチ表示に変更。
+  Drop the manual translation-backend switch: the on-device Chrome
+  Translator is now the primary with MyMemory as an automatic fallback.
+  The memoization key no longer includes a backend, and the export
+  manifest is bumped to v4 (cached translations drop the backend tag; v3
+  archives still import). The auto-translate and compact-feed settings are
+  shown as ON/OFF toggle switches.

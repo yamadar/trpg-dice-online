@@ -3,17 +3,19 @@ import { getCachedTranslation, seedTranslation, translateText } from './translat
 
 describe('translation cache', () => {
   it('returns a seeded translation', () => {
-    seedTranslation('こんにちは', 'ja', 'en', 'chrome', 'Hello')
-    expect(getCachedTranslation('こんにちは', 'ja', 'en', 'chrome')).toBe('Hello')
+    seedTranslation('こんにちは', 'ja', 'en', 'Hello')
+    expect(getCachedTranslation('こんにちは', 'ja', 'en')).toBe('Hello')
   })
 
-  it('keys the cache by backend, languages and text', () => {
-    seedTranslation('はい', 'ja', 'en', 'chrome', 'Yes')
-    expect(getCachedTranslation('はい', 'ja', 'en', 'mymemory')).toBeUndefined()
-    expect(getCachedTranslation('いいえ', 'ja', 'en', 'chrome')).toBeUndefined()
+  it('keys the cache by languages and text', () => {
+    seedTranslation('はい', 'ja', 'en', 'Yes')
+    expect(getCachedTranslation('はい', 'ja', 'en')).toBe('Yes')
+    // A different target language or different text is a different key.
+    expect(getCachedTranslation('はい', 'ja', 'ja')).toBeUndefined()
+    expect(getCachedTranslation('いいえ', 'ja', 'en')).toBeUndefined()
   })
 
   it('returns the input unchanged when source and target match', async () => {
-    expect(await translateText('そのまま', 'ja', 'ja', 'chrome')).toBe('そのまま')
+    expect(await translateText('そのまま', 'ja', 'ja')).toBe('そのまま')
   })
 })

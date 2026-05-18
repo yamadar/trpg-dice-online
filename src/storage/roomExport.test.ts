@@ -28,9 +28,7 @@ const entries: LogEntry[] = [
   },
 ]
 
-const translations: TranslationRecord[] = [
-  { text: 'hi', from: 'en', to: 'ja', backend: 'mymemory', translated: 'やあ' },
-]
+const translations: TranslationRecord[] = [{ text: 'hi', from: 'en', to: 'ja', translated: 'やあ' }]
 
 function manifestOf(zip: Uint8Array) {
   return JSON.parse(strFromU8(unzipSync(zip)['room.json']))
@@ -49,7 +47,7 @@ describe('buildRoomExport', () => {
       buildRoomExport({ code: 'ABC', name: 'Session' }, players, entries, [], 999),
     )
     expect(manifest.type).toBe('trpg-dice-room-log')
-    expect(manifest.version).toBe(3)
+    expect(manifest.version).toBe(4)
     expect(manifest.exportedAt).toBe(999)
     expect(manifest.room).toEqual({ code: 'ABC', name: 'Session' })
     expect(manifest.players).toEqual(players)
