@@ -38,6 +38,12 @@ jobs:
 
       - name: Build
         run: npm run build
+        # TURN credentials are inlined into the client bundle by Vite
+        # (VITE_* vars). Unset secrets fall back to the free public TURN.
+        env:
+          VITE_TURN_URLS: ${{ secrets.VITE_TURN_URLS }}
+          VITE_TURN_USERNAME: ${{ secrets.VITE_TURN_USERNAME }}
+          VITE_TURN_CREDENTIAL: ${{ secrets.VITE_TURN_CREDENTIAL }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
