@@ -24,16 +24,29 @@ export interface ResolvedMentions {
 /** Matches `@all` (any case) not glued to another letter/number. */
 const ALL_PATTERN = /@all(?![\p{L}\p{N}])/iu
 
+/** Escape a string so it can be used literally inside a RegExp. */
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Whether `@name` appears in `text` as a whole mention — i.e. not glued to
+ * a following name character, so `@Bob` does not match inside `@Bobby`.
+ */
+function mentionsName(text: string, name: string): boolean {
+  return new RegExp('@' + escapeRegExp(name) + '(?![\\p{L}\\p{N}_])', 'u').test(text)
+}
+
 /**
  * Resolve every `@mention` in `text` against the given players. Matching
- * is by name (`@name` appearing anywhere in the text); ids are returned so
- * the result survives later renames. Pure.
+ * is by name (`@name` appearing as a whole token); ids are returned so the
+ * result survives later renames. Pure.
  */
 export function resolveMentions(text: string, players: MentionTarget[]): ResolvedMentions {
   const ids = new Set<string>()
   for (const player of players) {
     const name = player.name.trim()
-    if (name && text.includes('@' + name)) ids.add(player.id)
+    if (name && mentionsName(text, name)) ids.add(player.id)
   }
   return { ids: [...ids], all: ALL_PATTERN.test(text) }
 }

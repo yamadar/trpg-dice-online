@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { CloseIcon } from './icons'
 import type { ChatFile } from '../net/protocol'
@@ -31,22 +31,31 @@ export function Lightbox({ images, index, onIndexChange, onClose }: Props) {
   const hasPrev = index > 0
   const hasNext = index < images.length - 1
 
-  const go = (dir: -1 | 1) => {
-    const next = index + dir
-    if (next >= 0 && next < images.length) onIndexChange(next)
-  }
+  const go = useCallback(
+    (dir: -1 | 1) => {
+      const next = index + dir
+      if (next >= 0 && next < images.length) onIndexChange(next)
+    },
+    [index, images.length, onIndexChange],
+  )
 
-  // No dependency array: rebinds each render so the handler always sees
-  // the current index.
+  // Rebinds only when navigation context changes (not every render).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-      else if (e.key === 'ArrowLeft') go(-1)
-      else if (e.key === 'ArrowRight') go(1)
+      if (e.key === 'Escape') {
+        onClose()
+      } else if (e.key === 'ArrowLeft') {
+        // Prevent the arrow keys from also scrolling the page behind.
+        e.preventDefault()
+        go(-1)
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        go(1)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  })
+  }, [go, onClose])
 
   if (!file) return null
 

@@ -23,6 +23,16 @@ describe('resolveMentions', () => {
     expect(r.all).toBe(false)
   })
 
+  it('does not match a name that is only a prefix of a longer mention', () => {
+    // "@Bobby" must not resolve the players named "Bob".
+    expect(resolveMentions('hey @Bobby', players).ids).toEqual([])
+  })
+
+  it('matches a name followed by punctuation or whitespace', () => {
+    expect(resolveMentions('@Alice!', players).ids).toEqual(['u1'])
+    expect(resolveMentions('@Alice and others', players).ids).toEqual(['u1'])
+  })
+
   it('flags @all and @ALL regardless of case', () => {
     expect(resolveMentions('listen @all', players).all).toBe(true)
     expect(resolveMentions('@ALL now', players).all).toBe(true)

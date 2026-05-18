@@ -457,3 +457,11 @@ The `lang` fields carry the source language for future real-time translation
   Add chat @mentions: "@username" / "@all" highlight the message for the
   target. Mentions are stored by player id and typing "@" autocompletes
   usernames.
+- v1.23 — レビュー指摘の修正。@メンションが別名の前方一致で誤マッチして
+  いた問題（「@Bobby」が「Bob」に一致）を境界判定で修正。ライトボックスの
+  矢印キーで背景がスクロールしないよう preventDefault を追加し、キー
+  ハンドラの再登録を必要時のみに整理した。
+  Review fixes: stop an @mention falsely matching a name that is only a
+  prefix ("@Bobby" no longer matches "Bob"); the lightbox arrow keys now
+  preventDefault so the background does not scroll, and its key handler
+  rebinds only when needed.
