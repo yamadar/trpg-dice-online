@@ -44,12 +44,15 @@ const FeedSystemItem = memo(function FeedSystemItem({
 const FeedChatItem = memo(function FeedChatItem({
   message: m,
   archived,
+  pending,
   playerId,
   onOpenDetail,
   onOpenImage,
 }: {
   message: ChatMessage
   archived: boolean
+  /** A message still queued for an offline GM — shown but not yet sent. */
+  pending?: boolean
   playerId: string
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
@@ -64,7 +67,7 @@ const FeedChatItem = memo(function FeedChatItem({
     <li
       className={`feed-chat${own ? ' own' : ''}${mentionsMe ? ' mentioned' : ''}${
         archived ? ' archived' : ''
-      }`}
+      }${pending ? ' pending' : ''}`}
     >
       <div className="feed-line">
         <span className="player-dot" style={{ background: color }} />
@@ -84,7 +87,11 @@ const FeedChatItem = memo(function FeedChatItem({
           {m.playerName}
         </button>
         {m.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
-        <time>{new Date(m.timestamp).toLocaleTimeString(lang)}</time>
+        {pending ? (
+          <span className="pending-tag">{t('chat.pending')}</span>
+        ) : (
+          <time>{new Date(m.timestamp).toLocaleTimeString(lang)}</time>
+        )}
       </div>
       {m.text && <p className="chat-text">{m.text}</p>}
       {m.file && <ChatAttachment file={m.file} onOpenImage={onOpenImage} />}
@@ -151,6 +158,8 @@ interface Props {
   /** Whether more history can be paged in above the current oldest entry. */
   hasOlder: boolean
   onLoadOlder: () => void
+  /** Chat queued for an offline GM, shown as pending below the feed. */
+  pending: ChatMessage[]
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
 }
@@ -163,6 +172,7 @@ export function FeedList({
   isGM,
   hasOlder,
   onLoadOlder,
+  pending,
   onOpenDetail,
   onOpenImage,
 }: Props) {
@@ -174,7 +184,7 @@ export function FeedList({
   useEffect(() => {
     const el = listRef.current
     if (el && stuckToBottom.current) el.scrollTop = el.scrollHeight
-  }, [feed.length])
+  }, [feed.length, pending.length])
 
   const onScroll = () => {
     const el = listRef.current
@@ -220,6 +230,17 @@ export function FeedList({
           />
         )
       })}
+      {pending.map((m) => (
+        <FeedChatItem
+          key={`pending-${m.id}`}
+          message={m}
+          archived={false}
+          pending
+          playerId={playerId}
+          onOpenDetail={onOpenDetail}
+          onOpenImage={onOpenImage}
+        />
+      ))}
     </ul>
   )
 }

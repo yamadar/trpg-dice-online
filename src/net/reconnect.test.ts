@@ -8,9 +8,9 @@ describe('reconnectDelay', () => {
     expect(reconnectDelay(3)).toBe(4000)
   })
 
-  it('caps the backoff so it never exceeds 8s', () => {
-    expect(reconnectDelay(10)).toBe(8000)
-    expect(reconnectDelay(100)).toBe(8000)
+  it('caps the backoff so it never exceeds 5s', () => {
+    expect(reconnectDelay(10)).toBe(5000)
+    expect(reconnectDelay(100)).toBe(5000)
   })
 
   it('treats a non-positive attempt as the minimum delay', () => {
@@ -20,8 +20,8 @@ describe('reconnectDelay', () => {
 })
 
 describe('MAX_RECONNECT_ATTEMPTS', () => {
-  it('is a small positive number', () => {
-    expect(MAX_RECONNECT_ATTEMPTS).toBeGreaterThan(0)
-    expect(MAX_RECONNECT_ATTEMPTS).toBeLessThanOrEqual(10)
+  it('allows persistent retrying before giving up', () => {
+    expect(MAX_RECONNECT_ATTEMPTS).toBeGreaterThanOrEqual(10)
+    expect(MAX_RECONNECT_ATTEMPTS).toBeLessThanOrEqual(60)
   })
 })

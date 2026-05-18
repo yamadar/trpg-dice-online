@@ -133,11 +133,21 @@ An SPA where players roll TRPG dice and share results with other players in real
 - ルーム参加の試行中は「接続中」を表示する
   While a join is in progress, a "connecting" indicator is shown
 - 意図しない切断（タブのバックグラウンド化・通信断など）は自動で同じルームへ
-  再接続を試みる。バックオフ付きで数回試行し、履歴は保持する。「退出」を
-  押した意図的な切断では再接続しない。
+  再接続を試みる。再接続の間隔は最長 5 秒に抑え、「退出」を押した意図的な
+  切断では再接続しない。
   An unintentional disconnect (a backgrounded tab, a network blip) auto-
-  reconnects to the same room with a backoff, keeping the feed; a
+  reconnects to the same room, retrying at most every 5 seconds; a
   deliberate "leave" never reconnects.
+- GM がオフラインになると、参加者には再接続中のバナーを表示する。再接続でき
+  ないまま長時間が過ぎたら「GM が不在のためオフラインになりました」と通知して
+  オフラインに戻す。
+  When the GM goes offline a participant sees a reconnecting banner; if
+  the GM stays unreachable too long, the participant is notified and
+  taken offline.
+- GM がオフラインの間に参加者が送ったチャットは未送信として自分のフィードに
+  表示され、再接続できたとき順番に送信される。
+  Chat a participant sends while the GM is offline is shown as unsent in
+  their own feed and delivered in order once the room reconnects.
 - ルーム未参加でもローカル単体で利用できる（オフラインモード）
   Works standalone offline when not in a room
 
@@ -608,3 +618,15 @@ The `lang` fields carry the source language for future real-time translation
   the room. Offline, "Import history" in the room panel seeds the durable
   log with every entry, restores the feed, and re-hosts the same code;
   attachments are rebuilt into data URLs from the archive's files.
+- v1.39 — GM がオフラインになったときの参加者の体験を改善。GM の不在は GM が
+  送る定期キープアライブの途絶で検知する（WebRTC 自体の切断検知は遅いため）。
+  再接続中はバナーで「GM がオフラインです」と表示し、再接続の間隔を最長 5 秒に
+  抑えて粘り強く試行する。長時間つながらなければ通知してオフラインへ戻す。
+  オフライン中に送ったチャットは未送信として表示し、再接続時に順番に送信する。
+  Improve the participant experience when the GM goes offline: the GM's
+  absence is detected from a gap in its periodic keepalive (WebRTC is slow
+  to report a lost peer on its own). A banner shows that the GM is offline
+  while reconnecting, the retry interval is capped at 5s for persistent
+  probing, and after a long outage the participant is notified and taken
+  offline. Chat sent during the outage is shown as unsent and delivered in
+  order on reconnect.

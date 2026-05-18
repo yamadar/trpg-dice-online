@@ -180,6 +180,12 @@
   border-bottom: 1px solid rgba(239, 68, 68, 0.5);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
+/* Reconnecting is informational, not an error — amber, not red. */
+.app-banner.reconnecting {
+  background: #78350f;
+  color: #fde68a;
+  border-bottom-color: rgba(245, 158, 11, 0.5);
+}
 
 /* --- bottom dock --- */
 .dock {
@@ -820,6 +826,18 @@ button.player-row {
 .feed-chat.archived,
 .feed-system.archived {
   opacity: 0.5;
+}
+
+/* A chat message queued for an offline GM — shown but not yet sent. */
+.feed-chat.pending {
+  opacity: 0.72;
+  border-left: 3px dashed var(--text-dim);
+  padding-left: 7px;
+}
+.pending-tag {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: #fbbf24;
 }
 
 .typing-line {
