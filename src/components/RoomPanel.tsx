@@ -100,7 +100,11 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
               disabled={busy || (codeInput.length > 0 && codeInput.length < 4)}
               onClick={() => void session.createRoom(codeInput || undefined)}
             >
-              {t('room.create')}
+              {/* Each part stays whole; when narrow the label wraps only
+                  before "(become GM)". */}
+              <span className="nowrap">{t('room.create')}</span>
+              <wbr />
+              <span className="nowrap">{t('room.createGmNote')}</span>
             </button>
             <button type="button" disabled={busy || codeInput.length < 4} onClick={handleJoin}>
               {busy ? t('room.connecting') : t('room.join')}

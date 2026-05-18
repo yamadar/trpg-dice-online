@@ -1120,6 +1120,21 @@ button.player-row {
   flex-wrap: wrap;
   gap: 4px;
 }
+/* Equal-width chips on a fixed grid — keeps the dice count tidy (5×2) and
+   makes the two roll kinds the same width regardless of label length. */
+.chip-grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+}
+.chip-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+/* A label segment that must stay whole; wrapping happens only between
+   segments (used so the create button breaks before "(become GM)"). */
+.nowrap {
+  white-space: nowrap;
+}
 .chip {
   min-width: 38px;
   padding: 7px 8px;
