@@ -43,6 +43,10 @@ export class RoomManager {
   private hostConn: DataConnection | null = null
   /** True while close() is tearing down, so drops are not reported. */
   private closing = false
+  /** Host: a peer opened for a pending room-code change, awaiting commit. */
+  private candidatePeer: Peer | null = null
+  /** Host: client peer ids on the old peer when a code change was prepared. */
+  private preMigrationKeys: string[] = []
   private readonly cb: RoomCallbacks
 
   constructor(cb: RoomCallbacks) {
@@ -119,8 +123,11 @@ export class RoomManager {
    * good is reported so the session can rebuild the room.
    */
   private watchPeer(peer: Peer, lostKind: 'hostLost' | 'peerLost'): void {
+    // The `peer === this.peer` guard ignores a peer that has been swapped
+    // out (e.g. the old peer destroyed by a deliberate room-code change),
+    // so its teardown is not mistaken for an unexpected disconnect.
     peer.on('disconnected', () => {
-      if (!this.closing && !peer.destroyed) {
+      if (!this.closing && peer === this.peer && !peer.destroyed) {
         try {
           peer.reconnect()
         } catch {
@@ -129,7 +136,7 @@ export class RoomManager {
       }
     })
     peer.on('close', () => {
-      if (!this.closing) this.cb.onError(lostKind)
+      if (!this.closing && peer === this.peer) this.cb.onError(lostKind)
     })
   }
 
@@ -226,9 +233,67 @@ export class RoomManager {
     if (this.hostConn?.open) this.hostConn.send(msg)
   }
 
+  /**
+   * Host: open a second peer under `code` to prepare a room-code change.
+   * It starts accepting connections immediately so migrating clients can
+   * join right away. Rejects with `'unavailable-id'` when the code is in
+   * use by another room, leaving the current room untouched.
+   */
+  prepareCodeChange(code: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      const candidate = new Peer(peerIdForCode(code), { config: peerConfig })
+      let settled = false
+      candidate.on('open', () => {
+        settled = true
+        this.candidatePeer = candidate
+        // Snapshot the current (old-peer) clients so commit can drop just
+        // them and keep anyone who already migrated to the new peer.
+        this.preMigrationKeys = [...this.connections.keys()]
+        candidate.on('connection', (conn) => this.registerClientConnection(conn))
+        this.watchPeer(candidate, 'peerLost')
+        resolve()
+      })
+      candidate.on('error', (err: Error & { type?: string }) => {
+        if (!settled) {
+          candidate.destroy()
+          reject(err.type ?? err)
+        }
+      })
+    })
+  }
+
+  /** Host: switch the live room onto the prepared code, dropping the old peer. */
+  commitCodeChange(): void {
+    const candidate = this.candidatePeer
+    if (!candidate) return
+    this.candidatePeer = null
+    // Close the old-peer connections ourselves so their async 'close'
+    // events are no-ops (already removed) and report no "player left".
+    for (const key of this.preMigrationKeys) {
+      this.connections.get(key)?.close()
+      this.connections.delete(key)
+    }
+    this.preMigrationKeys = []
+    // Promote the candidate before destroying the old peer, so the old
+    // peer's 'close' is recognised as a swap-out rather than a loss.
+    const oldPeer = this.peer
+    this.peer = candidate
+    oldPeer?.destroy()
+  }
+
+  /** Host: discard a prepared code change without switching over. */
+  cancelCodeChange(): void {
+    this.candidatePeer?.destroy()
+    this.candidatePeer = null
+    this.preMigrationKeys = []
+  }
+
   /** Tear down all connections and the peer. */
   close(): void {
     this.closing = true
+    this.candidatePeer?.destroy()
+    this.candidatePeer = null
+    this.preMigrationKeys = []
     for (const conn of this.connections.values()) conn.close()
     this.connections.clear()
     this.hostConn?.close()

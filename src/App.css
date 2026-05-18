@@ -345,14 +345,27 @@
   gap: 8px;
   margin-bottom: 12px;
 }
-.room-join {
+.room-setup > input,
+.room-code-edit input {
+  text-transform: uppercase;
+}
+.room-setup-buttons {
   display: flex;
   gap: 6px;
 }
-.room-join input {
+.room-setup-buttons button {
+  flex: 1;
+}
+.room-code-edit {
+  display: flex;
+  gap: 6px;
+}
+.room-code-edit input {
   flex: 1;
   min-width: 0;
-  text-transform: uppercase;
+}
+.room-code-edit button {
+  flex-shrink: 0;
 }
 .room-code-row {
   display: flex;

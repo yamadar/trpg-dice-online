@@ -51,6 +51,16 @@ describe('peerIdForCode', () => {
   it('namespaces and uppercases the code', () => {
     expect(peerIdForCode('abc123')).toBe('trpgdice-ABC123')
   })
+
+  // Room isolation rests on each room code mapping to its own peer id:
+  // distinct codes can never share a P2P hub.
+  it('maps distinct codes to distinct peer ids', () => {
+    expect(peerIdForCode('ROOM01')).not.toBe(peerIdForCode('ROOM02'))
+  })
+
+  it('maps codes that differ only in case to the same peer id', () => {
+    expect(peerIdForCode('room01')).toBe(peerIdForCode('ROOM01'))
+  })
 })
 
 describe('redactRoll', () => {

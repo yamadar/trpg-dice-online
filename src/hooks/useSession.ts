@@ -4,6 +4,7 @@ import type { Lang } from '../i18n/translations'
 import { RoomManager, type RoomStatus } from '../net/room'
 import {
   newChatId,
+  normalizeRoomCode,
   redactRoll,
   staleGhostPeerIds,
   type ChatFile,
@@ -22,7 +23,7 @@ import { saveLastRoomCode } from '../storage/room'
 import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 
 export type Role = 'offline' | 'host' | 'client'
-export type ErrorKind = 'connect' | 'hostLost' | null
+export type ErrorKind = 'connect' | 'hostLost' | 'codeTaken' | null
 
 const MAX_HISTORY = 200
 const MAX_CHAT = 200
@@ -62,8 +63,11 @@ export interface Session {
   setRoomName: (name: string) => void
   errorKind: ErrorKind
   clearError: () => void
-  createRoom: () => Promise<void>
+  /** Create a room; with a code, host exactly that code (else random). */
+  createRoom: (preferredCode?: string) => Promise<void>
   joinRoom: (code: string) => Promise<void>
+  /** Host only: change the live room's code; clients migrate automatically. */
+  changeRoomCode: (code: string) => Promise<void>
   leaveRoom: () => void
   players: Player[]
   history: RollResult[]
@@ -305,6 +309,20 @@ export function useSession(): Session {
           roomNameRef.current = msg.name
           setRoomNameState(msg.name)
           break
+        case 'roomCodeChanged': {
+          // The GM moved the room to a new code. Follow it over, keeping
+          // the feed, by re-joining through the reconnect machinery.
+          const newCode = msg.code
+          setRoomCode(newCode)
+          roomCodeRef.current = newCode
+          saveLastRoomCode(newCode)
+          addMarker('codeChanged', { roomCode: newCode })
+          if (!reconnectingRef.current) {
+            reconnectingRef.current = true
+            attemptReconnectRef.current('client', newCode, 1)
+          }
+          break
+        }
         case 'players':
           setPlayers(msg.players)
           break
@@ -367,26 +385,33 @@ export function useSession(): Session {
   }, [handleClientDisconnect, handleClientMessage, handleHostMessage])
 
   // --- Public actions -----------------------------------------------------
-  const createRoom = useCallback(async () => {
-    setErrorKind(null)
-    gracefulCloseRef.current = false
-    intentionalLeaveRef.current = false
-    const mgr = ensureRoom()
-    try {
-      const code = await mgr.host()
-      peerPlayersRef.current.clear()
-      setRole('host')
-      setRoomCode(code)
-      saveLastRoomCode(code)
-      roomNameRef.current = ''
-      setRoomNameState('')
-      setPlayers([selfPlayer(true)])
-      addMarker('created', { roomCode: code })
-    } catch {
-      setErrorKind('connect')
-      goOffline()
-    }
-  }, [addMarker, ensureRoom, goOffline, selfPlayer])
+  const createRoom = useCallback(
+    async (preferredCode?: string) => {
+      setErrorKind(null)
+      gracefulCloseRef.current = false
+      intentionalLeaveRef.current = false
+      // A code under 4 chars is treated as "no code" — host a random one.
+      const wanted = preferredCode ? normalizeRoomCode(preferredCode) : ''
+      const mgr = ensureRoom()
+      try {
+        const code = await mgr.host(wanted.length >= 4 ? wanted : undefined)
+        peerPlayersRef.current.clear()
+        setRole('host')
+        setRoomCode(code)
+        saveLastRoomCode(code)
+        roomNameRef.current = ''
+        setRoomNameState('')
+        setPlayers([selfPlayer(true)])
+        addMarker('created', { roomCode: code })
+      } catch (err) {
+        // A requested code already taken by another room is distinct from
+        // a generic connection failure.
+        setErrorKind(err === 'unavailable-id' ? 'codeTaken' : 'connect')
+        goOffline()
+      }
+    },
+    [addMarker, ensureRoom, goOffline, selfPlayer],
+  )
 
   const joinRoom = useCallback(
     async (code: string) => {
@@ -527,6 +552,45 @@ export function useSession(): Session {
     attemptReconnectRef.current = attemptReconnect
     connErrorRef.current = handleConnError
   }, [attemptReconnect, handleConnError])
+
+  /**
+   * Host: change the live room's code. A new peer is claimed first (so a
+   * code already used by another room is rejected without disturbing this
+   * room); clients are then told to migrate and the room switches over.
+   * The feed survives on both ends because no one goes offline.
+   */
+  const changeRoomCode = useCallback(
+    async (rawCode: string) => {
+      if (roleRef.current !== 'host') return
+      const code = normalizeRoomCode(rawCode)
+      if (code.length < 4 || code === roomCodeRef.current) return
+      const mgr = roomRef.current
+      if (!mgr) return
+      setErrorKind(null)
+      try {
+        await mgr.prepareCodeChange(code)
+      } catch {
+        // The code belongs to another room — leave this room as it was.
+        setErrorKind('codeTaken')
+        return
+      }
+      // Tell current clients the new code, let the message land, then
+      // switch the room onto the new peer.
+      mgr.broadcast({ t: 'roomCodeChanged', code })
+      setTimeout(() => {
+        if (roleRef.current !== 'host' || roomRef.current !== mgr) {
+          mgr.cancelCodeChange()
+          return
+        }
+        mgr.commitCodeChange()
+        setRoomCode(code)
+        roomCodeRef.current = code
+        saveLastRoomCode(code)
+        addMarker('codeChanged', { roomCode: code })
+      }, 500)
+    },
+    [addMarker],
+  )
 
   const roll = useCallback(
     (result: RollResult) => {
@@ -711,6 +775,7 @@ export function useSession(): Session {
     clearError,
     createRoom,
     joinRoom,
+    changeRoomCode,
     leaveRoom,
     players,
     history,

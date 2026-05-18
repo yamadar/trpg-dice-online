@@ -85,8 +85,20 @@ An SPA where players roll TRPG dice and share results with other players in real
 - ルームを作成・参加でき、ロール履歴・チャット・参加者一覧を共有する
   Create / join a room and share roll history, chat, and the player list
 - ルーム作成者が GM 兼ホストになる / The room creator becomes GM and P2P host
+- ルーム作成時、GM はルームコードを指定できる（空欄なら自動生成）。指定した
+  コードが他のルームで使用中の場合はエラーを表示する。
+  When creating a room the GM may choose the room code (blank = random);
+  a code already used by another room shows an error.
+- GM は参加中のルームのコードを変更できる。参加者は自動的に新しいコードへ
+  移行し、履歴は保持される。他のルームのコードには影響しない。
+  The GM can change the code of a live room; players migrate to the new
+  code automatically with their feed kept, and other rooms are unaffected.
 - GM はルームに名前を付けられ、ルーム名は参加者全員に共有される
   The GM can name the room; the room name is shared with all players
+- ルーム内のやり取り（ロール・チャット・参加者）はそのルーム内で完結し、
+  他のルームには一切影響しない。
+  Everything that happens in a room (rolls, chat, players) stays within
+  that room and never affects another room.
 - ルームごとに URL（`?room=コード`）を発行し、リンクの共有で参加できる
   Each room has its own URL (`?room=CODE`); sharing the link lets others join
 - ルーム参加の試行中は「接続中」を表示する
@@ -408,3 +420,9 @@ The `lang` fields carry the source language for future real-time translation
   Detect unintentional disconnects (a backgrounded tab, a network blip)
   and auto-reconnect to the same room with a backoff, keeping the feed; a
   deliberate "leave" never triggers a reconnect.
+- v1.19 — ルーム作成時に GM がルームコードを指定できるようにした（使用中の
+  コードはエラー）。参加中のルームのコードも変更でき、参加者は履歴を保った
+  まま自動的に新しいコードへ移行する。ルーム間の独立性を 2 タブ以上で確認。
+  Let the GM pick the room code when creating a room (a taken code errors)
+  and change a live room's code, with players migrating automatically and
+  keeping their feed. Room isolation verified across multiple tabs.
