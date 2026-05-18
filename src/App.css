@@ -325,6 +325,9 @@
   font-size: 1.05rem;
   margin-bottom: 12px;
 }
+.panel-icon {
+  margin-right: 8px;
+}
 .panel h3 {
   font-size: 0.9rem;
   color: var(--text-dim);
@@ -705,6 +708,11 @@ button.player-row {
   background: var(--accent-2);
   color: #fff;
 }
+/* The compact-mode toggle reads as active when on. */
+.feed-compact[aria-pressed='true'] {
+  color: var(--accent-2);
+  font-weight: 600;
+}
 
 .feed {
   list-style: none;
@@ -838,6 +846,22 @@ button.player-row {
   margin-left: auto;
   flex-shrink: 0;
   color: #fbbf24;
+}
+
+/* Compact dice & chat: denser feed items so more fits on screen. */
+.activity.compact .feed {
+  gap: 3px;
+}
+.activity.compact .feed-chat,
+.activity.compact .feed-roll {
+  padding: 3px 9px;
+}
+.activity.compact .feed-line {
+  font-size: 0.72rem;
+}
+.activity.compact .chat-text {
+  font-size: 0.9rem;
+  margin-top: 1px;
 }
 
 .typing-line {

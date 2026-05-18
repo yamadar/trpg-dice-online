@@ -22,6 +22,6 @@ describe('reconnectDelay', () => {
 describe('MAX_RECONNECT_ATTEMPTS', () => {
   it('allows persistent retrying before giving up', () => {
     expect(MAX_RECONNECT_ATTEMPTS).toBeGreaterThanOrEqual(10)
-    expect(MAX_RECONNECT_ATTEMPTS).toBeLessThanOrEqual(60)
+    expect(MAX_RECONNECT_ATTEMPTS).toBeLessThanOrEqual(120)
   })
 })

@@ -6,6 +6,7 @@ import { isImageType } from '../chat/attachment'
 import type { ChatFile, ChatMessage } from '../net/protocol'
 import type { RollResult } from '../dice/types'
 import { loadFullLog } from '../storage/roomLog'
+import { loadCompactFeed, saveCompactFeed } from '../storage/display'
 import { Sheet } from './Sheet'
 import { PlayerDetailCard } from './PlayerDetailCard'
 import { Lightbox } from './Lightbox'
@@ -40,6 +41,8 @@ interface Props {
 export function ActivityPanel({ session, onNotice }: Props) {
   const { t } = useI18n()
   const [filter, setFilter] = useState<FeedFilter>('all')
+  // Compact layout for the feed — denser items; persisted across sessions.
+  const [compact, setCompact] = useState(loadCompactFeed)
   // The feed entry whose name was tapped, opening the player-detail card.
   const [detail, setDetail] = useState<FeedDetailTarget | null>(null)
   // Index (within `images`) of the picture open in the lightbox.
@@ -127,6 +130,12 @@ export function ActivityPanel({ session, onNotice }: Props) {
     }
   }
 
+  const toggleCompact = () => {
+    const next = !compact
+    setCompact(next)
+    saveCompactFeed(next)
+  }
+
   const typing = session.typingNames
   const typingLine =
     typing.length === 0
@@ -141,7 +150,7 @@ export function ActivityPanel({ session, onNotice }: Props) {
   const pending = filter === 'all' || filter === 'chat' ? session.outbox : []
 
   return (
-    <section className="panel activity">
+    <section className={`panel activity${compact ? ' compact' : ''}`}>
       <div className="panel-head">
         <h2>{t('feed.section')}</h2>
         <div className="feed-tools">
@@ -158,6 +167,14 @@ export function ActivityPanel({ session, onNotice }: Props) {
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            className="link feed-compact"
+            aria-pressed={compact}
+            onClick={toggleCompact}
+          >
+            {t('feed.compact')}
+          </button>
           {feed.length > 0 && (
             <button type="button" className="link feed-clear" onClick={clearFeed}>
               {t('feed.clear')}

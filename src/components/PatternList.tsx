@@ -37,7 +37,12 @@ export function PatternList({
 
   return (
     <section className="panel">
-      <h2>{t('pattern.section')}</h2>
+      <h2>
+        <span className="panel-icon" aria-hidden="true">
+          ⭐
+        </span>
+        {t('pattern.section')}
+      </h2>
       {!hasCharacter && <p className="hint">{t('pattern.needCharacter')}</p>}
       {hasCharacter && patterns.length === 0 && (
         <p className="hint">

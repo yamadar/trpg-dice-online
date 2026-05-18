@@ -34,6 +34,8 @@ export function CharacterPanel({ characters, onNotice }: Props) {
   // One toast after a burst of name edits settles, not per keystroke.
   // Toast once the name edit settles (on blur or when the sheet closes).
   const nameNotice = useFieldNotice(() => onNotice(t('toast.characterName')))
+  // The same settle-then-toast for the background / memo detail fields.
+  const detailNotice = useFieldNotice(() => onNotice(t('toast.characterDetail')))
 
   const handleCreate = () => {
     createCharacter('', lang)
@@ -77,7 +79,12 @@ export function CharacterPanel({ characters, onNotice }: Props) {
 
   return (
     <section className="panel">
-      <h2>{t('character.section')}</h2>
+      <h2>
+        <span className="panel-icon" aria-hidden="true">
+          🎭
+        </span>
+        {t('character.section')}
+      </h2>
 
       <div className="char-switch">
         <label className="field">
@@ -133,9 +140,11 @@ export function CharacterPanel({ characters, onNotice }: Props) {
                   value={activeCharacter.background}
                   maxLength={1000}
                   placeholder={t('character.backgroundPlaceholder')}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     updateCharacter(activeCharacter.id, { background: e.target.value })
-                  }
+                    detailNotice.markChanged()
+                  }}
+                  onBlur={detailNotice.flush}
                 />
               </label>
               <label className="field">
@@ -145,7 +154,11 @@ export function CharacterPanel({ characters, onNotice }: Props) {
                   value={activeCharacter.memo}
                   maxLength={2000}
                   placeholder={t('character.memoPlaceholder')}
-                  onChange={(e) => updateCharacter(activeCharacter.id, { memo: e.target.value })}
+                  onChange={(e) => {
+                    updateCharacter(activeCharacter.id, { memo: e.target.value })
+                    detailNotice.markChanged()
+                  }}
+                  onBlur={detailNotice.flush}
                 />
               </label>
               <label className="checkbox">

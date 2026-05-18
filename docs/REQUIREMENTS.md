@@ -76,6 +76,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   Feed entries from the GM show a GM mark next to the name
 - 表示のクリアは誤操作で行われないよう、確認ダイアログを必須とする
   Clearing the feed requires a confirmation dialog to avoid accidental loss
+- フィードは任意でコンパクト表示に切り替えられる（項目を詰めて表示）。設定は
+  ブラウザに保存される
+  The feed can optionally be switched to a compact, denser layout; the
+  choice is remembered in the browser
 - 表示は直近のみだが、上限を超えて遡る古い履歴は「これより前を読み込む」で
   永続ログからオンデマンドに読み込める
   Older history beyond the display cap can be paged in on demand from the
@@ -630,3 +634,12 @@ The `lang` fields carry the source language for future real-time translation
   probing, and after a long outage the participant is notified and taken
   offline. Chat sent during the outage is shown as unsent and delivered in
   order on reconnect.
+- v1.40 — 小さな UX 改善: GM 不在時の再接続を最大 60 回（約 5 分）まで粘って
+  から離脱するようにし、ルーム／キャラ／ダイス／パターン各モーダルのタイトルに
+  アイコンを付け、ダイス & チャットにコンパクト表示の切り替えを追加。
+  キャラクター詳細の更新とルームコードの変更でも Toast を表示する。
+  Small UX improvements: reconnection now persists up to 60 attempts
+  (~5 minutes) before giving up; the Room / Character / Dice / Pattern
+  modal titles carry their icons; the dice & chat feed gained a compact
+  layout toggle; and editing character details or changing the room code
+  now also raises a toast.
