@@ -32,6 +32,18 @@
   min-width: 0;
   max-width: 100%;
   font-size: 0.9rem;
+  /* Each stat is a button that opens its panel. */
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.stat:hover {
+  background: var(--bg);
 }
 .stat-key {
   font-size: 0.7rem;
@@ -389,8 +401,30 @@ button.player-row {
 }
 .player-caret {
   flex-shrink: 0;
-  color: var(--text-dim);
-  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--accent);
+  font-size: 0.8rem;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+.player-caret.open {
+  transform: rotate(90deg);
+}
+.players-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.expand-all {
+  flex-shrink: 0;
+  font-size: 0.8rem;
 }
 .player-detail {
   display: flex;

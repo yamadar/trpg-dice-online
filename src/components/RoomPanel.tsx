@@ -17,7 +17,7 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   const { t } = useI18n()
   const [codeInput, setCodeInput] = useState(() => normalizeRoomCode(initialJoinCode))
   const [copied, setCopied] = useState(false)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
   const { status, role, roomCode, players, playerId } = session
 
   const busy = status === 'connecting'
@@ -48,6 +48,26 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   const handleLeave = () => {
     if (role === 'host' && !window.confirm(t('room.leaveConfirmGM'))) return
     session.leaveRoom()
+  }
+
+  // Only players with a character name or background have a detail to expand.
+  const detailIds = players
+    .filter((p) => p.characterName.trim() !== '' || p.background.trim() !== '')
+    .map((p) => p.id)
+  const allExpanded = detailIds.length > 0 && detailIds.every((id) => expandedIds.has(id))
+
+  const toggleExpanded = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  // One control to expand or collapse every participant's detail at once.
+  const toggleAll = () => {
+    setExpandedIds(allExpanded ? new Set() : new Set(detailIds))
   }
 
   return (
@@ -127,14 +147,21 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
       )}
 
       <div className="players">
-        <h3>
-          {t('room.players')} ({players.length})
-        </h3>
+        <div className="players-head">
+          <h3>
+            {t('room.players')} ({players.length})
+          </h3>
+          {detailIds.length > 0 && (
+            <button type="button" className="link expand-all" onClick={toggleAll}>
+              {allExpanded ? t('room.collapseAll') : t('room.expandAll')}
+            </button>
+          )}
+        </div>
         <ul>
           {players.map((p: Player) => {
             const color = playerColor(p.id)
             const hasDetail = p.characterName.trim() !== '' || p.background.trim() !== ''
-            const expanded = expandedId === p.id
+            const expanded = expandedIds.has(p.id)
             const rowInner = (
               <>
                 <span className="player-dot" style={{ background: color }} />
@@ -144,8 +171,8 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
                 {p.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
                 {p.id === playerId && <span className="badge you">{t('room.youBadge')}</span>}
                 {hasDetail && (
-                  <span className="player-caret" aria-hidden="true">
-                    {expanded ? '▾' : '▸'}
+                  <span className={`player-caret${expanded ? ' open' : ''}`} aria-hidden="true">
+                    ▸
                   </span>
                 )}
               </>
@@ -157,7 +184,7 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
                     type="button"
                     className="player-row"
                     aria-expanded={expanded}
-                    onClick={() => setExpandedId(expanded ? null : p.id)}
+                    onClick={() => toggleExpanded(p.id)}
                   >
                     {rowInner}
                   </button>

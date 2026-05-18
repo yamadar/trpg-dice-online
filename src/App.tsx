@@ -171,6 +171,8 @@ function App() {
           roomName={session.roomName}
           playerCount={session.players.length}
           characterName={characters.activeCharacter?.name ?? ''}
+          onOpenRoom={() => setOpenSheet('room')}
+          onOpenCharacter={() => setOpenSheet('character')}
         />
         <SettingsMenu
           name={session.name}
