@@ -489,3 +489,11 @@ The `lang` fields carry the source language for future real-time translation
   デバウンスから、フォーカスが外れた時／モーダルを閉じた時に変更した。
   Also toast on a player-name change, and switch the name fields'
   notification from a typing debounce to firing on blur / modal close.
+- v1.26 — リファクタリング。ActivityPanel をフィード表示（FeedList）と
+  チャット入力（ChatComposer）に分割し、@メンション補完を
+  useMentionAutocomplete フックへ切り出した。フィードの新着自動スクロールは、
+  利用者が末尾付近にいるときだけ行うようにした（履歴を読み返している最中に
+  引き戻されない）。
+  Refactor: split ActivityPanel into FeedList + ChatComposer and a
+  useMentionAutocomplete hook; the feed now auto-scrolls to a new entry
+  only when the player is already near the bottom.
