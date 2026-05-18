@@ -25,6 +25,10 @@ const ja: Dict = {
   'gate.start': 'はじめる',
   'gate.nameHint': 'プレイヤー名は設定からいつでも変更できます。',
 
+  'toast.roomName': 'ルーム名を変更しました',
+  'toast.characterName': 'キャラクター名を変更しました',
+  'toast.patternSaved': 'パターンを保存しました',
+
   'settings.help': '使い方を見る',
   'tutorial.skip': 'スキップ',
   'tutorial.next': '次へ',
@@ -138,7 +142,7 @@ const ja: Dict = {
   'room.join': 'ルームに参加',
   'room.codePlaceholder': 'ルームコード',
   'room.code': 'ルームコード',
-  'room.copy': 'コードをコピー',
+  'room.copy': 'リンクをコピー',
   'room.copied': 'コピーしました',
   'room.leave': 'ルームを退出',
   'room.leaveConfirmGM': 'ルームを閉じると、参加者全員がオフラインになります。よろしいですか？',
@@ -147,7 +151,7 @@ const ja: Dict = {
   'room.players': '参加者',
   'room.gmBadge': 'GM',
   'room.youBadge': 'あなた',
-  'room.shareHint': 'このコードを仲間に共有してください',
+  'room.shareHint': 'このリンクを仲間に共有してください',
   'room.error': '接続に失敗しました。コードを確認してください。',
   'room.hostLost': 'GM との接続が切れました。',
 
@@ -177,6 +181,10 @@ const en: Dict = {
 
   'gate.start': 'Start',
   'gate.nameHint': 'You can change your player name anytime in Settings.',
+
+  'toast.roomName': 'Room name updated',
+  'toast.characterName': 'Character name updated',
+  'toast.patternSaved': 'Pattern saved',
 
   'settings.help': 'How to use',
   'tutorial.skip': 'Skip',
@@ -291,7 +299,7 @@ const en: Dict = {
   'room.join': 'Join room',
   'room.codePlaceholder': 'Room code',
   'room.code': 'Room code',
-  'room.copy': 'Copy code',
+  'room.copy': 'Copy link',
   'room.copied': 'Copied',
   'room.leave': 'Leave room',
   'room.leaveConfirmGM': 'Closing the room will take every player offline. Continue?',
@@ -300,7 +308,7 @@ const en: Dict = {
   'room.players': 'Players',
   'room.gmBadge': 'GM',
   'room.youBadge': 'You',
-  'room.shareHint': 'Share this code with your party',
+  'room.shareHint': 'Share this link with your party',
   'room.error': 'Failed to connect. Please check the code.',
   'room.hostLost': 'Lost connection to the GM.',
 

@@ -1,17 +1,19 @@
 import { useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
 import type { UseCharacters } from '../characters/useCharacters'
 import { exportCharacterJSON } from '../characters/io'
 
 interface Props {
   characters: UseCharacters
+  onNotice: (message: string) => void
 }
 
 /**
  * Character management: pick the active character, edit its name /
  * background / private memo, and export or import characters.
  */
-export function CharacterPanel({ characters }: Props) {
+export function CharacterPanel({ characters, onNotice }: Props) {
   const { t, lang } = useI18n()
   const {
     characters: list,
@@ -28,6 +30,9 @@ export function CharacterPanel({ characters }: Props) {
   const [importError, setImportError] = useState(false)
   const [exportMemo, setExportMemo] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // One toast after a burst of name edits settles, not per keystroke.
+  const notifyNameChange = useDebouncedCallback(() => onNotice(t('toast.characterName')), 800)
 
   const handleCreate = () => {
     createCharacter('', lang)
@@ -101,7 +106,10 @@ export function CharacterPanel({ characters }: Props) {
               value={activeCharacter.name}
               maxLength={40}
               placeholder={t('character.namePlaceholder')}
-              onChange={(e) => updateCharacter(activeCharacter.id, { name: e.target.value })}
+              onChange={(e) => {
+                updateCharacter(activeCharacter.id, { name: e.target.value })
+                notifyNameChange()
+              }}
             />
           </label>
 
