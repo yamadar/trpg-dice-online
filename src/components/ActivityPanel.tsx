@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import type { TFn } from '../i18n/context'
 import type { Session } from '../hooks/useSession'
@@ -88,6 +88,8 @@ export function ActivityPanel({ session, onNotice }: Props) {
     const i = images.indexOf(file)
     setLightboxIndex(i >= 0 ? i : 0)
   }
+  // Stable so the Lightbox keydown effect does not rebind every render.
+  const closeLightbox = useCallback(() => setLightboxIndex(null), [])
 
   // Items older than the most recent room exit belong to a room left behind.
   const lastExitAt = useMemo(
@@ -454,7 +456,7 @@ export function ActivityPanel({ session, onNotice }: Props) {
           images={images}
           index={lightboxIndex}
           onIndexChange={setLightboxIndex}
-          onClose={() => setLightboxIndex(null)}
+          onClose={closeLightbox}
         />
       )}
     </section>
