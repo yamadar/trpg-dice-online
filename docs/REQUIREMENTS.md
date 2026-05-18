@@ -105,6 +105,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   that room and never affects another room.
 - ルームごとに URL（`?room=コード`）を発行し、リンクの共有で参加できる
   Each room has its own URL (`?room=CODE`); sharing the link lets others join
+- `?room=コード` 付きの URL で開いたとき（リロード時も含む）は、手動操作を
+  待たず自動でそのルームへの参加を試みる
+  Opening (or reloading) a URL with a `?room=CODE` automatically attempts
+  to join that room without waiting for a manual tap
 - ルーム参加の試行中は「接続中」を表示する
   While a join is in progress, a "connecting" indicator is shown
 - 意図しない切断（タブのバックグラウンド化・通信断など）は自動で同じルームへ
@@ -532,3 +536,7 @@ The `lang` fields carry the source language for future real-time translation
   持たせ、GM のものには名前の横に GM マークを表示するようにした。
   Feed chat / roll entries now record whether the sender was the GM, and
   show a GM mark beside the name for the GM's entries.
+- v1.32 — `?room=コード` 付きで開く／リロードした際に、自動でそのルームへ
+  参加を試みるようにした（手動の「ルームに参加」操作が不要）。
+  Opening or reloading with a `?room=CODE` now auto-attempts to join that
+  room, with no manual "join" tap needed.
