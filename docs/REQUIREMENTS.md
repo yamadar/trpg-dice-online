@@ -540,3 +540,10 @@ The `lang` fields carry the source language for future real-time translation
   参加を試みるようにした（手動の「ルームに参加」操作が不要）。
   Opening or reloading with a `?room=CODE` now auto-attempts to join that
   room, with no manual "join" tap needed.
+- v1.33 — ルームの全履歴（ロール・チャット・マーカー）を IndexedDB の
+  ルーム単位の永続ログにも追記するようにした。表示は従来どおり直近のみだが、
+  リロード復元・遡り表示・エクスポートの基盤となる。「表示をクリア」は
+  そのルームのログも削除する。
+  Every roll / chat / marker is now also appended to a durable per-room
+  IndexedDB log — the basis for reload restore, on-demand history and
+  export. "Clear view" also clears that room's log.
