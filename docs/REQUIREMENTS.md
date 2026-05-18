@@ -210,9 +210,13 @@ An SPA where players roll TRPG dice and share results with other players in real
   Low-frequency controls (player name, language) live in a settings menu
 - キャラクターの背景情報・メモは折りたたみ可能にする
   Character background and memo are collapsible
-- ルーム名・キャラクター名の変更やパターンの保存は Toast で通知する
-  Saving / changing room and character names and saving patterns is
-  confirmed with a toast
+- プレイヤー名・キャラクター名・ルーム名の変更やパターンの保存は Toast で
+  通知する。保存ボタンの無い項目（各種名前）は、入力中ではなく入力欄から
+  フォーカスが外れた時、またはモーダルが閉じられた時に通知する。
+  Changing the player / character / room name and saving a pattern is
+  confirmed with a toast. For fields without a save button (the names),
+  the toast fires when the field loses focus or the modal closes — not
+  while typing.
 - ページを離れる前（リロード・戻る・閉じる）に確認ダイアログを表示する
   A confirmation is shown before the page is left (reload, back, close)
 - 履歴＆チャットを主画面とし、画面の大半を占有する。最小限の状態
@@ -480,3 +484,8 @@ The `lang` fields carry the source language for future real-time translation
   The GM hidden-roll flag is now stored on the pattern, shown in the
   pattern list only to the GM, ignored when a non-GM rolls it, and kept
   through character export / import.
+- v1.25 — プレイヤー名の変更も Toast で通知するようにした。保存ボタンの
+  無い名前項目（プレイヤー名・キャラクター名・ルーム名）の通知を、入力中の
+  デバウンスから、フォーカスが外れた時／モーダルを閉じた時に変更した。
+  Also toast on a player-name change, and switch the name fields'
+  notification from a typing debounce to firing on blur / modal close.

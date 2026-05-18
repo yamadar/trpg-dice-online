@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
-import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
+import { useFieldNotice } from '../hooks/useFieldNotice'
 import type { UseCharacters } from '../characters/useCharacters'
 import { exportCharacterJSON } from '../characters/io'
 
@@ -32,7 +32,8 @@ export function CharacterPanel({ characters, onNotice }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // One toast after a burst of name edits settles, not per keystroke.
-  const notifyNameChange = useDebouncedCallback(() => onNotice(t('toast.characterName')), 800)
+  // Toast once the name edit settles (on blur or when the sheet closes).
+  const nameNotice = useFieldNotice(() => onNotice(t('toast.characterName')))
 
   const handleCreate = () => {
     createCharacter('', lang)
@@ -108,8 +109,9 @@ export function CharacterPanel({ characters, onNotice }: Props) {
               placeholder={t('character.namePlaceholder')}
               onChange={(e) => {
                 updateCharacter(activeCharacter.id, { name: e.target.value })
-                notifyNameChange()
+                nameNotice.markChanged()
               }}
+              onBlur={nameNotice.flush}
             />
           </label>
 

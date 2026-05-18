@@ -27,6 +27,7 @@ const ja: Dict = {
 
   'toast.roomName': 'ルーム名を変更しました',
   'toast.characterName': 'キャラクター名を変更しました',
+  'toast.playerName': 'プレイヤー名を変更しました',
   'toast.patternSaved': 'パターンを保存しました',
   'toast.patternUpdated': 'パターンを更新しました',
 
@@ -210,6 +211,7 @@ const en: Dict = {
 
   'toast.roomName': 'Room name updated',
   'toast.characterName': 'Character name updated',
+  'toast.playerName': 'Player name updated',
   'toast.patternSaved': 'Pattern saved',
   'toast.patternUpdated': 'Pattern updated',
 

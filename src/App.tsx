@@ -193,6 +193,7 @@ function App() {
           name={session.name}
           onChangeName={(next) => updateIdentity({ name: next })}
           onOpenHelp={() => setShowTutorial(true)}
+          onNotice={flash}
         />
       </header>
 
