@@ -22,6 +22,8 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
     () => normalizeRoomCode(initialJoinCode) || normalizeRoomCode(loadLastRoomCode()),
   )
   const [copied, setCopied] = useState(false)
+  // Host-only field for changing the live room's code.
+  const [newCode, setNewCode] = useState('')
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
   const { status, role, roomCode, players, playerId } = session
 
@@ -81,24 +83,25 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
 
       {!online && (
         <div className="room-setup">
-          <button
-            type="button"
-            className="primary"
+          <input
+            type="text"
+            value={codeInput}
+            placeholder={t('room.codePlaceholder')}
+            maxLength={8}
             disabled={busy}
-            onClick={() => void session.createRoom()}
-          >
-            {t('room.create')}
-          </button>
-          <div className="room-join">
-            <input
-              type="text"
-              value={codeInput}
-              placeholder={t('room.codePlaceholder')}
-              maxLength={8}
-              disabled={busy}
-              onChange={(e) => setCodeInput(normalizeRoomCode(e.target.value))}
-              onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-            />
+            onChange={(e) => setCodeInput(normalizeRoomCode(e.target.value))}
+            onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
+          />
+          <div className="room-setup-buttons">
+            <button
+              type="button"
+              className="primary"
+              // A code is optional for create; if given it must be valid.
+              disabled={busy || (codeInput.length > 0 && codeInput.length < 4)}
+              onClick={() => void session.createRoom(codeInput || undefined)}
+            >
+              {t('room.create')}
+            </button>
             <button type="button" disabled={busy || codeInput.length < 4} onClick={handleJoin}>
               {busy ? t('room.connecting') : t('room.join')}
             </button>
@@ -108,7 +111,7 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
               {t('room.connecting')}
             </p>
           ) : (
-            <p className="hint">{t('room.offline')}</p>
+            <p className="hint">{t('room.codeCreateHint')}</p>
           )}
         </div>
       )}
@@ -123,6 +126,28 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
             </button>
           </div>
           <p className="hint">{t('room.shareHint')}</p>
+          {role === 'host' && (
+            <div className="field">
+              <span>{t('room.changeCode')}</span>
+              <div className="room-code-edit">
+                <input
+                  type="text"
+                  value={newCode}
+                  placeholder={t('room.newCodePlaceholder')}
+                  maxLength={8}
+                  onChange={(e) => setNewCode(normalizeRoomCode(e.target.value))}
+                />
+                <button
+                  type="button"
+                  disabled={busy || newCode.length < 4 || newCode === roomCode}
+                  onClick={() => void session.changeRoomCode(newCode)}
+                >
+                  {t('room.changeCode')}
+                </button>
+              </div>
+              <p className="hint">{t('room.codeChangeHint')}</p>
+            </div>
+          )}
           {role === 'host' ? (
             <label className="field">
               <span>{t('room.name')}</span>

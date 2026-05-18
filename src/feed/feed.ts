@@ -18,6 +18,7 @@ export type MarkerType =
   | 'reconnecting'
   | 'reconnected'
   | 'reconnectFailed'
+  | 'codeChanged'
 
 export interface SystemMarker {
   id: string

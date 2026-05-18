@@ -85,6 +85,8 @@ export type HostMessage =
   | { t: 'typing'; signal: TypingSignal }
   | { t: 'notice'; event: 'playerJoined' | 'playerLeft'; playerName: string; timestamp: number }
   | { t: 'roomName'; name: string }
+  /** The GM changed the room code; clients must re-join under the new one. */
+  | { t: 'roomCodeChanged'; code: string }
   | { t: 'roomClosed' }
 
 export type NetMessage = ClientMessage | HostMessage

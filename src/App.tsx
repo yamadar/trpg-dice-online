@@ -183,7 +183,11 @@ function App() {
 
       {session.errorKind && (
         <p className="app-banner" role="alert">
-          {session.errorKind === 'connect' ? t('room.error') : t('room.hostLost')}
+          {session.errorKind === 'connect'
+            ? t('room.error')
+            : session.errorKind === 'codeTaken'
+              ? t('room.codeTaken')
+              : t('room.hostLost')}
           <button
             type="button"
             className="link icon-x"
