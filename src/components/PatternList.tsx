@@ -6,6 +6,8 @@ import { CloseIcon } from './icons'
 interface Props {
   /** Whether a character is active (patterns belong to a character). */
   hasCharacter: boolean
+  /** Active character's name, for the empty-state message. */
+  characterName: string
   patterns: Pattern[]
   onLoad: (pattern: Pattern) => void
   onQuickRoll: (pattern: Pattern) => void
@@ -15,6 +17,7 @@ interface Props {
 
 export function PatternList({
   hasCharacter,
+  characterName,
   patterns,
   onLoad,
   onQuickRoll,
@@ -33,7 +36,11 @@ export function PatternList({
     <section className="panel">
       <h2>{t('pattern.section')}</h2>
       {!hasCharacter && <p className="hint">{t('pattern.needCharacter')}</p>}
-      {hasCharacter && patterns.length === 0 && <p className="hint">{t('pattern.none')}</p>}
+      {hasCharacter && patterns.length === 0 && (
+        <p className="hint">
+          {t('pattern.none', { name: characterName.trim() || t('character.unnamed') })}
+        </p>
+      )}
       {hasCharacter && (
         <ul className="pattern-list">
           {patterns.map((p, i) => (

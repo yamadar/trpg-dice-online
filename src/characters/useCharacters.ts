@@ -22,6 +22,8 @@ export interface UseCharacters {
   updateCharacter: (id: string, patch: Partial<CharacterEdits>) => void
   deleteCharacter: (id: string) => void
   addPattern: (characterId: string, pattern: Omit<Pattern, 'id'>) => void
+  /** Replace an existing pattern's fields, keeping its id and position. */
+  updatePattern: (characterId: string, patternId: string, pattern: Omit<Pattern, 'id'>) => void
   deletePattern: (characterId: string, patternId: string) => void
   /** Move a pattern up (-1) or down (+1) within its character's list. */
   movePattern: (characterId: string, patternId: string, direction: -1 | 1) => void
@@ -94,6 +96,26 @@ export function useCharacters(): UseCharacters {
     })
   }, [])
 
+  const updatePattern = useCallback(
+    (characterId: string, patternId: string, pattern: Omit<Pattern, 'id'>) => {
+      setCharacters((prev) => {
+        const next = prev.map((c) =>
+          c.id === characterId
+            ? {
+                ...c,
+                patterns: c.patterns.map((p) =>
+                  p.id === patternId ? { ...pattern, id: patternId } : p,
+                ),
+              }
+            : c,
+        )
+        saveCharacters(next)
+        return next
+      })
+    },
+    [],
+  )
+
   const deletePattern = useCallback((characterId: string, patternId: string) => {
     setCharacters((prev) => {
       const next = prev.map((c) =>
@@ -155,6 +177,7 @@ export function useCharacters(): UseCharacters {
     updateCharacter,
     deleteCharacter,
     addPattern,
+    updatePattern,
     deletePattern,
     movePattern,
     importCharacter,
