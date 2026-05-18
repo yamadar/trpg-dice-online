@@ -5,6 +5,7 @@ import { useSession } from './hooks/useSession'
 import { useCharacters } from './characters/useCharacters'
 import { rollPattern } from './dice/roll'
 import type { Pattern } from './dice/types'
+import { normalizeRoomCode } from './net/protocol'
 import { isTutorialSeen, markTutorialSeen } from './storage/tutorial'
 import { CloseIcon } from './components/icons'
 import { StatusBar } from './components/StatusBar'
@@ -45,10 +46,10 @@ function App() {
   const [draft, setDraft] = useState<Draft>(DEFAULT_DRAFT)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [initialJoinCode] = useState(roomCodeFromUrl)
-  const [openSheet, setOpenSheet] = useState<SheetId | null>(initialJoinCode ? 'room' : null)
+  const [openSheet, setOpenSheet] = useState<SheetId | null>(null)
   const [showTutorial, setShowTutorial] = useState(() => !isTutorialSeen())
 
-  const { updateIdentity } = session
+  const { updateIdentity, joinRoom } = session
   const activeName = characters.activeCharacter?.name
   const activeBackground = characters.activeCharacter?.background
 
@@ -61,6 +62,17 @@ function App() {
   useEffect(() => {
     updateIdentity({ lang })
   }, [updateIdentity, lang])
+
+  // When the page is opened (or reloaded) with a ?room= code, attempt to
+  // join that room automatically instead of waiting for a manual tap. The
+  // ref guards against React StrictMode running the effect twice in dev.
+  const autoJoinDone = useRef(false)
+  useEffect(() => {
+    if (autoJoinDone.current) return
+    autoJoinDone.current = true
+    const code = normalizeRoomCode(initialJoinCode)
+    if (code.length >= 4) void joinRoom(code)
+  }, [initialJoinCode, joinRoom])
 
   // Reflect the current room in the URL so it can be shared / bookmarked.
   const firstUrlSync = useRef(true)
