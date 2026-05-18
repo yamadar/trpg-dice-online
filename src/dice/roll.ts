@@ -35,7 +35,7 @@ function newId(): string {
 /** Execute a pattern: roll its dice, apply the modifier, build a RollResult. */
 export function rollPattern(
   pattern: Pick<Pattern, 'name' | 'kind' | 'diceType' | 'diceCount' | 'modifier'>,
-  player: { id: string; name: string },
+  player: { id: string; name: string; characterName?: string; background?: string },
   hidden = false,
 ): RollResult {
   const count = Math.max(1, Math.floor(pattern.diceCount))
@@ -52,6 +52,8 @@ export function rollPattern(
     value: sum + pattern.modifier,
     playerId: player.id,
     playerName: player.name,
+    characterName: player.characterName ?? '',
+    background: player.background ?? '',
     hidden,
     timestamp: Date.now(),
   }

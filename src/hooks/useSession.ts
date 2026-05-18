@@ -616,6 +616,8 @@ export function useSession(): Session {
         id: newChatId(),
         playerId,
         playerName: composeName(nameRef.current, characterNameRef.current) || '???',
+        characterName: characterNameRef.current,
+        background: backgroundRef.current,
         text: trimmed,
         timestamp: Date.now(),
         lang: langRef.current,

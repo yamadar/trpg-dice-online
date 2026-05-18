@@ -15,13 +15,24 @@ function roll(id: string, at: number): RollResult {
     value: 3,
     playerId: 'p1',
     playerName: 'A',
+    characterName: '',
+    background: '',
     hidden: false,
     timestamp: at,
   }
 }
 
 function chat(id: string, at: number): ChatMessage {
-  return { id, playerId: 'p1', playerName: 'A', text: 'hi', timestamp: at, lang: 'ja' }
+  return {
+    id,
+    playerId: 'p1',
+    playerName: 'A',
+    characterName: '',
+    background: '',
+    text: 'hi',
+    timestamp: at,
+    lang: 'ja',
+  }
 }
 
 function chatWithFile(id: string, at: number): ChatMessage {

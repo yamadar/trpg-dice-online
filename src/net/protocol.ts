@@ -35,6 +35,12 @@ export interface ChatMessage {
   playerId: string
   /** Composed display name ("Character（Player）" or just the player). */
   playerName: string
+  /** Active character name when the message was sent ('' if none). A
+   *  snapshot, so tapping the name later shows that character, not the
+   *  sender's current one. */
+  characterName: string
+  /** Active character's public background at that time ('' if none). */
+  background: string
   text: string
   timestamp: number
   /** Language the message was written in (for future translation). */

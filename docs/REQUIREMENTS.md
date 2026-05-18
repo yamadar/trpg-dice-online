@@ -74,12 +74,14 @@ An SPA where players roll TRPG dice and share results with other players in real
   Each participant gets a stable color so they are easy to tell apart
 - 表示のクリアは誤操作で行われないよう、確認ダイアログを必須とする
   Clearing the feed requires a confirmation dialog to avoid accidental loss
-- フィードの名前をタップすると、そのプレイヤーのキャラクター名・プレイヤー名・
-  背景情報をカードで表示する（PC・モバイル両対応）。退出済みのプレイヤーは
-  記録された名前のみを表示する。
-  Tapping a name in the feed shows that player's character name, player name
-  and background in a card (works on desktop and mobile); for a player who
-  has left, only the name recorded on the entry is shown.
+- フィードの名前をタップすると、その発言・ロール時点のキャラクター名・
+  プレイヤー名・背景情報をカードで表示する（PC・モバイル両対応）。表示は
+  タップした項目のキャラクターのスナップショットで、その後プレイヤーが
+  キャラクターを変更しても当時のキャラクターが表示される。
+  Tapping a name in the feed shows the character name, player name and
+  background as they were when that entry was created (works on desktop
+  and mobile); it is a snapshot, so switching characters later does not
+  change what an old entry shows.
 
 ### 3.7 オンライン共有 / Online sharing
 - ルームを作成・参加でき、ロール履歴・チャット・参加者一覧を共有する
@@ -426,3 +428,10 @@ The `lang` fields carry the source language for future real-time translation
   Let the GM pick the room code when creating a room (a taken code errors)
   and change a live room's code, with players migrating automatically and
   keeping their feed. Room isolation verified across multiple tabs.
+- v1.20 — フィードの各発言・ロールに当時のキャラクター名・背景情報を保存し、
+  名前タップ時はその時点のキャラクター情報を表示するようにした（その後
+  キャラクターを変更しても古い発言は当時のキャラクターを表示）。添付アイコン
+  とステータスバー 2 ボタンの表示位置を整えた。
+  Each feed entry now stores the character name / background in use at the
+  time, so tapping a name shows that character even after the sender
+  switches; also tidied the attach-icon and status-bar alignment.

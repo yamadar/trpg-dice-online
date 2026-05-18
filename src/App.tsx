@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { useI18n } from './i18n/useI18n'
 import { useSession } from './hooks/useSession'
@@ -91,22 +91,34 @@ function App() {
 
   const rollerName = session.displayName || t('common.you')
 
+  // Identity snapshot attached to a roll, so tapping the name later shows
+  // the character used at that time rather than the current one.
+  const roller = useMemo(
+    () => ({
+      id: session.playerId,
+      name: rollerName,
+      characterName: activeName ?? '',
+      background: activeBackground ?? '',
+    }),
+    [session.playerId, rollerName, activeName, activeBackground],
+  )
+
   const handleRoll = useCallback(
     (hidden: boolean) => {
-      const result = rollPattern(draft, { id: session.playerId, name: rollerName }, hidden)
+      const result = rollPattern(draft, roller, hidden)
       session.roll(result)
       setOpenSheet(null) // return to the feed to see the result
     },
-    [draft, rollerName, session],
+    [draft, roller, session],
   )
 
   const handleQuickRoll = useCallback(
     (p: Pattern) => {
-      const result = rollPattern(p, { id: session.playerId, name: rollerName }, false)
+      const result = rollPattern(p, roller, false)
       session.roll(result)
       setOpenSheet(null)
     },
-    [rollerName, session],
+    [roller, session],
   )
 
   const handleSave = useCallback(() => {

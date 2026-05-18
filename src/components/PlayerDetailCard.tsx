@@ -3,27 +3,41 @@ import type { Player } from '../net/protocol'
 import { playerColor } from '../players/colors'
 
 interface Props {
-  /** The live participant, or null when they have left the room. */
+  /** The live participant, used for the GM badge and current player name. */
   player: Player | null
   /** The player id of the tapped feed entry (used for the color swatch). */
   playerId: string
-  /** Display name captured on the feed entry, shown when the player has left. */
-  fallbackName: string
+  /** Composed display name captured on the tapped feed entry. */
+  displayName: string
+  /** Character name active when the entry was created (the snapshot). */
+  characterName: string
+  /** Character background at that time (the snapshot). */
+  background: string
   /** Whether the tapped entry belongs to the local player. */
   isSelf: boolean
 }
 
 /**
- * Read-only profile shown when a name in the feed is tapped. Live details
- * (character name, background) come from the current participant list; for
- * a player who has since left, only the name captured on the entry remains.
+ * Read-only profile shown when a name in the feed is tapped. Character
+ * details come from the tapped entry, not the live player, so a name
+ * sent under an old character still shows that old character — even
+ * after the player has switched characters.
  */
-export function PlayerDetailCard({ player, playerId, fallbackName, isSelf }: Props) {
+export function PlayerDetailCard({
+  player,
+  playerId,
+  displayName,
+  characterName,
+  background,
+  isSelf,
+}: Props) {
   const { t } = useI18n()
   const color = playerColor(playerId)
-  const characterName = player?.characterName.trim() ?? ''
-  const playerName = (player?.name ?? fallbackName).trim()
-  const background = player?.background.trim() ?? ''
+  const character = characterName.trim()
+  const bg = background.trim()
+  // The person name is not part of the snapshot; show the live one when
+  // the player is still present.
+  const playerName = player?.name.trim() ?? ''
 
   return (
     <section className="panel player-card">
@@ -32,27 +46,29 @@ export function PlayerDetailCard({ player, playerId, fallbackName, isSelf }: Pro
       <div className="player-card-head">
         <span className="player-dot" style={{ background: color }} />
         <span className="player-card-name" style={{ color }}>
-          {characterName || playerName || t('player.anon')}
+          {character || displayName || t('player.anon')}
         </span>
         {player?.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
         {isSelf && <span className="badge you">{t('room.youBadge')}</span>}
       </div>
 
       <dl className="player-card-fields">
-        {characterName && (
+        {character && (
           <div>
             <dt>{t('character.name')}</dt>
-            <dd>{characterName}</dd>
+            <dd>{character}</dd>
           </div>
         )}
-        <div>
-          <dt>{t('player.name')}</dt>
-          <dd>{playerName || t('player.anon')}</dd>
-        </div>
+        {playerName && (
+          <div>
+            <dt>{t('player.name')}</dt>
+            <dd>{playerName}</dd>
+          </div>
+        )}
       </dl>
 
-      {background ? (
-        <p className="player-card-bg">{background}</p>
+      {bg ? (
+        <p className="player-card-bg">{bg}</p>
       ) : (
         <p className="hint">{t('feed.noBackground')}</p>
       )}

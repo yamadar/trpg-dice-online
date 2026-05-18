@@ -40,6 +40,11 @@ export interface RollResult {
   value: number
   playerId: string
   playerName: string
+  /** Active character name when the roll was made ('' if none). A snapshot,
+   *  so tapping the name later shows the character used at that time. */
+  characterName: string
+  /** Active character's public background at that time ('' if none). */
+  background: string
   /** When true the value is hidden from non-GM players. */
   hidden: boolean
   timestamp: number
