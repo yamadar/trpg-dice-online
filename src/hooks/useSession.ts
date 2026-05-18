@@ -18,6 +18,7 @@ import {
 import { newMarkerId, type MarkerType, type SystemMarker } from '../feed/feed'
 import { composeName } from '../players/identity'
 import { getPlayerId, loadPlayerName, savePlayerName } from '../storage/player'
+import { saveLastRoomCode } from '../storage/room'
 
 export type Role = 'offline' | 'host' | 'client'
 export type ErrorKind = 'connect' | 'hostLost' | null
@@ -364,6 +365,7 @@ export function useSession(): Session {
       peerPlayersRef.current.clear()
       setRole('host')
       setRoomCode(code)
+      saveLastRoomCode(code)
       roomNameRef.current = ''
       setRoomNameState('')
       setPlayers([selfPlayer(true)])
@@ -383,6 +385,7 @@ export function useSession(): Session {
         await mgr.join(code)
         setRole('client')
         setRoomCode(code)
+        saveLastRoomCode(code)
         addMarker('joined', { roomCode: code })
         mgr.sendToHost({ t: 'hello', player: selfPlayer(false) })
       } catch {
