@@ -10,6 +10,8 @@ import {
 } from '../feed/feed'
 import { playerColor } from '../players/colors'
 import { formatDiceSummary, formatRollText } from '../dice/format'
+import { Sheet } from './Sheet'
+import { PlayerDetailCard } from './PlayerDetailCard'
 
 const FILTERS: FeedFilter[] = ['all', 'rolls', 'chat']
 
@@ -25,6 +27,8 @@ export function ActivityPanel({ session }: { session: Session }) {
   const { t, lang } = useI18n()
   const [filter, setFilter] = useState<FeedFilter>('all')
   const [text, setText] = useState('')
+  // The feed entry whose name was tapped, opening the player-detail card.
+  const [detail, setDetail] = useState<{ playerId: string; name: string } | null>(null)
   const listRef = useRef<HTMLUListElement>(null)
 
   const feed = useMemo(
@@ -117,9 +121,14 @@ export function ActivityPanel({ session }: { session: Session }) {
               <li key={item.id} className={`feed-chat${own ? ' own' : ''}${archived}`}>
                 <div className="feed-line">
                   <span className="player-dot" style={{ background: color }} />
-                  <span className="feed-name" style={{ color }}>
+                  <button
+                    type="button"
+                    className="feed-name"
+                    style={{ color }}
+                    onClick={() => setDetail({ playerId: m.playerId, name: m.playerName })}
+                  >
                     {m.playerName}
-                  </span>
+                  </button>
                   <time>{new Date(m.timestamp).toLocaleTimeString(lang)}</time>
                 </div>
                 <p className="chat-text">{m.text}</p>
@@ -135,9 +144,16 @@ export function ActivityPanel({ session }: { session: Session }) {
             <li key={item.id} className={`feed-roll roll ${isHidden ? 'hidden' : r.kind}${archived}`}>
               <div className="feed-line">
                 <span className="player-dot" style={{ background: color }} />
-                <span className="feed-name" style={{ color }}>
+                <button
+                  type="button"
+                  className="feed-name"
+                  style={{ color }}
+                  onClick={() =>
+                    setDetail({ playerId: r.playerId, name: r.playerName || t('player.anon') })
+                  }
+                >
                   {r.playerName || t('player.anon')}
-                </span>
+                </button>
                 <time>{new Date(r.timestamp).toLocaleTimeString(lang)}</time>
               </div>
               <p className="roll-text">{formatRollText(t, r, canSee)}</p>
@@ -182,6 +198,17 @@ export function ActivityPanel({ session }: { session: Session }) {
             {t('chat.send')}
           </button>
         </div>
+      )}
+
+      {detail && (
+        <Sheet onClose={() => setDetail(null)}>
+          <PlayerDetailCard
+            player={session.players.find((p) => p.id === detail.playerId) ?? null}
+            playerId={detail.playerId}
+            fallbackName={detail.name}
+            isSelf={detail.playerId === session.playerId}
+          />
+        </Sheet>
       )}
     </section>
   )
