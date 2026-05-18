@@ -80,10 +80,12 @@ An SPA where players roll TRPG dice and share results with other players in real
   永続ログからオンデマンドに読み込める
   Older history beyond the display cap can be paged in on demand from the
   durable log with "Load older"
-- ルームの全履歴（ダイス・チャット・添付ファイル・各発言時のプレイヤー／
-  キャラクター情報）を JSON ファイルにエクスポートできる
-  The room's full history (rolls, chat, file attachments and the player /
-  character snapshot of each entry) can be exported to a JSON file
+- ルームの全履歴（参加者一覧、ダイス・チャット・添付ファイル、各発言時の
+  プレイヤー／キャラクター情報）を ZIP 書庫にエクスポートできる。書庫から
+  ルームの状態を復元できるだけの情報を含む
+  The room's full history — the player roster, rolls, chat, file
+  attachments and the player / character snapshot of each entry — can be
+  exported to a ZIP archive holding everything needed to restore the room
 - フィードの名前をタップすると、その発言・ロール時点のキャラクター名・
   プレイヤー名・背景情報をカードで表示する（PC・モバイル両対応）。表示は
   タップした項目のキャラクターのスナップショットで、その後プレイヤーが
@@ -586,3 +588,11 @@ The `lang` fields carry the source language for future real-time translation
   history" in the room panel writes the durable log — rolls, chat, file
   attachments and markers, each with its player / character snapshot —
   into a single versioned, self-contained file.
+- v1.37 — 履歴エクスポートを ZIP 書庫に変更し、復元に必要な情報を補った。
+  書庫には参加者一覧と全エントリを含む `room.json` と、添付ファイルを実体の
+  ファイルとして納める `attachments/` フォルダを格納する。base64 を JSON に
+  埋め込まず実ファイルとして圧縮するため、画像付きの書き出しでも軽い。
+  The history export is now a ZIP archive and carries everything needed
+  to restore a room. It holds a `room.json` with the player roster and
+  all entries, plus an `attachments/` folder with each chat attachment as
+  a real file — no base64 inlined in the JSON, and the archive compresses.

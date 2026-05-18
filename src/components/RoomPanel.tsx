@@ -3,7 +3,7 @@ import { useI18n } from '../i18n/useI18n'
 import { useFieldNotice } from '../hooks/useFieldNotice'
 import { loadLastRoomCode } from '../storage/room'
 import { loadFullLog } from '../storage/roomLog'
-import { exportRoomLogJSON, roomLogFilename } from '../storage/roomExport'
+import { buildRoomExport, roomExportFilename } from '../storage/roomExport'
 import { normalizeRoomCode, type Player } from '../net/protocol'
 import { playerColor } from '../players/colors'
 import { composeName } from '../players/identity'
@@ -59,17 +59,17 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
     session.leaveRoom()
   }
 
-  // Save the room's full durable history (rolls, chat, attachments and
-  // markers) as a downloadable JSON file.
+  // Save the room's full durable history — the player roster, rolls,
+  // chat, attachments and markers — as a downloadable ZIP archive.
   const handleExport = async () => {
     if (!roomCode) return
     const entries = await loadFullLog(roomCode)
-    const json = exportRoomLogJSON({ code: roomCode, name: session.roomName }, entries)
-    const blob = new Blob([json], { type: 'application/json' })
+    const zip = buildRoomExport({ code: roomCode, name: session.roomName }, players, entries)
+    const blob = new Blob([zip], { type: 'application/zip' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = roomLogFilename(roomCode)
+    a.download = roomExportFilename(roomCode)
     a.click()
     URL.revokeObjectURL(url)
   }
