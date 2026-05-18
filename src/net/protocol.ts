@@ -47,6 +47,10 @@ export interface ChatMessage {
   lang: Lang
   /** Optional attachment (image preview or downloadable file). */
   file?: ChatFile
+  /** Ids of @mentioned players (id-based, so renames do not break it). */
+  mentions: string[]
+  /** True when the message mentions everyone (`@all`). */
+  mentionsAll: boolean
 }
 
 /** Shared state a host sends to a newly joined client. */

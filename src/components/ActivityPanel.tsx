@@ -17,6 +17,13 @@ import { Lightbox } from './Lightbox'
 import { CloseIcon } from './icons'
 import type { ChatFile } from '../net/protocol'
 import { MAX_ATTACHMENT_BYTES, formatBytes, isImageType, readAttachment } from '../chat/attachment'
+import { applyMention, mentionQuery, resolveMentions } from '../chat/mentions'
+
+/** An entry in the @mention autocomplete list. */
+type MentionSuggestion = { kind: 'all' } | { kind: 'player'; id: string; name: string }
+
+/** How many autocomplete suggestions to show at once. */
+const MAX_SUGGESTIONS = 6
 
 const FILTERS: FeedFilter[] = ['all', 'rolls', 'chat', 'files']
 
@@ -52,8 +59,13 @@ export function ActivityPanel({ session, onNotice }: Props) {
   const [pending, setPending] = useState<ChatFile | null>(null)
   const [attaching, setAttaching] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  // The in-progress @mention the caret sits in, driving the autocomplete.
+  const [mention, setMention] = useState<{ query: string; start: number; selected: number } | null>(
+    null,
+  )
   const listRef = useRef<HTMLUListElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const chatInputRef = useRef<HTMLInputElement>(null)
 
   const feed = useMemo(
     () => buildFeed(session.history, session.chat, session.markers, filter),
@@ -92,16 +104,58 @@ export function ActivityPanel({ session, onNotice }: Props) {
     if (el) el.scrollTop = el.scrollHeight
   }, [feed.length])
 
+  // Autocomplete options for the current @token: an "everyone" entry plus
+  // matching players (self excluded).
+  const suggestions = useMemo<MentionSuggestion[]>(() => {
+    if (!mention) return []
+    const q = mention.query.toLowerCase()
+    const list: MentionSuggestion[] = []
+    if ('all'.startsWith(q)) list.push({ kind: 'all' })
+    for (const p of session.players) {
+      if (p.id === session.playerId) continue
+      const name = p.name.trim()
+      if (name && name.toLowerCase().includes(q)) {
+        list.push({ kind: 'player', id: p.id, name })
+      }
+    }
+    return list.slice(0, MAX_SUGGESTIONS)
+  }, [mention, session.players, session.playerId])
+
   const send = () => {
     if (!text.trim() && !pending) return
-    session.sendChat(text, pending ?? undefined)
+    const { ids, all } = resolveMentions(text, session.players)
+    session.sendChat(text, pending ?? undefined, ids, all)
     setText('')
     setPending(null)
+    setMention(null)
   }
 
-  const onType = (value: string) => {
+  // Recompute the @mention autocomplete from the input value and caret.
+  const refreshMention = (value: string, cursor: number) => {
+    const q = mentionQuery(value, cursor)
+    setMention(q ? { query: q.query, start: q.start, selected: 0 } : null)
+  }
+
+  const onType = (value: string, cursor: number) => {
     setText(value)
     session.sendTyping()
+    refreshMention(value, cursor)
+  }
+
+  // Insert the picked suggestion as "@label " and return focus to the input.
+  const pickSuggestion = (s: MentionSuggestion) => {
+    if (!mention) return
+    const label = s.kind === 'all' ? 'all' : s.name
+    const next = applyMention(text, mention.start, mention.query, label)
+    setText(next.text)
+    setMention(null)
+    requestAnimationFrame(() => {
+      const el = chatInputRef.current
+      if (el) {
+        el.focus()
+        el.setSelectionRange(next.cursor, next.cursor)
+      }
+    })
   }
 
   // Read a picked file into a sendable attachment (images are downscaled).
@@ -179,8 +233,15 @@ export function ActivityPanel({ session, onNotice }: Props) {
             const m = item.message
             const own = m.playerId === session.playerId
             const color = playerColor(m.playerId)
+            // Highlight the message for a player it @mentions (or for
+            // everyone when it is an @all). Id-based, so it survives renames.
+            const mentionsMe =
+              (m.mentionsAll ?? false) || (m.mentions ?? []).includes(session.playerId)
             return (
-              <li key={item.id} className={`feed-chat${own ? ' own' : ''}${archived}`}>
+              <li
+                key={item.id}
+                className={`feed-chat${own ? ' own' : ''}${mentionsMe ? ' mentioned' : ''}${archived}`}
+              >
                 <div className="feed-line">
                   <span className="player-dot" style={{ background: color }} />
                   <button
@@ -271,6 +332,32 @@ export function ActivityPanel({ session, onNotice }: Props) {
               </button>
             </div>
           )}
+          {mention && suggestions.length > 0 && (
+            <ul className="mention-suggest" role="listbox">
+              {suggestions.map((s, i) => (
+                <li key={s.kind === 'all' ? '@all' : s.id}>
+                  <button
+                    type="button"
+                    className={`mention-item${i === mention.selected ? ' active' : ''}`}
+                    // preventDefault keeps focus on the chat input.
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      pickSuggestion(s)
+                    }}
+                  >
+                    {s.kind === 'all' ? (
+                      <>
+                        <span className="mention-handle">@all</span>
+                        <span className="mention-sub">{t('chat.mentionEveryone')}</span>
+                      </>
+                    ) : (
+                      <span className="mention-handle">@{s.name}</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="chat-input">
             <input
               ref={fileInputRef}
@@ -288,13 +375,50 @@ export function ActivityPanel({ session, onNotice }: Props) {
               📎
             </button>
             <input
+              ref={chatInputRef}
               type="text"
               value={text}
               maxLength={300}
               placeholder={t('chat.placeholder')}
-              onChange={(e) => onType(e.target.value)}
-              // Ignore Enter that only confirms an IME (e.g. Japanese) conversion.
+              onChange={(e) => onType(e.target.value, e.target.selectionStart ?? e.target.value.length)}
+              onSelect={(e) => {
+                const el = e.currentTarget
+                refreshMention(el.value, el.selectionStart ?? el.value.length)
+              }}
+              onBlur={() => setMention(null)}
               onKeyDown={(e) => {
+                // While the autocomplete is open, the arrow keys and Enter
+                // drive it instead of the message input.
+                if (mention && suggestions.length > 0) {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault()
+                    setMention({
+                      ...mention,
+                      selected: (mention.selected + 1) % suggestions.length,
+                    })
+                    return
+                  }
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault()
+                    setMention({
+                      ...mention,
+                      selected:
+                        (mention.selected - 1 + suggestions.length) % suggestions.length,
+                    })
+                    return
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault()
+                    setMention(null)
+                    return
+                  }
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                    e.preventDefault()
+                    pickSuggestion(suggestions[mention.selected] ?? suggestions[0])
+                    return
+                  }
+                }
+                // Ignore Enter that only confirms an IME (e.g. Japanese) conversion.
                 if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                   e.preventDefault()
                   send()

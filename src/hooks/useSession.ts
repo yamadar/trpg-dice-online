@@ -77,7 +77,7 @@ export interface Session {
   typingNames: string[]
   isGM: boolean
   roll: (result: RollResult) => void
-  sendChat: (text: string, file?: ChatFile) => void
+  sendChat: (text: string, file?: ChatFile, mentions?: string[], mentionsAll?: boolean) => void
   /** Signal that the local player is typing (throttled internally). */
   sendTyping: () => void
   /** Clear the local feed view (rolls, chat and markers). */
@@ -608,7 +608,7 @@ export function useSession(): Session {
   )
 
   const sendChat = useCallback(
-    (text: string, file?: ChatFile) => {
+    (text: string, file?: ChatFile, mentions: string[] = [], mentionsAll = false) => {
       const trimmed = text.trim()
       // A message needs either text or an attachment to be worth sending.
       if (!trimmed && !file) return
@@ -621,6 +621,8 @@ export function useSession(): Session {
         text: trimmed,
         timestamp: Date.now(),
         lang: langRef.current,
+        mentions,
+        mentionsAll,
         ...(file ? { file } : {}),
       }
       const currentRole = roleRef.current
