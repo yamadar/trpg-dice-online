@@ -714,6 +714,11 @@ button.player-row {
 .feed-empty {
   padding: 12px 0;
 }
+.feed-load-older {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0 6px;
+}
 .feed-line {
   display: flex;
   align-items: center;

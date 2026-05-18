@@ -82,6 +82,18 @@ describe('buildFeed', () => {
     expect(a.map((i) => i.id)).toEqual(b.map((i) => i.id))
   })
 
+  it('de-duplicates entries that appear in both inputs by id', () => {
+    // Paged-in older history overlaps the live window — the same entry
+    // can arrive from both arrays and must be shown only once.
+    const feed = buildFeed(
+      [roll('r', 10), roll('r', 10)],
+      [chat('c', 20), chat('c', 20)],
+      [marker('m', 30), marker('m', 30)],
+      'all',
+    )
+    expect(feed.map((i) => i.id)).toEqual(['r', 'c', 'm'])
+  })
+
   it('returns an empty feed for empty inputs', () => {
     expect(buildFeed([], [], [], 'all')).toEqual([])
   })

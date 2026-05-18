@@ -51,7 +51,8 @@ export type FeedItem =
  * oldest-first. The filter hides rolls or chat; system markers stay
  * visible for the all / rolls / chat views because they give context.
  * The "files" view is a focused gallery: only chat messages that carry
- * an attachment, with no rolls or markers.
+ * an attachment, with no rolls or markers. Entries are de-duplicated by
+ * id, since paged-in older history overlaps the live window.
  */
 export function buildFeed(
   history: RollResult[],
@@ -76,6 +77,13 @@ export function buildFeed(
       items.push({ kind: 'system', id: marker.id, at: marker.timestamp, marker })
     }
   }
-  items.sort((a, b) => a.at - b.at || a.id.localeCompare(b.id))
-  return items
+  // Paged-in older history overlaps the live window — show each entry once.
+  const seen = new Set<string>()
+  const unique = items.filter((item) => {
+    if (seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
+  unique.sort((a, b) => a.at - b.at || a.id.localeCompare(b.id))
+  return unique
 }
