@@ -82,6 +82,47 @@ export async function appendLogEntry(
   }
 }
 
+/** One entry read back from the log. */
+export interface LogEntry {
+  kind: LogKind
+  at: number
+  data: unknown
+}
+
+/**
+ * Load the most recent `limit` entries of a room's log, oldest-first.
+ * Used to restore the feed after a reload.
+ */
+export async function loadRecentLog(roomCode: string, limit: number): Promise<LogEntry[]> {
+  if (!roomCode || limit <= 0) return []
+  const db = await openDb()
+  if (!db) return []
+  return new Promise((resolve) => {
+    try {
+      const out: LogEntry[] = []
+      // 'prev' walks newest-first; collect `limit`, then reverse.
+      const cursor = db
+        .transaction(STORE, 'readonly')
+        .objectStore(STORE)
+        .index('byRoomAt')
+        .openCursor(roomRange(roomCode), 'prev')
+      cursor.onsuccess = () => {
+        const cur = cursor.result
+        if (cur && out.length < limit) {
+          const rec = cur.value as LogRecord
+          out.push({ kind: rec.kind, at: rec.at, data: rec.data })
+          cur.continue()
+        } else {
+          resolve(out.reverse())
+        }
+      }
+      cursor.onerror = () => resolve([])
+    } catch {
+      resolve([])
+    }
+  })
+}
+
 /** Delete a room's entire durable log. */
 export async function clearRoomLog(roomCode: string | null): Promise<void> {
   if (!roomCode) return
