@@ -13,6 +13,9 @@ export interface ActiveRoom {
   /** Durable-log session id, so a resumed room keeps one continuous log.
    *  Absent only for a pointer written before the session-id change. */
   sessionId?: string
+  /** The room name, so a reload can restore it before any sync arrives —
+   *  the GM otherwise has no peer to receive it back from. */
+  roomName?: string
 }
 
 /** The room this tab was in before a reload, or null. */
@@ -26,6 +29,7 @@ export function loadActiveRoom(): ActiveRoom | null {
         code: value.code,
         role: value.role,
         ...(typeof value.sessionId === 'string' ? { sessionId: value.sessionId } : {}),
+        ...(typeof value.roomName === 'string' ? { roomName: value.roomName } : {}),
       }
     }
   } catch {
@@ -37,6 +41,18 @@ export function loadActiveRoom(): ActiveRoom | null {
 export function saveActiveRoom(room: ActiveRoom): void {
   try {
     sessionStorage.setItem(KEY, JSON.stringify(room))
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Patch just the room name on the stored pointer (a no-op when none). */
+export function updateActiveRoomName(roomName: string): void {
+  try {
+    const raw = sessionStorage.getItem(KEY)
+    if (!raw) return
+    const value = JSON.parse(raw) as ActiveRoom
+    sessionStorage.setItem(KEY, JSON.stringify({ ...value, roomName }))
   } catch {
     /* ignore */
   }
