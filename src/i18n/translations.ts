@@ -16,6 +16,10 @@ const ja: Dict = {
   'theme.rose': 'ローズ',
   'theme.daylight': 'デイライト',
   'theme.parchment': 'パーチメント',
+  'fontSize.label': '文字サイズ',
+  'fontSize.small': '小',
+  'fontSize.medium': '中',
+  'fontSize.large': '大',
 
   'settings.title': '設定',
   'settings.open': '設定',
@@ -230,6 +234,10 @@ const en: Dict = {
   'theme.rose': 'Rose',
   'theme.daylight': 'Daylight',
   'theme.parchment': 'Parchment',
+  'fontSize.label': 'Text size',
+  'fontSize.small': 'Small',
+  'fontSize.medium': 'Medium',
+  'fontSize.large': 'Large',
 
   'settings.title': 'Settings',
   'settings.open': 'Settings',

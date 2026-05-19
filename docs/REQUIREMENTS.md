@@ -288,6 +288,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   ブラウザに保存する。
   A colour theme can be picked in the settings — six themes (four dark,
   two light), and the choice is saved per browser.
+- 設定から文字サイズ（小・中・大）を選べる。UI 全体が連動して拡縮し、
+  選択はブラウザに保存する。
+  A text size (small / medium / large) can be picked in the settings; the
+  whole UI scales with it and the choice is saved per browser.
 - キャラクターの背景情報・メモは折りたたみ可能にする
   Character background and memo are collapsible
 - プレイヤー名・キャラクター名・ルーム名の変更やパターンの保存は Toast で
@@ -744,3 +748,8 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   name and message flow as one block, so a wrapped message lines up its
   later lines under the name. A run of identical consecutive system
   messages is folded into one line with a trailing "(n)" count.
+- v1.48 — 設定に文字サイズ（小・中・大）の切り替えを追加。ルートの
+  font-size を変えて UI 全体を rem 連動で拡縮し、選択はブラウザに保存する。
+  Add a text-size setting (small / medium / large). It changes the root
+  font-size so the whole rem-based UI rescales, and the choice is saved
+  per browser.

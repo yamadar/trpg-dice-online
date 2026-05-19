@@ -3,6 +3,7 @@ import { useI18n } from '../i18n/useI18n'
 import { useFieldNotice } from '../hooks/useFieldNotice'
 import { LanguageToggle } from './LanguageToggle'
 import { ThemeToggle } from './ThemeToggle'
+import { FontSizeToggle } from './FontSizeToggle'
 
 interface Props {
   name: string
@@ -94,6 +95,10 @@ export function SettingsMenu({
             <div className="field">
               <span>{t('theme.title')}</span>
               <ThemeToggle />
+            </div>
+            <div className="field">
+              <span>{t('fontSize.label')}</span>
+              <FontSizeToggle />
             </div>
 
             <button
