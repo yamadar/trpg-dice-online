@@ -24,6 +24,8 @@ const ja: Dict = {
   'settings.title': '設定',
   'settings.open': '設定',
   'settings.close': '閉じる',
+  'settings.groupLanguage': '言語と翻訳',
+  'settings.groupAppearance': '外観',
   'settings.about': 'このアプリについて',
 
   'dock.room': 'ルーム',
@@ -242,6 +244,8 @@ const en: Dict = {
   'settings.title': 'Settings',
   'settings.open': 'Settings',
   'settings.close': 'Close',
+  'settings.groupLanguage': 'Language & translation',
+  'settings.groupAppearance': 'Appearance',
   'settings.about': 'About',
 
   'dock.room': 'Room',

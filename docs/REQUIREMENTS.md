@@ -769,3 +769,9 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   sent only on change and on joining; the welcome snapshot gains an
   `images` map. The player-detail card shows the other player's current
   portrait and opens it in the lightbox on tap.
+- v1.50 — 設定パネルの項目を意味ごとに小見出し付きでグループ化した。
+  「言語と翻訳」（言語・自動翻訳）と「外観」（文字サイズ・コンパクト表示・
+  テーマ）に分け、各グループを区切り線で隔てる。
+  Group the settings panel into titled sections — "Language &
+  translation" (language, auto-translate) and "Appearance" (text size,
+  compact feed, theme) — each set off by a divider.

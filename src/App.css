@@ -292,15 +292,23 @@
 }
 
 /* --- settings: about section --- */
+/* A titled cluster of related settings — and the About block — each set
+   off from what precedes it by a faint rule. */
+.settings-group,
 .settings-about {
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
+.settings-group h3,
 .settings-about h3 {
   font-size: 0.8rem;
   color: var(--text-dim);
   margin-bottom: 6px;
+}
+/* The last control in a group should not crowd the next group's rule. */
+.settings-group > :last-child {
+  margin-bottom: 0;
 }
 .about-title {
   font-weight: 600;
