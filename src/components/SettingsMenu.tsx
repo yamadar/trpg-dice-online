@@ -78,11 +78,11 @@ export function SettingsMenu({
 
             <div className="settings-group">
               <h3>{t('settings.groupLanguage')}</h3>
-              <div className="field">
+              <div className="setting-row">
                 <span>{t('lang.label')}</span>
                 <LanguageToggle />
               </div>
-              <label className="toggle-field">
+              <label className="setting-row">
                 <span>{t('translate.auto')}</span>
                 <input
                   type="checkbox"
@@ -95,11 +95,11 @@ export function SettingsMenu({
 
             <div className="settings-group">
               <h3>{t('settings.groupAppearance')}</h3>
-              <div className="field">
+              <div className="setting-row">
                 <span>{t('fontSize.label')}</span>
                 <FontSizeToggle />
               </div>
-              <label className="toggle-field">
+              <label className="setting-row">
                 <span>{t('feed.compact')}</span>
                 <input
                   type="checkbox"
