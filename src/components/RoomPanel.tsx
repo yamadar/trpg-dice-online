@@ -10,6 +10,7 @@ import { normalizeRoomCode, type ChatMessage, type Player } from '../net/protoco
 import { playerColor } from '../players/colors'
 import { composeName } from '../players/identity'
 import type { Session } from '../hooks/useSession'
+import { RoomHistory } from './RoomHistory'
 
 interface Props {
   session: Session
@@ -19,7 +20,7 @@ interface Props {
 }
 
 /** Which lobby screen is shown while not in a room. */
-type LobbyView = 'home' | 'create' | 'join'
+type LobbyView = 'home' | 'create' | 'join' | 'history'
 
 export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   const { t, lang } = useI18n()
@@ -121,8 +122,8 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   // chat, attachments, markers and any cached chat translations — as a
   // downloadable ZIP archive.
   const handleExport = async () => {
-    if (!roomCode) return
-    const entries = await loadFullLog(roomCode)
+    if (!roomCode || !session.sessionId) return
+    const entries = await loadFullLog(session.sessionId)
     // Carry whatever chat translations are already cached so a re-import
     // shows them without re-translating.
     const translations: TranslationRecord[] = []
@@ -278,6 +279,14 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
             type="button"
             className="link"
             disabled={busy}
+            onClick={() => setView('history')}
+          >
+            {t('room.history')}
+          </button>
+          <button
+            type="button"
+            className="link"
+            disabled={busy}
             onClick={() => fileInputRef.current?.click()}
           >
             {t('room.importHistory')}
@@ -380,6 +389,10 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
             </p>
           )}
         </div>
+      )}
+
+      {!online && view === 'history' && (
+        <RoomHistory playerId={playerId} onBack={() => setView('home')} />
       )}
 
       {online && (

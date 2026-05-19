@@ -1,26 +1,36 @@
 /**
- * Durable per-room history log, backed by IndexedDB.
+ * Durable per-session history log, backed by IndexedDB.
  *
  * The in-memory feed is capped (the last 200 entries) for rendering, but
- * every roll / chat / marker is also appended here so the full room log
+ * every roll / chat / marker is also appended here so the full history
  * survives a reload and can later be browsed on demand and exported.
  * IndexedDB is used because a room's log — with base64 image attachments —
  * easily exceeds the ~5MB localStorage limit.
+ *
+ * Entries are keyed by a `sessionId` rather than the room code: a code can
+ * be reused across unrelated games, and a live room can even change its
+ * code mid-session. The `sessionId` is minted once per create / join and
+ * stays stable across reloads, reconnects and code changes, so each game
+ * keeps a clean, separate history. A companion `sessions` store holds the
+ * metadata (code, name, timestamps) the history browser needs.
  *
  * All calls degrade gracefully (resolve to a no-op / empty) when IndexedDB
  * is unavailable, so the app keeps working without the log.
  */
 
 const DB_NAME = 'trpg-dice'
-const DB_VERSION = 1
+const DB_VERSION = 2
 const STORE = 'roomLog'
+const META = 'sessions'
 
 /** Which feed list an entry belongs to. */
 export type LogKind = 'roll' | 'chat' | 'marker'
 
 interface LogRecord {
-  /** `${roomCode}:${entryId}` — unique, so re-appending an entry upserts. */
+  /** `${sessionId}:${entryId}` — unique, so re-appending an entry upserts. */
   pk: string
+  sessionId: string
+  /** The room code in effect when the entry was logged (for display). */
   roomCode: string
   /** Entry timestamp, used to order the log chronologically. */
   at: number
@@ -28,22 +38,105 @@ interface LogRecord {
   data: unknown
 }
 
+/** Stored metadata describing one room session. */
+interface SessionRecord {
+  sessionId: string
+  /** Most recent room code seen for the session. */
+  code: string
+  /** Most recent room name seen for the session ('' when unnamed). */
+  name: string
+  role: 'host' | 'client' | 'unknown'
+  firstAt: number
+  lastAt: number
+}
+
+/** One past session as surfaced to the history browser (count derived). */
+export interface SessionSummary extends SessionRecord {
+  /** Number of log entries the session holds. */
+  count: number
+}
+
+/** Identifies the session a freshly logged entry belongs to. */
+export interface LogTarget {
+  sessionId: string
+  roomCode: string
+  roomName: string
+  role: 'host' | 'client'
+}
+
+/** Mint a fresh, unique session id. */
+export function newSessionId(): string {
+  return `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
 let dbPromise: Promise<IDBDatabase | null> | null = null
+
+/** Re-key existing v1 records (code-keyed) into one session per room code. */
+function migrateV1(logStore: IDBObjectStore, metaStore: IDBObjectStore): void {
+  const meta = new Map<string, SessionRecord>()
+  const cursorReq = logStore.openCursor()
+  cursorReq.onsuccess = () => {
+    const cur = cursorReq.result
+    if (cur) {
+      const rec = cur.value as LogRecord
+      if (typeof rec.roomCode === 'string' && rec.sessionId === undefined) {
+        const sid = `legacy-${rec.roomCode}`
+        rec.sessionId = sid
+        cur.update(rec)
+        const m = meta.get(sid)
+        if (m) {
+          m.firstAt = Math.min(m.firstAt, rec.at)
+          m.lastAt = Math.max(m.lastAt, rec.at)
+        } else {
+          meta.set(sid, {
+            sessionId: sid,
+            code: rec.roomCode,
+            name: '',
+            role: 'unknown',
+            firstAt: rec.at,
+            lastAt: rec.at,
+          })
+        }
+      }
+      cur.continue()
+    } else {
+      for (const m of meta.values()) metaStore.put(m)
+    }
+  }
+}
 
 function openDb(): Promise<IDBDatabase | null> {
   if (dbPromise) return dbPromise
   dbPromise = new Promise((resolve) => {
     try {
       const req = indexedDB.open(DB_NAME, DB_VERSION)
-      req.onupgradeneeded = () => {
+      req.onupgradeneeded = (event) => {
         const db = req.result
+        const tx = req.transaction
+        let logStore: IDBObjectStore
         if (!db.objectStoreNames.contains(STORE)) {
-          const store = db.createObjectStore(STORE, { keyPath: 'pk' })
-          store.createIndex('byRoomAt', ['roomCode', 'at'])
+          logStore = db.createObjectStore(STORE, { keyPath: 'pk' })
+        } else {
+          logStore = tx!.objectStore(STORE)
+          // The old room-code index is superseded by the session index.
+          if (logStore.indexNames.contains('byRoomAt')) logStore.deleteIndex('byRoomAt')
+        }
+        if (!logStore.indexNames.contains('bySessionAt')) {
+          logStore.createIndex('bySessionAt', ['sessionId', 'at'])
+        }
+        const metaStore = db.objectStoreNames.contains(META)
+          ? tx!.objectStore(META)
+          : db.createObjectStore(META, { keyPath: 'sessionId' })
+        // v1 stored entries keyed by room code with no session metadata.
+        if (event.oldVersion >= 1 && event.oldVersion < 2) {
+          migrateV1(logStore, metaStore)
         }
       }
       req.onsuccess = () => resolve(req.result)
       req.onerror = () => resolve(null)
+      // Another tab still holds an older version open — degrade to no log
+      // rather than hang waiting for the upgrade.
+      req.onblocked = () => resolve(null)
     } catch {
       resolve(null)
     }
@@ -51,57 +144,115 @@ function openDb(): Promise<IDBDatabase | null> {
   return dbPromise
 }
 
-/** The whole key range covering one room, ordered by timestamp. */
-function roomRange(roomCode: string): IDBKeyRange {
-  return IDBKeyRange.bound([roomCode, -Infinity], [roomCode, Infinity])
+/** The whole key range covering one session, ordered by timestamp. */
+function sessionRange(sessionId: string): IDBKeyRange {
+  return IDBKeyRange.bound([sessionId, -Infinity], [sessionId, Infinity])
 }
 
 /**
- * Append (or upsert) one feed entry to a room's durable log. A no-op when
- * there is no room. Fire-and-forget — failures are swallowed.
+ * Read-modify-write the session's metadata record so its timestamp span
+ * covers `[firstAt, lastAt]`. Must be called at most once per transaction
+ * — a second call would read the record before the first write committed.
+ */
+function bumpSessionMeta(
+  store: IDBObjectStore,
+  target: LogTarget,
+  firstAt: number,
+  lastAt: number,
+): void {
+  const getReq = store.get(target.sessionId)
+  getReq.onsuccess = () => {
+    const existing = getReq.result as SessionRecord | undefined
+    const next: SessionRecord = existing
+      ? {
+          ...existing,
+          code: target.roomCode,
+          // Keep an earlier name if the room is currently unnamed.
+          name: target.roomName || existing.name,
+          role: target.role,
+          firstAt: Math.min(existing.firstAt, firstAt),
+          lastAt: Math.max(existing.lastAt, lastAt),
+        }
+      : {
+          sessionId: target.sessionId,
+          code: target.roomCode,
+          name: target.roomName,
+          role: target.role,
+          firstAt,
+          lastAt,
+        }
+    store.put(next)
+  }
+}
+
+/**
+ * Append (or upsert) one feed entry to a session's durable log, refreshing
+ * the session metadata. A no-op when there is no session. Fire-and-forget
+ * — failures are swallowed.
  */
 export async function appendLogEntry(
-  roomCode: string | null,
+  target: LogTarget | null,
   kind: LogKind,
   entry: { id: string; timestamp: number },
 ): Promise<void> {
-  if (!roomCode) return
+  if (!target) return
   const db = await openDb()
   if (!db) return
   try {
+    const tx = db.transaction([STORE, META], 'readwrite')
     const record: LogRecord = {
-      pk: `${roomCode}:${entry.id}`,
-      roomCode,
+      pk: `${target.sessionId}:${entry.id}`,
+      sessionId: target.sessionId,
+      roomCode: target.roomCode,
       at: entry.timestamp,
       kind,
       data: entry,
     }
-    db.transaction(STORE, 'readwrite').objectStore(STORE).put(record)
+    tx.objectStore(STORE).put(record)
+    bumpSessionMeta(tx.objectStore(META), target, entry.timestamp, entry.timestamp)
   } catch {
     /* IndexedDB unavailable or quota exceeded */
   }
 }
 
 /**
- * Append many entries to a room's log in one transaction — used to seed
+ * Append many entries to a session's log in one transaction — used to seed
  * the log when a room is restored from an imported export. Resolves once
  * the write commits (or is abandoned), so the caller can rely on it.
  */
-export async function appendLogEntries(roomCode: string, entries: LogEntry[]): Promise<void> {
-  if (!roomCode || entries.length === 0) return
+export async function appendLogEntries(
+  target: LogTarget | null,
+  entries: LogEntry[],
+): Promise<void> {
+  if (!target || entries.length === 0) return
   const db = await openDb()
   if (!db) return
   await new Promise<void>((resolve) => {
     try {
-      const store = db.transaction(STORE, 'readwrite').objectStore(STORE)
+      const tx = db.transaction([STORE, META], 'readwrite')
+      const store = tx.objectStore(STORE)
+      let firstAt = Infinity
+      let lastAt = -Infinity
       for (const e of entries) {
         const id = (e.data as { id?: unknown }).id
         if (typeof id !== 'string') continue
-        const record: LogRecord = { pk: `${roomCode}:${id}`, roomCode, at: e.at, kind: e.kind, data: e.data }
+        const record: LogRecord = {
+          pk: `${target.sessionId}:${id}`,
+          sessionId: target.sessionId,
+          roomCode: target.roomCode,
+          at: e.at,
+          kind: e.kind,
+          data: e.data,
+        }
         store.put(record)
+        firstAt = Math.min(firstAt, e.at)
+        lastAt = Math.max(lastAt, e.at)
       }
-      store.transaction.oncomplete = () => resolve()
-      store.transaction.onerror = () => resolve()
+      if (Number.isFinite(firstAt)) {
+        bumpSessionMeta(tx.objectStore(META), target, firstAt, lastAt)
+      }
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => resolve()
     } catch {
       resolve()
     }
@@ -119,72 +270,130 @@ export interface LogEntry {
  * Load up to `limit` entries strictly older than `beforeAt` (use Infinity
  * for the most recent ones), returned oldest-first.
  */
-async function loadLog(roomCode: string, beforeAt: number, limit: number): Promise<LogEntry[]> {
-  if (!roomCode || limit <= 0) return []
+function loadLog(sessionId: string, beforeAt: number, limit: number): Promise<LogEntry[]> {
+  if (!sessionId || limit <= 0) return Promise.resolve([])
+  return openDb().then(
+    (db) =>
+      new Promise<LogEntry[]>((resolve) => {
+        if (!db) return resolve([])
+        try {
+          const upperOpen = Number.isFinite(beforeAt)
+          const range = IDBKeyRange.bound(
+            [sessionId, -Infinity],
+            [sessionId, beforeAt],
+            false,
+            upperOpen,
+          )
+          const out: LogEntry[] = []
+          // 'prev' walks newest-first; collect `limit`, then reverse.
+          const cursor = db
+            .transaction(STORE, 'readonly')
+            .objectStore(STORE)
+            .index('bySessionAt')
+            .openCursor(range, 'prev')
+          cursor.onsuccess = () => {
+            const cur = cursor.result
+            if (cur && out.length < limit) {
+              const rec = cur.value as LogRecord
+              out.push({ kind: rec.kind, at: rec.at, data: rec.data })
+              cur.continue()
+            } else {
+              resolve(out.reverse())
+            }
+          }
+          cursor.onerror = () => resolve([])
+        } catch {
+          resolve([])
+        }
+      }),
+  )
+}
+
+/** The most recent `limit` entries of a session's log, oldest-first. */
+export function loadRecentLog(sessionId: string, limit: number): Promise<LogEntry[]> {
+  return loadLog(sessionId, Infinity, limit)
+}
+
+/** A session's entire durable log, oldest-first. */
+export function loadFullLog(sessionId: string): Promise<LogEntry[]> {
+  return loadLog(sessionId, Infinity, Infinity)
+}
+
+/** Every stored past session, most recently active first. */
+export async function listSessions(): Promise<SessionSummary[]> {
   const db = await openDb()
   if (!db) return []
   return new Promise((resolve) => {
     try {
-      const upperOpen = Number.isFinite(beforeAt)
-      const range = IDBKeyRange.bound(
-        [roomCode, -Infinity],
-        [roomCode, beforeAt],
-        false,
-        upperOpen,
-      )
-      const out: LogEntry[] = []
-      // 'prev' walks newest-first; collect `limit`, then reverse.
-      const cursor = db
-        .transaction(STORE, 'readonly')
-        .objectStore(STORE)
-        .index('byRoomAt')
-        .openCursor(range, 'prev')
-      cursor.onsuccess = () => {
-        const cur = cursor.result
-        if (cur && out.length < limit) {
-          const rec = cur.value as LogRecord
-          out.push({ kind: rec.kind, at: rec.at, data: rec.data })
-          cur.continue()
-        } else {
-          resolve(out.reverse())
+      const tx = db.transaction([STORE, META], 'readonly')
+      const metaReq = tx.objectStore(META).getAll()
+      metaReq.onsuccess = () => {
+        const records = (metaReq.result as SessionRecord[]) ?? []
+        if (records.length === 0) return resolve([])
+        const index = tx.objectStore(STORE).index('bySessionAt')
+        const summaries: SessionSummary[] = []
+        let pending = records.length
+        const done = (rec: SessionRecord, count: number) => {
+          summaries.push({ ...rec, count })
+          if (--pending === 0) {
+            summaries.sort((a, b) => b.lastAt - a.lastAt)
+            resolve(summaries)
+          }
+        }
+        for (const rec of records) {
+          const countReq = index.count(sessionRange(rec.sessionId))
+          countReq.onsuccess = () => done(rec, countReq.result)
+          countReq.onerror = () => done(rec, 0)
         }
       }
-      cursor.onerror = () => resolve([])
+      metaReq.onerror = () => resolve([])
     } catch {
       resolve([])
     }
   })
 }
 
-/** The most recent `limit` entries of a room's log, oldest-first. */
-export function loadRecentLog(roomCode: string, limit: number): Promise<LogEntry[]> {
-  return loadLog(roomCode, Infinity, limit)
-}
-
-/** The room's entire durable log, oldest-first. */
-export function loadFullLog(roomCode: string): Promise<LogEntry[]> {
-  return loadLog(roomCode, Infinity, Infinity)
-}
-
-/** Delete a room's entire durable log. */
-export async function clearRoomLog(roomCode: string | null): Promise<void> {
-  if (!roomCode) return
+/** Delete one session's entire durable log and its metadata record. */
+export async function deleteSession(sessionId: string | null): Promise<void> {
+  if (!sessionId) return
   const db = await openDb()
   if (!db) return
-  try {
-    const cursor = db
-      .transaction(STORE, 'readwrite')
-      .objectStore(STORE)
-      .index('byRoomAt')
-      .openCursor(roomRange(roomCode))
-    cursor.onsuccess = () => {
-      const cur = cursor.result
-      if (cur) {
-        cur.delete()
-        cur.continue()
+  await new Promise<void>((resolve) => {
+    try {
+      const tx = db.transaction([STORE, META], 'readwrite')
+      const cursor = tx
+        .objectStore(STORE)
+        .index('bySessionAt')
+        .openCursor(sessionRange(sessionId))
+      cursor.onsuccess = () => {
+        const cur = cursor.result
+        if (cur) {
+          cur.delete()
+          cur.continue()
+        }
       }
+      tx.objectStore(META).delete(sessionId)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => resolve()
+    } catch {
+      resolve()
     }
-  } catch {
-    /* ignore */
-  }
+  })
+}
+
+/** Delete every stored session — the whole history. */
+export async function deleteAllSessions(): Promise<void> {
+  const db = await openDb()
+  if (!db) return
+  await new Promise<void>((resolve) => {
+    try {
+      const tx = db.transaction([STORE, META], 'readwrite')
+      tx.objectStore(STORE).clear()
+      tx.objectStore(META).clear()
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => resolve()
+    } catch {
+      resolve()
+    }
+  })
 }

@@ -10,6 +10,9 @@ const KEY = 'trpg-dice.activeRoom'
 export interface ActiveRoom {
   code: string
   role: 'host' | 'client'
+  /** Durable-log session id, so a resumed room keeps one continuous log.
+   *  Absent only for a pointer written before the session-id change. */
+  sessionId?: string
 }
 
 /** The room this tab was in before a reload, or null. */
@@ -19,7 +22,11 @@ export function loadActiveRoom(): ActiveRoom | null {
     if (!raw) return null
     const value = JSON.parse(raw) as Partial<ActiveRoom>
     if (typeof value.code === 'string' && (value.role === 'host' || value.role === 'client')) {
-      return { code: value.code, role: value.role }
+      return {
+        code: value.code,
+        role: value.role,
+        ...(typeof value.sessionId === 'string' ? { sessionId: value.sessionId } : {}),
+      }
     }
   } catch {
     /* sessionStorage unavailable or malformed */
