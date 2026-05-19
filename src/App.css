@@ -359,7 +359,8 @@
   gap: 4px;
   margin-bottom: 10px;
 }
-.field span {
+.field span,
+.setting-row > span {
   font-size: 0.8rem;
   color: var(--text-dim);
 }
@@ -627,14 +628,24 @@ button.player-row {
   height: 16px;
 }
 
-/* Settings ON/OFF switch — label on the left, sliding toggle on the right. */
-.toggle-field {
+/* A settings row: label on the left, its control (toggle switch or
+   segmented buttons) on the right, on one line. A control too wide for
+   the row (e.g. the size picker in a narrow panel) wraps below instead
+   of squeezing the label. */
+.setting-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 0.9rem;
+  flex-wrap: wrap;
+  gap: 6px 12px;
   margin-bottom: 10px;
+}
+/* The label keeps to one line; the control reflows if space runs out. */
+.setting-row > span {
+  white-space: nowrap;
+}
+/* The toggle rows are <label>s — clicking anywhere on the row flips them. */
+label.setting-row {
   cursor: pointer;
 }
 .toggle {
