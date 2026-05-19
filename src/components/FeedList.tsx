@@ -1,8 +1,9 @@
-import { memo, useEffect, useRef, useState } from 'react'
+import { Fragment, memo, useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { useTranslatedText } from '../i18n/useTranslatedText'
 import type { TFn } from '../i18n/context'
 import type { FeedItem, SystemMarker } from '../feed/feed'
+import { formatClock, formatFeedDate, sameDay } from '../feed/datetime'
 import type { ChatFile, ChatMessage } from '../net/protocol'
 import type { RollResult } from '../dice/types'
 import { playerColor } from '../players/colors'
@@ -62,7 +63,7 @@ const FeedChatItem = memo(function FeedChatItem({
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
 }) {
-  const { t, lang, autoTranslate } = useI18n()
+  const { t, autoTranslate } = useI18n()
   const own = m.playerId === playerId
   const color = playerColor(m.playerId)
   // Highlight the message for a player it @mentions (or for everyone when it
@@ -109,7 +110,7 @@ const FeedChatItem = memo(function FeedChatItem({
         {pending ? (
           <span className="pending-tag">{t('chat.pending')}</span>
         ) : (
-          <time>{new Date(m.timestamp).toLocaleTimeString(lang)}</time>
+          <time>{formatClock(new Date(m.timestamp))}</time>
         )}
       </div>
       {m.text && (
@@ -136,7 +137,7 @@ const FeedRollItem = memo(function FeedRollItem({
   compact: boolean
   onOpenDetail: (target: FeedDetailTarget) => void
 }) {
-  const { t, lang } = useI18n()
+  const { t } = useI18n()
   const canSee = isGM || !r.hidden
   const isHidden = r.hidden && !canSee
   const color = playerColor(r.playerId)
@@ -161,7 +162,7 @@ const FeedRollItem = memo(function FeedRollItem({
           {feedName(fullName, r.characterName ?? '', compact)}
         </button>
         {r.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
-        <time>{new Date(r.timestamp).toLocaleTimeString(lang)}</time>
+        <time>{formatClock(new Date(r.timestamp))}</time>
       </div>
       <p className="roll-text">{formatRollText(t, r, canSee)}</p>
       {!isHidden && (
@@ -206,7 +207,7 @@ export function FeedList({
   onOpenDetail,
   onOpenImage,
 }: Props) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const listRef = useRef<HTMLUListElement>(null)
   // Whether the player is at the bottom — only then does a new entry scroll.
   const stuckToBottom = useRef(true)
@@ -233,15 +234,17 @@ export function FeedList({
           </button>
         </li>
       )}
-      {feed.map((item) => {
+      {feed.map((item, i) => {
         const archived = item.at < lastExitAt
+        // A divider carrying the date opens the feed and marks each day change.
+        const prev = i > 0 ? feed[i - 1] : null
+        const newDay = !prev || !sameDay(new Date(prev.at), new Date(item.at))
+        let node
         if (item.kind === 'system') {
-          return <FeedSystemItem key={item.id} marker={item.marker} archived={archived} />
-        }
-        if (item.kind === 'chat') {
-          return (
+          node = <FeedSystemItem marker={item.marker} archived={archived} />
+        } else if (item.kind === 'chat') {
+          node = (
             <FeedChatItem
-              key={item.id}
               message={item.message}
               archived={archived}
               compact={compact}
@@ -250,16 +253,26 @@ export function FeedList({
               onOpenImage={onOpenImage}
             />
           )
+        } else {
+          node = (
+            <FeedRollItem
+              roll={item.roll}
+              archived={archived}
+              isGM={isGM}
+              compact={compact}
+              onOpenDetail={onOpenDetail}
+            />
+          )
         }
         return (
-          <FeedRollItem
-            key={item.id}
-            roll={item.roll}
-            archived={archived}
-            isGM={isGM}
-            compact={compact}
-            onOpenDetail={onOpenDetail}
-          />
+          <Fragment key={item.id}>
+            {newDay && (
+              <li className="feed-date">
+                <span>{formatFeedDate(new Date(item.at), lang)}</span>
+              </li>
+            )}
+            {node}
+          </Fragment>
         )
       })}
       {pending.map((m) => (
