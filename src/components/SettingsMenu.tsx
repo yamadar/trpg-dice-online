@@ -56,94 +56,96 @@ export function SettingsMenu({
         <>
           <div className="settings-backdrop" onClick={() => setOpen(false)} />
           <div className="settings-panel" role="dialog" aria-label={t('settings.title')}>
-            <div className="settings-head">
-              <h2>{t('settings.title')}</h2>
-              <button
-                type="button"
-                className="settings-close icon-x"
-                aria-label={t('settings.close')}
-                onClick={() => setOpen(false)}
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            <label className="setting-row">
-              <span>{t('player.name')}</span>
-              <input
-                type="text"
-                value={name}
-                maxLength={24}
-                placeholder={t('player.namePlaceholder')}
-                onChange={(e) => {
-                  onChangeName(e.target.value)
-                  markChanged()
-                }}
-                onBlur={flush}
-              />
-            </label>
-
-            <div className="settings-group">
-              <h3>{t('settings.groupLanguage')}</h3>
-              <div className="setting-row">
-                <span>{t('lang.label')}</span>
-                <LanguageToggle />
-              </div>
+            {/* Pinned outside the scroll region so it stays put — same
+                placement as the other modals' close button. */}
+            <button
+              type="button"
+              className="sheet-close icon-x"
+              aria-label={t('settings.close')}
+              onClick={() => setOpen(false)}
+            >
+              <CloseIcon />
+            </button>
+            <div className="settings-body">
+              <h2 className="settings-title">{t('settings.title')}</h2>
               <label className="setting-row">
-                <span>{t('translate.auto')}</span>
+                <span>{t('player.name')}</span>
                 <input
-                  type="checkbox"
-                  className="toggle"
-                  checked={autoTranslate}
-                  onChange={(e) => setAutoTranslate(e.target.checked)}
+                  type="text"
+                  value={name}
+                  maxLength={24}
+                  placeholder={t('player.namePlaceholder')}
+                  onChange={(e) => {
+                    onChangeName(e.target.value)
+                    markChanged()
+                  }}
+                  onBlur={flush}
                 />
               </label>
-            </div>
 
-            <div className="settings-group">
-              <h3>{t('settings.groupAppearance')}</h3>
-              <div className="setting-row">
-                <span>{t('fontSize.label')}</span>
-                <FontSizeToggle />
+              <div className="settings-group">
+                <h3>{t('settings.groupLanguage')}</h3>
+                <div className="setting-row">
+                  <span>{t('lang.label')}</span>
+                  <LanguageToggle />
+                </div>
+                <label className="setting-row">
+                  <span>{t('translate.auto')}</span>
+                  <input
+                    type="checkbox"
+                    className="toggle"
+                    checked={autoTranslate}
+                    onChange={(e) => setAutoTranslate(e.target.checked)}
+                  />
+                </label>
               </div>
-              <label className="setting-row">
-                <span>{t('feed.compact')}</span>
-                <input
-                  type="checkbox"
-                  className="toggle"
-                  checked={compact}
-                  onChange={onToggleCompact}
-                />
-              </label>
-              <div className="field">
-                <span>{t('theme.title')}</span>
-                <ThemeToggle />
-              </div>
-            </div>
 
-            <div className="settings-about">
-              <h3>{t('settings.about')}</h3>
-              <p className="about-title">{t('app.title')}</p>
-              <p className="about-line">{t('app.tagline')}</p>
-              <p className="about-line">
-                MIT License ·{' '}
-                <a
-                  href="https://github.com/yamadar/trpg-dice-online"
-                  target="_blank"
-                  rel="noreferrer"
+              <div className="settings-group">
+                <h3>{t('settings.groupAppearance')}</h3>
+                <div className="setting-row">
+                  <span>{t('fontSize.label')}</span>
+                  <FontSizeToggle />
+                </div>
+                <label className="setting-row">
+                  <span>{t('feed.compact')}</span>
+                  <input
+                    type="checkbox"
+                    className="toggle"
+                    checked={compact}
+                    onChange={onToggleCompact}
+                  />
+                </label>
+                <div className="field">
+                  <span>{t('theme.title')}</span>
+                  <ThemeToggle />
+                </div>
+              </div>
+
+              <div className="settings-about">
+                <h3>{t('settings.about')}</h3>
+                <p className="about-title">{t('app.title')}</p>
+                <p className="about-line">{t('app.tagline')}</p>
+                <p className="about-line">
+                  MIT License ·{' '}
+                  <a
+                    href="https://github.com/yamadar/trpg-dice-online"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    GitHub
+                  </a>
+                </p>
+                <button
+                  type="button"
+                  className="settings-help-btn"
+                  onClick={() => {
+                    setOpen(false)
+                    onOpenHelp()
+                  }}
                 >
-                  GitHub
-                </a>
-              </p>
-              <button
-                type="button"
-                className="settings-help-btn"
-                onClick={() => {
-                  setOpen(false)
-                  onOpenHelp()
-                }}
-              >
-                {t('settings.help')}
-              </button>
+                  {t('settings.help')}
+                </button>
+              </div>
             </div>
           </div>
         </>
