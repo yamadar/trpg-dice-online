@@ -775,3 +775,11 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   Group the settings panel into titled sections — "Language &
   translation" (language, auto-translate) and "Appearance" (text size,
   compact feed, theme) — each set off by a divider.
+- v1.51 — 設定パネルの調整: プレイヤー名も「ラベル左／操作右」の 1 行
+  レイアウトに統一。「使い方を見る」を「このアプリについて」セクションへ
+  移動。パネルをやや広げ、テーマのグリッドが枠から飛び出さず右端が他の
+  要素と揃うようにした。
+  Settings-panel tweaks: the player name now uses the same one-row
+  layout, "How to use" moves into the About section, and the panel is a
+  little wider so the theme grid no longer overflows — its right edge
+  lines up with the other controls.

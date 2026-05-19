@@ -99,6 +99,9 @@
   gap: 4px;
   padding: 5px;
   border-radius: 8px;
+  /* Let the cell shrink to its 1fr share so a long theme name cannot
+     push the grid wider than the panel. */
+  min-width: 0;
 }
 .theme-option.active {
   border-color: var(--accent);
@@ -643,6 +646,11 @@ button.player-row {
 /* The label keeps to one line; the control reflows if space runs out. */
 .setting-row > span {
   white-space: nowrap;
+}
+/* A text field (the player name) fills the row's remaining width. */
+.setting-row input[type='text'] {
+  flex: 1;
+  min-width: 0;
 }
 /* The toggle rows are <label>s — clicking anywhere on the row flips them. */
 label.setting-row {
@@ -1309,7 +1317,7 @@ label.setting-row {
   right: 0;
   top: calc(100% + 8px);
   z-index: 21;
-  width: 280px;
+  width: 320px;
   max-width: 86vw;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -1566,5 +1574,5 @@ label.setting-row {
 
 .settings-help-btn {
   width: 100%;
-  margin-top: 4px;
+  margin-top: 12px;
 }

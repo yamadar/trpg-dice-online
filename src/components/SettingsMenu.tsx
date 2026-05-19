@@ -61,7 +61,7 @@ export function SettingsMenu({
                 {t('settings.close')}
               </button>
             </div>
-            <label className="field">
+            <label className="setting-row">
               <span>{t('player.name')}</span>
               <input
                 type="text"
@@ -114,17 +114,6 @@ export function SettingsMenu({
               </div>
             </div>
 
-            <button
-              type="button"
-              className="settings-help-btn"
-              onClick={() => {
-                setOpen(false)
-                onOpenHelp()
-              }}
-            >
-              {t('settings.help')}
-            </button>
-
             <div className="settings-about">
               <h3>{t('settings.about')}</h3>
               <p className="about-title">{t('app.title')}</p>
@@ -139,6 +128,16 @@ export function SettingsMenu({
                   GitHub
                 </a>
               </p>
+              <button
+                type="button"
+                className="settings-help-btn"
+                onClick={() => {
+                  setOpen(false)
+                  onOpenHelp()
+                }}
+              >
+                {t('settings.help')}
+              </button>
             </div>
           </div>
         </>
