@@ -68,6 +68,10 @@ An SPA where players roll TRPG dice and share results with other players in real
 - 履歴にはダイスの内訳（各目）も保持する / History keeps the individual die faces
 - 履歴とチャットは 1 つのフィードに時系列で統合表示する
   History and chat are merged into a single chronological feed
+- 各エントリの時刻は `H:mm` で表示する。フィードの先頭と日付を跨ぐ位置には、
+  年月日（UI 言語に応じた表記）を中央に置いた区切り線を入れる
+  Each entry's time is shown as `H:mm`; a divider carrying the date (in the
+  UI language) opens the feed and marks every day change
 - 「すべて / 履歴のみ / チャットのみ」で表示を絞り込める
   A filter switches between All / Rolls only / Chat only
 - 参加者ごとに固有の色を割り当て、フィードと参加者一覧で見分けやすくする
@@ -77,11 +81,11 @@ An SPA where players roll TRPG dice and share results with other players in real
 - 表示のクリアは誤操作で行われないよう、確認ダイアログを必須とする
   Clearing the feed requires a confirmation dialog to avoid accidental loss
 - 設定メニューでフィードをコンパクト表示に切り替えられる。コンパクト時は
-  各エントリを 1 行（名前・内容・時刻）に詰め、プレイヤー色のドットと名前の
+  各エントリを 1 行（時刻・名前・内容）に詰め、プレイヤー色のドットと名前の
   「（プレイヤー名）」を省いてキャラクター名のみを表示する。長い発言は折り返す。
   設定はブラウザに保存される
   The settings menu can switch the feed to a compact layout: each entry is
-  packed onto one row (name · content · time), the player-color dot is
+  packed onto one row (time · name · content), the player-color dot is
   dropped and the name shows only the character (no "（Player）"); a long
   message wraps. The choice is remembered in the browser
 - 設定で自動翻訳をオンにすると、チャットを設定言語へ翻訳して表示する。
@@ -699,3 +703,10 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   manifest is bumped to v4 (cached translations drop the backend tag; v3
   archives still import). The auto-translate and compact-feed settings are
   shown as ON/OFF toggle switches.
+- v1.45 — フィードの時刻表示を `H:mm`（秒なし）に統一し、コンパクト表示の
+  並びを「時刻・名前・内容」に変更。フィードの先頭と日付を跨ぐ位置に、
+  年月日（UI 言語準拠）を中央に据えた区切り線を追加。
+  Unify the feed's time display to `H:mm` (no seconds) and reorder the
+  compact row to time · name · content. A date divider — the calendar
+  date (in the UI language) centered between two rules — now opens the
+  feed and marks each day change.

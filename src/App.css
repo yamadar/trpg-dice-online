@@ -891,6 +891,23 @@ button.player-row {
   padding: 3px 12px;
 }
 
+/* Date divider: the date centered between two faint rules. */
+.feed-date {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+.feed-date::before,
+.feed-date::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 .feed-roll.archived,
 .feed-chat.archived,
 .feed-system.archived {
@@ -909,7 +926,7 @@ button.player-row {
   color: #fbbf24;
 }
 
-/* Compact dice & chat: a dense entry — name · content · time on one row.
+/* Compact dice & chat: a dense entry — time · name · content on one row.
    The colored name already signals the player, so the dot is dropped; a
    long message wraps under its first line rather than being truncated.
    min-width:0 down the flex chain keeps a long word from widening the
@@ -943,21 +960,29 @@ button.player-row {
 .activity.compact .player-dot {
   display: none;
 }
+/* The time leads the row; the name follows it, then the message. */
+.activity.compact .feed-line time {
+  order: 0;
+  margin-left: 0;
+}
 .activity.compact .feed-name {
+  order: 1;
   flex-shrink: 0;
+}
+.activity.compact .badge {
+  order: 2;
 }
 .activity.compact .chat-text,
 .activity.compact .roll-text {
-  order: 2;
+  order: 3;
   flex: 1;
   min-width: 0;
   margin: 0;
   font-size: 0.82rem;
 }
-.activity.compact .feed-line time,
 .activity.compact .pending-tag,
 .activity.compact .chat-trans-toggle {
-  order: 3;
+  order: 4;
 }
 /* The dice breakdown is dropped from the one-line view. */
 .activity.compact .roll-detail {
@@ -966,7 +991,7 @@ button.player-row {
 /* Keep an attachment from breaking the single-line height. */
 .activity.compact .chat-thumb,
 .activity.compact .chat-file {
-  order: 2;
+  order: 3;
   flex-shrink: 0;
 }
 .activity.compact .chat-thumb img {
