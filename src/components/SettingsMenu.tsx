@@ -4,6 +4,7 @@ import { useFieldNotice } from '../hooks/useFieldNotice'
 import { LanguageToggle } from './LanguageToggle'
 import { ThemeToggle } from './ThemeToggle'
 import { FontSizeToggle } from './FontSizeToggle'
+import { CloseIcon } from './icons'
 
 interface Props {
   name: string
@@ -57,8 +58,13 @@ export function SettingsMenu({
           <div className="settings-panel" role="dialog" aria-label={t('settings.title')}>
             <div className="settings-head">
               <h2>{t('settings.title')}</h2>
-              <button type="button" className="link" onClick={() => setOpen(false)}>
-                {t('settings.close')}
+              <button
+                type="button"
+                className="settings-close icon-x"
+                aria-label={t('settings.close')}
+                onClick={() => setOpen(false)}
+              >
+                <CloseIcon />
               </button>
             </div>
             <label className="setting-row">
