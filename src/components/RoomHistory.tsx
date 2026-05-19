@@ -40,7 +40,9 @@ export function RoomHistory({ playerId, onBack }: Props) {
   const { t, lang } = useI18n()
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null)
   const [selected, setSelected] = useState<SessionSummary | null>(null)
-  const [log, setLog] = useState<LoadedLog | null>(null)
+  // The loaded log is tagged with its session id, so a result that lands
+  // after the selection moved on is simply ignored at render time.
+  const [log, setLog] = useState<{ sessionId: string; data: LoadedLog } | null>(null)
   const [filter, setFilter] = useState<FeedFilter>('all')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
@@ -52,25 +54,37 @@ export function RoomHistory({ playerId, onBack }: Props) {
     refresh()
   }, [refresh])
 
-  // Load the chosen session's whole durable log for read-only browsing.
   const openSession = useCallback((s: SessionSummary) => {
     setSelected(s)
-    setLog(null)
     setFilter('all')
-    void loadFullLog(s.sessionId).then((entries) => {
-      setLog({
-        history: entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult),
-        chat: entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage),
-        markers: entries.filter((e) => e.kind === 'marker').map((e) => e.data as SystemMarker),
-      })
-    })
+    setLightboxIndex(null)
   }, [])
 
   const closeSession = useCallback(() => {
     setSelected(null)
-    setLog(null)
     setLightboxIndex(null)
   }, [])
+
+  // Load the selected session's whole durable log for read-only browsing.
+  // The result is tagged with its session id; a stale load that resolves
+  // after the selection moved on is dropped by `loadedLog` below.
+  useEffect(() => {
+    if (!selected) return
+    const sid = selected.sessionId
+    void loadFullLog(sid).then((entries) => {
+      setLog({
+        sessionId: sid,
+        data: {
+          history: entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult),
+          chat: entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage),
+          markers: entries.filter((e) => e.kind === 'marker').map((e) => e.data as SystemMarker),
+        },
+      })
+    })
+  }, [selected])
+
+  // Only the log that matches the current selection — null while loading.
+  const loadedLog = selected && log?.sessionId === selected.sessionId ? log.data : null
 
   const handleDelete = (s: SessionSummary) => {
     if (!window.confirm(t('history.deleteConfirm'))) return
@@ -83,8 +97,8 @@ export function RoomHistory({ playerId, onBack }: Props) {
   }
 
   const feed = useMemo(
-    () => (log ? buildFeed(log.history, log.chat, log.markers, filter) : []),
-    [log, filter],
+    () => (loadedLog ? buildFeed(loadedLog.history, loadedLog.chat, loadedLog.markers, filter) : []),
+    [loadedLog, filter],
   )
 
   // Image attachments in view order — the lightbox steps through these.
@@ -129,7 +143,7 @@ export function RoomHistory({ playerId, onBack }: Props) {
             </button>
           ))}
         </div>
-        {log === null ? (
+        {loadedLog === null ? (
           <p className="hint history-loading">…</p>
         ) : (
           <FeedList

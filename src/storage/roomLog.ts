@@ -107,37 +107,55 @@ function migrateV1(logStore: IDBObjectStore, metaStore: IDBObjectStore): void {
 
 function openDb(): Promise<IDBDatabase | null> {
   if (dbPromise) return dbPromise
+  let req: IDBOpenDBRequest
+  try {
+    req = indexedDB.open(DB_NAME, DB_VERSION)
+  } catch {
+    // IndexedDB unavailable — degrade to no log, uncached so a later call
+    // (in case the failure was transient) can retry.
+    return Promise.resolve(null)
+  }
   dbPromise = new Promise((resolve) => {
-    try {
-      const req = indexedDB.open(DB_NAME, DB_VERSION)
-      req.onupgradeneeded = (event) => {
-        const db = req.result
-        const tx = req.transaction
-        let logStore: IDBObjectStore
-        if (!db.objectStoreNames.contains(STORE)) {
-          logStore = db.createObjectStore(STORE, { keyPath: 'pk' })
-        } else {
-          logStore = tx!.objectStore(STORE)
-          // The old room-code index is superseded by the session index.
-          if (logStore.indexNames.contains('byRoomAt')) logStore.deleteIndex('byRoomAt')
-        }
-        if (!logStore.indexNames.contains('bySessionAt')) {
-          logStore.createIndex('bySessionAt', ['sessionId', 'at'])
-        }
-        const metaStore = db.objectStoreNames.contains(META)
-          ? tx!.objectStore(META)
-          : db.createObjectStore(META, { keyPath: 'sessionId' })
-        // v1 stored entries keyed by room code with no session metadata.
-        if (event.oldVersion >= 1 && event.oldVersion < 2) {
-          migrateV1(logStore, metaStore)
-        }
+    req.onupgradeneeded = (event) => {
+      const db = req.result
+      const tx = req.transaction
+      let logStore: IDBObjectStore
+      if (!db.objectStoreNames.contains(STORE)) {
+        logStore = db.createObjectStore(STORE, { keyPath: 'pk' })
+      } else {
+        logStore = tx!.objectStore(STORE)
+        // The old room-code index is superseded by the session index.
+        if (logStore.indexNames.contains('byRoomAt')) logStore.deleteIndex('byRoomAt')
       }
-      req.onsuccess = () => resolve(req.result)
-      req.onerror = () => resolve(null)
-      // Another tab still holds an older version open — degrade to no log
-      // rather than hang waiting for the upgrade.
-      req.onblocked = () => resolve(null)
-    } catch {
+      if (!logStore.indexNames.contains('bySessionAt')) {
+        logStore.createIndex('bySessionAt', ['sessionId', 'at'])
+      }
+      const metaStore = db.objectStoreNames.contains(META)
+        ? tx!.objectStore(META)
+        : db.createObjectStore(META, { keyPath: 'sessionId' })
+      // v1 stored entries keyed by room code with no session metadata.
+      if (event.oldVersion >= 1 && event.oldVersion < 2) {
+        migrateV1(logStore, metaStore)
+      }
+    }
+    req.onsuccess = () => {
+      const db = req.result
+      // Step aside for another tab's upgrade, and drop the cache so the
+      // next call reopens at the (possibly new) version.
+      db.onversionchange = () => {
+        db.close()
+        dbPromise = null
+      }
+      resolve(db)
+    }
+    // A failed or blocked open must not stay cached: clear `dbPromise` so a
+    // later call can retry once the blocking tab closes.
+    req.onerror = () => {
+      dbPromise = null
+      resolve(null)
+    }
+    req.onblocked = () => {
+      dbPromise = null
       resolve(null)
     }
   })
