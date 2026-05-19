@@ -4,6 +4,7 @@ import {
   normalizeRoomCode,
   peerIdForCode,
   redactRoll,
+  sanitizeSyncedImage,
   staleGhostPeerIds,
   type Player,
 } from './protocol'
@@ -122,5 +123,33 @@ describe('staleGhostPeerIds', () => {
       ['cur', player('alice', 'Alice')],
     ])
     expect(staleGhostPeerIds(roster, 'alice', 'cur').sort()).toEqual(['g1', 'g2'])
+  })
+})
+
+describe('sanitizeSyncedImage', () => {
+  const pngDataUrl = 'data:image/png;base64,iVBORw0KGgo='
+
+  it('passes through an image data URL', () => {
+    expect(sanitizeSyncedImage(pngDataUrl)).toBe(pngDataUrl)
+  })
+
+  it('treats an empty string as "no portrait"', () => {
+    expect(sanitizeSyncedImage('')).toBe('')
+  })
+
+  it('rejects an external or non-image URL', () => {
+    expect(sanitizeSyncedImage('https://evil.example/track.gif')).toBe('')
+    expect(sanitizeSyncedImage('data:text/html;base64,PHNjcmlwdD4=')).toBe('')
+  })
+
+  it('rejects a portrait over the size cap', () => {
+    const huge = 'data:image/png;base64,' + 'A'.repeat(4 * 1024 * 1024)
+    expect(sanitizeSyncedImage(huge)).toBe('')
+  })
+
+  it('rejects non-string input', () => {
+    expect(sanitizeSyncedImage(undefined)).toBe('')
+    expect(sanitizeSyncedImage(null)).toBe('')
+    expect(sanitizeSyncedImage(42)).toBe('')
   })
 })

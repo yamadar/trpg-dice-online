@@ -793,3 +793,11 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   Place the settings panel's × button 8px from the frame, matching the
   other modals. On mobile the panel now opens as a full-height drawer
   whose body scrolls when the content overflows.
+- v1.54 — コードレビュー指摘の反映。TypeScript strict モードを有効化。
+  オフライン（ルーム未参加）時はページ離脱の確認ダイアログを出さないよう
+  にした。P2P で受け取る identity・画像は信頼せず、GM フラグや id の詐称、
+  不正な画像 URL を弾くようにした。
+  Code-review follow-ups: enable TypeScript strict mode; drop the
+  page-leave confirmation while offline (not in a room); and harden the
+  P2P layer so a client cannot spoof the GM flag or id and only valid
+  image data URLs are accepted from the network.

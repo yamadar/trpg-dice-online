@@ -125,6 +125,26 @@ export function redactRoll(result: RollResult): RollResult {
 }
 
 /**
+ * Largest character portrait accepted from the network, measured in
+ * data-URL characters — roughly the ~2 MB the local image pipeline
+ * targets, plus base64 overhead.
+ */
+const MAX_SYNCED_IMAGE_CHARS = 3 * 1024 * 1024
+
+/**
+ * Sanitize a character portrait received over the network. A portrait is
+ * untrusted, so accept only an empty string (which clears it) or an
+ * `image/*` data URL within the size cap; anything else — an external
+ * URL, an oversized blob — collapses to ''.
+ */
+export function sanitizeSyncedImage(image: unknown): string {
+  if (typeof image !== 'string' || image === '') return ''
+  if (!image.startsWith('data:image/')) return ''
+  if (image.length > MAX_SYNCED_IMAGE_CHARS) return ''
+  return image
+}
+
+/**
  * peerIds in `roster` that belong to the same player as `playerId` but
  * under a connection other than `keepPeerId` — i.e. stale ghost entries
  * left by an earlier connection of a player who is (re)joining now.

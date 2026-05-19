@@ -6,6 +6,7 @@ import {
   newChatId,
   normalizeRoomCode,
   redactRoll,
+  sanitizeSyncedImage,
   staleGhostPeerIds,
   type ChatFile,
   type ChatMessage,
@@ -302,17 +303,29 @@ export function useSession(): Session {
         case 'identity': {
           const existing = peerPlayersRef.current.get(peerId)
           if (existing) {
-            peerPlayersRef.current.set(peerId, { ...existing, ...msg.identity })
+            // Take only the known identity fields from the (untrusted)
+            // client message — never let it overwrite the host-side id or
+            // the isGM flag (which `hello` already fixed to false).
+            const { name, characterName, background, lang } = msg.identity
+            peerPlayersRef.current.set(peerId, {
+              ...existing,
+              name,
+              characterName,
+              background,
+              lang,
+            })
             broadcastPlayers()
           }
           break
         }
         case 'image': {
           // Relay a client's portrait to everyone, keyed by its player id.
+          // The portrait is untrusted, so sanitize before storing/relaying.
           const sender = peerPlayersRef.current.get(peerId)
           if (sender) {
-            putPlayerImage(sender.id, msg.image)
-            roomRef.current?.broadcast({ t: 'image', playerId: sender.id, image: msg.image })
+            const image = sanitizeSyncedImage(msg.image)
+            putPlayerImage(sender.id, image)
+            roomRef.current?.broadcast({ t: 'image', playerId: sender.id, image })
           }
           break
         }
@@ -367,6 +380,9 @@ export function useSession(): Session {
     setRole('offline')
     setStatus('offline')
     setRoomCode(null)
+    // Clear the ref eagerly too (mirrors createRoom / joinRoom) so a stray
+    // offline log write cannot land under the room just left.
+    roomCodeRef.current = null
     roomNameRef.current = ''
     setRoomNameState('')
     setTyping({})
@@ -381,9 +397,14 @@ export function useSession(): Session {
         case 'welcome': {
           // Keep the player's pre-join rolls/chat by merging the snapshot in.
           setPlayers(msg.snapshot.players)
-          // Adopt the host's portrait map, keeping the local player's own.
+          // Adopt the host's portrait map — each entry is untrusted, so
+          // sanitize it — while keeping the local player's own portrait.
           {
-            const images = { ...msg.snapshot.images }
+            const images: Record<string, string> = {}
+            for (const [id, img] of Object.entries(msg.snapshot.images ?? {})) {
+              const clean = sanitizeSyncedImage(img)
+              if (clean) images[id] = clean
+            }
             if (ownImageRef.current) images[playerId] = ownImageRef.current
             setPlayerImages(images)
           }
@@ -421,7 +442,7 @@ export function useSession(): Session {
           setPlayers(msg.players)
           break
         case 'image':
-          putPlayerImage(msg.playerId, msg.image)
+          putPlayerImage(msg.playerId, sanitizeSyncedImage(msg.image))
           break
         case 'roll':
           appendHistory(msg.result)
