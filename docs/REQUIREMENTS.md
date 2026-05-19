@@ -801,3 +801,15 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   page-leave confirmation while offline (not in a room); and harden the
   P2P layer so a client cannot spoof the GM flag or id and only valid
   image data URLs are accepted from the network.
+- v1.55 — クライアントが送るチャットは、ホスト（GM）が応答を返すまで
+  送信キューに残すようにした。GM が一時的にオフラインで、クライアントが
+  まだそれを検知できていない間に送信しても、メッセージは失われず保留表示
+  のまま残り、再接続時に再送される。あわせて、連続するシステムメッセージ
+  の (n) 集約を、表示フィルタを適用する前の本来のタイムライン上で判定する
+  よう修正し、フィルタで隠れたロール／発言を跨いで誤集約されないようにした。
+  A client now keeps each chat message in the send queue until the host
+  echoes it back, so a message sent during an as-yet-undetected GM
+  outage is no longer lost — it stays pending and the reconnect flush
+  re-sends it. Consecutive system markers are also folded into a "(n)"
+  on the real timeline, before the view filter, so they no longer fold
+  across a roll / chat that the current filter hides.

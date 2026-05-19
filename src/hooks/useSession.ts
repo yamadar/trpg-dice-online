@@ -866,11 +866,14 @@ export function useSession(): Session {
         appendChat(message)
         roomRef.current?.broadcast({ t: 'chat', message })
       } else if (currentRole === 'client') {
-        // While the GM is unreachable, hold the message in the outbox and
-        // show it as pending; the reconnect flush sends it in order.
-        if (reconnectingRef.current) {
-          setOutbox((prev) => capEnd([...prev, message], MAX_OUTBOX))
-        } else {
+        // Queue every message and show it as pending until the host
+        // echoes it back (handleHostMessage 'chat' clears it from the
+        // outbox). If the GM is unreachable — whether or not the drop has
+        // been detected yet — the message simply stays queued and the
+        // reconnect flush re-sends it, so a send during an as-yet-
+        // undetected outage is never silently lost.
+        setOutbox((prev) => capEnd([...prev, message], MAX_OUTBOX))
+        if (!reconnectingRef.current) {
           roomRef.current?.sendToHost({ t: 'chat', message })
         }
       } else {
