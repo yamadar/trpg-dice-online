@@ -77,11 +77,16 @@ function collapseSystemRuns(items: FeedItem[]): FeedItem[] {
 }
 
 /**
- * Merge rolls, chat and system markers into a single timeline ordered
- * oldest-first. The filter hides rolls or chat; system markers stay
- * visible for the all / rolls / chat views because they give context.
- * The "files" view is a focused gallery: only chat messages that carry
- * an attachment, with no rolls or markers. Entries are de-duplicated by
+ * Merge rolls, chat and system markers into one oldest-first timeline.
+ *
+ * Identical consecutive system markers are folded together with a count
+ * — but the fold is computed on the *full* timeline, before the view
+ * filter is applied, so a roll or chat hidden by the current filter can
+ * never make two separate markers look like one repeated marker.
+ *
+ * The filter then hides the kinds a view does not want: `rolls` drops
+ * chat, `chat` drops rolls, and `files` is a focused gallery of just the
+ * chat messages that carry an attachment. Entries are de-duplicated by
  * id, since paged-in older history overlaps the live window.
  */
 export function buildFeed(
@@ -90,30 +95,35 @@ export function buildFeed(
   markers: SystemMarker[],
   filter: FeedFilter,
 ): FeedItem[] {
-  const items: FeedItem[] = []
-  if (filter === 'all' || filter === 'rolls') {
-    for (const roll of history) {
-      items.push({ kind: 'roll', id: roll.id, at: roll.timestamp, roll })
-    }
+  // The full timeline — every roll, chat and marker — so a marker run is
+  // judged adjacent only when nothing really sits between its entries.
+  const all: FeedItem[] = []
+  for (const roll of history) {
+    all.push({ kind: 'roll', id: roll.id, at: roll.timestamp, roll })
   }
-  if (filter !== 'rolls') {
-    for (const message of chat) {
-      if (filter === 'files' && !message.file) continue
-      items.push({ kind: 'chat', id: message.id, at: message.timestamp, message })
-    }
+  for (const message of chat) {
+    all.push({ kind: 'chat', id: message.id, at: message.timestamp, message })
   }
-  if (filter !== 'files') {
-    for (const marker of markers) {
-      items.push({ kind: 'system', id: marker.id, at: marker.timestamp, marker, count: 1 })
-    }
+  for (const marker of markers) {
+    all.push({ kind: 'system', id: marker.id, at: marker.timestamp, marker, count: 1 })
   }
   // Paged-in older history overlaps the live window — show each entry once.
   const seen = new Set<string>()
-  const unique = items.filter((item) => {
+  const unique = all.filter((item) => {
     if (seen.has(item.id)) return false
     seen.add(item.id)
     return true
   })
   unique.sort((a, b) => a.at - b.at || a.id.localeCompare(b.id))
-  return collapseSystemRuns(unique)
+  // Fold adjacent identical markers on the real timeline, then drop the
+  // entry kinds the current view hides.
+  return collapseSystemRuns(unique).filter((item) => {
+    if (item.kind === 'roll') return filter === 'all' || filter === 'rolls'
+    if (item.kind === 'chat') {
+      if (filter === 'rolls') return false
+      if (filter === 'files') return item.message.file !== undefined
+      return true
+    }
+    return filter !== 'files'
+  })
 }

@@ -127,6 +127,40 @@ describe('buildFeed', () => {
     const feed = buildFeed([], [chat('c', 20)], joins, 'all')
     expect(feed.map((i) => i.kind)).toEqual(['system', 'chat', 'system'])
   })
+
+  it('does not fold a run broken by an entry the filter hides', () => {
+    // Two joins with a roll between them. In the chat view the roll is
+    // hidden, but the markers were not truly adjacent, so they must not
+    // fold into one "(2)" entry.
+    const joins: SystemMarker[] = [
+      { id: 'j1', timestamp: 10, type: 'playerJoined', playerName: 'Alice' },
+      { id: 'j2', timestamp: 30, type: 'playerJoined', playerName: 'Alice' },
+    ]
+    const feed = buildFeed([roll('r', 20)], [], joins, 'chat')
+    expect(feed.map((i) => i.kind)).toEqual(['system', 'system'])
+    expect(feed.every((i) => i.kind === 'system' && i.count === 1)).toBe(true)
+  })
+
+  it('does not fold a run broken by a chat hidden in the rolls view', () => {
+    const joins: SystemMarker[] = [
+      { id: 'j1', timestamp: 10, type: 'playerJoined', playerName: 'Alice' },
+      { id: 'j2', timestamp: 30, type: 'playerJoined', playerName: 'Alice' },
+    ]
+    const feed = buildFeed([], [chat('c', 20)], joins, 'rolls')
+    expect(feed.map((i) => i.kind)).toEqual(['system', 'system'])
+  })
+
+  it('still folds truly adjacent markers in a filtered view', () => {
+    // A roll exists, but not between the two joins — the joins are still
+    // adjacent, so the fold applies even in the chat view.
+    const joins: SystemMarker[] = [
+      { id: 'j1', timestamp: 10, type: 'playerJoined', playerName: 'Alice' },
+      { id: 'j2', timestamp: 11, type: 'playerJoined', playerName: 'Alice' },
+    ]
+    const feed = buildFeed([roll('r', 50)], [], joins, 'chat')
+    expect(feed).toHaveLength(1)
+    expect(feed[0]).toMatchObject({ kind: 'system', count: 2 })
+  })
 })
 
 describe('isRoomExitMarker', () => {
