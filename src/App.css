@@ -1312,32 +1312,46 @@ label.setting-row {
   inset: 0;
   z-index: 20;
 }
+/* Mobile-first: a full-height drawer pinned to the right edge, so its
+   own body can scroll independently of the page. Desktop turns it back
+   into a dropdown below the gear button. */
 .settings-panel {
-  position: absolute;
+  position: fixed;
+  top: 0;
   right: 0;
-  top: calc(100% + 8px);
+  bottom: 0;
   z-index: 21;
   width: 320px;
   max-width: 86vw;
   background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
+  border-left: 1px solid var(--border);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-}
-.settings-head {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+}
+.settings-title {
+  font-size: 1.05rem;
+  /* Keep the title clear of the floating × close button. */
+  padding-right: 30px;
   margin-bottom: 12px;
 }
-.settings-head h2 {
-  font-size: 1.05rem;
+/* The scrolling region. The × button is a sibling, not a child, so it
+   stays pinned to the panel while this body scrolls. */
+.settings-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
 }
-/* The square × close button — same look as the sheet modals' close. */
-.settings-close {
-  width: 34px;
-  height: 34px;
+@media (min-width: 721px) {
+  .settings-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    bottom: auto;
+    max-height: calc(100vh - 88px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
 }
 
 /* --- character panel --- */

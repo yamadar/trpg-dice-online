@@ -787,3 +787,9 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   閉じるボタンに統一した。
   The settings panel's close control is now the same × icon button used
   by the other modals.
+- v1.53 — 設定パネルの × ボタンを、他のモーダルと同じく枠から 8px の位置に
+  配置した。モバイルでは設定を画面の高さいっぱいのドロワーとして開き、
+  内容が収まらないときはパネル内でスクロールできるようにした。
+  Place the settings panel's × button 8px from the frame, matching the
+  other modals. On mobile the panel now opens as a full-height drawer
+  whose body scrolls when the content overflows.
