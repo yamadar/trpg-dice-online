@@ -75,30 +75,43 @@ export function SettingsMenu({
                 onBlur={flush}
               />
             </label>
-            <div className="field">
-              <span>{t('lang.label')}</span>
-              <LanguageToggle />
+
+            <div className="settings-group">
+              <h3>{t('settings.groupLanguage')}</h3>
+              <div className="field">
+                <span>{t('lang.label')}</span>
+                <LanguageToggle />
+              </div>
+              <label className="toggle-field">
+                <span>{t('translate.auto')}</span>
+                <input
+                  type="checkbox"
+                  className="toggle"
+                  checked={autoTranslate}
+                  onChange={(e) => setAutoTranslate(e.target.checked)}
+                />
+              </label>
             </div>
-            <label className="toggle-field">
-              <span>{t('translate.auto')}</span>
-              <input
-                type="checkbox"
-                className="toggle"
-                checked={autoTranslate}
-                onChange={(e) => setAutoTranslate(e.target.checked)}
-              />
-            </label>
-            <label className="toggle-field">
-              <span>{t('feed.compact')}</span>
-              <input type="checkbox" className="toggle" checked={compact} onChange={onToggleCompact} />
-            </label>
-            <div className="field">
-              <span>{t('theme.title')}</span>
-              <ThemeToggle />
-            </div>
-            <div className="field">
-              <span>{t('fontSize.label')}</span>
-              <FontSizeToggle />
+
+            <div className="settings-group">
+              <h3>{t('settings.groupAppearance')}</h3>
+              <div className="field">
+                <span>{t('fontSize.label')}</span>
+                <FontSizeToggle />
+              </div>
+              <label className="toggle-field">
+                <span>{t('feed.compact')}</span>
+                <input
+                  type="checkbox"
+                  className="toggle"
+                  checked={compact}
+                  onChange={onToggleCompact}
+                />
+              </label>
+              <div className="field">
+                <span>{t('theme.title')}</span>
+                <ThemeToggle />
+              </div>
             </div>
 
             <button
