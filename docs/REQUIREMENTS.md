@@ -263,6 +263,13 @@ An SPA where players roll TRPG dice and share results with other players in real
   import its size is checked, and an image over ~2560 px on the long edge
   or ~2 MB is automatically downscaled / compressed. It shows as a small
   thumbnail in the character info and opens full size on tap
+- キャラクター画像はルーム内の他プレイヤーへ同期される。フィードで名前を
+  タップして開く参加者カードに、その参加者の現在の画像が表示される。画像は
+  ロスター（参加者一覧）とは別経路で送られ、変化したときだけ送信する
+  The character portrait is synced to the other players in the room — the
+  player-detail card (opened by tapping a name in the feed) shows that
+  player's current portrait. The image travels on its own channel, apart
+  from the roster, and is sent only when it actually changes
 - 複数のキャラクターを保持でき、操作するキャラクターを任意で切り替えられる
   Multiple characters can be kept; the active one can be switched freely
 - キャラクターとして発言・ロールすると、名前は「{キャラ名}（{PL 名}）」と表記される
@@ -753,3 +760,12 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   Add a text-size setting (small / medium / large). It changes the root
   font-size so the whole rem-based UI rescales, and the choice is saved
   per browser.
+- v1.49 — キャラクター画像をルーム内の他プレイヤーへ同期するようにした。
+  画像はロスターとは別の専用メッセージ（`image`）で送り、変化時とルーム
+  参加時のみ送信する。welcome スナップショットに `images` を追加。参加者
+  カードに相手の現在の画像を表示し、タップでライトボックス拡大する。
+  Sync the character portrait to the other players in a room. The image
+  travels on its own `image` message — separate from the roster — and is
+  sent only on change and on joining; the welcome snapshot gains an
+  `images` map. The player-detail card shows the other player's current
+  portrait and opens it in the lightbox on tap.

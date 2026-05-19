@@ -52,14 +52,20 @@ function App() {
   // settings menu while the feed itself consumes the value.
   const [compact, setCompact] = useState(loadCompactFeed)
 
-  const { updateIdentity, resumeRoom } = session
+  const { updateIdentity, setCharacterImage, resumeRoom } = session
   const activeName = characters.activeCharacter?.name
   const activeBackground = characters.activeCharacter?.background
+  const activeImage = characters.activeCharacter?.image
 
   // Keep the synced identity in step with the active character...
   useEffect(() => {
     updateIdentity({ characterName: activeName ?? '', background: activeBackground ?? '' })
   }, [updateIdentity, activeName, activeBackground])
+
+  // ...and sync the active character's portrait to the room.
+  useEffect(() => {
+    setCharacterImage(activeImage ?? '')
+  }, [setCharacterImage, activeImage])
 
   // ...and with the chosen UI language.
   useEffect(() => {

@@ -62,6 +62,12 @@ export interface Snapshot {
   chat: ChatMessage[]
   /** GM-chosen room name ('' if the room is unnamed). */
   roomName: string
+  /**
+   * Character portrait images, keyed by player id. Carried separately
+   * from `players` so the frequent roster broadcast stays small — an
+   * image only travels when it actually changes.
+   */
+  images: Record<string, string>
 }
 
 /** A "someone is typing" signal carrying who is typing. */
@@ -84,6 +90,8 @@ export type ClientMessage =
   | { t: 'roll'; result: RollResult }
   | { t: 'chat'; message: ChatMessage }
   | { t: 'identity'; identity: Identity }
+  /** The local player's character portrait changed ('' clears it). */
+  | { t: 'image'; image: string }
   | { t: 'typing'; signal: TypingSignal }
   /** Periodic liveness signal so the host can detect dropped clients. */
   | { t: 'ping' }
@@ -96,6 +104,8 @@ export type HostMessage =
   | { t: 'chat'; message: ChatMessage }
   | { t: 'typing'; signal: TypingSignal }
   | { t: 'notice'; event: 'playerJoined' | 'playerLeft'; playerName: string; timestamp: number }
+  /** A player's character portrait changed ('' clears it). */
+  | { t: 'image'; playerId: string; image: string }
   | { t: 'roomName'; name: string }
   /** The GM changed the room code; clients must re-join under the new one. */
   | { t: 'roomCodeChanged'; code: string }
