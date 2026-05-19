@@ -29,7 +29,12 @@ import {
   newSessionId,
   type LogTarget,
 } from '../storage/roomLog'
-import { clearActiveRoom, loadActiveRoom, saveActiveRoom } from '../storage/activeRoom'
+import {
+  clearActiveRoom,
+  loadActiveRoom,
+  saveActiveRoom,
+  updateActiveRoomName,
+} from '../storage/activeRoom'
 import type { RoomImport } from '../storage/roomImport'
 import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 
@@ -449,6 +454,7 @@ export function useSession(): Session {
           setChat((prev) => mergeById(prev, msg.snapshot.chat, MAX_CHAT))
           roomNameRef.current = msg.snapshot.roomName
           setRoomNameState(msg.snapshot.roomName)
+          updateActiveRoomName(msg.snapshot.roomName)
           // Record the snapshot in the durable log (put() upserts, so a
           // re-welcome does not duplicate entries).
           const target = logTarget()
@@ -459,6 +465,7 @@ export function useSession(): Session {
         case 'roomName':
           roomNameRef.current = msg.name
           setRoomNameState(msg.name)
+          updateActiveRoomName(msg.name)
           break
         case 'roomCodeChanged': {
           // The GM moved the room to a new code. Follow it over, keeping
@@ -473,6 +480,7 @@ export function useSession(): Session {
             code: newCode,
             role: 'client',
             sessionId: sessionIdRef.current ?? undefined,
+            roomName: roomNameRef.current,
           })
           addMarker('codeChanged', { roomCode: newCode })
           if (!reconnectingRef.current) {
@@ -589,8 +597,8 @@ export function useSession(): Session {
         sessionIdRef.current = sid
         setSessionId(sid)
         saveLastRoomCode(code)
-        saveActiveRoom({ code, role: 'host', sessionId: sid })
         const initialName = name?.trim() ?? ''
+        saveActiveRoom({ code, role: 'host', sessionId: sid, roomName: initialName })
         roomNameRef.current = initialName
         setRoomNameState(initialName)
         setPlayers([selfPlayer(true)])
@@ -623,7 +631,8 @@ export function useSession(): Session {
         sessionIdRef.current = sid
         setSessionId(sid)
         saveLastRoomCode(code)
-        saveActiveRoom({ code, role: 'client', sessionId: sid })
+        // The room name is unknown until the welcome snapshot arrives.
+        saveActiveRoom({ code, role: 'client', sessionId: sid, roomName: '' })
         addMarker('joined', { roomCode: code })
         mgr.sendToHost({ t: 'hello', player: selfPlayer(false) })
         // The portrait travels apart from `hello` (the roster stays light).
@@ -795,7 +804,12 @@ export function useSession(): Session {
         saveLastRoomCode(code)
         // The session id is unchanged — the log follows the room across
         // a code change.
-        saveActiveRoom({ code, role: 'host', sessionId: sessionIdRef.current ?? undefined })
+        saveActiveRoom({
+          code,
+          role: 'host',
+          sessionId: sessionIdRef.current ?? undefined,
+          roomName: roomNameRef.current,
+        })
         addMarker('codeChanged', { roomCode: code })
       }, 500)
     },
@@ -821,6 +835,12 @@ export function useSession(): Session {
       if (resuming && sid) {
         sessionIdRef.current = sid
         setSessionId(sid)
+        // Restore the room name a GM would otherwise lose on reload (a
+        // client also gets it back from the welcome snapshot shortly).
+        if (pointer?.roomName) {
+          roomNameRef.current = pointer.roomName
+          setRoomNameState(pointer.roomName)
+        }
         // Restore the recent feed from this session's durable log.
         const entries = await loadRecentLog(sid, 500)
         const rolls = entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult)
@@ -885,7 +905,7 @@ export function useSession(): Session {
         sessionIdRef.current = sid
         setSessionId(sid)
         saveLastRoomCode(hosted)
-        saveActiveRoom({ code: hosted, role: 'host', sessionId: sid })
+        saveActiveRoom({ code: hosted, role: 'host', sessionId: sid, roomName: data.roomName })
         roomNameRef.current = data.roomName
         setRoomNameState(data.roomName)
         setPlayers([selfPlayer(true)])
@@ -1048,6 +1068,9 @@ export function useSession(): Session {
     setRoomNameState(name)
     if (roleRef.current === 'host') {
       roomRef.current?.broadcast({ t: 'roomName', name })
+      // Persist it so a GM reload restores the name without a peer to
+      // receive it back from.
+      updateActiveRoomName(name)
     }
   }, [])
 
