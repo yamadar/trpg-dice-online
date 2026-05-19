@@ -3,6 +3,8 @@ import { useI18n } from '../i18n/useI18n'
 import { useFieldNotice } from '../hooks/useFieldNotice'
 import type { UseCharacters } from '../characters/useCharacters'
 import { exportCharacterJSON } from '../characters/io'
+import { prepareCharacterImage } from '../characters/image'
+import { Lightbox } from './Lightbox'
 
 interface Props {
   characters: UseCharacters
@@ -29,7 +31,13 @@ export function CharacterPanel({ characters, onNotice }: Props) {
   const [showDetails, setShowDetails] = useState(false)
   const [importError, setImportError] = useState(false)
   const [exportMemo, setExportMemo] = useState(false)
+  // Portrait state: a spinner-style busy flag while an image is processed,
+  // an error flag, and whether the full-size viewer is open.
+  const [imageBusy, setImageBusy] = useState(false)
+  const [imageError, setImageError] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   // One toast after a burst of name edits settles, not per keystroke.
   // Toast once the name edit settles (on blur or when the sheet closes).
@@ -70,11 +78,36 @@ export function CharacterPanel({ characters, onNotice }: Props) {
     setImportError(false)
     file
       .text()
-      .then((text) => {
-        if (!importCharacter(text)) setImportError(true)
-        else setShowDetails(true)
+      .then((text) => importCharacter(text))
+      .then((ok) => {
+        if (ok) setShowDetails(true)
+        else setImportError(true)
       })
       .catch(() => setImportError(true))
+  }
+
+  // Attach / replace the portrait: the picked file is downscaled and
+  // compressed (see characters/image.ts) before it is stored.
+  const handlePickImage = () => imageInputRef.current?.click()
+
+  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-picking the same file
+    if (!file || !activeCharacter) return
+    const characterId = activeCharacter.id
+    setImageError(false)
+    setImageBusy(true)
+    prepareCharacterImage(file)
+      .then((image) => {
+        if (image) updateCharacter(characterId, { image })
+        else setImageError(true)
+      })
+      .catch(() => setImageError(true))
+      .finally(() => setImageBusy(false))
+  }
+
+  const handleRemoveImage = () => {
+    if (activeCharacter) updateCharacter(activeCharacter.id, { image: undefined })
   }
 
   return (
@@ -133,6 +166,46 @@ export function CharacterPanel({ characters, onNotice }: Props) {
 
           {showDetails && (
             <div className="char-details">
+              <div className="field">
+                <span>{t('character.image')}</span>
+                {activeCharacter.image ? (
+                  <div className="char-image-row">
+                    <button
+                      type="button"
+                      className="char-image-thumb"
+                      aria-label={t('character.imageView')}
+                      onClick={() => setLightboxOpen(true)}
+                    >
+                      <img src={activeCharacter.image} alt={activeCharacter.name} />
+                    </button>
+                    <div className="char-image-actions">
+                      <button type="button" onClick={handlePickImage} disabled={imageBusy}>
+                        {t('character.imageChange')}
+                      </button>
+                      <button type="button" className="link danger" onClick={handleRemoveImage}>
+                        {t('character.imageRemove')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button type="button" onClick={handlePickImage} disabled={imageBusy}>
+                    {t('character.imageAdd')}
+                  </button>
+                )}
+                {imageBusy && <p className="hint">{t('character.imageProcessing')}</p>}
+                {imageError && (
+                  <p className="banner error" role="alert">
+                    {t('character.imageError')}
+                  </p>
+                )}
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleImageFile}
+                />
+              </div>
               <label className="field">
                 <span>{t('character.background')}</span>
                 <textarea
@@ -198,6 +271,20 @@ export function CharacterPanel({ characters, onNotice }: Props) {
         <p className="banner error" role="alert">
           {t('character.importError')}
         </p>
+      )}
+
+      {lightboxOpen && activeCharacter?.image && (
+        <Lightbox
+          images={[
+            {
+              name: activeCharacter.name || t('character.unnamed'),
+              dataUrl: activeCharacter.image,
+            },
+          ]}
+          index={0}
+          onIndexChange={() => {}}
+          onClose={() => setLightboxOpen(false)}
+        />
       )}
     </section>
   )

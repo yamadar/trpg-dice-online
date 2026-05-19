@@ -21,7 +21,13 @@ export interface Character {
    * source language; it has no effect on behaviour yet.
    */
   lang: Lang
+  /**
+   * Optional portrait, as an `image/*` data URL — the character's look.
+   * Downscaled on the way in (see `characters/image.ts`); absent when no
+   * picture has been attached.
+   */
+  image?: string
 }
 
 /** The fields of a character the user can edit directly. */
-export type CharacterEdits = Pick<Character, 'name' | 'background' | 'memo' | 'lang'>
+export type CharacterEdits = Pick<Character, 'name' | 'background' | 'memo' | 'lang' | 'image'>

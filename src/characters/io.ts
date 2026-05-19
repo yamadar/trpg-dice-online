@@ -9,14 +9,16 @@ import { LANGS, type Lang } from '../i18n/translations'
 import type { Character } from './types'
 
 const FILE_TYPE = 'trpg-dice-character'
-const FILE_VERSION = 1
+/** v2: the optional portrait image. */
+const FILE_VERSION = 2
 
 /** A character ready to be imported — everything but the (local) id. */
 export type CharacterImport = Omit<Character, 'id'>
 
 /**
- * Serialize a character to a versioned JSON string for download.
- * The private memo is excluded unless `includeMemo` is explicitly true.
+ * Serialize a character to a versioned JSON string for download. The
+ * private memo is excluded unless `includeMemo` is explicitly true; the
+ * portrait, when present, is always included.
  */
 export function exportCharacterJSON(character: Character, includeMemo = false): string {
   const payload = {
@@ -28,6 +30,7 @@ export function exportCharacterJSON(character: Character, includeMemo = false): 
       memo: includeMemo ? character.memo : '',
       patterns: character.patterns,
       lang: character.lang,
+      image: character.image ?? '',
     },
   }
   return JSON.stringify(payload, null, 2)
@@ -35,6 +38,11 @@ export function exportCharacterJSON(character: Character, includeMemo = false): 
 
 function asString(value: unknown): string {
   return typeof value === 'string' ? value : ''
+}
+
+/** Accept only an `image/*` data URL as a portrait; anything else is dropped. */
+function asImage(value: unknown): string | undefined {
+  return typeof value === 'string' && value.startsWith('data:image/') ? value : undefined
 }
 
 function asLang(value: unknown): Lang {
@@ -89,5 +97,6 @@ export function parseCharacterImport(text: string): CharacterImport | null {
     memo: asString(character.memo),
     patterns,
     lang: asLang(character.lang),
+    image: asImage(character.image),
   }
 }

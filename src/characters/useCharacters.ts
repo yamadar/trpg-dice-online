@@ -10,6 +10,7 @@ import {
   saveCharacters,
 } from '../storage/characters'
 import { parseCharacterImport } from './io'
+import { prepareCharacterImage } from './image'
 import type { Character, CharacterEdits } from './types'
 
 export interface UseCharacters {
@@ -28,7 +29,7 @@ export interface UseCharacters {
   /** Move a pattern up (-1) or down (+1) within its character's list. */
   movePattern: (characterId: string, patternId: string, direction: -1 | 1) => void
   /** Import a character from an exported-file string; returns success. */
-  importCharacter: (text: string) => boolean
+  importCharacter: (text: string) => Promise<boolean>
 }
 
 /** Saved characters and the active selection, backed by localStorage. */
@@ -148,12 +149,17 @@ export function useCharacters(): UseCharacters {
   )
 
   const importCharacter = useCallback(
-    (text: string): boolean => {
+    async (text: string): Promise<boolean> => {
       const imported = parseCharacterImport(text)
       if (!imported) return false
+      // Re-run the portrait through the size check so an oversized image
+      // from the file is shrunk; a broken one is simply dropped.
+      const image = imported.image
+        ? ((await prepareCharacterImage(imported.image)) ?? undefined)
+        : undefined
       const id = newCharacterId()
       setCharacters((prev) => {
-        const next = [...prev, { ...imported, id }]
+        const next = [...prev, { ...imported, id, image }]
         saveCharacters(next)
         return next
       })

@@ -246,8 +246,17 @@ An SPA where players roll TRPG dice and share results with other players in real
 
 ### 3.12 キャラクター / Characters
 - プレイヤー（人）とは別に「キャラクター」の概念を持つ / Characters are distinct from the player
-- キャラクターは 名前 / 背景情報（公開）/ メモ（非公開）/ パターン一覧 を持つ
-  A character has a name, public background, private memo, and pattern list
+- キャラクターは 名前 / 背景情報（公開）/ メモ（非公開）/ パターン一覧 /
+  画像（任意）を持つ
+  A character has a name, public background, private memo, pattern list,
+  and an optional portrait image
+- キャラクター詳細に見た目の画像を 1 枚添付できる。添付・読み込み時に
+  サイズを検査し、長辺 2560px・約 2MB を超える場合は自動で縮小・圧縮する。
+  キャラクター情報では小さなサムネイルで表示し、タップで拡大表示する
+  A single portrait image can be attached to a character. On attach and on
+  import its size is checked, and an image over ~2560 px on the long edge
+  or ~2 MB is automatically downscaled / compressed. It shows as a small
+  thumbnail in the character info and opens full size on tap
 - 複数のキャラクターを保持でき、操作するキャラクターを任意で切り替えられる
   Multiple characters can be kept; the active one can be switched freely
 - キャラクターとして発言・ロールすると、名前は「{キャラ名}（{PL 名}）」と表記される
@@ -256,9 +265,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   The background is shared with the room; the memo never leaves the device
 - パターンはキャラクターごとに保持される / Patterns belong to a character
 - 各キャラクターは JSON ファイルとして書き出し・読み込みできる。書き出し時に
-  非公開のメモを含めるかを選べる（既定は含めない）。
+  非公開のメモを含めるかを選べる（既定は含めない）。画像は常に含める。
   Each character can be exported to / imported from a JSON file; the export
-  can optionally include the private memo (off by default).
+  can optionally include the private memo (off by default) and always
+  includes the portrait image when one is set.
 - 参加者一覧では各参加者の行を開いてキャラクターの詳細（名前・背景）を閲覧できる
   In the player list, each row expands to show that player's character
   details (name and background)
@@ -361,7 +371,7 @@ RollResult = { id, patternName, kind, diceType, diceCount,
 ChatMessage = { id, playerId, playerName, text, timestamp, lang }
 // Player carries the active character's public info; memo is never synced.
 Player      = { id, name, isGM, characterName, background, lang }
-Character   = { id, name, background, memo, patterns: Pattern[], lang }
+Character   = { id, name, background, memo, patterns: Pattern[], lang, image? }
 
 // Local-only feed annotations (not synced); they record room events.
 MarkerType  = 'created'|'joined'|'youLeft'|'youClosed'
@@ -710,3 +720,14 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   compact row to time · name · content. A date divider — the calendar
   date (in the UI language) centered between two rules — now opens the
   feed and marks each day change.
+- v1.46 — キャラクターに見た目の画像を 1 枚添付できるようにした。添付時・
+  読み込み時に長辺 2560px・約 2MB を上限としてサイズ検査し、超過分は
+  キャンバスで自動縮小・JPEG 圧縮する。画像はエクスポート JSON に含め、
+  キャラクター詳細ではサムネイル表示・タップでライトボックス拡大する。
+  書庫マニフェストは v2（任意の image フィールド、旧 v1 も読み込み可）。
+  A character can carry one portrait image. On attach and on import the
+  size is checked against ~2560 px / ~2 MB and anything larger is
+  downscaled and JPEG-compressed on a canvas. The image is part of the
+  character export JSON, shows as a thumbnail in the character details,
+  and opens in the lightbox on tap. The character file is bumped to v2
+  (an optional image field; v1 files still import).
