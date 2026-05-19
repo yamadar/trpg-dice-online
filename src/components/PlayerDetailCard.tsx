@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import type { Player } from '../net/protocol'
 import { playerColor } from '../players/colors'
+import { Lightbox } from './Lightbox'
 
 interface Props {
   /** The live participant, used for the GM badge and current player name. */
@@ -13,6 +15,8 @@ interface Props {
   characterName: string
   /** Character background at that time (the snapshot). */
   background: string
+  /** The player's current character portrait, synced from the room, if any. */
+  image?: string
   /** Whether the tapped entry belongs to the local player. */
   isSelf: boolean
 }
@@ -21,7 +25,8 @@ interface Props {
  * Read-only profile shown when a name in the feed is tapped. Character
  * details come from the tapped entry, not the live player, so a name
  * sent under an old character still shows that old character — even
- * after the player has switched characters.
+ * after the player has switched characters. The portrait, by contrast,
+ * is the player's current one (synced live, not part of the snapshot).
  */
 export function PlayerDetailCard({
   player,
@@ -29,9 +34,11 @@ export function PlayerDetailCard({
   displayName,
   characterName,
   background,
+  image,
   isSelf,
 }: Props) {
   const { t } = useI18n()
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const color = playerColor(playerId)
   const character = characterName.trim()
   const bg = background.trim()
@@ -51,6 +58,17 @@ export function PlayerDetailCard({
         {player?.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
         {isSelf && <span className="badge you">{t('room.youBadge')}</span>}
       </div>
+
+      {image && (
+        <button
+          type="button"
+          className="char-image-thumb player-card-image"
+          aria-label={t('character.imageView')}
+          onClick={() => setLightboxOpen(true)}
+        >
+          <img src={image} alt={character || displayName} />
+        </button>
+      )}
 
       <dl className="player-card-fields">
         {character && (
@@ -74,6 +92,15 @@ export function PlayerDetailCard({
       )}
 
       {!player && <p className="hint">{t('feed.playerLeft')}</p>}
+
+      {lightboxOpen && image && (
+        <Lightbox
+          images={[{ name: character || displayName || t('player.anon'), dataUrl: image }]}
+          index={0}
+          onIndexChange={() => {}}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </section>
   )
 }

@@ -195,6 +195,7 @@ export function ActivityPanel({ session, compact, onNotice }: Props) {
             displayName={detail.name}
             characterName={detail.characterName}
             background={detail.background}
+            image={session.playerImages[detail.playerId]}
             isSelf={detail.playerId === session.playerId}
           />
         </Sheet>

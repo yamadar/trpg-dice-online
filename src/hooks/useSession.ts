@@ -61,6 +61,8 @@ export interface Session {
   displayName: string
   /** Update any part of the local player's identity (and re-sync it). */
   updateIdentity: (patch: Partial<Identity>) => void
+  /** Set the local player's character portrait and sync it ('' clears it). */
+  setCharacterImage: (image: string) => void
   role: Role
   status: RoomStatus
   roomCode: string | null
@@ -81,6 +83,8 @@ export interface Session {
   changeRoomCode: (code: string) => Promise<void>
   leaveRoom: () => void
   players: Player[]
+  /** Character portrait images keyed by player id (synced apart from the roster). */
+  playerImages: Record<string, string>
   history: RollResult[]
   chat: ChatMessage[]
   markers: SystemMarker[]
@@ -135,6 +139,9 @@ export function useSession(): Session {
   const [roomName, setRoomNameState] = useState('')
   const [errorKind, setErrorKind] = useState<ErrorKind>(null)
   const [playersState, setPlayers] = useState<Player[]>([])
+  /** Character portrait images keyed by player id — synced apart from the
+   *  roster, so the frequent `players` broadcast stays small. */
+  const [playerImages, setPlayerImagesState] = useState<Record<string, string>>({})
   const [history, setHistory] = useState<RollResult[]>([])
   const [chat, setChat] = useState<ChatMessage[]>([])
   const [markers, setMarkers] = useState<SystemMarker[]>([])
@@ -151,6 +158,10 @@ export function useSession(): Session {
   const characterNameRef = useRef(characterName)
   const backgroundRef = useRef(background)
   const langRef = useRef(lang)
+  /** The local player's character portrait, read synchronously on re-sync. */
+  const ownImageRef = useRef('')
+  /** All players' portraits, mirrored so PeerJS callbacks read current values. */
+  const playerImagesRef = useRef(playerImages)
   // These refs mirror state so PeerJS callbacks always read current values.
   const roleRef = useRef(role)
   const historyRef = useRef(history)
@@ -210,6 +221,23 @@ export function useSession(): Session {
     setTyping((prev) => ({ ...prev, [signal.playerId]: { name: signal.playerName, at: Date.now() } }))
   }, [])
 
+  /** Replace the whole portrait map — ref and state move together. */
+  const setPlayerImages = useCallback((next: Record<string, string>) => {
+    playerImagesRef.current = next
+    setPlayerImagesState(next)
+  }, [])
+
+  /** Set or clear one player's portrait. */
+  const putPlayerImage = useCallback(
+    (id: string, image: string) => {
+      const next = { ...playerImagesRef.current }
+      if (image) next[id] = image
+      else delete next[id]
+      setPlayerImages(next)
+    },
+    [setPlayerImages],
+  )
+
   const selfPlayer = useCallback(
     (asGM: boolean): Player => ({
       id: playerId,
@@ -257,6 +285,7 @@ export function useSession(): Session {
             history: historyRef.current.map(redactRoll),
             chat: chatRef.current,
             roomName: roomNameRef.current,
+            images: { ...playerImagesRef.current },
           }
           roomRef.current?.sendTo(peerId, { t: 'welcome', snapshot })
           broadcastPlayers()
@@ -275,6 +304,15 @@ export function useSession(): Session {
           if (existing) {
             peerPlayersRef.current.set(peerId, { ...existing, ...msg.identity })
             broadcastPlayers()
+          }
+          break
+        }
+        case 'image': {
+          // Relay a client's portrait to everyone, keyed by its player id.
+          const sender = peerPlayersRef.current.get(peerId)
+          if (sender) {
+            putPlayerImage(sender.id, msg.image)
+            roomRef.current?.broadcast({ t: 'image', playerId: sender.id, image: msg.image })
           }
           break
         }
@@ -300,7 +338,7 @@ export function useSession(): Session {
           break
       }
     },
-    [addMarker, appendChat, appendHistory, broadcastPlayers, buildRoster, noteTyping],
+    [addMarker, appendChat, appendHistory, broadcastPlayers, buildRoster, noteTyping, putPlayerImage],
   )
 
   /** Set the reconnecting flag — a ref for sync reads, state for rendering. */
@@ -343,6 +381,12 @@ export function useSession(): Session {
         case 'welcome': {
           // Keep the player's pre-join rolls/chat by merging the snapshot in.
           setPlayers(msg.snapshot.players)
+          // Adopt the host's portrait map, keeping the local player's own.
+          {
+            const images = { ...msg.snapshot.images }
+            if (ownImageRef.current) images[playerId] = ownImageRef.current
+            setPlayerImages(images)
+          }
           setHistory((prev) => mergeById(prev, msg.snapshot.history, MAX_HISTORY))
           setChat((prev) => mergeById(prev, msg.snapshot.chat, MAX_CHAT))
           roomNameRef.current = msg.snapshot.roomName
@@ -376,6 +420,9 @@ export function useSession(): Session {
         case 'players':
           setPlayers(msg.players)
           break
+        case 'image':
+          putPlayerImage(msg.playerId, msg.image)
+          break
         case 'roll':
           appendHistory(msg.result)
           break
@@ -404,7 +451,17 @@ export function useSession(): Session {
           break
       }
     },
-    [addMarker, appendChat, appendHistory, goOffline, markReconnecting, noteTyping],
+    [
+      addMarker,
+      appendChat,
+      appendHistory,
+      goOffline,
+      markReconnecting,
+      noteTyping,
+      playerId,
+      putPlayerImage,
+      setPlayerImages,
+    ],
   )
 
   const handleClientDisconnect = useCallback(
@@ -414,6 +471,9 @@ export function useSession(): Session {
       if (peerPlayersRef.current.delete(peerId)) {
         broadcastPlayers()
         if (gone) {
+          // Drop the departed player's portrait so it is not carried in
+          // later welcome snapshots.
+          putPlayerImage(gone.id, '')
           const shown = composeName(gone.name, gone.characterName)
           addMarker('playerLeft', { playerName: shown })
           roomRef.current?.broadcast({
@@ -425,7 +485,7 @@ export function useSession(): Session {
         }
       }
     },
-    [addMarker, broadcastPlayers],
+    [addMarker, broadcastPlayers, putPlayerImage],
   )
 
   const ensureRoom = useCallback((): RoomManager => {
@@ -491,6 +551,8 @@ export function useSession(): Session {
         saveActiveRoom({ code, role: 'client' })
         addMarker('joined', { roomCode: code })
         mgr.sendToHost({ t: 'hello', player: selfPlayer(false) })
+        // The portrait travels apart from `hello` (the roster stays light).
+        if (ownImageRef.current) mgr.sendToHost({ t: 'image', image: ownImageRef.current })
       } catch {
         // onError already surfaced the failure.
         goOffline()
@@ -575,6 +637,7 @@ export function useSession(): Session {
           .then(() => {
             setRole('client')
             mgr.sendToHost({ t: 'hello', player: selfPlayer(false) })
+            if (ownImageRef.current) mgr.sendToHost({ t: 'image', image: ownImageRef.current })
             // Flush messages queued while the GM was unreachable, in order.
             for (const message of outboxRef.current) {
               mgr.sendToHost({ t: 'chat', message })
@@ -865,6 +928,26 @@ export function useSession(): Session {
     [resyncIdentity],
   )
 
+  /**
+   * Set the local player's character portrait and sync it to the room.
+   * Travels on its own message so the frequent roster broadcast stays
+   * small; `''` clears the portrait.
+   */
+  const setCharacterImage = useCallback(
+    (image: string) => {
+      if (image === ownImageRef.current) return
+      ownImageRef.current = image
+      putPlayerImage(playerId, image)
+      const currentRole = roleRef.current
+      if (currentRole === 'host') {
+        roomRef.current?.broadcast({ t: 'image', playerId, image })
+      } else if (currentRole === 'client') {
+        roomRef.current?.sendToHost({ t: 'image', image })
+      }
+    },
+    [playerId, putPlayerImage],
+  )
+
   /** Host: name (or rename) the room and broadcast it to clients. */
   const setRoomName = useCallback((name: string) => {
     roomNameRef.current = name
@@ -940,6 +1023,7 @@ export function useSession(): Session {
     name,
     displayName: composeName(name, characterName),
     updateIdentity,
+    setCharacterImage,
     role,
     status,
     roomCode,
@@ -954,6 +1038,7 @@ export function useSession(): Session {
     changeRoomCode,
     leaveRoom,
     players,
+    playerImages,
     history,
     chat,
     markers,

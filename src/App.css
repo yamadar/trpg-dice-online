@@ -1372,6 +1372,10 @@ button.player-row {
   gap: 6px;
   align-items: flex-start;
 }
+/* The portrait inside the tapped-player detail card. */
+.player-card-image {
+  margin-top: 10px;
+}
 
 /* --- chip rows (count / type / kind) --- */
 .chip-row {
