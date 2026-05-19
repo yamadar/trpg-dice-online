@@ -1328,11 +1328,16 @@ label.setting-row {
 .settings-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   margin-bottom: 12px;
 }
 .settings-head h2 {
   font-size: 1.05rem;
+}
+/* The square × close button — same look as the sheet modals' close. */
+.settings-close {
+  width: 34px;
+  height: 34px;
 }
 
 /* --- character panel --- */

@@ -783,3 +783,7 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   layout, "How to use" moves into the About section, and the panel is a
   little wider so the theme grid no longer overflows — its right edge
   lines up with the other controls.
+- v1.52 — 設定パネルの「閉じる」を、他のモーダルと同じ × アイコンの
+  閉じるボタンに統一した。
+  The settings panel's close control is now the same × icon button used
+  by the other modals.
