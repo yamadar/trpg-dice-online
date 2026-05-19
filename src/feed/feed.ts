@@ -44,7 +44,37 @@ export type FeedFilter = 'all' | 'rolls' | 'chat' | 'files'
 export type FeedItem =
   | { kind: 'roll'; id: string; at: number; roll: RollResult }
   | { kind: 'chat'; id: string; at: number; message: ChatMessage }
-  | { kind: 'system'; id: string; at: number; marker: SystemMarker }
+  /** `count` folds a run of identical consecutive markers — 1 when alone. */
+  | { kind: 'system'; id: string; at: number; marker: SystemMarker; count: number }
+
+/** Whether two markers describe the same event for the same player / room. */
+function sameMarker(a: SystemMarker, b: SystemMarker): boolean {
+  return a.type === b.type && a.playerName === b.playerName && a.roomCode === b.roomCode
+}
+
+/**
+ * Fold a run of consecutive identical system markers into the first one,
+ * counting how many were merged — so e.g. a flaky connection's repeated
+ * "joined" notices read as a single "joined (3)" rather than a wall of
+ * duplicates. Only adjacent markers merge; anything between breaks the run.
+ */
+function collapseSystemRuns(items: FeedItem[]): FeedItem[] {
+  const out: FeedItem[] = []
+  for (const item of items) {
+    const last = out[out.length - 1]
+    if (
+      item.kind === 'system' &&
+      last &&
+      last.kind === 'system' &&
+      sameMarker(last.marker, item.marker)
+    ) {
+      out[out.length - 1] = { ...last, count: last.count + 1 }
+    } else {
+      out.push(item)
+    }
+  }
+  return out
+}
 
 /**
  * Merge rolls, chat and system markers into a single timeline ordered
@@ -74,7 +104,7 @@ export function buildFeed(
   }
   if (filter !== 'files') {
     for (const marker of markers) {
-      items.push({ kind: 'system', id: marker.id, at: marker.timestamp, marker })
+      items.push({ kind: 'system', id: marker.id, at: marker.timestamp, marker, count: 1 })
     }
   }
   // Paged-in older history overlaps the live window — show each entry once.
@@ -85,5 +115,5 @@ export function buildFeed(
     return true
   })
   unique.sort((a, b) => a.at - b.at || a.id.localeCompare(b.id))
-  return unique
+  return collapseSystemRuns(unique)
 }

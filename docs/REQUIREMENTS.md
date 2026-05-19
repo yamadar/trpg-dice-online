@@ -80,14 +80,20 @@ An SPA where players roll TRPG dice and share results with other players in real
   Feed entries from the GM show a GM mark next to the name
 - 表示のクリアは誤操作で行われないよう、確認ダイアログを必須とする
   Clearing the feed requires a confirmation dialog to avoid accidental loss
+- 同じシステムメッセージ（「○○が参加しました」等）が連続したら 1 行にまとめ、
+  末尾に「(n)」で件数を示す
+  A run of identical consecutive system messages (e.g. "X joined") is
+  folded into one line with a trailing "(n)" count
 - 設定メニューでフィードをコンパクト表示に切り替えられる。コンパクト時は
   各エントリを 1 行（時刻・名前・内容）に詰め、プレイヤー色のドットと名前の
-  「（プレイヤー名）」を省いてキャラクター名のみを表示する。長い発言は折り返す。
-  設定はブラウザに保存される
+  「（プレイヤー名）」を省いてキャラクター名のみを表示する。時刻は左の定位置に
+  置き、長い発言は折り返して 2 行目以降を名前の位置に揃える。設定はブラウザに
+  保存される
   The settings menu can switch the feed to a compact layout: each entry is
   packed onto one row (time · name · content), the player-color dot is
-  dropped and the name shows only the character (no "（Player）"); a long
-  message wraps. The choice is remembered in the browser
+  dropped and the name shows only the character (no "（Player）"); the time
+  sits in a fixed left gutter and a long message wraps with its later
+  lines aligned under the name. The choice is remembered in the browser
 - 設定で自動翻訳をオンにすると、チャットを設定言語へ翻訳して表示する。
   翻訳は端末内の Chrome Translator を優先し、使えない場合は MyMemory へ
   自動でフォールバックする。各メッセージは原文に戻せ、翻訳中は原文に
@@ -731,3 +737,10 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   character export JSON, shows as a thumbnail in the character details,
   and opens in the lightbox on tap. The character file is bumped to v2
   (an optional image field; v1 files still import).
+- v1.47 — コンパクト表示で時刻を左の定位置に固定し、名前と本文を 1 つの
+  まとまりとして流すことで、折り返した 2 行目以降を名前の位置に揃えた。
+  同じシステムメッセージが連続した場合は 1 行にまとめ「(n)」で件数を示す。
+  In the compact feed the time is pinned to a fixed left gutter and the
+  name and message flow as one block, so a wrapped message lines up its
+  later lines under the name. A run of identical consecutive system
+  messages is folded into one line with a trailing "(n)" count.

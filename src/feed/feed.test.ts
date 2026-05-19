@@ -97,6 +97,36 @@ describe('buildFeed', () => {
   it('returns an empty feed for empty inputs', () => {
     expect(buildFeed([], [], [], 'all')).toEqual([])
   })
+
+  it('folds consecutive identical system markers into one with a count', () => {
+    const joins: SystemMarker[] = [
+      { id: 'j1', timestamp: 10, type: 'playerJoined', playerName: 'Alice' },
+      { id: 'j2', timestamp: 11, type: 'playerJoined', playerName: 'Alice' },
+      { id: 'j3', timestamp: 12, type: 'playerJoined', playerName: 'Alice' },
+    ]
+    const feed = buildFeed([], [], joins, 'all')
+    expect(feed).toHaveLength(1)
+    expect(feed[0]).toMatchObject({ kind: 'system', count: 3 })
+  })
+
+  it('does not fold markers for different players', () => {
+    const joins: SystemMarker[] = [
+      { id: 'j1', timestamp: 10, type: 'playerJoined', playerName: 'Alice' },
+      { id: 'j2', timestamp: 11, type: 'playerJoined', playerName: 'Bob' },
+    ]
+    const feed = buildFeed([], [], joins, 'all')
+    expect(feed).toHaveLength(2)
+    expect(feed.every((i) => i.kind === 'system' && i.count === 1)).toBe(true)
+  })
+
+  it('does not fold a run broken by a non-system entry', () => {
+    const joins: SystemMarker[] = [
+      { id: 'j1', timestamp: 10, type: 'playerJoined', playerName: 'Alice' },
+      { id: 'j3', timestamp: 30, type: 'playerJoined', playerName: 'Alice' },
+    ]
+    const feed = buildFeed([], [chat('c', 20)], joins, 'all')
+    expect(feed.map((i) => i.kind)).toEqual(['system', 'chat', 'system'])
+  })
 })
 
 describe('isRoomExitMarker', () => {

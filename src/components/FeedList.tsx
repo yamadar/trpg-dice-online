@@ -31,15 +31,19 @@ function markerText(t: TFn, marker: SystemMarker): string {
 
 const FeedSystemItem = memo(function FeedSystemItem({
   marker,
+  count,
   archived,
 }: {
   marker: SystemMarker
+  /** How many identical consecutive markers this row stands for (≥1). */
+  count: number
   archived: boolean
 }) {
   const { t } = useI18n()
+  const text = markerText(t, marker)
   return (
     <li className={`feed-system${archived ? ' archived' : ''}`}>
-      <span>{markerText(t, marker)}</span>
+      <span>{count > 1 ? `${text} (${count})` : text}</span>
     </li>
   )
 })
@@ -98,15 +102,6 @@ const FeedChatItem = memo(function FeedChatItem({
           {feedName(m.playerName, m.characterName ?? '', compact)}
         </button>
         {m.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
-        {autoTranslate && translated !== null && (
-          <button
-            type="button"
-            className="link chat-trans-toggle"
-            onClick={() => setShowOriginal((v) => !v)}
-          >
-            {showOriginal ? t('chat.viewTranslation') : t('chat.viewOriginal')}
-          </button>
-        )}
         {pending ? (
           <span className="pending-tag">{t('chat.pending')}</span>
         ) : (
@@ -117,6 +112,16 @@ const FeedChatItem = memo(function FeedChatItem({
         <p className={`chat-text${translating ? ' translating' : ''}`}>
           {showTranslation ? translated : m.text}
         </p>
+      )}
+      {/* The original / translation toggle sits with the message it flips. */}
+      {autoTranslate && translated !== null && (
+        <button
+          type="button"
+          className="link chat-trans-toggle"
+          onClick={() => setShowOriginal((v) => !v)}
+        >
+          {showOriginal ? t('chat.viewTranslation') : t('chat.viewOriginal')}
+        </button>
       )}
       {m.file && <ChatAttachment file={m.file} onOpenImage={onOpenImage} />}
     </li>
@@ -241,7 +246,7 @@ export function FeedList({
         const newDay = !prev || !sameDay(new Date(prev.at), new Date(item.at))
         let node
         if (item.kind === 'system') {
-          node = <FeedSystemItem marker={item.marker} archived={archived} />
+          node = <FeedSystemItem marker={item.marker} count={item.count} archived={archived} />
         } else if (item.kind === 'chat') {
           node = (
             <FeedChatItem
