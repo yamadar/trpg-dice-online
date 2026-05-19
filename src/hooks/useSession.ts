@@ -73,8 +73,9 @@ export interface Session {
   setRoomName: (name: string) => void
   errorKind: ErrorKind
   clearError: () => void
-  /** Create a room; with a code, host exactly that code (else random). */
-  createRoom: (preferredCode?: string) => Promise<void>
+  /** Create a room; with a code, host exactly that code (else random). An
+   *  optional name pre-sets the room name. */
+  createRoom: (preferredCode?: string, name?: string) => Promise<void>
   joinRoom: (code: string) => Promise<void>
   /** On startup, resume the room from the URL — re-host (GM) or re-join. */
   resumeRoom: (urlCode: string) => Promise<void>
@@ -526,7 +527,7 @@ export function useSession(): Session {
 
   // --- Public actions -----------------------------------------------------
   const createRoom = useCallback(
-    async (preferredCode?: string) => {
+    async (preferredCode?: string, name?: string) => {
       setErrorKind(null)
       gracefulCloseRef.current = false
       intentionalLeaveRef.current = false
@@ -542,8 +543,9 @@ export function useSession(): Session {
         roomCodeRef.current = code
         saveLastRoomCode(code)
         saveActiveRoom({ code, role: 'host' })
-        roomNameRef.current = ''
-        setRoomNameState('')
+        const initialName = name?.trim() ?? ''
+        roomNameRef.current = initialName
+        setRoomNameState(initialName)
         setPlayers([selfPlayer(true)])
         addMarker('created', { roomCode: code })
       } catch (err) {

@@ -18,13 +18,24 @@ interface Props {
   onNotice: (message: string) => void
 }
 
+/** Which lobby screen is shown while not in a room. */
+type LobbyView = 'home' | 'create' | 'join'
+
 export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   const { t, lang } = useI18n()
-  // Prefill the join field with the URL code if any, else the last code
+  // Creating and joining are now distinct screens; a URL code jumps
+  // straight to the join screen with the field prefilled.
+  const [view, setView] = useState<LobbyView>(() =>
+    normalizeRoomCode(initialJoinCode) ? 'join' : 'home',
+  )
+  // Join screen: prefilled with the URL code if any, else the last code
   // this player created or joined.
-  const [codeInput, setCodeInput] = useState(
+  const [joinCode, setJoinCode] = useState(
     () => normalizeRoomCode(initialJoinCode) || normalizeRoomCode(loadLastRoomCode()),
   )
+  // Create screen: an optional custom code and the room name.
+  const [createCode, setCreateCode] = useState('')
+  const [createName, setCreateName] = useState('')
   const [copied, setCopied] = useState(false)
   // Host-only field for changing the live room's code.
   const [newCode, setNewCode] = useState('')
@@ -32,7 +43,7 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   // File-picker ref + error flag for importing a room from an export file.
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importError, setImportError] = useState(false)
-  const { status, role, roomCode, players, playerId } = session
+  const { status, role, roomCode, players, playerId, playerImages } = session
 
   const busy = status === 'connecting'
   const online = role !== 'offline'
@@ -52,8 +63,15 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   }, [roomCode, role, onNotice, t])
 
   const handleJoin = () => {
-    const code = normalizeRoomCode(codeInput)
+    const code = normalizeRoomCode(joinCode)
     if (code.length >= 4) void session.joinRoom(code)
+  }
+
+  const handleCreate = () => {
+    const code = normalizeRoomCode(createCode)
+    // A code is optional for create; if given it must be valid.
+    if (code.length > 0 && code.length < 4) return
+    void session.createRoom(code || undefined, createName.trim() || undefined)
   }
 
   // Restore a room from an exported ZIP: parse it, then re-host the room.
@@ -93,7 +111,7 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
     }
   }
 
-  // The GM is also the host: leaving closes the room for everyone, so confirm.
+  // The GM is also the host: closing ends the room for everyone, so confirm.
   const handleLeave = () => {
     if (role === 'host' && !window.confirm(t('room.leaveConfirmGM'))) return
     session.leaveRoom()
@@ -155,6 +173,85 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
     setExpandedIds(allExpanded ? new Set() : new Set(detailIds))
   }
 
+  // The participant roster — shown prominently at the top of an active room.
+  const playersBlock = (
+    <div className="players players-prominent">
+      <div className="players-head">
+        <h3>
+          {t('room.players')} ({players.length})
+        </h3>
+        {detailIds.length > 0 && (
+          <button type="button" className="link expand-all" onClick={toggleAll}>
+            {allExpanded ? t('room.collapseAll') : t('room.expandAll')}
+          </button>
+        )}
+      </div>
+      <ul>
+        {players.map((p: Player) => {
+          const color = playerColor(p.id)
+          const shown = composeName(p.name, p.characterName) || t('player.anon')
+          const image = playerImages[p.id]
+          const hasDetail = p.characterName.trim() !== '' || p.background.trim() !== ''
+          const expanded = expandedIds.has(p.id)
+          const rowInner = (
+            <>
+              {image ? (
+                <span className="player-avatar">
+                  <img src={image} alt="" />
+                </span>
+              ) : (
+                <span className="player-avatar" style={{ background: color }}>
+                  {shown.charAt(0)}
+                </span>
+              )}
+              <span className="player-name" style={{ color }}>
+                {shown}
+              </span>
+              {p.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
+              {p.id === playerId && <span className="badge you">{t('room.youBadge')}</span>}
+              {hasDetail && (
+                <span className={`player-caret${expanded ? ' open' : ''}`} aria-hidden="true">
+                  ▸
+                </span>
+              )}
+            </>
+          )
+          return (
+            <li key={p.id}>
+              {hasDetail ? (
+                <button
+                  type="button"
+                  className="player-row"
+                  aria-expanded={expanded}
+                  onClick={() => toggleExpanded(p.id)}
+                >
+                  {rowInner}
+                </button>
+              ) : (
+                <div className="player-row">{rowInner}</div>
+              )}
+              {hasDetail && expanded && (
+                <div className="player-detail">
+                  {p.characterName.trim() && (
+                    <p>
+                      <span className="detail-key">{t('character.name')}</span>
+                      {p.characterName}
+                    </p>
+                  )}
+                  <p>
+                    <span className="detail-key">{t('player.name')}</span>
+                    {p.name || t('player.anon')}
+                  </p>
+                  {p.background.trim() && <p className="detail-bg">{p.background}</p>}
+                </div>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+
   return (
     <section className="panel">
       <h2>
@@ -164,43 +261,25 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
         {t('room.section')}
       </h2>
 
-      {!online && (
+      {!online && view === 'home' && (
         <div className="room-setup">
-          <input
-            type="text"
-            value={codeInput}
-            placeholder={t('room.codePlaceholder')}
-            maxLength={8}
+          <button
+            type="button"
+            className="primary big"
             disabled={busy}
-            onChange={(e) => setCodeInput(normalizeRoomCode(e.target.value))}
-            onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-          />
-          <div className="room-setup-buttons">
-            <button
-              type="button"
-              className="primary"
-              // A code is optional for create; if given it must be valid.
-              disabled={busy || (codeInput.length > 0 && codeInput.length < 4)}
-              onClick={() => void session.createRoom(codeInput || undefined)}
-            >
-              {/* Each part stays whole; when narrow the label wraps only
-                  before "(become GM)". */}
-              <span className="nowrap">{t('room.create')}</span>
-              <wbr />
-              <span className="nowrap">{t('room.createGmNote')}</span>
-            </button>
-            <button type="button" disabled={busy || codeInput.length < 4} onClick={handleJoin}>
-              {busy ? t('room.connecting') : t('room.join')}
-            </button>
-          </div>
-          {busy ? (
-            <p className="room-connecting" role="status">
-              {t('room.connecting')}
-            </p>
-          ) : (
-            <p className="hint">{t('room.codeCreateHint')}</p>
-          )}
-          <button type="button" disabled={busy} onClick={() => fileInputRef.current?.click()}>
+            onClick={() => setView('create')}
+          >
+            {t('room.create')}
+          </button>
+          <button type="button" className="big" disabled={busy} onClick={() => setView('join')}>
+            {t('room.join')}
+          </button>
+          <button
+            type="button"
+            className="link"
+            disabled={busy}
+            onClick={() => fileInputRef.current?.click()}
+          >
             {t('room.importHistory')}
           </button>
           <input
@@ -218,8 +297,95 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
         </div>
       )}
 
+      {!online && view === 'create' && (
+        <div className="room-setup">
+          <label className="field">
+            <span>{t('room.name')}</span>
+            <input
+              type="text"
+              value={createName}
+              maxLength={40}
+              placeholder={t('room.namePlaceholder')}
+              disabled={busy}
+              onChange={(e) => setCreateName(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>{t('room.code')}</span>
+            <input
+              type="text"
+              className="upper"
+              value={createCode}
+              placeholder={t('room.codePlaceholder')}
+              maxLength={8}
+              disabled={busy}
+              onChange={(e) => setCreateCode(normalizeRoomCode(e.target.value))}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+            />
+          </label>
+          <p className="hint">{t('room.codeCreateHint')}</p>
+          <p className="hint">{t('room.createGmHint')}</p>
+          <div className="room-setup-buttons">
+            <button type="button" disabled={busy} onClick={() => setView('home')}>
+              {t('room.back')}
+            </button>
+            <button
+              type="button"
+              className="primary"
+              disabled={busy || (createCode.length > 0 && createCode.length < 4)}
+              onClick={handleCreate}
+            >
+              {busy ? t('room.connecting') : t('room.create')}
+            </button>
+          </div>
+          {busy && (
+            <p className="room-connecting" role="status">
+              {t('room.connecting')}
+            </p>
+          )}
+        </div>
+      )}
+
+      {!online && view === 'join' && (
+        <div className="room-setup">
+          <label className="field">
+            <span>{t('room.code')}</span>
+            <input
+              type="text"
+              className="upper"
+              value={joinCode}
+              placeholder={t('room.codePlaceholder')}
+              maxLength={8}
+              disabled={busy}
+              onChange={(e) => setJoinCode(normalizeRoomCode(e.target.value))}
+              onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
+            />
+          </label>
+          <div className="room-setup-buttons">
+            <button type="button" disabled={busy} onClick={() => setView('home')}>
+              {t('room.back')}
+            </button>
+            <button
+              type="button"
+              className="primary"
+              disabled={busy || joinCode.length < 4}
+              onClick={handleJoin}
+            >
+              {busy ? t('room.connecting') : t('room.join')}
+            </button>
+          </div>
+          {busy && (
+            <p className="room-connecting" role="status">
+              {t('room.connecting')}
+            </p>
+          )}
+        </div>
+      )}
+
       {online && (
         <div className="room-active">
+          {playersBlock}
+
           <div className="room-code-row">
             <span className="room-code-label">{t('room.code')}</span>
             <code className="room-code">{roomCode}</code>
@@ -228,30 +394,9 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
             </button>
           </div>
           <p className="hint">{t('room.shareHint')}</p>
-          {role === 'host' && (
-            <div className="field">
-              <span>{t('room.changeCode')}</span>
-              <div className="room-code-edit">
-                <input
-                  type="text"
-                  value={newCode}
-                  placeholder={t('room.newCodePlaceholder')}
-                  maxLength={8}
-                  onChange={(e) => setNewCode(normalizeRoomCode(e.target.value))}
-                />
-                <button
-                  type="button"
-                  disabled={busy || newCode.length < 4 || newCode === roomCode}
-                  onClick={() => void session.changeRoomCode(newCode)}
-                >
-                  {t('room.changeCode')}
-                </button>
-              </div>
-              <p className="hint">{t('room.codeChangeHint')}</p>
-            </div>
-          )}
+
           {role === 'host' ? (
-            <label className="field">
+            <label className="field-inline">
               <span>{t('room.name')}</span>
               <input
                 type="text"
@@ -267,86 +412,48 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
             </label>
           ) : (
             session.roomName.trim() && (
-              <div className="field">
+              <div className="field-inline">
                 <span>{t('room.name')}</span>
                 <p className="room-name-display">{session.roomName}</p>
               </div>
             )
           )}
+
+          {role === 'host' && (
+            <details className="gm-section">
+              <summary>{t('room.gmSection')}</summary>
+              <div className="field">
+                <span>{t('room.changeCode')}</span>
+                <div className="room-code-edit">
+                  <input
+                    type="text"
+                    className="upper"
+                    value={newCode}
+                    placeholder={t('room.newCodePlaceholder')}
+                    maxLength={8}
+                    onChange={(e) => setNewCode(normalizeRoomCode(e.target.value))}
+                  />
+                  <button
+                    type="button"
+                    disabled={busy || newCode.length < 4 || newCode === roomCode}
+                    onClick={() => void session.changeRoomCode(newCode)}
+                  >
+                    {t('room.changeCode')}
+                  </button>
+                </div>
+                <p className="hint">{t('room.codeChangeHint')}</p>
+              </div>
+            </details>
+          )}
+
           <button type="button" onClick={() => void handleExport()}>
             {t('room.exportHistory')}
           </button>
           <button type="button" className="danger" onClick={handleLeave}>
-            {t('room.leave')}
+            {role === 'host' ? t('room.close') : t('room.leave')}
           </button>
         </div>
       )}
-
-      <div className="players">
-        <div className="players-head">
-          <h3>
-            {t('room.players')} ({players.length})
-          </h3>
-          {detailIds.length > 0 && (
-            <button type="button" className="link expand-all" onClick={toggleAll}>
-              {allExpanded ? t('room.collapseAll') : t('room.expandAll')}
-            </button>
-          )}
-        </div>
-        <ul>
-          {players.map((p: Player) => {
-            const color = playerColor(p.id)
-            const hasDetail = p.characterName.trim() !== '' || p.background.trim() !== ''
-            const expanded = expandedIds.has(p.id)
-            const rowInner = (
-              <>
-                <span className="player-dot" style={{ background: color }} />
-                <span className="player-name" style={{ color }}>
-                  {composeName(p.name, p.characterName) || t('player.anon')}
-                </span>
-                {p.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
-                {p.id === playerId && <span className="badge you">{t('room.youBadge')}</span>}
-                {hasDetail && (
-                  <span className={`player-caret${expanded ? ' open' : ''}`} aria-hidden="true">
-                    ▸
-                  </span>
-                )}
-              </>
-            )
-            return (
-              <li key={p.id}>
-                {hasDetail ? (
-                  <button
-                    type="button"
-                    className="player-row"
-                    aria-expanded={expanded}
-                    onClick={() => toggleExpanded(p.id)}
-                  >
-                    {rowInner}
-                  </button>
-                ) : (
-                  <div className="player-row">{rowInner}</div>
-                )}
-                {hasDetail && expanded && (
-                  <div className="player-detail">
-                    {p.characterName.trim() && (
-                      <p>
-                        <span className="detail-key">{t('character.name')}</span>
-                        {p.characterName}
-                      </p>
-                    )}
-                    <p>
-                      <span className="detail-key">{t('player.name')}</span>
-                      {p.name || t('player.anon')}
-                    </p>
-                    {p.background.trim() && <p className="detail-bg">{p.background}</p>}
-                  </div>
-                )}
-              </li>
-            )
-          })}
-        </ul>
-      </div>
     </section>
   )
 }
