@@ -24,7 +24,7 @@ declare global {
   }
 }
 
-/** Resolved translations, keyed by `${backend}:${from}:${to}:${text}`. */
+/** Resolved translations, keyed by `${from}:${to}:${text}` — see cacheKey. */
 const results = new Map<string, string>()
 /** In-flight translations, so the same text is only requested once. */
 const inflight = new Map<string, Promise<string>>()

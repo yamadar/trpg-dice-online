@@ -94,16 +94,18 @@ function App() {
     window.history.replaceState(null, '', url)
   }, [session.roomCode])
 
-  // Confirm before the page is left (reload, back, close) so the room
-  // connection and feed are not lost by accident.
+  // Confirm before the page is left (reload, back, close) only while in a
+  // room, so an active connection and its feed are not lost by accident.
+  // Offline there is nothing live to protect, so the prompt is skipped.
   useEffect(() => {
+    if (session.role === 'offline') return
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault()
       e.returnValue = ''
     }
     window.addEventListener('beforeunload', onBeforeUnload)
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
-  }, [])
+  }, [session.role])
 
   // Clear the previous dismissal timer first, so a quick second toast is
   // not cut short by the earlier one's timer.
