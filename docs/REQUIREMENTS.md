@@ -813,3 +813,13 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   re-sends it. Consecutive system markers are also folded into a "(n)"
   on the real timeline, before the view filter, so they no longer fold
   across a roll / chat that the current filter hides.
+- v1.56 — 設定パネルのドロップダウン表示を、ビューポートが十分に広く
+  かつ高いときだけに限定した。PC でもウィンドウの高さが足りないと、
+  ドロップダウンが枠から浮いた窮屈な箱になり × ボタンが内容の上に
+  浮いてしまうため、その場合はモバイルと同じ全画面高のドロワー表示に
+  フォールバックする。
+  Limit the settings panel's dropdown layout to viewports that are both
+  wide and tall enough to show it un-cramped. On a short desktop window
+  the dropdown became a small floating box with the × hovering over the
+  content, so there it now falls back to the same full-height drawer
+  used on mobile.

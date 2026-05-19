@@ -1313,8 +1313,9 @@ label.setting-row {
   z-index: 20;
 }
 /* Mobile-first: a full-height drawer pinned to the right edge, so its
-   own body can scroll independently of the page. Desktop turns it back
-   into a dropdown below the gear button. */
+   own body can scroll independently of the page. A roomy desktop
+   viewport turns it into a dropdown below the gear button (see the
+   media query below); a cramped one keeps the drawer. */
 .settings-panel {
   position: fixed;
   top: 0;
@@ -1343,7 +1344,11 @@ label.setting-row {
   overflow-y: auto;
   padding: 16px;
 }
-@media (min-width: 721px) {
+/* The dropdown is offered only when the viewport is wide AND tall
+   enough to show the whole panel un-cramped. On a short window it would
+   be a small floating box with the × hovering over scrolling content,
+   so there the full-height drawer (the mobile layout) is kept instead. */
+@media (min-width: 721px) and (min-height: 800px) {
   .settings-panel {
     position: absolute;
     top: calc(100% + 8px);
