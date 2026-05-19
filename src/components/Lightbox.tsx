@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { CloseIcon } from './icons'
-import type { ChatFile } from '../net/protocol'
+
+/** The minimum the viewer needs to show an image. A `ChatFile` satisfies it. */
+export interface LightboxImage {
+  name: string
+  dataUrl: string
+}
 
 interface Props {
-  /** All image attachments currently in the feed, in order. */
-  images: ChatFile[]
+  /** Images to page through, in order. */
+  images: LightboxImage[]
   /** Index of the image being shown. */
   index: number
   onIndexChange: (index: number) => void

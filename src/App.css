@@ -1349,6 +1349,37 @@ button.player-row {
   margin-top: 8px;
 }
 
+/* --- character portrait --- */
+.char-image-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+/* A small tappable thumbnail; the full image opens in the lightbox. */
+.char-image-thumb {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg);
+  cursor: pointer;
+}
+.char-image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.char-image-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
 /* --- chip rows (count / type / kind) --- */
 .chip-row {
   display: flex;

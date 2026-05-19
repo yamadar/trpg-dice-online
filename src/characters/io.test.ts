@@ -89,6 +89,27 @@ describe('exportCharacterJSON / parseCharacterImport', () => {
     expect(parsed).toEqual({ name: '', background: '', memo: '', lang: 'ja', patterns: [] })
   })
 
+  it('round-trips a portrait image', () => {
+    const withImage: Character = { ...sample, image: 'data:image/png;base64,aGVsbG8=' }
+    const parsed = parseCharacterImport(exportCharacterJSON(withImage))
+    expect(parsed?.image).toBe('data:image/png;base64,aGVsbG8=')
+  })
+
+  it('leaves the image undefined for a character without a portrait', () => {
+    expect(parseCharacterImport(exportCharacterJSON(sample))?.image).toBeUndefined()
+  })
+
+  it('rejects an image field that is not an image data URL', () => {
+    const parsed = parseCharacterImport(
+      JSON.stringify({
+        type: 'trpg-dice-character',
+        version: 2,
+        character: { name: 'X', image: 'data:text/html,<script>' },
+      }),
+    )
+    expect(parsed?.image).toBeUndefined()
+  })
+
   it('drops invalid patterns and clamps the dice count to 1-10', () => {
     const parsed = parseCharacterImport(
       JSON.stringify({
