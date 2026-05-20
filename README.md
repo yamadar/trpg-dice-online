@@ -49,6 +49,26 @@ all from a static page with no backend server.
   to the keyless [MyMemory](https://mymemory.translated.net/) REST API. Tap
   "Original" on a translated message to see what was sent.
 
+## Install as a PWA
+
+The site is a Progressive Web App, so it can be installed to the home screen
+on iOS / Android and launched in standalone (full-screen) mode — no browser
+chrome, instant repeat launches.
+
+- **Android (Chrome):** open the demo URL, tap the browser menu and choose
+  *Install app* (or *Add to Home screen*).
+- **iOS (Safari):** open the demo URL, tap the share button and choose
+  *Add to Home Screen*.
+
+The app shell is precached by a service worker so it opens immediately on
+relaunch, but rooms themselves are peer-to-peer over WebRTC and still need
+a live network connection.
+
+**Screen orientation:** the manifest does not lock or override orientation,
+so the installed PWA follows the device's own auto-rotate / rotation-lock
+setting (e.g. on Android, turning auto-rotate OFF will keep the app in its
+current orientation even if you tilt the device).
+
 ## How online sharing works
 
 The app uses **WebRTC peer-to-peer connections via [PeerJS](https://peerjs.com/)**.

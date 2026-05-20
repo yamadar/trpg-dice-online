@@ -29,7 +29,9 @@ export default defineConfig(({ command }) => ({
           'Online TRPG sessions made easy — dice, characters, rooms, chat and GM hidden rolls.',
         lang: 'ja',
         display: 'standalone',
-        orientation: 'any',
+        // No `orientation` field: declaring `any` would force the PWA to
+        // override the device's system rotation lock (e.g. Android's
+        // auto-rotate OFF setting), so we omit it and let the OS decide.
         // Matches the default midnight theme's --bg so the splash / status
         // bar blend with the app shell on first paint.
         theme_color: '#14151c',
