@@ -2,9 +2,10 @@
 
 **Languages:** [English](README.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [한국어](README.ko.md) · [Italiano](README.it.md) · [Русский](README.ru.md) · [ไทย](README.th.md) · [Türkçe](README.tr.md) · [Bahasa Indonesia](README.id.md) · [Polski](README.pl.md) · [Tiếng Việt](README.vi.md) · [हिन्दी](README.hi.md) · [العربية](README.ar.md) · [Українська](README.uk.md)
 
-Ein Online-Würfler für Tabletop-RPG-Runden. Würfle, speichere wieder­
-verwendbare Muster und teile Ergebnisse, Verlauf und Chat in Echtzeit mit
-deiner Gruppe — alles von einer statischen Seite ohne Backend.
+Ein Online-Würfler für Tabletop-RPG-Runden. Würfle, speichere
+wiederverwendbare Muster und teile Ergebnisse, Verlauf und Chat in
+Echtzeit mit deiner Gruppe — alles von einer statischen Seite ohne
+Backend.
 
 **🎲 Live-Demo:** https://yamadar.github.io/trpg-dice-online/
 
@@ -16,10 +17,10 @@ deiner Gruppe — alles von einer statischen Seite ohne Backend.
 - **Modifikator (B)** — addiere einen vorzeichenbehafteten `+/-` Wert.
 - **Art (C)** — `Schaden` oder `Probe`. Schaden zeigt
   `{Muster} {Wert} Schaden`; Probe zeigt
-  `Ergebnis der Probe „{Muster}": {Wert}`.
+  `Ergebnis der Probe „{Muster}“: {Wert}`.
 - **Charaktere** — verwalte mehrere Charaktere (Name, öffentlicher
   Hintergrund, private Notiz, optionales Porträt, Mustern-Liste sowie
-  die pro Charakter gespeicherte Option „Notiz beim Export einschließen")
+  die pro Charakter gespeicherte Option „Notiz beim Export einschließen“)
   und exportiere/importiere sie als JSON.
 - **Muster** — bündle A + B + C unter einem Namen pro Charakter und
   würfle gespeicherte Muster mit einem Klick.
@@ -36,7 +37,7 @@ deiner Gruppe — alles von einer statischen Seite ohne Backend.
   bei.
 - **SL-Bedienelemente** — die SL bündelt Raumumbenennung und Code-Wechsel
   hinter einem Aufklapp-Bereich, und der Verlassen-Knopf heißt „Raum
-  schließen".
+  schließen“.
 - **SL-verdeckte Würfe** — die SL kann den Wert verbergen; andere sehen
   nur, dass ein verdeckter Wurf stattfand.
 - **Spielerfarben & Tippen-Anzeige** — jeder Teilnehmer bekommt eine

@@ -43,7 +43,7 @@ all from a static page with no backend server.
   color, and a subtle indicator shows who is typing.
 - **Room awareness** — join/leave events appear in the feed, and closing
   the room as GM notifies every player gracefully.
-- **Bilingual** — switch the UI between Japanese and English.
+- **Multilingual** — the UI is available in 19 languages.
 
 ## How online sharing works
 
