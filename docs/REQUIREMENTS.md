@@ -1,8 +1,8 @@
-# TRPG Online Dice — Requirements & Implementation Plan
+# Dice & Chat — Requirements & Implementation Plan
 
 [日本語版](REQUIREMENTS.ja.md)
 
-> Online dice roller for TRPG sessions. Requirements & implementation plan.
+> Online TRPG sessions made easy. Requirements & implementation plan.
 
 ## 1. Overview
 
@@ -617,3 +617,18 @@ Commit after each step.
   with the SVG kept as a higher-DPI fallback for desktop tabs. The
   service worker only precaches the app shell — offline play is out of
   scope because the app is realtime P2P.
+- v1.65 — Rebrand: display name changes from "TRPG Online Dice / TRPG
+  オンラインダイス" to **Dice & Chat**, and the tagline changes from
+  "Roll dice together with your party / 仲間とダイスをシェアしよう" to
+  "Online TRPG sessions made easy / オンラインTRPGセッションを簡単に".
+  Updated everywhere the user-facing brand is read: the i18n
+  `app.title` / `app.tagline` / `tutorial.welcome.title` keys across
+  all 19 locales, the page `<title>` and `apple-mobile-web-app-title`
+  meta, the PWA manifest `name` / `short_name` / `description`, and
+  every README / requirements heading. Internal identifiers (npm
+  package slug, GitHub Pages base path `/trpg-dice-online/`, the
+  P2P peer-id prefix `trpgdice-`, the IndexedDB name `trpg-dice`,
+  `localStorage` keys `trpg-dice.*`, and the room-export ZIP magic
+  string `trpg-dice-room-log`) are intentionally left unchanged so
+  existing users' data, saved exports and open connections keep
+  working.

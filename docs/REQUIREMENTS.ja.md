@@ -1,8 +1,8 @@
-# TRPG オンラインダイス — 要件定義 / 実装プラン
+# Dice & Chat — 要件定義 / 実装プラン
 
 [English](REQUIREMENTS.md)
 
-> TRPG セッション用のオンラインダイスローラーに関する要件定義と実装プラン。
+> オンライン TRPG セッションを簡単に。要件定義と実装プラン。
 
 ## 1. 概要
 
@@ -584,3 +584,17 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   SVG のみだった構成から `.ico` を主・SVG を高 DPI フォールバックとする
   構成に変更。Service Worker はアプリシェルのみ precache する
   （リアルタイム P2P アプリのためオフライン動作は対象外）。
+- v1.65 — リブランド。表示名を「TRPG オンラインダイス / TRPG Online
+  Dice」から **Dice & Chat** に、サブタイトルを「仲間とダイスをシェア
+  しよう / Roll dice together with your party」から「オンライン TRPG
+  セッションを簡単に / Online TRPG sessions made easy」に変更する。
+  ユーザーが見るすべての場所を更新: 19 言語の i18n
+  `app.title` / `app.tagline` / `tutorial.welcome.title`、ページの
+  `<title>` と `apple-mobile-web-app-title` メタ、PWA マニフェストの
+  `name` / `short_name` / `description`、全 19 言語の README と
+  REQUIREMENTS の見出し。内部識別子（npm パッケージ名、GitHub
+  Pages のベースパス `/trpg-dice-online/`、P2P ピア ID プレフィクス
+  `trpgdice-`、IndexedDB 名 `trpg-dice`、`localStorage` キー
+  `trpg-dice.*`、ルームエクスポート ZIP のマジック文字列
+  `trpg-dice-room-log`）は既存ユーザーのデータ・エクスポートファイル・
+  接続中のセッションを壊さないため敢えて変更しない。
