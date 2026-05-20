@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const th: Dict = {
-  'app.title': 'TRPG ลูกเต๋าออนไลน์',
-  'app.tagline': 'ทอยลูกเต๋ากับเพื่อนร่วมปาร์ตี้',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'เซสชัน TRPG ออนไลน์ ง่ายขึ้น',
   'lang.label': 'ภาษา',
   'translate.auto': 'แปลอัตโนมัติ',
   'theme.title': 'ธีม',
@@ -48,7 +48,7 @@ export const th: Dict = {
   'tutorial.next': 'ถัดไป',
   'tutorial.back': 'ย้อนกลับ',
   'tutorial.done': 'เริ่มเลย',
-  'tutorial.welcome.title': 'ยินดีต้อนรับสู่ TRPG ลูกเต๋าออนไลน์',
+  'tutorial.welcome.title': 'ยินดีต้อนรับสู่ Dice & Chat',
   'tutorial.welcome.body':
     'ทอยลูกเต๋ากับปาร์ตี้ของคุณ พร้อมแชร์ผลทอย ประวัติ และแชทแบบเรียลไทม์ ไม่ต้องติดตั้ง และใช้งานในเครื่องได้แม้ไม่มีห้อง',
   'tutorial.dice.title': 'ทอยลูกเต๋า',

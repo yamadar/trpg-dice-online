@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const uk: Dict = {
-  'app.title': 'TRPG Онлайн-кубики',
-  'app.tagline': 'Кидайте кубики разом з компанією',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'Онлайн-сесії TRPG — це просто',
   'lang.label': 'Мова',
   'translate.auto': 'Авто-переклад',
   'theme.title': 'Тема',
@@ -48,7 +48,7 @@ export const uk: Dict = {
   'tutorial.next': 'Далі',
   'tutorial.back': 'Назад',
   'tutorial.done': 'Поїхали',
-  'tutorial.welcome.title': 'Ласкаво просимо до TRPG Онлайн-кубики',
+  'tutorial.welcome.title': 'Ласкаво просимо до Dice & Chat',
   'tutorial.welcome.body':
     'Кидайте кубики з компанією та діліться кидками, історією і чатом у реальному часі. Без встановлення; працює локально навіть без кімнати.',
   'tutorial.dice.title': 'Кидати кубики',

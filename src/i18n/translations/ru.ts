@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const ru: Dict = {
-  'app.title': 'TRPG Онлайн-кости',
-  'app.tagline': 'Кидайте кости вместе с группой',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'Онлайн-сессии TRPG — это просто',
   'lang.label': 'Язык',
   'translate.auto': 'Авто-перевод',
   'theme.title': 'Тема',
@@ -48,7 +48,7 @@ export const ru: Dict = {
   'tutorial.next': 'Далее',
   'tutorial.back': 'Назад',
   'tutorial.done': 'Поехали',
-  'tutorial.welcome.title': 'Добро пожаловать в TRPG Онлайн-кости',
+  'tutorial.welcome.title': 'Добро пожаловать в Dice & Chat',
   'tutorial.welcome.body':
     'Кидайте кости с группой и делитесь бросками, историей и чатом в реальном времени. Установка не нужна, можно играть и без комнаты.',
   'tutorial.dice.title': 'Бросок костей',

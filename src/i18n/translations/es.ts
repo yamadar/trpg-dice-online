@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const es: Dict = {
-  'app.title': 'TRPG Dados en línea',
-  'app.tagline': 'Tira los dados con tu grupo',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'Sesiones de TRPG en línea, simplificadas',
   'lang.label': 'Idioma',
   'translate.auto': 'Traducción automática',
   'theme.title': 'Tema',
@@ -48,7 +48,7 @@ export const es: Dict = {
   'tutorial.next': 'Siguiente',
   'tutorial.back': 'Atrás',
   'tutorial.done': 'Comenzar',
-  'tutorial.welcome.title': 'Te damos la bienvenida a TRPG Dados en línea',
+  'tutorial.welcome.title': 'Te damos la bienvenida a Dice & Chat',
   'tutorial.welcome.body':
     'Tira dados con tu grupo y comparte tiradas, historial y chat en tiempo real. No requiere instalación y funciona localmente incluso sin sala.',
   'tutorial.dice.title': 'Tirar dados',

@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const en: Dict = {
-  'app.title': 'TRPG Online Dice',
-  'app.tagline': 'Roll dice together with your party',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'Online TRPG sessions made easy',
   'lang.label': 'Language',
   'translate.auto': 'Auto-translate',
   'theme.title': 'Theme',
@@ -48,7 +48,7 @@ export const en: Dict = {
   'tutorial.next': 'Next',
   'tutorial.back': 'Back',
   'tutorial.done': 'Get started',
-  'tutorial.welcome.title': 'Welcome to TRPG Online Dice',
+  'tutorial.welcome.title': 'Welcome to Dice & Chat',
   'tutorial.welcome.body':
     'Roll dice with your party and share rolls, history and chat in real time. No install needed, and it works locally even without a room.',
   'tutorial.dice.title': 'Roll dice',

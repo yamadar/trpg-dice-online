@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const vi: Dict = {
-  'app.title': 'TRPG Xúc xắc trực tuyến',
-  'app.tagline': 'Tung xúc xắc cùng nhóm chơi',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'Phiên TRPG trực tuyến dễ dàng hơn',
   'lang.label': 'Ngôn ngữ',
   'translate.auto': 'Tự động dịch',
   'theme.title': 'Chủ đề',
@@ -48,7 +48,7 @@ export const vi: Dict = {
   'tutorial.next': 'Tiếp',
   'tutorial.back': 'Quay lại',
   'tutorial.done': 'Bắt đầu',
-  'tutorial.welcome.title': 'Chào mừng đến TRPG Xúc xắc trực tuyến',
+  'tutorial.welcome.title': 'Chào mừng đến Dice & Chat',
   'tutorial.welcome.body':
     'Cùng nhóm tung xúc xắc và chia sẻ kết quả, lịch sử và trò chuyện theo thời gian thực. Không cần cài đặt và vẫn hoạt động cục bộ khi không có phòng.',
   'tutorial.dice.title': 'Tung xúc xắc',

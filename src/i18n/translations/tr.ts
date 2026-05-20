@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const tr: Dict = {
-  'app.title': 'TRPG Çevrimiçi Zar',
-  'app.tagline': 'Ekibinle birlikte zar at',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'Çevrimiçi TRPG oturumları artık kolay',
   'lang.label': 'Dil',
   'translate.auto': 'Otomatik çeviri',
   'theme.title': 'Tema',
@@ -48,7 +48,7 @@ export const tr: Dict = {
   'tutorial.next': 'İleri',
   'tutorial.back': 'Geri',
   'tutorial.done': 'Başla',
-  'tutorial.welcome.title': 'TRPG Çevrimiçi Zar’a hoş geldin',
+  'tutorial.welcome.title': 'Dice & Chat’e hoş geldin',
   'tutorial.welcome.body':
     'Ekibinle zar atın; atışları, geçmişi ve sohbeti gerçek zamanlı paylaşın. Kurulum gerekmez ve oda olmadan da yerel çalışır.',
   'tutorial.dice.title': 'Zar atmak',

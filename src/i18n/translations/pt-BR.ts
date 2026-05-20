@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const ptBR: Dict = {
-  'app.title': 'TRPG Dados online',
-  'app.tagline': 'Role dados com o seu grupo',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'Sessões de TRPG online, simplificadas',
   'lang.label': 'Idioma',
   'translate.auto': 'Tradução automática',
   'theme.title': 'Tema',
@@ -48,7 +48,7 @@ export const ptBR: Dict = {
   'tutorial.next': 'Próximo',
   'tutorial.back': 'Voltar',
   'tutorial.done': 'Começar',
-  'tutorial.welcome.title': 'Boas-vindas ao TRPG Dados online',
+  'tutorial.welcome.title': 'Boas-vindas ao Dice & Chat',
   'tutorial.welcome.body':
     'Role dados com seu grupo e compartilhe rolagens, histórico e chat em tempo real. Sem instalação, funciona localmente mesmo sem uma sala.',
   'tutorial.dice.title': 'Rolar dados',

@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const fr: Dict = {
-  'app.title': 'TRPG Dés en ligne',
-  'app.tagline': 'Lancez les dés avec votre groupe',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'Vos sessions de JdR en ligne, simplifiées',
   'lang.label': 'Langue',
   'translate.auto': 'Traduction automatique',
   'theme.title': 'Thème',
@@ -48,7 +48,7 @@ export const fr: Dict = {
   'tutorial.next': 'Suivant',
   'tutorial.back': 'Retour',
   'tutorial.done': 'Commencer',
-  'tutorial.welcome.title': 'Bienvenue dans TRPG Dés en ligne',
+  'tutorial.welcome.title': 'Bienvenue dans Dice & Chat',
   'tutorial.welcome.body':
     'Lancez les dés avec votre groupe et partagez jets, historique et tchat en temps réel. Pas d’installation, fonctionne aussi en local sans salle.',
   'tutorial.dice.title': 'Lancer les dés',
