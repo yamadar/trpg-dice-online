@@ -4,7 +4,7 @@ import { useFieldNotice } from '../hooks/useFieldNotice'
 import { LanguageToggle } from './LanguageToggle'
 import { ThemeToggle } from './ThemeToggle'
 import { FontSizeToggle } from './FontSizeToggle'
-import { CloseIcon } from './icons'
+import { BrandIcon, CloseIcon } from './icons'
 
 interface Props {
   name: string
@@ -123,7 +123,10 @@ export function SettingsMenu({
 
               <div className="settings-about">
                 <h3>{t('settings.about')}</h3>
-                <p className="about-title">{t('app.title')}</p>
+                <p className="about-title brand-heading">
+                  <BrandIcon className="brand-mark" />
+                  <span>{t('app.title')}</span>
+                </p>
                 <p className="about-line">{t('app.tagline')}</p>
                 <p className="about-line">
                   MIT License ·{' '}

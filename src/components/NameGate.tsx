@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { BrandIcon } from './icons'
 
 interface Props {
   onSubmit: (name: string) => void
@@ -21,7 +22,10 @@ export function NameGate({ onSubmit }: Props) {
   return (
     <div className="name-gate" role="dialog" aria-modal="true">
       <div className="name-gate-card">
-        <h1>{t('app.title')}</h1>
+        <h1 className="brand-heading">
+          <BrandIcon className="brand-mark" />
+          <span>{t('app.title')}</span>
+        </h1>
         <p className="hint">{t('app.tagline')}</p>
         <label className="field">
           <span>{t('player.name')}</span>
