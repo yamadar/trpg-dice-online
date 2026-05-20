@@ -72,7 +72,21 @@
   font-size: 0.85rem;
 }
 
-.lang-toggle {
+/* Language picker — a native select so the (long) language list stays
+   keyboard-accessible and scrolls cleanly on every platform. */
+.lang-select {
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 6px 28px 6px 10px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-width: 100%;
+}
+
+/* Generic segmented control (font size picker, etc.). */
+.seg-toggle {
   display: flex;
   gap: 4px;
   background: var(--bg);
@@ -80,12 +94,12 @@
   border-radius: 10px;
   padding: 3px;
 }
-.lang-btn {
+.seg-btn {
   border: none;
   background: transparent;
   padding: 6px 12px;
 }
-.lang-btn.active {
+.seg-btn.active {
   background: var(--accent-2);
   color: #fff;
 }
