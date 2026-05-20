@@ -82,6 +82,15 @@ andal, salin `.env.example` ke `.env` lalu atur:
 - `VITE_TURN_USERNAME` — nama pengguna TURN.
 - `VITE_TURN_CREDENTIAL` — kredensial TURN (kata sandi).
 
+**Catatan keamanan:** Vite menempelkan setiap variabel `VITE_*` ke dalam
+bundle produksi, sehingga kredensial TURN yang diatur di sini terlihat
+oleh siapa pun yang membuka halaman. Untuk mengurangi risiko
+penyalahgunaan, gunakan kredensial TURN yang berumur pendek / sementara
+(misalnya pola kredensial bertenggang waktu lewat TURN REST API) dan
+batasan dari sisi penyedia — origin yang diizinkan, filter IP, atau
+kuota bulanan. Jangan memakai kembali kredensial produksi berjangka
+panjang di sini.
+
 Untuk memakainya pada deploy GitHub Pages, tambahkan sebagai secret
 repositori dan teruskan pada langkah build di
 `.github/workflows/deploy.yml`. Opsi gratis: tingkat gratis

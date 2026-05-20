@@ -89,6 +89,15 @@ vers `.env` et renseignez :
 - `VITE_TURN_USERNAME` — nom d'utilisateur TURN.
 - `VITE_TURN_CREDENTIAL` — identifiant TURN (mot de passe).
 
+**Note de sécurité :** Vite inline toutes les variables `VITE_*` dans le
+bundle de production : les identifiants TURN définis ici sont donc
+visibles par quiconque charge la page. Pour limiter le risque d'abus,
+utilisez des identifiants TURN éphémères / à courte durée de vie (par
+exemple le pattern d'identifiants à durée limitée fourni par l'API REST
+TURN) et configurez des limites côté fournisseur — origines autorisées,
+filtrage IP, quotas mensuels. Ne réutilisez pas d'identifiants de
+production à longue durée.
+
 Pour les utiliser dans le déploiement GitHub Pages, ajoutez-les comme
 secrets du dépôt et passez-les dans l'étape de build de
 `.github/workflows/deploy.yml`. Options gratuites : l'offre gratuite de

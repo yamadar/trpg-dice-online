@@ -89,6 +89,14 @@ Open Relay Project の無料公開 TURN サーバーにフォールバックし�
 - `VITE_TURN_USERNAME` — TURN のユーザー名。
 - `VITE_TURN_CREDENTIAL` — TURN の資格情報（パスワード）。
 
+**セキュリティ注意:** Vite はすべての `VITE_*` 変数を本番ビルドへ
+インライン化するため、ここに設定した TURN 認証情報はサイトを開いた
+誰でも閲覧できる状態になります。乱用リスクを抑えるため、短寿命 /
+一時的な TURN 認証情報（例：TURN REST API による時限式クレデンシャル）と、
+プロバイダー側の制限（許可オリジン・IP フィルタ・月次クォータ）を
+組み合わせて運用してください。長期間有効な本番用認証情報を流用しない
+こと。
+
 GitHub Pages にデプロイして使う場合は、これらをリポジトリ Secrets に
 追加し、`.github/workflows/deploy.yml` のビルドステップに渡します。
 無料の選択肢としては [Metered](https://www.metered.ca/) の無料枠や

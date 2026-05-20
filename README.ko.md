@@ -81,6 +81,13 @@ Project의 무료 공개 TURN 서버로 폴백합니다 — 가벼운 사용에�
 - `VITE_TURN_USERNAME` — TURN 사용자 이름.
 - `VITE_TURN_CREDENTIAL` — TURN 자격 증명(비밀번호).
 
+**보안 주의:** Vite는 모든 `VITE_*` 변수를 프로덕션 번들에 인라인합니다.
+즉, 여기 설정한 TURN 자격 증명은 사이트를 여는 누구에게나 노출됩니다.
+남용 위험을 줄이려면 단기 / 임시 TURN 자격 증명(예: TURN REST API의
+시간 제한 자격 증명 패턴)을 사용하고, 제공자 측의 제한(허용 출처,
+IP 필터링, 월간 한도)을 함께 설정하세요. 장기 유효한 프로덕션 자격
+증명을 그대로 가져다 쓰지 마세요.
+
 GitHub Pages 배포에서 사용하려면 저장소 Secrets에 추가하고
 `.github/workflows/deploy.yml`의 빌드 단계에서 전달하세요. 무료
 옵션으로는 [Metered](https://www.metered.ca/) 무료 등급이나

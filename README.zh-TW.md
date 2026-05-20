@@ -51,6 +51,8 @@ npm run build    # 正式建置至 dist/
 - `VITE_TURN_USERNAME` — TURN 使用者名稱。
 - `VITE_TURN_CREDENTIAL` — TURN 認證資訊（密碼）。
 
+**安全提示：** Vite 會把所有 `VITE_*` 變數內嵌到正式建置的套件中，因此你在這裡設定的 TURN 認證資訊任何開啟頁面的人都能看到。為降低被濫用的風險，請使用短期 / 暫時的 TURN 認證資訊（例如 TURN REST API 的時限式認證模式），並搭配服務提供方的限制（允許來源、IP 篩選、每月配額）。請勿把長期有效的正式環境認證資訊重複使用於此處。
+
 若要在 GitHub Pages 部署中使用，請將其加入 Repository Secrets，並在 `.github/workflows/deploy.yml` 的建置步驟中傳入。免費選項包括 [Metered](https://www.metered.ca/) 的免費方案，或自架 [coturn](https://github.com/coturn/coturn)。
 
 ## 部署

@@ -86,6 +86,15 @@ niezawodnego przekaźnika skopiuj `.env.example` do `.env` i ustaw:
 - `VITE_TURN_USERNAME` — nazwa użytkownika TURN.
 - `VITE_TURN_CREDENTIAL` — dane uwierzytelniające TURN (hasło).
 
+**Uwaga bezpieczeństwa:** Vite wstawia każdą zmienną `VITE_*` bezpośrednio
+do produkcyjnego bundle'a, dlatego dane logowania TURN ustawione tutaj
+są widoczne dla każdego, kto otworzy stronę. Aby ograniczyć ryzyko
+nadużyć, używaj krótkotrwałych / efemerycznych poświadczeń TURN
+(np. wzorzec poświadczeń z ograniczonym czasem życia z TURN REST API)
+oraz limitów po stronie dostawcy — dozwolone originy, filtrowanie IP,
+kwoty miesięczne. Nie używaj tu ponownie długoterminowych poświadczeń
+produkcyjnych.
+
 Aby użyć ich we wdrożeniu na GitHub Pages, dodaj je jako sekrety
 repozytorium i przekaż w kroku build w `.github/workflows/deploy.yml`.
 Darmowe opcje: darmowy plan [Metered](https://www.metered.ca/) lub
