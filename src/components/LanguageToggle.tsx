@@ -1,23 +1,27 @@
 import { useI18n } from '../i18n/useI18n'
-import { LANGS } from '../i18n/translations'
+import { LANG_NAMES, LANGS, type Lang } from '../i18n/translations'
 
-const LABELS: Record<string, string> = { ja: '日本語', en: 'English' }
-
+/**
+ * A `<select>` dropdown — the only sensible UI once the language list
+ * grew past a couple of options. Native dropdowns scale to many items,
+ * stay keyboard-accessible and free us from owning a custom popup. Each
+ * option is labelled in its own native script so a player can find their
+ * language even when the UI is currently in one they cannot read.
+ */
 export function LanguageToggle() {
   const { lang, setLang, t } = useI18n()
   return (
-    <div className="lang-toggle" role="group" aria-label={t('lang.label')}>
+    <select
+      className="lang-select"
+      aria-label={t('lang.label')}
+      value={lang}
+      onChange={(e) => setLang(e.target.value as Lang)}
+    >
       {LANGS.map((l) => (
-        <button
-          key={l}
-          type="button"
-          className={l === lang ? 'lang-btn active' : 'lang-btn'}
-          aria-pressed={l === lang}
-          onClick={() => setLang(l)}
-        >
-          {LABELS[l]}
-        </button>
+        <option key={l} value={l}>
+          {LANG_NAMES[l]}
+        </option>
       ))}
-    </div>
+    </select>
   )
 }

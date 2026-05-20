@@ -18,12 +18,12 @@ export function FontSizeToggle() {
   }
 
   return (
-    <div className="lang-toggle" role="group" aria-label={t('fontSize.label')}>
+    <div className="seg-toggle" role="group" aria-label={t('fontSize.label')}>
       {FONT_SCALES.map((s) => (
         <button
           key={s}
           type="button"
-          className={s === scale ? 'lang-btn active' : 'lang-btn'}
+          className={s === scale ? 'seg-btn active' : 'seg-btn'}
           aria-pressed={s === scale}
           onClick={() => choose(s)}
         >

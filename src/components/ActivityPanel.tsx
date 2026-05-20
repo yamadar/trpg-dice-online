@@ -51,12 +51,13 @@ export function ActivityPanel({ session, compact, onNotice }: Props) {
   const [older, setOlder] = useState<OlderEntries>(EMPTY_OLDER)
   const [reachedOldest, setReachedOldest] = useState(false)
 
-  // A room change (enter / leave / code change) resets the paged-in history.
-  // This adjusts state during render — the pattern React recommends over an
+  // A room change (enter / leave) resets the paged-in history. Keyed by the
+  // session id, so a mid-room code change keeps the paged-in log. This
+  // adjusts state during render — the pattern React recommends over an
   // effect for "reset some state when a prop changes".
-  const [olderRoom, setOlderRoom] = useState(session.roomCode)
-  if (olderRoom !== session.roomCode) {
-    setOlderRoom(session.roomCode)
+  const [olderSession, setOlderSession] = useState(session.sessionId)
+  if (olderSession !== session.sessionId) {
+    setOlderSession(session.sessionId)
     setOlder(EMPTY_OLDER)
     setReachedOldest(false)
   }
@@ -109,16 +110,16 @@ export function ActivityPanel({ session, compact, onNotice }: Props) {
   // "older than X" cursor cannot fill. Rooms hold at most ~1000 entries,
   // so loading the whole log in one go is both simple and exact.
   const loadOlder = useCallback(async () => {
-    const code = session.roomCode
-    if (!code) return
-    const entries = await loadFullLog(code)
+    const sid = session.sessionId
+    if (!sid) return
+    const entries = await loadFullLog(sid)
     setOlder({
       history: entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult),
       chat: entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage),
       markers: entries.filter((e) => e.kind === 'marker').map((e) => e.data as SystemMarker),
     })
     setReachedOldest(true)
-  }, [session.roomCode])
+  }, [session.sessionId])
 
   // Clearing the feed is destructive, so require a deliberate confirmation.
   const clearFeed = () => {
@@ -137,7 +138,7 @@ export function ActivityPanel({ session, compact, onNotice }: Props) {
 
   // Older history can only come from a room's durable log, and only once
   // the live window is full enough to plausibly have dropped entries.
-  const hasOlder = session.roomCode !== null && !reachedOldest && feed.length >= FEED_WINDOW
+  const hasOlder = session.sessionId !== null && !reachedOldest && feed.length >= FEED_WINDOW
 
   // Messages queued for an offline GM belong with chat — hidden in rolls view.
   const pending = filter === 'all' || filter === 'chat' ? session.outbox : []

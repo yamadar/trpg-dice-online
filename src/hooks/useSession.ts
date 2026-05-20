@@ -21,8 +21,22 @@ import { newMarkerId, type MarkerType, type SystemMarker } from '../feed/feed'
 import { composeName } from '../players/identity'
 import { getPlayerId, loadPlayerName, savePlayerName } from '../storage/player'
 import { saveLastRoomCode } from '../storage/room'
-import { appendLogEntries, appendLogEntry, clearRoomLog, loadRecentLog } from '../storage/roomLog'
-import { clearActiveRoom, loadActiveRoom, saveActiveRoom } from '../storage/activeRoom'
+import {
+  appendLogEntries,
+  appendLogEntry,
+  deleteSession,
+  loadRecentLog,
+  newSessionId,
+  savePortraitForSession,
+  savePortraitsForSession,
+  type LogTarget,
+} from '../storage/roomLog'
+import {
+  clearActiveRoom,
+  loadActiveRoom,
+  saveActiveRoom,
+  updateActiveRoomName,
+} from '../storage/activeRoom'
 import type { RoomImport } from '../storage/roomImport'
 import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 
@@ -67,14 +81,17 @@ export interface Session {
   role: Role
   status: RoomStatus
   roomCode: string | null
+  /** Durable-log session id for the current room, or null when offline. */
+  sessionId: string | null
   /** GM-chosen room name ('' when unnamed). */
   roomName: string
   /** Set the room name (host only; broadcast to clients). */
   setRoomName: (name: string) => void
   errorKind: ErrorKind
   clearError: () => void
-  /** Create a room; with a code, host exactly that code (else random). */
-  createRoom: (preferredCode?: string) => Promise<void>
+  /** Create a room; with a code, host exactly that code (else random). An
+   *  optional name pre-sets the room name. */
+  createRoom: (preferredCode?: string, name?: string) => Promise<void>
   joinRoom: (code: string) => Promise<void>
   /** On startup, resume the room from the URL — re-host (GM) or re-join. */
   resumeRoom: (urlCode: string) => Promise<void>
@@ -137,6 +154,7 @@ export function useSession(): Session {
   const [role, setRole] = useState<Role>('offline')
   const [status, setStatus] = useState<RoomStatus>('offline')
   const [roomCode, setRoomCode] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [roomName, setRoomNameState] = useState('')
   const [errorKind, setErrorKind] = useState<ErrorKind>(null)
   const [playersState, setPlayers] = useState<Player[]>([])
@@ -168,6 +186,9 @@ export function useSession(): Session {
   const historyRef = useRef(history)
   const chatRef = useRef(chat)
   const roomCodeRef = useRef(roomCode)
+  /** The durable-log session id — written directly so appends read it
+   *  synchronously, mirrored to `sessionId` state for consumers. */
+  const sessionIdRef = useRef<string | null>(null)
   const roomNameRef = useRef(roomName)
   const outboxRef = useRef(outbox)
   useEffect(() => {
@@ -203,21 +224,42 @@ export function useSession(): Session {
   const lastSeenRef = useRef(new Map<string, number>())
   const roomRef = useRef<RoomManager | null>(null)
 
+  /** The current durable-log target, or null when not in a room. */
+  const logTarget = useCallback((): LogTarget | null => {
+    const sid = sessionIdRef.current
+    if (!sid) return null
+    return {
+      sessionId: sid,
+      roomCode: roomCodeRef.current ?? '',
+      roomName: roomNameRef.current,
+      role: roleRef.current === 'host' ? 'host' : 'client',
+    }
+  }, [])
+
   // The in-memory feed is capped for rendering; every entry is also
-  // appended to the durable per-room log so the full history survives.
-  const appendHistory = useCallback((result: RollResult) => {
-    setHistory((prev) => capEnd([...prev, result], MAX_HISTORY))
-    void appendLogEntry(roomCodeRef.current, 'roll', result)
-  }, [])
-  const appendChat = useCallback((message: ChatMessage) => {
-    setChat((prev) => capEnd([...prev, message], MAX_CHAT))
-    void appendLogEntry(roomCodeRef.current, 'chat', message)
-  }, [])
-  const addMarker = useCallback((type: MarkerType, extra?: Partial<SystemMarker>) => {
-    const marker: SystemMarker = { id: newMarkerId(), timestamp: Date.now(), type, ...extra }
-    setMarkers((prev) => capEnd([...prev, marker], MAX_MARKERS))
-    void appendLogEntry(roomCodeRef.current, 'marker', marker)
-  }, [])
+  // appended to the durable per-session log so the full history survives.
+  const appendHistory = useCallback(
+    (result: RollResult) => {
+      setHistory((prev) => capEnd([...prev, result], MAX_HISTORY))
+      void appendLogEntry(logTarget(), 'roll', result)
+    },
+    [logTarget],
+  )
+  const appendChat = useCallback(
+    (message: ChatMessage) => {
+      setChat((prev) => capEnd([...prev, message], MAX_CHAT))
+      void appendLogEntry(logTarget(), 'chat', message)
+    },
+    [logTarget],
+  )
+  const addMarker = useCallback(
+    (type: MarkerType, extra?: Partial<SystemMarker>) => {
+      const marker: SystemMarker = { id: newMarkerId(), timestamp: Date.now(), type, ...extra }
+      setMarkers((prev) => capEnd([...prev, marker], MAX_MARKERS))
+      void appendLogEntry(logTarget(), 'marker', marker)
+    },
+    [logTarget],
+  )
   const noteTyping = useCallback((signal: TypingSignal) => {
     setTyping((prev) => ({ ...prev, [signal.playerId]: { name: signal.playerName, at: Date.now() } }))
   }, [])
@@ -235,6 +277,9 @@ export function useSession(): Session {
       if (image) next[id] = image
       else delete next[id]
       setPlayerImages(next)
+      // Persist to the per-session portrait store so a past session's
+      // history view can show the last-known portrait of each player.
+      void savePortraitForSession(sessionIdRef.current, id, image)
     },
     [setPlayerImages],
   )
@@ -380,9 +425,11 @@ export function useSession(): Session {
     setRole('offline')
     setStatus('offline')
     setRoomCode(null)
-    // Clear the ref eagerly too (mirrors createRoom / joinRoom) so a stray
+    setSessionId(null)
+    // Clear the refs eagerly too (mirrors createRoom / joinRoom) so a stray
     // offline log write cannot land under the room just left.
     roomCodeRef.current = null
+    sessionIdRef.current = null
     roomNameRef.current = ''
     setRoomNameState('')
     setTyping({})
@@ -407,21 +454,24 @@ export function useSession(): Session {
             }
             if (ownImageRef.current) images[playerId] = ownImageRef.current
             setPlayerImages(images)
+            void savePortraitsForSession(sessionIdRef.current, images)
           }
           setHistory((prev) => mergeById(prev, msg.snapshot.history, MAX_HISTORY))
           setChat((prev) => mergeById(prev, msg.snapshot.chat, MAX_CHAT))
           roomNameRef.current = msg.snapshot.roomName
           setRoomNameState(msg.snapshot.roomName)
+          updateActiveRoomName(msg.snapshot.roomName)
           // Record the snapshot in the durable log (put() upserts, so a
           // re-welcome does not duplicate entries).
-          const code = roomCodeRef.current
-          for (const roll of msg.snapshot.history) void appendLogEntry(code, 'roll', roll)
-          for (const message of msg.snapshot.chat) void appendLogEntry(code, 'chat', message)
+          const target = logTarget()
+          for (const roll of msg.snapshot.history) void appendLogEntry(target, 'roll', roll)
+          for (const message of msg.snapshot.chat) void appendLogEntry(target, 'chat', message)
           break
         }
         case 'roomName':
           roomNameRef.current = msg.name
           setRoomNameState(msg.name)
+          updateActiveRoomName(msg.name)
           break
         case 'roomCodeChanged': {
           // The GM moved the room to a new code. Follow it over, keeping
@@ -430,7 +480,14 @@ export function useSession(): Session {
           setRoomCode(newCode)
           roomCodeRef.current = newCode
           saveLastRoomCode(newCode)
-          saveActiveRoom({ code: newCode, role: 'client' })
+          // The session id is unchanged — the log follows the room across
+          // a code change.
+          saveActiveRoom({
+            code: newCode,
+            role: 'client',
+            sessionId: sessionIdRef.current ?? undefined,
+            roomName: roomNameRef.current,
+          })
           addMarker('codeChanged', { roomCode: newCode })
           if (!reconnectingRef.current) {
             markReconnecting(true)
@@ -477,6 +534,7 @@ export function useSession(): Session {
       appendChat,
       appendHistory,
       goOffline,
+      logTarget,
       markReconnecting,
       noteTyping,
       playerId,
@@ -526,7 +584,7 @@ export function useSession(): Session {
 
   // --- Public actions -----------------------------------------------------
   const createRoom = useCallback(
-    async (preferredCode?: string) => {
+    async (preferredCode?: string, name?: string) => {
       setErrorKind(null)
       gracefulCloseRef.current = false
       intentionalLeaveRef.current = false
@@ -538,12 +596,17 @@ export function useSession(): Session {
         peerPlayersRef.current.clear()
         setRole('host')
         setRoomCode(code)
-        // Eagerly set the ref so the marker below is logged under this room.
+        // Eagerly set the refs so the marker below is logged under this
+        // room and a fresh session id.
         roomCodeRef.current = code
+        const sid = newSessionId()
+        sessionIdRef.current = sid
+        setSessionId(sid)
         saveLastRoomCode(code)
-        saveActiveRoom({ code, role: 'host' })
-        roomNameRef.current = ''
-        setRoomNameState('')
+        const initialName = name?.trim() ?? ''
+        saveActiveRoom({ code, role: 'host', sessionId: sid, roomName: initialName })
+        roomNameRef.current = initialName
+        setRoomNameState(initialName)
         setPlayers([selfPlayer(true)])
         addMarker('created', { roomCode: code })
       } catch (err) {
@@ -557,19 +620,25 @@ export function useSession(): Session {
   )
 
   const joinRoom = useCallback(
-    async (code: string) => {
+    async (code: string, resumeSessionId?: string) => {
       setErrorKind(null)
       gracefulCloseRef.current = false
       intentionalLeaveRef.current = false
       const mgr = ensureRoom()
       try {
         await mgr.join(code)
+        // Resuming keeps the same session id (one continuous log); a fresh
+        // join mints a new one.
+        const sid = resumeSessionId ?? newSessionId()
         setRole('client')
         setRoomCode(code)
-        // Eagerly set the ref so the marker below is logged under this room.
+        // Eagerly set the refs so the marker below is logged under this room.
         roomCodeRef.current = code
+        sessionIdRef.current = sid
+        setSessionId(sid)
         saveLastRoomCode(code)
-        saveActiveRoom({ code, role: 'client' })
+        // The room name is unknown until the welcome snapshot arrives.
+        saveActiveRoom({ code, role: 'client', sessionId: sid, roomName: '' })
         addMarker('joined', { roomCode: code })
         mgr.sendToHost({ t: 'hello', player: selfPlayer(false) })
         // The portrait travels apart from `hello` (the roster stays light).
@@ -739,7 +808,14 @@ export function useSession(): Session {
         setRoomCode(code)
         roomCodeRef.current = code
         saveLastRoomCode(code)
-        saveActiveRoom({ code, role: 'host' })
+        // The session id is unchanged — the log follows the room across
+        // a code change.
+        saveActiveRoom({
+          code,
+          role: 'host',
+          sessionId: sessionIdRef.current ?? undefined,
+          roomName: roomNameRef.current,
+        })
         addMarker('codeChanged', { roomCode: code })
       }, 500)
     },
@@ -758,9 +834,21 @@ export function useSession(): Session {
       if (code.length < 4) return
       const pointer = loadActiveRoom()
       const resuming = pointer?.code === code
-      if (resuming) {
-        // Restore the recent feed from this room's durable log.
-        const entries = await loadRecentLog(code, 500)
+      // Resuming keeps the stored session id so the log stays continuous;
+      // a pointer from before the session-id change carries none, so mint
+      // a fresh one (its pre-reload entries simply will not be restored).
+      const sid = resuming ? (pointer?.sessionId ?? newSessionId()) : null
+      if (resuming && sid) {
+        sessionIdRef.current = sid
+        setSessionId(sid)
+        // Restore the room name a GM would otherwise lose on reload (a
+        // client also gets it back from the welcome snapshot shortly).
+        if (pointer?.roomName) {
+          roomNameRef.current = pointer.roomName
+          setRoomNameState(pointer.roomName)
+        }
+        // Restore the recent feed from this session's durable log.
+        const entries = await loadRecentLog(sid, 500)
         const rolls = entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult)
         const chats = entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage)
         const marks = entries
@@ -778,7 +866,7 @@ export function useSession(): Session {
         markReconnecting(true)
         attemptReconnectRef.current('host', code, 1)
       } else {
-        void joinRoom(code)
+        void joinRoom(code, sid ?? undefined)
       }
     },
     [joinRoom, markReconnecting],
@@ -801,8 +889,14 @@ export function useSession(): Session {
       try {
         const hosted = await mgr.host(code)
         peerPlayersRef.current.clear()
+        // An imported room is a fresh session, distinct from any earlier
+        // run under the same code.
+        const sid = newSessionId()
         // Persist the imported history first, then show its recent window.
-        await appendLogEntries(hosted, data.entries)
+        await appendLogEntries(
+          { sessionId: sid, roomCode: hosted, roomName: data.roomName, role: 'host' },
+          data.entries,
+        )
         const rolls = data.entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult)
         const chats = data.entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage)
         const marks = data.entries
@@ -814,8 +908,10 @@ export function useSession(): Session {
         setRole('host')
         setRoomCode(hosted)
         roomCodeRef.current = hosted
+        sessionIdRef.current = sid
+        setSessionId(sid)
         saveLastRoomCode(hosted)
-        saveActiveRoom({ code: hosted, role: 'host' })
+        saveActiveRoom({ code: hosted, role: 'host', sessionId: sid, roomName: data.roomName })
         roomNameRef.current = data.roomName
         setRoomNameState(data.roomName)
         setPlayers([selfPlayer(true)])
@@ -905,9 +1001,9 @@ export function useSession(): Session {
     setChat([])
     setMarkers([])
     setOutbox([])
-    // "Clear" also discards the room's durable log, so older entries are
-    // not later resurfaced by an on-demand history load.
-    void clearRoomLog(roomCodeRef.current)
+    // "Clear" also discards this session's durable log, so older entries
+    // are not later resurfaced by an on-demand history load.
+    void deleteSession(sessionIdRef.current)
   }, [])
 
   /** Re-publish the local identity after it changed. */
@@ -978,6 +1074,9 @@ export function useSession(): Session {
     setRoomNameState(name)
     if (roleRef.current === 'host') {
       roomRef.current?.broadcast({ t: 'roomName', name })
+      // Persist it so a GM reload restores the name without a peer to
+      // receive it back from.
+      updateActiveRoomName(name)
     }
   }, [])
 
@@ -1028,6 +1127,16 @@ export function useSession(): Session {
     }
   }, [role])
 
+  // When the session id first arrives (create / join / resume), persist
+  // the local player's portrait so a fresh session always carries one
+  // entry for the GM — putPlayerImage's per-update save misses the case
+  // where the portrait was set before any room existed.
+  useEffect(() => {
+    if (sessionId && ownImageRef.current) {
+      void savePortraitForSession(sessionId, playerId, ownImageRef.current)
+    }
+  }, [sessionId, playerId])
+
   // Tear down the peer when the app unmounts.
   useEffect(() => () => roomRef.current?.close(), [])
 
@@ -1051,6 +1160,7 @@ export function useSession(): Session {
     role,
     status,
     roomCode,
+    sessionId,
     roomName,
     setRoomName,
     errorKind,
