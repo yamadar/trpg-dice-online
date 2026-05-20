@@ -193,6 +193,17 @@ export function useSession(): Session {
   const sessionIdRef = useRef<string | null>(null)
   const roomNameRef = useRef(roomName)
   const outboxRef = useRef(outbox)
+  /**
+   * Set the moment a roll, chat or imported snapshot lands on this session.
+   * Read by `finalizeSession` on the way out so an empty drive-by session is
+   * dropped while one that carried real content survives. Reset at the
+   * start of every create / join — including the case where a still-open
+   * session is reused, since `restoreFeedFromLog` then re-flips it on.
+   * Kept as a ref because the post-welcome / post-roll exit can land in
+   * the same micro-task as the state write, before `historyRef` / `chatRef`
+   * catch up through the mirror effect.
+   */
+  const hasActivityRef = useRef(false)
   useEffect(() => {
     roleRef.current = role
     historyRef.current = history
@@ -242,6 +253,7 @@ export function useSession(): Session {
   // appended to the durable per-session log so the full history survives.
   const appendHistory = useCallback(
     (result: RollResult) => {
+      hasActivityRef.current = true
       setHistory((prev) => capEnd([...prev, result], MAX_HISTORY))
       void appendLogEntry(logTarget(), 'roll', result)
     },
@@ -249,6 +261,7 @@ export function useSession(): Session {
   )
   const appendChat = useCallback(
     (message: ChatMessage) => {
+      hasActivityRef.current = true
       setChat((prev) => capEnd([...prev, message], MAX_CHAT))
       void appendLogEntry(logTarget(), 'chat', message)
     },
@@ -449,8 +462,7 @@ export function useSession(): Session {
   const finalizeSession = useCallback((closing: boolean) => {
     const sid = sessionIdRef.current
     if (!sid) return
-    const hasActivity = historyRef.current.length > 0 || chatRef.current.length > 0
-    if (!hasActivity) {
+    if (!hasActivityRef.current) {
       void deleteSession(sid)
     } else if (closing) {
       void markSessionClosed(sid)
@@ -477,6 +489,9 @@ export function useSession(): Session {
             if (ownImageRef.current) images[playerId] = ownImageRef.current
             setPlayerImages(images)
             void savePortraitsForSession(sessionIdRef.current, images)
+          }
+          if (msg.snapshot.history.length || msg.snapshot.chat.length) {
+            hasActivityRef.current = true
           }
           setHistory((prev) => mergeById(prev, msg.snapshot.history, MAX_HISTORY))
           setChat((prev) => mergeById(prev, msg.snapshot.chat, MAX_CHAT))
@@ -621,6 +636,7 @@ export function useSession(): Session {
     const marks = entries
       .filter((e) => e.kind === 'marker')
       .map((e) => e.data as SystemMarker)
+    if (rolls.length || chats.length) hasActivityRef.current = true
     if (rolls.length) setHistory((prev) => mergeById(prev, rolls, MAX_HISTORY))
     if (chats.length) setChat((prev) => mergeById(prev, chats, MAX_CHAT))
     if (marks.length) setMarkers((prev) => mergeById(prev, marks, MAX_MARKERS))
@@ -632,6 +648,7 @@ export function useSession(): Session {
       setErrorKind(null)
       gracefulCloseRef.current = false
       intentionalLeaveRef.current = false
+      hasActivityRef.current = false
       // A code under 4 chars is treated as "no code" — host a random one.
       const wanted = preferredCode ? normalizeRoomCode(preferredCode) : ''
       const mgr = ensureRoom()
@@ -674,6 +691,7 @@ export function useSession(): Session {
       setErrorKind(null)
       gracefulCloseRef.current = false
       intentionalLeaveRef.current = false
+      hasActivityRef.current = false
       const mgr = ensureRoom()
       try {
         await mgr.join(code)
@@ -933,6 +951,9 @@ export function useSession(): Session {
       setErrorKind(null)
       gracefulCloseRef.current = false
       intentionalLeaveRef.current = false
+      // Import is a fresh session; the loop below flips activity back on
+      // if the imported archive actually carried any rolls or chat.
+      hasActivityRef.current = false
       const code = normalizeRoomCode(data.roomCode)
       if (code.length < 4) return
       const mgr = ensureRoom()
@@ -952,6 +973,7 @@ export function useSession(): Session {
         const marks = data.entries
           .filter((e) => e.kind === 'marker')
           .map((e) => e.data as SystemMarker)
+        if (rolls.length || chats.length) hasActivityRef.current = true
         setHistory(capEnd(rolls, MAX_HISTORY))
         setChat(capEnd(chats, MAX_CHAT))
         setMarkers(capEnd(marks, MAX_MARKERS))
