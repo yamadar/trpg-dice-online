@@ -176,11 +176,14 @@ const FeedRollItem = memo(function FeedRollItem({
           {formatDiceSummary(r.diceCount, r.diceType, r.modifier)}
           {' · '}
           {t('result.faces')}:{' '}
-          <span className="face-list">
+          <span className="face-list" aria-hidden="true">
             {r.faces.map((v, i) => (
               <DiceFaceIcon key={i} diceType={r.diceType} value={v} />
             ))}
           </span>
+          {/* The icons are decorative; this readable summary is what AT
+              actually announces. */}
+          <span className="visually-hidden">{r.faces.join(', ')}</span>
           {r.hidden && isGM && ' 🔒'}
         </p>
       )}

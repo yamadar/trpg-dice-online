@@ -76,8 +76,9 @@ export function DiceFaceIcon({ diceType, value }: Props) {
     <svg
       className="dice-face"
       viewBox={`0 0 ${SIZE} ${SIZE}`}
-      role="img"
-      aria-label={`${diceType}: ${value}`}
+      // Decorative: the surrounding feed line already announces the values
+      // in the player's language, so each icon stays out of the AT tree.
+      aria-hidden="true"
     >
       {diceType === 'D4' && (
         <polygon points={TRIANGLE} fill="none" stroke="currentColor" strokeWidth="1.4" />
