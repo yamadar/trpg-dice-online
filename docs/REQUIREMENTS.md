@@ -65,7 +65,15 @@ An SPA where players roll TRPG dice and share results with other players in real
 
 ### 3.6 履歴とチャットの統合表示 / Combined history & chat feed
 - すべてのロール結果を時系列の履歴として残す / Every roll is kept in a chronological history
-- 履歴にはダイスの内訳（各目）も保持する / History keeps the individual die faces
+- 履歴にはダイスの内訳（各目）も保持する。フィードの出目内訳は各ダイスを
+  真上から見た形（D4/D8/D20 は三角形・正方形 + X / 六角形、D6 は正方形、
+  D10 は縦長の菱形、D12 は正五角形、D100 は円）の SVG アイコンに数字を
+  載せて表示する
+  History keeps the individual die faces. Each face is rendered in the feed
+  as a small SVG icon shaped like the die viewed from above (triangle for
+  d4, square for d6, square with corner rays for d8, vertical rhombus for
+  d10, pentagon for d12, hexagon for d20, circle for d100) with the value
+  inscribed
 - 履歴とチャットは 1 つのフィードに時系列で統合表示する
   History and chat are merged into a single chronological feed
 - 各エントリの時刻は `H:mm` で表示する。フィードの先頭と日付を跨ぐ位置には、
@@ -132,6 +140,22 @@ An SPA where players roll TRPG dice and share results with other players in real
 - ルームを作成・参加でき、ロール履歴・チャット・参加者一覧を共有する
   Create / join a room and share roll history, chat, and the player list
 - ルーム作成者が GM 兼ホストになる / The room creator becomes GM and P2P host
+- ロビーは「ホーム → 作成 / 参加 / 過去のルーム」と画面を分割する。作成画面
+  ではルーム名と任意コードを入力でき、参加画面はコード入力のみ。`?room=コード`
+  付きで開いた場合は参加画面をプリフィルして表示する。
+  The lobby is split into home → create / join / past rooms. The create
+  screen takes the room name and an optional code; the join screen only
+  takes the code. Opening with `?room=CODE` jumps straight to the join
+  screen with the code prefilled.
+- 入室中の表示は、参加者一覧をアバター付きで上部に大きく出す。ルーム名と
+  ルームコードの変更は GM 専用の `<details>` セクションに集約し、それぞれ
+  「名前を変更」「コードを変更」ボタンで明示的に確定する。GM の退出ボタンは
+  「ルームを閉じる」と表記する。
+  In-room the participant roster is prominent at the top with portraits.
+  The room name and code edits are tucked into a collapsed GM-only
+  `<details>` section behind explicit "Change name" / "Change code"
+  buttons; the GM's exit reads "Close room" to make clear it ends the
+  session for everyone.
 - ルーム作成時、GM はルームコードを指定できる（空欄なら自動生成）。指定した
   コードが他のルームで使用中の場合はエラーを表示する。
   When creating a room the GM may choose the room code (blank = random);
@@ -277,11 +301,17 @@ An SPA where players roll TRPG dice and share results with other players in real
 - 背景情報はルーム内に共有される。メモは端末内のみで共有されない
   The background is shared with the room; the memo never leaves the device
 - パターンはキャラクターごとに保持される / Patterns belong to a character
-- 各キャラクターは JSON ファイルとして書き出し・読み込みできる。書き出し時に
-  非公開のメモを含めるかを選べる（既定は含めない）。画像は常に含める。
-  Each character can be exported to / imported from a JSON file; the export
-  can optionally include the private memo (off by default) and always
-  includes the portrait image when one is set.
+- 各キャラクターは JSON ファイルとして書き出し・読み込みできる。書き出しに
+  非公開のメモを含めるかどうかはキャラクターごとに保存され（既定は含めない）、
+  画像は常に含める。
+  Each character can be exported to / imported from a JSON file; whether
+  the private memo is included is a per-character preference, persisted
+  locally (off by default), and the portrait image is always included when
+  one is set.
+- キャラクター詳細（画像・背景情報・メモ）は、選択中のキャラクターが
+  あれば常に表示する（折りたたみ表示にはしない）。
+  The character details (image / background / memo) are shown inline when
+  a character is active — no separate expand toggle.
 - 参加者一覧では各参加者の行を開いてキャラクターの詳細（名前・背景）を閲覧できる
   In the player list, each row expands to show that player's character
   details (name and background)
@@ -338,6 +368,35 @@ An SPA where players roll TRPG dice and share results with other players in real
   On first run, an overlay tutorial walks through how to use the app; it
   can be reopened anytime from the settings menu as the in-app help.
 
+### 3.14 過去のルーム履歴 / Past room history
+- ルームでのロール・チャット・マーカーは「セッション ID」単位で IndexedDB に
+  永続化する。同じコードを使い回しても別日の会話は別セッションに分かれ、
+  セッション中にコードを変更しても 1 つのセッションとして連続する。
+  Rolls, chat and markers in a room are persisted to IndexedDB by
+  `sessionId`. The same code reused on a different day stays a separate
+  session, and a code change mid-room keeps a single continuous one.
+- セッションごとに最後に取得できたプレイヤーの画像（ポートレート）も
+  永続化する。後から履歴を見たときに当時のキャラクター画像を表示できる。
+  The last-known portrait of each player in a session is persisted too,
+  so the history viewer can show their character image at the time.
+- ロビーの「過去のルーム」一覧から過去セッションを開いて、その回のフィードを
+  読み取り専用で閲覧できる。フィードは ALL / ロール / チャット / ファイルの
+  フィルタに対応し、画像はライトボックスで拡大できる。
+  The lobby's "Past rooms" list opens an old session and shows its feed
+  read-only, with the same All / Rolls / Chat / Files filter and the
+  lightbox for image attachments.
+- 読み取り専用フィードのキャラクター名をタップすると、エントリのスナップショット
+  （キャラクター名・背景）と保存された最後のポートレートでプレイヤー詳細を
+  表示する。
+  Tapping a character name in the read-only feed surfaces a player detail
+  card built from the entry's snapshot (character name / background) and
+  the saved last-known portrait.
+- セッションは個別に削除でき、まとめて全削除もできる。削除時はそのセッションの
+  ログ・メタデータ・ポートレートをすべて消す。確認ダイアログを必須とする。
+  Sessions can be deleted one by one or all at once; a confirmation is
+  required, and the matching log, metadata and portraits are all removed
+  together.
+
 ## 4. 非機能要件 / Non-functional
 
 - SPA（シングルページ） / Single-page application
@@ -352,7 +411,7 @@ An SPA where players roll TRPG dice and share results with other players in real
 | ビルド / Build | Vite | 高速・静的出力 |
 | UI | React 19 + TypeScript | 型安全な SPA |
 | リアルタイム / Realtime | PeerJS (WebRTC P2P) | バックエンド不要で GitHub Pages と両立 |
-| 永続化 / Persistence | localStorage | パターン・名前・言語の保存 |
+| 永続化 / Persistence | localStorage + IndexedDB | localStorage に名前・言語・キャラクター等、IndexedDB にルームの永続ログとセッションメタ・ポートレートを保存 / localStorage for name/language/characters, IndexedDB for the per-session log, metadata and portraits |
 | テスト / Test | Vitest | ダイスロジックの単体テスト |
 | ホスティング / Hosting | GitHub Pages + GitHub Actions | 自動ビルド・デプロイ |
 
@@ -388,11 +447,21 @@ RollResult = { id, patternName, kind, diceType, diceCount,
 ChatMessage = { id, playerId, playerName, text, timestamp, lang }
 // Player carries the active character's public info; memo is never synced.
 Player      = { id, name, isGM, characterName, background, lang }
-Character   = { id, name, background, memo, patterns: Pattern[], lang, image? }
+Character   = { id, name, background, memo, patterns: Pattern[], lang,
+                image?, exportMemo? }
+
+// A live room's identity for the durable log: `sessionId` is minted once
+// per create / join and stays stable across reloads, reconnects and code
+// changes, so each game keeps a single continuous log.
+SessionId   = string  // e.g. "s-mfp7n7z9-9wk2x4"
+SessionRecord = { sessionId, code, name, role: 'host'|'client'|'unknown',
+                  firstAt, lastAt }
+PortraitRecord = { sessionId, playerId, image, updatedAt }
 
 // Local-only feed annotations (not synced); they record room events.
 MarkerType  = 'created'|'joined'|'youLeft'|'youClosed'
             | 'gmClosed'|'hostLost'|'playerJoined'|'playerLeft'
+            | 'reconnecting'|'reconnected'|'reconnectFailed'|'codeChanged'
 SystemMarker = { id, timestamp, type: MarkerType, roomCode?, playerName? }
 FeedItem    = roll | chat | system marker, merged and sorted by time
 ```
@@ -823,3 +892,62 @@ for chat auto-translation (see `docs/TRANSLATION_API_RESEARCH.md`).
   the dropdown became a small floating box with the × hovering over the
   content, so there it now falls back to the same full-height drawer
   used on mobile.
+- v1.57 — ロビーを「ホーム → 作成 / 参加」の 3 画面に分割し、入室中の表示は
+  参加者一覧を上部にアバター付きで大きく出し、ルーム名と GM 専用のコード
+  変更を `<details>` の GM セクションに集約した。GM の退出ボタンは「ルームを
+  閉じる」に変更。`createRoom` がルーム名を受け取れるようになった。
+  Split the lobby into a home / create / join flow. In-room moves the
+  participant roster to the top with portraits, and tucks the room-name
+  editor and GM-only code change into a collapsed GM `<details>` section
+  with explicit Change buttons. The GM's exit reads "Close room".
+- v1.58 — 過去のルーム履歴を閲覧・削除する機能。フィードの永続化キーを
+  ルームコードから `sessionId` に変更し（IndexedDB を v2 に移行、`sessions`
+  ストアを新設）、コードの使い回しやコード変更で履歴が分断されないように
+  した。ロビーに「過去のルーム」一覧と読み取り専用フィード、セッション単位・
+  全体の削除を追加。
+  Browse and delete past room history. The durable log is now keyed by
+  `sessionId` instead of room code (IndexedDB v2 with a new `sessions`
+  store), so a reused code or a mid-room code change no longer splits a
+  game's history. The lobby gains a "Past rooms" list with a read-only
+  feed and per-session / all-sessions deletion.
+- v1.59 — GM がリロードした際にルーム名が空になっていた問題を修正。アクティブ
+  ルームの sessionStorage ポインタにルーム名を持たせ、作成・改名・コード変更・
+  welcome 受信時に同期し、リロード復帰時に復元する。
+  Fix the GM losing the room name on reload. The per-tab `activeRoom`
+  sessionStorage pointer now carries the room name, kept in step on create
+  / rename / code-change / welcome, and restored on resume.
+- v1.60 — 出目内訳をテキストからダイス面の形状アイコン（SVG）に変更。各
+  ダイスの真上から見たシルエットに数字を載せて表示する（D8 と D20 は中央に
+  大きな数字、D4 は底辺に触れないよう数字を上に、D10 は縦長の菱形、D100 は
+  円）。SVG は currentColor で描かれ、周囲のテキスト色に追従する。スクリーン
+  リーダー向けに値の要約を visually-hidden 1 行で提供。
+  Replace the textual face breakdown with shape icons (SVG). Each die's
+  top-down silhouette is drawn with the rolled value inscribed (d8 / d20
+  show a prominent central number; d4 nudges the number up to clear the
+  base; d10 is a vertical rhombus; d100 is a circle). The icons are
+  decorative — a single visually-hidden text summary backs them for AT.
+- v1.61 — 細かな UI 改善。パターン名が未入力の判定ロールは「無名のパターン」
+  を出さず「判定の結果 N」とだけ表示するようにした。D20 アイコンの中央数字
+  を D8 より小さくして余白を確保。アプリ全体に `overflow: hidden` を入れ、
+  フィードが伸びてもページ自体がスクロールしないようにした。キャラクター
+  パネルの詳細を常時表示にし、背景情報・メモのテキストエリアを 5 行に拡張、
+  「メモも書き出しに含める」をキャラクターごとに永続化した（書き出し／読み
+  込みの仕様は不変）。
+  UI tweaks: drop the "unnamed pattern" placeholder for an unnamed
+  judgment roll (it now reads just "Result: N"); shrink the D20 central
+  number slightly relative to D8; clip overflow at the app shell so a
+  growing feed can no longer scroll the page itself; the character panel
+  now shows details inline, the background / memo textareas grow to five
+  rows, and the "include memo in export" preference is persisted per
+  character (the export / import format itself is unchanged).
+- v1.62 — 過去のフィード履歴にキャラクター情報と最後に確認できた
+  ポートレートを表示する。`sessionPortraits` ストアを新設（IndexedDB v3）し、
+  ポートレートを受け取る経路（個別更新・welcome スナップショット・
+  sessionId 確立時の GM 自身）で都度保存する。RoomHistory にプレイヤー
+  詳細サブビューを追加し、読み取り専用フィードでキャラクター名タップ時に
+  当時のスナップショットと保存済みのポートレートを表示する。
+  Surface the character snapshot and last-known portrait in the past-feed
+  viewer. A new `sessionPortraits` store (IndexedDB v3) records every
+  portrait we see — single updates, the welcome snapshot, and the host's
+  own portrait at session start — and the history viewer gains a player
+  detail sub-view that opens that snapshot when a name is tapped.
