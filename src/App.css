@@ -1021,6 +1021,22 @@ label.setting-row {
   font-family: var(--mono);
   margin-top: 2px;
 }
+/* Each face of a roll is shown as the die's shape, viewed from the result
+   side, with the number inside — replaces the old `[3, 5, 1]` text. */
+.face-list {
+  display: inline-flex;
+  gap: 4px;
+  row-gap: 2px;
+  vertical-align: middle;
+  flex-wrap: wrap;
+}
+.dice-face {
+  width: 1.8em;
+  height: 1.8em;
+  vertical-align: middle;
+  flex-shrink: 0;
+  overflow: visible;
+}
 
 .feed-chat {
   background: var(--panel-2);
