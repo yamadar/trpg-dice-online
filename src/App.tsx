@@ -258,7 +258,12 @@ function App() {
       )}
 
       <main className="app-main">
-        <ActivityPanel session={session} compact={compact} onNotice={flash} />
+        <ActivityPanel
+          session={session}
+          compact={compact}
+          onNotice={flash}
+          onOpenRoom={() => setOpenSheet('room')}
+        />
       </main>
 
       <Dock active={openSheet} onOpen={toggleSheet} />

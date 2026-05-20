@@ -1,4 +1,4 @@
-import { Fragment, memo, useEffect, useRef, useState } from 'react'
+import { Fragment, memo, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { useTranslatedText } from '../i18n/useTranslatedText'
 import type { TFn } from '../i18n/context'
@@ -206,6 +206,8 @@ interface Props {
   pending: ChatMessage[]
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
+  /** Overrides the default "nothing here yet" hint when the feed is empty. */
+  emptyState?: ReactNode
 }
 
 /** The scrollable roll + chat timeline. */
@@ -220,6 +222,7 @@ export function FeedList({
   pending,
   onOpenDetail,
   onOpenImage,
+  emptyState,
 }: Props) {
   const { t, lang } = useI18n()
   const listRef = useRef<HTMLUListElement>(null)
@@ -240,7 +243,12 @@ export function FeedList({
 
   return (
     <ul className="feed" ref={listRef} onScroll={onScroll}>
-      {feed.length === 0 && <li className="hint feed-empty">{t('feed.empty')}</li>}
+      {feed.length === 0 &&
+        (emptyState !== undefined ? (
+          <li className="feed-empty">{emptyState}</li>
+        ) : (
+          <li className="hint feed-empty">{t('feed.empty')}</li>
+        ))}
       {hasOlder && (
         <li className="feed-load-older">
           <button type="button" className="link" onClick={onLoadOlder}>

@@ -31,6 +31,8 @@ interface Props {
   compact: boolean
   /** Surfaces attachment errors as a toast. */
   onNotice: (message: string, kind?: 'success' | 'error') => void
+  /** Opens the Room sheet; surfaced from the empty-feed CTA when offline. */
+  onOpenRoom: () => void
 }
 
 /**
@@ -39,7 +41,7 @@ interface Props {
  * image lightbox. Older history (beyond the live window) is paged in from
  * the durable log on demand.
  */
-export function ActivityPanel({ session, compact, onNotice }: Props) {
+export function ActivityPanel({ session, compact, onNotice, onOpenRoom }: Props) {
   const { t } = useI18n()
   const [filter, setFilter] = useState<FeedFilter>('all')
   // The feed entry whose name was tapped, opening the player-detail card.
@@ -143,6 +145,21 @@ export function ActivityPanel({ session, compact, onNotice }: Props) {
   // Messages queued for an offline GM belong with chat — hidden in rolls view.
   const pending = filter === 'all' || filter === 'chat' ? session.outbox : []
 
+  // When the player is not in a room and the feed is empty, replace the
+  // default hint with a card that nudges them toward "Room". In a room or
+  // when filtering hides existing entries, keep the plain default hint.
+  const offlineEmpty = session.role === 'offline' && filter === 'all'
+  const emptyState = offlineEmpty ? (
+    <div className="feed-empty-card">
+      <p className="feed-empty-title">{t('feed.empty')}</p>
+      <p className="feed-empty-hint">{t('feed.emptyRollHint')}</p>
+      <p className="feed-empty-hint">{t('feed.emptyShareHint')}</p>
+      <button type="button" className="primary feed-empty-cta" onClick={onOpenRoom}>
+        {t('feed.emptyOpenRoom')}
+      </button>
+    </div>
+  ) : undefined
+
   return (
     <section className={`panel activity${compact ? ' compact' : ''}`}>
       <div className="panel-head">
@@ -180,6 +197,7 @@ export function ActivityPanel({ session, compact, onNotice }: Props) {
         pending={pending}
         onOpenDetail={setDetail}
         onOpenImage={openLightbox}
+        emptyState={emptyState}
       />
 
       <p className="typing-line" aria-live="polite">
