@@ -83,6 +83,15 @@ ama «best effort». Güvenilir bir aktarıcı için `.env.example` dosyasını
 - `VITE_TURN_USERNAME` — TURN kullanıcı adı.
 - `VITE_TURN_CREDENTIAL` — TURN kimlik bilgisi (şifre).
 
+**Güvenlik notu:** Vite tüm `VITE_*` değişkenlerini üretim paketine satır
+içine yerleştirir; bu nedenle burada ayarladığınız TURN kimlik bilgileri
+sayfayı yükleyen herkes tarafından görülebilir. Kötüye kullanım riskini
+azaltmak için kısa ömürlü / geçici TURN kimlik bilgileri kullanın
+(örneğin TURN REST API üzerinden süreli kimlik bilgileri modeli) ve
+sağlayıcı tarafındaki sınırlamaları (izinli origin'ler, IP filtreleri,
+aylık kotalar) birlikte uygulayın. Uzun ömürlü üretim kimlik bilgilerini
+burada yeniden kullanmayın.
+
 GitHub Pages dağıtımında kullanmak için bunları depo gizli anahtarları
 olarak ekleyin ve `.github/workflows/deploy.yml` derleme adımına aktarın.
 Ücretsiz seçenekler: [Metered](https://www.metered.ca/) ücretsiz katmanı

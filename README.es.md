@@ -84,6 +84,14 @@ relé fiable, copia `.env.example` a `.env` y define:
 - `VITE_TURN_USERNAME` — usuario TURN.
 - `VITE_TURN_CREDENTIAL` — credencial/contraseña TURN.
 
+**Nota de seguridad:** Vite incrusta todas las variables `VITE_*` en el
+bundle de producción, por lo que cualquier credencial TURN definida aquí
+queda visible para quien cargue la página. Para reducir el riesgo de
+abuso, usa credenciales TURN efímeras / de corta vida (por ejemplo el
+patrón de credenciales temporales del TURN REST API) y aplica límites del
+proveedor — orígenes permitidos, filtrado por IP o cuotas mensuales. No
+reutilices credenciales de producción de larga duración.
+
 Para usarlas en el despliegue de GitHub Pages, agrégalas como secretos del
 repositorio y pásalas en el paso de build de
 `.github/workflows/deploy.yml`. Opciones gratuitas: el plan gratuito de

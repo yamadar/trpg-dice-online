@@ -81,6 +81,14 @@ sao chép `.env.example` thành `.env` rồi đặt:
 - `VITE_TURN_USERNAME` — tên người dùng TURN.
 - `VITE_TURN_CREDENTIAL` — thông tin xác thực TURN (mật khẩu).
 
+**Lưu ý bảo mật:** Vite chèn mọi biến `VITE_*` thẳng vào bundle production,
+nên mọi thông tin xác thực TURN bạn đặt ở đây đều hiển thị với bất kỳ ai
+tải trang. Để giảm rủi ro lạm dụng, hãy dùng thông tin xác thực TURN
+ngắn hạn / tạm thời (ví dụ mẫu thông tin xác thực có giới hạn thời gian
+qua TURN REST API) và đặt giới hạn phía nhà cung cấp — origin được phép,
+lọc IP, hạn ngạch hàng tháng. Đừng tái sử dụng thông tin xác thực
+production tồn tại lâu ở đây.
+
 Để dùng các biến này khi triển khai lên GitHub Pages, hãy thêm chúng
 làm secret của kho và truyền vào bước build trong
 `.github/workflows/deploy.yml`. Tùy chọn miễn phí: gói miễn phí của

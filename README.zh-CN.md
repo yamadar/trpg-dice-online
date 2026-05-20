@@ -72,6 +72,12 @@ TURN 服务器——足以试用，但属于「尽力而为」。要使用稳定
 - `VITE_TURN_USERNAME` — TURN 用户名。
 - `VITE_TURN_CREDENTIAL` — TURN 凭据（密码）。
 
+**安全提示：** Vite 会把所有 `VITE_*` 变量内联到生产构建包里，因此你在
+这里设置的 TURN 凭据对任何打开页面的人都是可见的。为降低被滥用的
+风险，请使用短期 / 临时 TURN 凭据（例如 TURN REST API 的时限式凭据
+模式），并配合服务提供方的限制（允许来源、IP 过滤、月度配额）。请
+不要把长期有效的生产凭据复用到此处。
+
 若要在 GitHub Pages 部署中使用，请将其添加为仓库 Secrets，并在
 `.github/workflows/deploy.yml` 的构建步骤中传入。免费选择包括
 [Metered](https://www.metered.ca/) 免费额度或自托管

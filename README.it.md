@@ -87,6 +87,14 @@ Per un relay affidabile copia `.env.example` in `.env` e imposta:
 - `VITE_TURN_USERNAME` — username TURN.
 - `VITE_TURN_CREDENTIAL` — credenziale TURN (password).
 
+**Nota di sicurezza:** Vite inserisce in linea ogni variabile `VITE_*`
+nel bundle di produzione, quindi le credenziali TURN impostate qui sono
+visibili a chiunque carichi la pagina. Per ridurre il rischio di abusi,
+usa credenziali TURN effimere / a vita breve (ad esempio il pattern
+delle credenziali a tempo limitato dell'API REST di TURN) e applica
+limiti lato provider — origini ammesse, filtri IP o quote mensili. Non
+riutilizzare credenziali di produzione a lunga durata.
+
 Per usarli nel deploy su GitHub Pages, aggiungili come segreti del
 repository e passali nello step di build di
 `.github/workflows/deploy.yml`. Opzioni gratuite: il piano free di

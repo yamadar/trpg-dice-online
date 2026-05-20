@@ -49,7 +49,7 @@ Backend.
   anderer Spieler in deiner Oberflächensprache; sie bevorzugt die
   geräteinterne Chrome-Translator-API und fällt auf die schlüssellose
   [MyMemory](https://mymemory.translated.net/)-REST-API zurück. Tippe in
-  einer übersetzten Nachricht auf „Original", um den ursprünglich
+  einer übersetzten Nachricht auf „Original“, um den ursprünglich
   gesendeten Text zu sehen.
 
 ## So funktioniert das Teilen online
@@ -83,7 +83,7 @@ WebRTC benötigt einen TURN-Relay, um Spieler zu verbinden, deren Netz UDP
 blockiert oder symmetrisches NAT verwendet (häufig in öffentlichem WLAN).
 Standardmäßig nutzt die App die kostenlosen öffentlichen TURN-Server des
 Open Relay Project — für gelegentliche Nutzung ausreichend, aber „best
-effort". Für einen zuverlässigen Relay kopiere `.env.example` nach `.env`
+effort“. Für einen zuverlässigen Relay kopiere `.env.example` nach `.env`
 und setze:
 
 - `VITE_TURN_URLS` — kommagetrennte TURN-URLs. Nimm einen
@@ -91,6 +91,15 @@ und setze:
   blockiertem UDP funktioniert.
 - `VITE_TURN_USERNAME` — TURN-Benutzername.
 - `VITE_TURN_CREDENTIAL` — TURN-Zugangsdaten (Passwort).
+
+**Sicherheitshinweis:** Vite bettet alle `VITE_*`-Variablen in den
+Produktions-Bundle ein, sodass die hier gesetzten TURN-Zugangsdaten für
+jeden sichtbar sind, der die Seite lädt. Verwende kurzlebige bzw.
+ephemere TURN-Zugangsdaten (z. B. das Pattern der zeitlich begrenzten
+Credentials per TURN-REST-API) und konfiguriere anbieterseitige
+Beschränkungen – erlaubte Origins, IP-Filter oder monatliche Kontingente
+–, um das Missbrauchsrisiko zu reduzieren. Langlebige
+Produktions-Zugangsdaten nicht wiederverwenden.
 
 Für den GitHub-Pages-Deploy füge sie als Repository-Secrets hinzu und gib
 sie im Build-Schritt von `.github/workflows/deploy.yml` weiter. Kostenlose

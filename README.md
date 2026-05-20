@@ -86,6 +86,13 @@ best-effort. For a dependable relay, copy `.env.example` to `.env` and set:
 - `VITE_TURN_USERNAME` — TURN username.
 - `VITE_TURN_CREDENTIAL` — TURN credential / password.
 
+**Security note:** Vite inlines every `VITE_*` variable into the production
+bundle, so any TURN credentials set here are visible to anyone who loads
+the page. To reduce abuse risk, use short-lived / ephemeral TURN
+credentials (e.g. the TURN REST API time-limited credential pattern) and
+configure provider-side limits — allowed origins, IP filtering or monthly
+quotas. Don't reuse long-lived production credentials here.
+
 To use these in the GitHub Pages deploy, add them as repository secrets and
 pass them through the build step in `.github/workflows/deploy.yml`. Free
 options include a [Metered](https://www.metered.ca/) free tier or self-hosting
