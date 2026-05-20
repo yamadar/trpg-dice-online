@@ -37,7 +37,12 @@ nhóm chơi — tất cả từ một trang tĩnh, không backend.
   định, chỉ báo nhẹ cho biết ai đang nhập.
 - **Sự kiện phòng** — vào/rời xuất hiện trong dòng tin; khi GM đóng
   phòng, mọi người được thông báo rõ ràng.
-- **Đa ngôn ngữ** — giao diện hỗ trợ 19 ngôn ngữ.
+- **Đa ngôn ngữ & tự động dịch** — giao diện hỗ trợ 19 ngôn ngữ. Tự động
+  dịch chat tùy chọn hiển thị tin nhắn của những người chơi khác bằng
+  ngôn ngữ giao diện của bạn; ưu tiên Chrome Translator API trên thiết bị
+  và sẽ chuyển sang REST API không cần khóa của
+  [MyMemory](https://mymemory.translated.net/) khi không khả dụng. Chạm
+  «Bản gốc» trên tin nhắn đã dịch để xem nội dung gốc đã gửi.
 
 ## Cách hoạt động chia sẻ trực tuyến
 
@@ -62,6 +67,25 @@ npm test         # chạy test
 npm run lint     # lint
 npm run build    # build production vào dist/
 ```
+
+## Cấu hình (relay TURN)
+
+WebRTC cần một relay TURN để kết nối những người chơi có mạng chặn UDP
+hoặc dùng NAT đối xứng (thường gặp ở Wi-Fi công cộng). Mặc định ứng dụng
+dùng các máy chủ TURN công cộng miễn phí của Open Relay Project — đủ cho
+sử dụng thông thường nhưng là «best effort». Để có relay đáng tin cậy,
+sao chép `.env.example` thành `.env` rồi đặt:
+
+- `VITE_TURN_URLS` — các URL TURN cách nhau bằng dấu phẩy. Hãy thêm một
+  mục `turns:` qua TCP/443 để vẫn chạy khi UDP bị chặn.
+- `VITE_TURN_USERNAME` — tên người dùng TURN.
+- `VITE_TURN_CREDENTIAL` — thông tin xác thực TURN (mật khẩu).
+
+Để dùng các biến này khi triển khai lên GitHub Pages, hãy thêm chúng
+làm secret của kho và truyền vào bước build trong
+`.github/workflows/deploy.yml`. Tùy chọn miễn phí: gói miễn phí của
+[Metered](https://www.metered.ca/) hoặc tự host
+[coturn](https://github.com/coturn/coturn).
 
 ## Triển khai
 

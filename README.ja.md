@@ -45,7 +45,12 @@ TRPG セッション用のオンラインダイスローラーです。ダイス
   入力中かを控えめなインジケータで表示します。
 - **ルーム状況** — 入退室イベントはフィードに記録され、GM がルームを閉じる
   と全員に正しく通知されます。
-- **多言語対応** — UI は 19 言語に対応しています。
+- **多言語対応とチャット自動翻訳** — UI は 19 言語に対応。「自動翻訳」を
+  オンにすると、他プレイヤーのチャットを自分の UI 言語へ自動翻訳します。
+  端末内蔵の Chrome Translator API を優先的に使い、利用できない場合は
+  キー不要の [MyMemory](https://mymemory.translated.net/) REST API へ
+  フォールバックします。翻訳済みメッセージの「原文」をタップすれば
+  相手が送ったままの文を確認できます。
 
 ## オンライン共有の仕組み
 
@@ -70,6 +75,24 @@ npm test         # ユニットテスト実行
 npm run lint     # ソースの Lint
 npm run build    # 本番ビルド（dist/ へ出力）
 ```
+
+## 設定（TURN リレー）
+
+WebRTC は、UDP がブロックされていたり対称型 NAT のネットワーク（カフェや
+公衆 Wi-Fi に多い）でも接続するために TURN リレーが必要です。既定では
+Open Relay Project の無料公開 TURN サーバーにフォールバックします
+（試用には十分ですが、ベストエフォートです）。本格運用には
+`.env.example` を `.env` にコピーして以下を設定してください。
+
+- `VITE_TURN_URLS` — カンマ区切りの TURN URL。UDP がブロックされた環境
+  でも繋がるよう TCP/443 の `turns:` エントリを含めること。
+- `VITE_TURN_USERNAME` — TURN のユーザー名。
+- `VITE_TURN_CREDENTIAL` — TURN の資格情報（パスワード）。
+
+GitHub Pages にデプロイして使う場合は、これらをリポジトリ Secrets に
+追加し、`.github/workflows/deploy.yml` のビルドステップに渡します。
+無料の選択肢としては [Metered](https://www.metered.ca/) の無料枠や
+[coturn](https://github.com/coturn/coturn) のセルフホストがあります。
 
 ## デプロイ
 

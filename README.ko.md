@@ -37,7 +37,12 @@
   중 표시가 차분하게 나타남.
 - **룸 이벤트** — 입퇴장 이벤트가 피드에 기록되고, GM이 룸을 닫으면 모든
   참여자에게 정확히 통지됨.
-- **다국어** — UI는 19개 언어 지원.
+- **다국어 & 자동 번역** — UI는 19개 언어 지원. 선택형 자동 번역은 다른
+  플레이어의 채팅을 UI 언어로 보여 줍니다. 기기 내 Chrome Translator
+  API를 우선 사용하고, 사용할 수 없을 때는 키 없는
+  [MyMemory](https://mymemory.translated.net/) REST API로 폴백합니다.
+  번역된 메시지의 「원문」을 누르면 보낸 그대로의 내용을 확인할 수
+  있습니다.
 
 ## 온라인 공유 방식
 
@@ -62,6 +67,24 @@ npm test         # 테스트 실행
 npm run lint     # 린트
 npm run build    # 프로덕션 빌드 (dist/)
 ```
+
+## 설정 (TURN 릴레이)
+
+UDP를 차단하거나 대칭형 NAT를 사용하는 네트워크(공공 Wi-Fi 등)에서도
+연결하려면 WebRTC에는 TURN 릴레이가 필요합니다. 기본적으로는 Open Relay
+Project의 무료 공개 TURN 서버로 폴백합니다 — 가벼운 사용에는 충분하지만
+"best effort" 수준입니다. 안정적인 릴레이를 원한다면 `.env.example`을
+`.env`로 복사한 뒤 다음을 설정하세요:
+
+- `VITE_TURN_URLS` — 콤마로 구분된 TURN URL. UDP가 차단된 네트워크에서도
+  동작하도록 TCP/443의 `turns:` 항목을 포함하세요.
+- `VITE_TURN_USERNAME` — TURN 사용자 이름.
+- `VITE_TURN_CREDENTIAL` — TURN 자격 증명(비밀번호).
+
+GitHub Pages 배포에서 사용하려면 저장소 Secrets에 추가하고
+`.github/workflows/deploy.yml`의 빌드 단계에서 전달하세요. 무료
+옵션으로는 [Metered](https://www.metered.ca/) 무료 등급이나
+[coturn](https://github.com/coturn/coturn) 자체 호스팅이 있습니다.
 
 ## 배포
 

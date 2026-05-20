@@ -63,9 +63,15 @@ export const it: Dict = {
   'tutorial.room.title': 'Condividi in una stanza',
   'tutorial.room.body':
     'Da «Stanza» crei una stanza (diventi GM) o ti unisci con un codice. Il GM può scegliere o cambiare il codice, e la riconnessione è automatica se la rete cade.',
+  'tutorial.pastRooms.title': 'Stanze passate',
+  'tutorial.pastRooms.body':
+    'Ogni sessione viene conservata come registro in sola lettura. Dalla schermata «Stanza» tocca «Stanze passate» per riaprire una sessione precedente; puoi cancellare i registri uno per uno o tutti insieme.',
   'tutorial.chat.title': 'Chat e allegati',
   'tutorial.chat.body':
     'Chatta nel feed e allega immagini o file. Usa «@nome» per evidenziare un messaggio e tocca un nome nel feed per aprire il profilo del giocatore.',
+  'tutorial.translate.title': 'Tradurre la chat',
+  'tutorial.translate.body':
+    'Attiva «Traduzione automatica» in Impostazioni per tradurre la chat degli altri giocatori nella lingua della tua interfaccia. Tocca «Originale» su un messaggio tradotto per vedere il testo come è stato inviato.',
   'tutorial.settings.title': 'Impostazioni e aiuto',
   'tutorial.settings.body':
     'Cambia nome giocatore, lingua e tema, e riapri questa guida dalle Impostazioni (⚙) in alto a destra.',

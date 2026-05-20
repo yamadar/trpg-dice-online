@@ -63,9 +63,15 @@ export const ko: Dict = {
   'tutorial.room.title': '룸에서 공유',
   'tutorial.room.body':
     '「룸」에서 룸을 만들거나(나는 GM이 됩니다) 코드로 참여하세요. GM은 룸 코드를 지정·변경할 수 있고, 연결이 끊겨도 자동으로 재접속합니다.',
+  'tutorial.pastRooms.title': '지난 룸',
+  'tutorial.pastRooms.body':
+    '모든 세션이 읽기 전용 로그로 저장됩니다. 「룸」 화면에서 「지난 룸」을 누르면 이전 세션을 다시 열 수 있고, 로그는 하나씩 또는 한꺼번에 삭제할 수 있습니다.',
   'tutorial.chat.title': '채팅 & 첨부',
   'tutorial.chat.body':
     '피드에서 채팅을 하고 이미지나 파일을 첨부할 수 있습니다. 「@이름」으로 메시지를 강조하고, 피드의 이름을 탭하면 해당 플레이어 정보가 열립니다.',
+  'tutorial.translate.title': '채팅 번역',
+  'tutorial.translate.body':
+    '설정에서 「자동 번역」을 켜면 다른 플레이어의 채팅이 UI 언어로 번역됩니다. 번역된 메시지의 「원문」을 누르면 보낸 그대로의 내용을 확인할 수 있습니다.',
   'tutorial.settings.title': '설정과 도움말',
   'tutorial.settings.body':
     '플레이어 이름·언어·컬러 테마 변경과 이 가이드 다시 열기는 오른쪽 위의 설정(⚙)에서 가능합니다.',

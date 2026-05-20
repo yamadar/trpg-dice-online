@@ -63,9 +63,15 @@ export const de: Dict = {
   'tutorial.room.title': 'In einem Raum teilen',
   'tutorial.room.body':
     'Unter „Raum“ erstellst du einen Raum (du wirst SL) oder trittst mit einem Code bei. Die SL kann den Code wählen oder ändern; abgerissene Verbindungen werden automatisch wiederhergestellt.',
+  'tutorial.pastRooms.title': 'Vergangene Räume',
+  'tutorial.pastRooms.body':
+    'Jede Sitzung wird als schreibgeschütztes Protokoll aufbewahrt. Tippe im Raum-Bildschirm auf „Vergangene Räume“, um eine frühere Sitzung erneut zu öffnen; Protokolle lassen sich einzeln oder alle auf einmal löschen.',
   'tutorial.chat.title': 'Chat & Anhänge',
   'tutorial.chat.body':
     'Chatte im Feed und hänge Bilder oder Dateien an. Mit „@Name“ markierst du eine Nachricht, und ein Tipp auf einen Namen öffnet das Spielerprofil.',
+  'tutorial.translate.title': 'Chat übersetzen',
+  'tutorial.translate.body':
+    'Aktiviere „Auto-Übersetzung“ in den Einstellungen, damit der Chat anderer Spieler in deine Oberflächensprache übersetzt wird. Tippe in einer übersetzten Nachricht auf „Original“, um den ursprünglich gesendeten Text zu sehen.',
   'tutorial.settings.title': 'Einstellungen & Hilfe',
   'tutorial.settings.body':
     'Ändere Spielernamen, Sprache und Farbschema und öffne diese Anleitung erneut über die Einstellungen (⚙) oben rechts.',

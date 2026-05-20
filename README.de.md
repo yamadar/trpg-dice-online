@@ -44,7 +44,13 @@ Backend.
   stabile Farbe, und ein dezenter Indikator zeigt, wer gerade tippt.
 - **Raumereignisse** — Beitritte/Austritte erscheinen im Feed, und das
   Schließen des Raums durch die SL wird allen sauber gemeldet.
-- **Mehrsprachig** — die Oberfläche unterstützt 19 Sprachen.
+- **Mehrsprachig & Auto-Übersetzung** — die Oberfläche unterstützt
+  19 Sprachen. Die optionale Chat-Auto-Übersetzung zeigt Nachrichten
+  anderer Spieler in deiner Oberflächensprache; sie bevorzugt die
+  geräteinterne Chrome-Translator-API und fällt auf die schlüssellose
+  [MyMemory](https://mymemory.translated.net/)-REST-API zurück. Tippe in
+  einer übersetzten Nachricht auf „Original", um den ursprünglich
+  gesendeten Text zu sehen.
 
 ## So funktioniert das Teilen online
 
@@ -70,6 +76,26 @@ npm test         # Tests ausführen
 npm run lint     # Linting
 npm run build    # Produktions-Build nach dist/
 ```
+
+## Konfiguration (TURN-Relay)
+
+WebRTC benötigt einen TURN-Relay, um Spieler zu verbinden, deren Netz UDP
+blockiert oder symmetrisches NAT verwendet (häufig in öffentlichem WLAN).
+Standardmäßig nutzt die App die kostenlosen öffentlichen TURN-Server des
+Open Relay Project — für gelegentliche Nutzung ausreichend, aber „best
+effort". Für einen zuverlässigen Relay kopiere `.env.example` nach `.env`
+und setze:
+
+- `VITE_TURN_URLS` — kommagetrennte TURN-URLs. Nimm einen
+  `turns:`-Eintrag über TCP/443 auf, damit es auch in Netzen mit
+  blockiertem UDP funktioniert.
+- `VITE_TURN_USERNAME` — TURN-Benutzername.
+- `VITE_TURN_CREDENTIAL` — TURN-Zugangsdaten (Passwort).
+
+Für den GitHub-Pages-Deploy füge sie als Repository-Secrets hinzu und gib
+sie im Build-Schritt von `.github/workflows/deploy.yml` weiter. Kostenlose
+Optionen sind der Free-Tarif von [Metered](https://www.metered.ca/) oder
+das Selbsthosten von [coturn](https://github.com/coturn/coturn).
 
 ## Deployment
 

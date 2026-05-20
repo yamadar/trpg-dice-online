@@ -8,7 +8,9 @@ const STEPS: { icon: string; titleKey: string; bodyKey: string }[] = [
   { icon: '🎭', titleKey: 'tutorial.character.title', bodyKey: 'tutorial.character.body' },
   { icon: '⭐', titleKey: 'tutorial.patterns.title', bodyKey: 'tutorial.patterns.body' },
   { icon: '👥', titleKey: 'tutorial.room.title', bodyKey: 'tutorial.room.body' },
+  { icon: '📜', titleKey: 'tutorial.pastRooms.title', bodyKey: 'tutorial.pastRooms.body' },
   { icon: '💬', titleKey: 'tutorial.chat.title', bodyKey: 'tutorial.chat.body' },
+  { icon: '🌐', titleKey: 'tutorial.translate.title', bodyKey: 'tutorial.translate.body' },
   { icon: '⚙', titleKey: 'tutorial.settings.title', bodyKey: 'tutorial.settings.body' },
 ]
 

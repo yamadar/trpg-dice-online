@@ -37,7 +37,12 @@ secara real-time dengan tim — semua dari halaman statis tanpa backend.
   tetap, dan indikator halus menunjukkan siapa yang sedang mengetik.
 - **Peristiwa ruang** — masuk/keluar muncul di feed; menutup ruang
   sebagai GM memberi tahu semua dengan rapi.
-- **Multilingual** — UI mendukung 19 bahasa.
+- **Multilingual & terjemahan otomatis** — UI mendukung 19 bahasa.
+  Terjemahan otomatis opsional menampilkan obrolan dari pemain lain dalam
+  bahasa antarmuka Anda; mengutamakan API Chrome Translator di perangkat
+  dan beralih ke API REST tanpa kunci dari
+  [MyMemory](https://mymemory.translated.net/) jika tidak tersedia. Ketuk
+  «Asli» pada pesan terjemahan untuk melihat teks asli yang dikirim.
 
 ## Cara berbagi online
 
@@ -63,6 +68,25 @@ npm test         # jalankan test
 npm run lint     # lint
 npm run build    # production build ke dist/
 ```
+
+## Konfigurasi (relay TURN)
+
+WebRTC memerlukan relay TURN untuk menyambungkan pemain yang jaringannya
+memblokir UDP atau menggunakan NAT simetris (umum di Wi-Fi publik). Secara
+default aplikasi memakai server TURN publik gratis dari Open Relay Project
+— cukup untuk pemakaian sesekali tapi «best effort». Untuk relay yang
+andal, salin `.env.example` ke `.env` lalu atur:
+
+- `VITE_TURN_URLS` — URL TURN dipisah koma. Sertakan entri `turns:`
+  melalui TCP/443 supaya tetap bekerja saat UDP diblokir.
+- `VITE_TURN_USERNAME` — nama pengguna TURN.
+- `VITE_TURN_CREDENTIAL` — kredensial TURN (kata sandi).
+
+Untuk memakainya pada deploy GitHub Pages, tambahkan sebagai secret
+repositori dan teruskan pada langkah build di
+`.github/workflows/deploy.yml`. Opsi gratis: tingkat gratis
+[Metered](https://www.metered.ca/) atau hosting sendiri
+[coturn](https://github.com/coturn/coturn).
 
 ## Deployment
 

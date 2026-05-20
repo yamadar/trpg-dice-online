@@ -63,9 +63,15 @@ export const pl: Dict = {
   'tutorial.room.title': 'Wspólnie w pokoju',
   'tutorial.room.body':
     'Z „Pokoju” utwórz pokój (zostaniesz MG) lub dołącz z kodem. MG może wybrać i zmieniać kod, a po zerwaniu połączenia jest automatycznie wznawiane.',
+  'tutorial.pastRooms.title': 'Poprzednie pokoje',
+  'tutorial.pastRooms.body':
+    'Każda sesja jest zapisywana jako dziennik tylko do odczytu. Na ekranie „Pokój” dotknij „Poprzednie pokoje”, aby ponownie otworzyć wcześniejszą sesję; dzienniki możesz usuwać pojedynczo lub wszystkie naraz.',
   'tutorial.chat.title': 'Czat i załączniki',
   'tutorial.chat.body':
     'Rozmawiaj w strumieniu i dodawaj obrazy lub pliki. Użyj „@imie”, aby wyróżnić wiadomość; dotknięcie nazwy w strumieniu otwiera profil gracza.',
+  'tutorial.translate.title': 'Tłumacz czat',
+  'tutorial.translate.body':
+    'Włącz „Tłumacz automatycznie” w Ustawieniach, aby wiadomości innych graczy były tłumaczone na język interfejsu. Dotknij „Oryginał” na przetłumaczonej wiadomości, aby zobaczyć tekst tak, jak został wysłany.',
   'tutorial.settings.title': 'Ustawienia i pomoc',
   'tutorial.settings.body':
     'Zmień nazwę gracza, język i motyw, a także otwórz ten przewodnik ponownie z Ustawień (⚙) w prawym górnym rogu.',

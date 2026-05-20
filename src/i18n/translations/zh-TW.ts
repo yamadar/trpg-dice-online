@@ -63,9 +63,15 @@ export const zhTW: Dict = {
   'tutorial.room.title': '在房間中共享',
   'tutorial.room.body':
     '從「房間」建立房間（你會成為 GM）或以代碼加入。GM 可指定或變更房間代碼，連線中斷時會自動重連。',
+  'tutorial.pastRooms.title': '過往房間',
+  'tutorial.pastRooms.body':
+    '每場會話都會保留為唯讀紀錄。在「房間」畫面點擊「過往房間」可重新檢視先前的會話，紀錄可逐筆刪除，也可一次全部刪除。',
   'tutorial.chat.title': '聊天與附件',
   'tutorial.chat.body':
     '在動態中聊天並可附上圖片或檔案。以「@名稱」突顯訊息，輕觸動態中的名稱可開啟該玩家資訊。',
+  'tutorial.translate.title': '翻譯聊天',
+  'tutorial.translate.body':
+    '在「設定」開啟「自動翻譯」後，其他玩家的聊天會翻譯為你的介面語言。在已翻譯的訊息上點擊「原文」可看到對方原本送出的內容。',
   'tutorial.settings.title': '設定與說明',
   'tutorial.settings.body':
     '玩家名稱、語言、配色主題的修改與重新開啟本指南，皆可從右上角的設定（⚙）進行。',

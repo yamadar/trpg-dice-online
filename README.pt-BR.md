@@ -39,7 +39,12 @@ grupo em tempo real — tudo a partir de uma página estática, sem servidor.
   uma cor estável e um indicador discreto mostra quem está digitando.
 - **Eventos de sala** — entrada/saída aparecem no feed, e fechar a sala
   como mestre notifica todos corretamente.
-- **Multilíngue** — a UI suporta 19 idiomas.
+- **Multilíngue e tradução automática** — a UI suporta 19 idiomas. A
+  tradução automática opcional exibe as mensagens de outras pessoas no seu
+  idioma de interface; prefere a API Chrome Translator no dispositivo e
+  recorre à API REST sem chave do
+  [MyMemory](https://mymemory.translated.net/). Toque em «Original» em uma
+  mensagem traduzida para ver o texto como foi enviado.
 
 ## Como o compartilhamento funciona
 
@@ -65,6 +70,25 @@ npm test         # roda os testes
 npm run lint     # lint
 npm run build    # build de produção em dist/
 ```
+
+## Configuração (relay TURN)
+
+O WebRTC precisa de um relay TURN para conectar quem está em uma rede que
+bloqueia UDP ou usa NAT simétrico (comum em Wi-Fi público). Por padrão o
+app usa os servidores TURN públicos gratuitos do Open Relay Project —
+suficiente para uso ocasional, mas «best effort». Para um relay confiável,
+copie `.env.example` para `.env` e defina:
+
+- `VITE_TURN_URLS` — URLs TURN separadas por vírgula. Inclua uma entrada
+  `turns:` em TCP/443 para funcionar onde UDP for bloqueado.
+- `VITE_TURN_USERNAME` — usuário TURN.
+- `VITE_TURN_CREDENTIAL` — credencial/senha TURN.
+
+Para usá-las na implantação no GitHub Pages, adicione-as como segredos do
+repositório e passe-as no passo de build em
+`.github/workflows/deploy.yml`. Opções gratuitas: o plano grátis da
+[Metered](https://www.metered.ca/) ou auto-hospedar o
+[coturn](https://github.com/coturn/coturn).
 
 ## Implantação
 

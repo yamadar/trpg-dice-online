@@ -63,9 +63,15 @@ export const id: Dict = {
   'tutorial.room.title': 'Berbagi di ruang',
   'tutorial.room.body':
     'Dari «Ruang», buat ruang (jadi GM) atau gabung dengan kode. GM bisa memilih atau mengubah kode, dan koneksi yang putus akan tersambung kembali otomatis.',
+  'tutorial.pastRooms.title': 'Ruang sebelumnya',
+  'tutorial.pastRooms.body':
+    'Setiap sesi disimpan sebagai log baca-saja. Dari layar «Ruang», ketuk «Ruang sebelumnya» untuk membuka kembali sesi sebelumnya; log bisa dihapus satu per satu atau semuanya sekaligus.',
   'tutorial.chat.title': 'Obrolan & lampiran',
   'tutorial.chat.body':
     'Mengobrol di feed dan lampirkan gambar atau file. Pakai «@nama» untuk menyorot pesan dan ketuk nama di feed untuk membuka profil pemain itu.',
+  'tutorial.translate.title': 'Terjemahkan obrolan',
+  'tutorial.translate.body':
+    'Aktifkan «Terjemahan otomatis» di Pengaturan agar obrolan pemain lain diterjemahkan ke bahasa antarmukamu. Ketuk «Asli» pada pesan terjemahan untuk melihat teks yang dikirim.',
   'tutorial.settings.title': 'Pengaturan & bantuan',
   'tutorial.settings.body':
     'Ubah nama pemain, bahasa, dan tema warna, serta buka kembali panduan ini dari Pengaturan (⚙) di kanan atas.',

@@ -38,7 +38,12 @@ gerçek zamanlı paylaş — hepsi backend'siz statik bir sayfadan.
   bir rengi vardır; gizli bir gösterge kimin yazdığını belirtir.
 - **Oda olayları** — giriş/çıkışlar akışta görünür, GM odayı kapattığında
   herkese düzgün bildirilir.
-- **Çok dilli** — UI 19 dili destekler.
+- **Çok dilli ve otomatik çeviri** — UI 19 dili destekler. İsteğe bağlı
+  otomatik çeviri, diğer oyuncuların sohbetini arayüz dilinizde gösterir;
+  öncelikli olarak cihaz üzerindeki Chrome Translator API'yi kullanır,
+  kullanılamadığında anahtarsız [MyMemory](https://mymemory.translated.net/)
+  REST API'sine geri döner. Çevrilmiş bir mesajda «Özgün»e dokunarak
+  gönderilen metni olduğu gibi görebilirsiniz.
 
 ## Çevrimiçi paylaşım nasıl çalışır
 
@@ -63,6 +68,25 @@ npm test         # testleri çalıştır
 npm run lint     # lint
 npm run build    # dist/ için üretim build'i
 ```
+
+## Yapılandırma (TURN aktarıcısı)
+
+WebRTC, ağı UDP'yi engelleyen ya da simetrik NAT kullanan oyuncuları
+(genellikle halka açık Wi-Fi'lerde) bağlamak için TURN aktarıcısına
+ihtiyaç duyar. Varsayılan olarak uygulama Open Relay Project'in ücretsiz
+herkese açık TURN sunucularına geri döner — gündelik kullanım için yeterli
+ama «best effort». Güvenilir bir aktarıcı için `.env.example` dosyasını
+`.env` olarak kopyalayın ve şu değerleri tanımlayın:
+
+- `VITE_TURN_URLS` — virgülle ayrılmış TURN URL'leri. UDP'nin engellendiği
+  ağlarda da çalışsın diye TCP/443 üzerinden bir `turns:` girdisi ekleyin.
+- `VITE_TURN_USERNAME` — TURN kullanıcı adı.
+- `VITE_TURN_CREDENTIAL` — TURN kimlik bilgisi (şifre).
+
+GitHub Pages dağıtımında kullanmak için bunları depo gizli anahtarları
+olarak ekleyin ve `.github/workflows/deploy.yml` derleme adımına aktarın.
+Ücretsiz seçenekler: [Metered](https://www.metered.ca/) ücretsiz katmanı
+veya [coturn](https://github.com/coturn/coturn)'ı kendiniz barındırmak.
 
 ## Dağıtım
 

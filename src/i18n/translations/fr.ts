@@ -63,9 +63,15 @@ export const fr: Dict = {
   'tutorial.room.title': 'Partager dans une salle',
   'tutorial.room.body':
     'Depuis « Salle », créez une salle (vous devenez MJ) ou rejoignez avec un code. Le MJ peut choisir ou modifier le code ; la reconnexion est automatique en cas de coupure.',
+  'tutorial.pastRooms.title': 'Salles passées',
+  'tutorial.pastRooms.body':
+    'Chaque session est conservée comme journal en lecture seule. Depuis l’écran « Salle », touchez « Salles passées » pour rouvrir une session précédente ; vous pouvez supprimer les journaux un par un ou tous d’un coup.',
   'tutorial.chat.title': 'Tchat et pièces jointes',
   'tutorial.chat.body':
     'Discutez dans le fil et joignez des images ou fichiers. Utilisez « @nom » pour cibler quelqu’un, et touchez un nom dans le fil pour ouvrir son profil.',
+  'tutorial.translate.title': 'Traduire le tchat',
+  'tutorial.translate.body':
+    'Activez « Traduction automatique » dans les Paramètres pour traduire le tchat des autres joueurs dans la langue de votre interface. Touchez « Original » sur un message traduit pour voir le texte tel qu’il a été envoyé.',
   'tutorial.settings.title': 'Paramètres et aide',
   'tutorial.settings.body':
     'Modifiez votre nom de joueur, la langue et le thème, et rouvrez ce guide depuis Paramètres (⚙) en haut à droite.',
