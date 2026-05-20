@@ -80,15 +80,15 @@ export function BrandIcon({
       />
       <g stroke="#fff" strokeWidth="12" strokeLinejoin="round" fill="none">
         <polygon
-          points="255,49 398.8,132 398.8,298 255,381 111.2,298 111.2,132"
+          points="256,90 399.8,173 399.8,339 256,422 112.2,339 112.2,173"
           fill={`url(#${gradId})`}
         />
-        <polygon points="255,49 398.8,298 111.2,298" />
-        <polygon points="255,381 111.2,132 398.8,132" />
+        <polygon points="256,90 399.8,339 112.2,339" />
+        <polygon points="256,422 112.2,173 399.8,173" />
       </g>
       <text
-        x="255"
-        y="215"
+        x="256"
+        y="256"
         textAnchor="middle"
         dominantBaseline="central"
         fontFamily="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif"
