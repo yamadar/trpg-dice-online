@@ -449,7 +449,8 @@ export async function deleteAllSessions(): Promise<void> {
 /**
  * Upsert one player's last-known portrait for the given session. An empty
  * `image` deletes the record so a portrait removal does not leave a stale
- * snapshot behind. A no-op when there is no session.
+ * snapshot behind. Resolves once the IndexedDB transaction commits (or
+ * gives up), so callers that await it know the write landed.
  */
 export async function savePortraitForSession(
   sessionId: string | null,
@@ -459,30 +460,35 @@ export async function savePortraitForSession(
   if (!sessionId) return
   const db = await openDb()
   if (!db) return
-  try {
-    const tx = db.transaction(PORTRAITS, 'readwrite')
-    const store = tx.objectStore(PORTRAITS)
-    const pk = `${sessionId}:${playerId}`
-    if (image) {
-      const rec: PortraitRecord = {
-        pk,
-        sessionId,
-        playerId,
-        image,
-        updatedAt: Date.now(),
+  await new Promise<void>((resolve) => {
+    try {
+      const tx = db.transaction(PORTRAITS, 'readwrite')
+      const store = tx.objectStore(PORTRAITS)
+      const pk = `${sessionId}:${playerId}`
+      if (image) {
+        const rec: PortraitRecord = {
+          pk,
+          sessionId,
+          playerId,
+          image,
+          updatedAt: Date.now(),
+        }
+        store.put(rec)
+      } else {
+        store.delete(pk)
       }
-      store.put(rec)
-    } else {
-      store.delete(pk)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => resolve()
+    } catch {
+      resolve()
     }
-  } catch {
-    /* ignore */
-  }
+  })
 }
 
 /**
  * Bulk variant: persist every entry in a portrait map in one transaction.
  * Used when the welcome snapshot lands a whole roster's portraits at once.
+ * Resolves once the transaction commits, matching the single-record save.
  */
 export async function savePortraitsForSession(
   sessionId: string | null,
@@ -493,21 +499,25 @@ export async function savePortraitsForSession(
   if (entries.length === 0) return
   const db = await openDb()
   if (!db) return
-  try {
-    const tx = db.transaction(PORTRAITS, 'readwrite')
-    const store = tx.objectStore(PORTRAITS)
-    const now = Date.now()
-    for (const [playerId, image] of entries) {
-      const pk = `${sessionId}:${playerId}`
-      if (image) {
-        store.put({ pk, sessionId, playerId, image, updatedAt: now })
-      } else {
-        store.delete(pk)
+  await new Promise<void>((resolve) => {
+    try {
+      const tx = db.transaction(PORTRAITS, 'readwrite')
+      const store = tx.objectStore(PORTRAITS)
+      const now = Date.now()
+      for (const [playerId, image] of entries) {
+        const pk = `${sessionId}:${playerId}`
+        if (image) {
+          store.put({ pk, sessionId, playerId, image, updatedAt: now })
+        } else {
+          store.delete(pk)
+        }
       }
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => resolve()
+    } catch {
+      resolve()
     }
-  } catch {
-    /* ignore */
-  }
+  })
 }
 
 /** Load every stored portrait for the given session, keyed by player id. */
