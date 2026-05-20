@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const ja: Dict = {
-  'app.title': 'TRPG オンラインダイス',
-  'app.tagline': '仲間とダイスをシェアしよう',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'オンラインTRPGセッションを簡単に',
   'lang.label': '言語',
   'translate.auto': '自動翻訳',
   'theme.title': 'テーマ',
@@ -48,7 +48,7 @@ export const ja: Dict = {
   'tutorial.next': '次へ',
   'tutorial.back': '戻る',
   'tutorial.done': 'はじめる',
-  'tutorial.welcome.title': 'TRPG オンラインダイスへようこそ',
+  'tutorial.welcome.title': 'Dice & Chat へようこそ',
   'tutorial.welcome.body':
     '仲間とダイスを振り、出目・履歴・チャットをリアルタイムに共有できます。インストール不要、ルームに入らずローカルでも使えます。',
   'tutorial.dice.title': 'ダイスを振る',

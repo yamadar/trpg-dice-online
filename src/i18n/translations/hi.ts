@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const hi: Dict = {
-  'app.title': 'TRPG ऑनलाइन पासे',
-  'app.tagline': 'अपनी टीम के साथ पासे फेंकें',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'ऑनलाइन TRPG सेशन अब आसान',
   'lang.label': 'भाषा',
   'translate.auto': 'स्वतः अनुवाद',
   'theme.title': 'थीम',
@@ -48,7 +48,7 @@ export const hi: Dict = {
   'tutorial.next': 'आगे',
   'tutorial.back': 'पीछे',
   'tutorial.done': 'शुरू करें',
-  'tutorial.welcome.title': 'TRPG ऑनलाइन पासे में आपका स्वागत है',
+  'tutorial.welcome.title': 'Dice & Chat में आपका स्वागत है',
   'tutorial.welcome.body':
     'अपनी टीम के साथ पासे फेंकें और रोल, इतिहास और चैट को वास्तविक समय में साझा करें। इंस्टॉल की ज़रूरत नहीं; बिना कक्ष के भी स्थानीय रूप से काम करता है।',
   'tutorial.dice.title': 'पासे फेंकें',

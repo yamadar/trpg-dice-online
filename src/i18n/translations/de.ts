@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const de: Dict = {
-  'app.title': 'TRPG Online-Würfel',
-  'app.tagline': 'Würfle gemeinsam mit deiner Gruppe',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'TRPG-Online-Sessions leicht gemacht',
   'lang.label': 'Sprache',
   'translate.auto': 'Auto-Übersetzung',
   'theme.title': 'Design',
@@ -48,7 +48,7 @@ export const de: Dict = {
   'tutorial.next': 'Weiter',
   'tutorial.back': 'Zurück',
   'tutorial.done': 'Loslegen',
-  'tutorial.welcome.title': 'Willkommen bei TRPG Online-Würfel',
+  'tutorial.welcome.title': 'Willkommen bei Dice & Chat',
   'tutorial.welcome.body':
     'Würfle mit deiner Gruppe und teile Würfe, Verlauf und Chat in Echtzeit. Keine Installation nötig, funktioniert lokal auch ohne Raum.',
   'tutorial.dice.title': 'Würfeln',

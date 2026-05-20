@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const pl: Dict = {
-  'app.title': 'TRPG Kości online',
-  'app.tagline': 'Rzucaj kości razem z drużyną',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'Sesje TRPG online — prościej niż kiedykolwiek',
   'lang.label': 'Język',
   'translate.auto': 'Tłumacz automatycznie',
   'theme.title': 'Motyw',
@@ -48,7 +48,7 @@ export const pl: Dict = {
   'tutorial.next': 'Dalej',
   'tutorial.back': 'Wstecz',
   'tutorial.done': 'Zaczynamy',
-  'tutorial.welcome.title': 'Witaj w TRPG Kości online',
+  'tutorial.welcome.title': 'Witaj w Dice & Chat',
   'tutorial.welcome.body':
     'Rzucaj kośćmi z drużyną i dziel się rzutami, historią i czatem w czasie rzeczywistym. Bez instalacji i działa lokalnie nawet bez pokoju.',
   'tutorial.dice.title': 'Rzut kośćmi',

@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const zhTW: Dict = {
-  'app.title': 'TRPG 線上骰子',
-  'app.tagline': '與夥伴一起擲骰',
+  'app.title': 'Dice & Chat',
+  'app.tagline': '讓線上 TRPG 跑團更輕鬆',
   'lang.label': '語言',
   'translate.auto': '自動翻譯',
   'theme.title': '主題',
@@ -48,7 +48,7 @@ export const zhTW: Dict = {
   'tutorial.next': '下一步',
   'tutorial.back': '上一步',
   'tutorial.done': '開始使用',
-  'tutorial.welcome.title': '歡迎使用 TRPG 線上骰子',
+  'tutorial.welcome.title': '歡迎使用 Dice & Chat',
   'tutorial.welcome.body':
     '與夥伴一起擲骰，並即時共享投擲、歷史與聊天。無需安裝,沒有房間也可在本機使用。',
   'tutorial.dice.title': '擲骰',

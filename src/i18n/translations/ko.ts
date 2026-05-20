@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const ko: Dict = {
-  'app.title': 'TRPG 온라인 주사위',
-  'app.tagline': '동료와 함께 주사위를 굴려보세요',
+  'app.title': 'Dice & Chat',
+  'app.tagline': '온라인 TRPG 세션을 손쉽게',
   'lang.label': '언어',
   'translate.auto': '자동 번역',
   'theme.title': '테마',
@@ -48,7 +48,7 @@ export const ko: Dict = {
   'tutorial.next': '다음',
   'tutorial.back': '이전',
   'tutorial.done': '시작하기',
-  'tutorial.welcome.title': 'TRPG 온라인 주사위에 오신 것을 환영합니다',
+  'tutorial.welcome.title': 'Dice & Chat에 오신 것을 환영합니다',
   'tutorial.welcome.body':
     '동료와 함께 주사위를 굴리고, 굴림과 히스토리, 채팅을 실시간으로 공유하세요. 설치 불필요, 룸 없이도 로컬에서 사용할 수 있습니다.',
   'tutorial.dice.title': '주사위 굴리기',

@@ -23,10 +23,10 @@ export default defineConfig(({ command }) => ({
         'icons/apple-touch-icon-1024.png',
       ],
       manifest: {
-        name: 'TRPG Online Dice',
-        short_name: 'TRPG Dice',
+        name: 'Dice & Chat',
+        short_name: 'Dice & Chat',
         description:
-          'Online TRPG dice roller with rooms, chat and GM hidden rolls',
+          'Online TRPG sessions made easy — dice, characters, rooms, chat and GM hidden rolls.',
         lang: 'ja',
         display: 'standalone',
         orientation: 'any',

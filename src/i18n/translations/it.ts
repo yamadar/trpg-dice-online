@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const it: Dict = {
-  'app.title': 'TRPG Dadi online',
-  'app.tagline': 'Lancia i dadi con il tuo gruppo',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'Sessioni TRPG online, semplificate',
   'lang.label': 'Lingua',
   'translate.auto': 'Traduzione automatica',
   'theme.title': 'Tema',
@@ -48,7 +48,7 @@ export const it: Dict = {
   'tutorial.next': 'Avanti',
   'tutorial.back': 'Indietro',
   'tutorial.done': 'Inizia',
-  'tutorial.welcome.title': 'Benvenuto in TRPG Dadi online',
+  'tutorial.welcome.title': 'Benvenuto in Dice & Chat',
   'tutorial.welcome.body':
     'Lancia i dadi con il tuo gruppo e condividi tiri, cronologia e chat in tempo reale. Senza installazione e funziona localmente anche senza una stanza.',
   'tutorial.dice.title': 'Lancia i dadi',

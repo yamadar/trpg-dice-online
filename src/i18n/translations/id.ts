@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const id: Dict = {
-  'app.title': 'TRPG Dadu Online',
-  'app.tagline': 'Lempar dadu bersama tim',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'Sesi TRPG online jadi mudah',
   'lang.label': 'Bahasa',
   'translate.auto': 'Terjemahan otomatis',
   'theme.title': 'Tema',
@@ -48,7 +48,7 @@ export const id: Dict = {
   'tutorial.next': 'Lanjut',
   'tutorial.back': 'Kembali',
   'tutorial.done': 'Mulai',
-  'tutorial.welcome.title': 'Selamat datang di TRPG Dadu Online',
+  'tutorial.welcome.title': 'Selamat datang di Dice & Chat',
   'tutorial.welcome.body':
     'Lempar dadu bersama tim dan bagikan lemparan, riwayat, serta obrolan secara real-time. Tanpa instalasi dan bisa dipakai lokal tanpa ruang.',
   'tutorial.dice.title': 'Lempar dadu',

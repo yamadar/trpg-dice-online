@@ -1,8 +1,8 @@
 import type { Dict } from '../translations'
 
 export const ar: Dict = {
-  'app.title': 'TRPG نرد على الإنترنت',
-  'app.tagline': 'ارمِ النرد مع فريقك',
+  'app.title': 'Dice & Chat',
+  'app.tagline': 'جلسات TRPG عبر الإنترنت بسهولة',
   'lang.label': 'اللغة',
   'translate.auto': 'ترجمة تلقائية',
   'theme.title': 'السمة',
@@ -48,7 +48,7 @@ export const ar: Dict = {
   'tutorial.next': 'التالي',
   'tutorial.back': 'رجوع',
   'tutorial.done': 'لنبدأ',
-  'tutorial.welcome.title': 'مرحبًا بك في TRPG نرد على الإنترنت',
+  'tutorial.welcome.title': 'مرحبًا بك في Dice & Chat',
   'tutorial.welcome.body':
     'ارمِ النرد مع فريقك وشارك الرميات والسجل والدردشة في الوقت الفعلي. لا حاجة إلى تثبيت ويعمل محليًا حتى بدون غرفة.',
   'tutorial.dice.title': 'رمي النرد',
