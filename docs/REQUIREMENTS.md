@@ -229,6 +229,14 @@ An SPA where players roll TRPG dice and share results with other players in real
 - Rolls, chat and markers in a room are persisted to IndexedDB by
   `sessionId`. The same code reused on a different day stays a separate
   session, and a code change mid-room keeps a single continuous one.
+- A session that ends without any user activity (no roll, no chat, no
+  file attachment) is dropped at exit so a quick join-and-leave does not
+  leave an empty history entry behind.
+- Re-entering the same room code reuses the previous still-open session
+  so brief in-and-outs collapse into one history entry. The GM ending
+  the room explicitly (or a client receiving that notice) tags the
+  session as closed, after which the next visit to the same code mints a
+  fresh entry.
 - The last-known portrait of each player in a session is persisted too,
   so the history viewer can show their character image at the time.
 - The lobby's "Past rooms" list opens an old session and shows its feed
@@ -295,10 +303,12 @@ Character   = { id, name, background, memo, patterns: Pattern[], lang,
 
 // A live room's identity for the durable log: `sessionId` is minted once
 // per create / join and stays stable across reloads, reconnects and code
-// changes, so each game keeps a single continuous log.
+// changes, so each game keeps a single continuous log. Re-entering the
+// same code while the previous session is still open (`closed !== true`)
+// reuses that same id instead of minting a new one.
 SessionId   = string  // e.g. "s-mfp7n7z9-9wk2x4"
 SessionRecord = { sessionId, code, name, role: 'host'|'client'|'unknown',
-                  firstAt, lastAt }
+                  firstAt, lastAt, closed? }
 PortraitRecord = { sessionId, playerId, image, updatedAt }
 
 // Local-only feed annotations (not synced); they record room events.
@@ -583,3 +593,12 @@ Commit after each step.
   and the host's own portrait at session start — and the history viewer
   gains a player detail sub-view that opens that snapshot when a name is
   tapped.
+- v1.63 — Stop past-room clutter from quick visits. A session with no
+  user activity (no roll, no chat, no file attachment) is dropped from
+  the durable log on exit instead of leaving an empty entry; and
+  re-entering the same code reuses the previous still-open session
+  (`closed !== true` on `SessionRecord`) so a leave / rejoin or a
+  reload-driven re-host stays as one history entry. The GM explicitly
+  ending the room (or a client receiving that notice) tags the session
+  as closed, after which the next visit to the same code mints a fresh
+  entry.

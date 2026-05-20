@@ -25,7 +25,9 @@ import {
   appendLogEntries,
   appendLogEntry,
   deleteSession,
+  findReusableSession,
   loadRecentLog,
+  markSessionClosed,
   newSessionId,
   savePortraitForSession,
   savePortraitsForSession,
@@ -435,6 +437,26 @@ export function useSession(): Session {
     setTyping({})
   }, [markReconnecting])
 
+  /**
+   * Decide what to do with the durable log on the way out of a room:
+   *  - No user activity (no roll, no chat) → drop the session entirely
+   *    so a quick join-and-leave doesn't litter the history list.
+   *  - `closing` (host closed, or client received gmClosed) → tag the
+   *    session as closed so a later visit to the same code starts fresh.
+   *  - Otherwise (deliberate leave, dropped connection) → leave it open,
+   *    so re-entering the same code resumes this same history.
+   */
+  const finalizeSession = useCallback((closing: boolean) => {
+    const sid = sessionIdRef.current
+    if (!sid) return
+    const hasActivity = historyRef.current.length > 0 || chatRef.current.length > 0
+    if (!hasActivity) {
+      void deleteSession(sid)
+    } else if (closing) {
+      void markSessionClosed(sid)
+    }
+  }, [])
+
   // --- Client: handle a message from the host -----------------------------
   const handleHostMessage = useCallback(
     (msg: HostMessage) => {
@@ -525,6 +547,7 @@ export function useSession(): Session {
         case 'roomClosed':
           gracefulCloseRef.current = true
           addMarker('gmClosed', { roomCode: roomCodeRef.current ?? undefined })
+          finalizeSession(true)
           goOffline()
           break
       }
@@ -533,6 +556,7 @@ export function useSession(): Session {
       addMarker,
       appendChat,
       appendHistory,
+      finalizeSession,
       goOffline,
       logTarget,
       markReconnecting,
@@ -582,6 +606,26 @@ export function useSession(): Session {
     return mgr
   }, [handleClientDisconnect, handleClientMessage, handleHostMessage])
 
+  /**
+   * Hydrate the in-memory feed from a session's durable log. Used when a
+   * room re-opens an earlier (still-open) session — a quick re-host, a
+   * client re-joining the same code, or a startup-time resume — so the
+   * prior conversation is visible right away instead of only after the
+   * welcome snapshot arrives.
+   */
+  const restoreFeedFromLog = useCallback(async (sid: string) => {
+    const entries = await loadRecentLog(sid, 500)
+    if (entries.length === 0) return
+    const rolls = entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult)
+    const chats = entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage)
+    const marks = entries
+      .filter((e) => e.kind === 'marker')
+      .map((e) => e.data as SystemMarker)
+    if (rolls.length) setHistory((prev) => mergeById(prev, rolls, MAX_HISTORY))
+    if (chats.length) setChat((prev) => mergeById(prev, chats, MAX_CHAT))
+    if (marks.length) setMarkers((prev) => mergeById(prev, marks, MAX_MARKERS))
+  }, [])
+
   // --- Public actions -----------------------------------------------------
   const createRoom = useCallback(
     async (preferredCode?: string, name?: string) => {
@@ -599,7 +643,12 @@ export function useSession(): Session {
         // Eagerly set the refs so the marker below is logged under this
         // room and a fresh session id.
         roomCodeRef.current = code
-        const sid = newSessionId()
+        // Reuse a still-open session for the same code so re-hosting after
+        // a drop or a quick "leave then start again" stays in one history
+        // entry; a fresh code (or one explicitly closed earlier) mints a
+        // new one.
+        const reused = await findReusableSession(code, 'host')
+        const sid = reused ?? newSessionId()
         sessionIdRef.current = sid
         setSessionId(sid)
         saveLastRoomCode(code)
@@ -609,6 +658,7 @@ export function useSession(): Session {
         setRoomNameState(initialName)
         setPlayers([selfPlayer(true)])
         addMarker('created', { roomCode: code })
+        if (reused) await restoreFeedFromLog(reused)
       } catch (err) {
         // A requested code already taken by another room is distinct from
         // a generic connection failure.
@@ -616,7 +666,7 @@ export function useSession(): Session {
         goOffline()
       }
     },
-    [addMarker, ensureRoom, goOffline, selfPlayer],
+    [addMarker, ensureRoom, goOffline, restoreFeedFromLog, selfPlayer],
   )
 
   const joinRoom = useCallback(
@@ -627,9 +677,13 @@ export function useSession(): Session {
       const mgr = ensureRoom()
       try {
         await mgr.join(code)
-        // Resuming keeps the same session id (one continuous log); a fresh
-        // join mints a new one.
-        const sid = resumeSessionId ?? newSessionId()
+        // Resuming keeps the same session id (one continuous log); rejoining
+        // the same code reuses the previous (still-open) session so quick
+        // hops do not pile up new entries; a fresh join mints a new one.
+        const reused = resumeSessionId
+          ? null
+          : await findReusableSession(code, 'client')
+        const sid = resumeSessionId ?? reused ?? newSessionId()
         setRole('client')
         setRoomCode(code)
         // Eagerly set the refs so the marker below is logged under this room.
@@ -643,12 +697,15 @@ export function useSession(): Session {
         mgr.sendToHost({ t: 'hello', player: selfPlayer(false) })
         // The portrait travels apart from `hello` (the roster stays light).
         if (ownImageRef.current) mgr.sendToHost({ t: 'image', image: ownImageRef.current })
+        // For a re-join, surface the prior log right away — the welcome
+        // snapshot will merge in on top once it lands.
+        if (reused) await restoreFeedFromLog(reused)
       } catch {
         // onError already surfaced the failure.
         goOffline()
       }
     },
-    [addMarker, ensureRoom, goOffline, selfPlayer],
+    [addMarker, ensureRoom, goOffline, restoreFeedFromLog, selfPlayer],
   )
 
   const leaveRoom = useCallback(() => {
@@ -664,12 +721,14 @@ export function useSession(): Session {
       // Closing the room ends it for everyone: tell clients, then tear down.
       roomRef.current?.broadcast({ t: 'roomClosed' })
       addMarker('youClosed', { roomCode: roomCodeRef.current ?? undefined })
+      finalizeSession(true)
       setTimeout(() => goOffline(), 300)
     } else if (currentRole === 'client') {
       addMarker('youLeft', { roomCode: roomCodeRef.current ?? undefined })
+      finalizeSession(false)
       goOffline()
     }
-  }, [addMarker, goOffline, markReconnecting])
+  }, [addMarker, finalizeSession, goOffline, markReconnecting])
 
   // --- Auto-reconnect after an unintentional disconnect -------------------
   // One attempt at re-establishing the room. The transport is rebuilt from
@@ -847,16 +906,7 @@ export function useSession(): Session {
           roomNameRef.current = pointer.roomName
           setRoomNameState(pointer.roomName)
         }
-        // Restore the recent feed from this session's durable log.
-        const entries = await loadRecentLog(sid, 500)
-        const rolls = entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult)
-        const chats = entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage)
-        const marks = entries
-          .filter((e) => e.kind === 'marker')
-          .map((e) => e.data as SystemMarker)
-        if (rolls.length) setHistory(capEnd(rolls, MAX_HISTORY))
-        if (chats.length) setChat(capEnd(chats, MAX_CHAT))
-        if (marks.length) setMarkers(capEnd(marks, MAX_MARKERS))
+        await restoreFeedFromLog(sid)
       }
       setRoomCode(code)
       roomCodeRef.current = code
@@ -869,7 +919,7 @@ export function useSession(): Session {
         void joinRoom(code, sid ?? undefined)
       }
     },
-    [joinRoom, markReconnecting],
+    [joinRoom, markReconnecting, restoreFeedFromLog],
   )
 
   /**

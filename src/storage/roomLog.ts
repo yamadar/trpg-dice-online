@@ -40,7 +40,7 @@ interface LogRecord {
 }
 
 /** Stored metadata describing one room session. */
-interface SessionRecord {
+export interface SessionRecord {
   sessionId: string
   /** Most recent room code seen for the session. */
   code: string
@@ -49,6 +49,13 @@ interface SessionRecord {
   role: 'host' | 'client' | 'unknown'
   firstAt: number
   lastAt: number
+  /**
+   * True once the room ended for good: the host pressed close, or a client
+   * was told the GM closed it. A still-open session (left or dropped, but
+   * not closed) can be resumed by re-entering the same code, so multiple
+   * brief visits to the same room collapse into one history entry.
+   */
+  closed?: boolean
 }
 
 /** One past session as surfaced to the history browser (count derived). */
@@ -385,6 +392,81 @@ export async function listSessions(): Promise<SessionSummary[]> {
       metaReq.onerror = () => resolve([])
     } catch {
       resolve([])
+    }
+  })
+}
+
+/**
+ * Mark a session as closed — used once a host explicitly closes the room
+ * or a client receives the matching notification, so the next entry to
+ * the same code mints a fresh session instead of joining this one.
+ * A no-op when the record is missing or the session id is empty.
+ */
+export async function markSessionClosed(sessionId: string | null): Promise<void> {
+  if (!sessionId) return
+  const db = await openDb()
+  if (!db) return
+  await new Promise<void>((resolve) => {
+    try {
+      const tx = db.transaction(META, 'readwrite')
+      const store = tx.objectStore(META)
+      const getReq = store.get(sessionId)
+      getReq.onsuccess = () => {
+        const existing = getReq.result as SessionRecord | undefined
+        if (existing) store.put({ ...existing, closed: true })
+      }
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => resolve()
+    } catch {
+      resolve()
+    }
+  })
+}
+
+/**
+ * Pick the most recently active still-open session that matches `code`
+ * and `role`. Pure so it can be unit-tested without IndexedDB; the live
+ * lookup in `findReusableSession` reads every record and defers to this.
+ */
+export function pickReusableSessionId(
+  records: ReadonlyArray<SessionRecord>,
+  code: string,
+  role: 'host' | 'client',
+): string | null {
+  if (!code) return null
+  let best: SessionRecord | null = null
+  for (const r of records) {
+    if (r.closed === true) continue
+    if (r.code !== code) continue
+    if (r.role !== role) continue
+    if (!best || r.lastAt > best.lastAt) best = r
+  }
+  return best ? best.sessionId : null
+}
+
+/**
+ * Find a still-open session matching `code` and `role` so re-entering
+ * the same room collapses repeated visits into one history. Returns the
+ * most recently active candidate, or null when none exist or IndexedDB
+ * is unavailable.
+ */
+export async function findReusableSession(
+  code: string,
+  role: 'host' | 'client',
+): Promise<string | null> {
+  if (!code) return null
+  const db = await openDb()
+  if (!db) return null
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(META, 'readonly')
+      const req = tx.objectStore(META).getAll()
+      req.onsuccess = () => {
+        resolve(pickReusableSessionId((req.result as SessionRecord[]) ?? [], code, role))
+      }
+      req.onerror = () => resolve(null)
+    } catch {
+      resolve(null)
     }
   })
 }
