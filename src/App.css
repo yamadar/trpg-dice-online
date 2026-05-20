@@ -7,6 +7,9 @@
   display: flex;
   flex-direction: column;
   border-inline: 1px solid var(--border);
+  /* Clip any inner overflow (a long feed, a tall composer) so it never
+     causes the page itself to scroll. */
+  overflow: hidden;
 }
 
 /* --- header (compact status) --- */
@@ -159,6 +162,10 @@
 .app-main .feed {
   flex: 1;
   max-height: none;
+  /* Override the standalone `.feed` rule's min-height: inside the column
+     layout the feed must be free to shrink so it scrolls internally
+     instead of pushing the dock / page below the viewport. */
+  min-height: 0;
 }
 
 /* The connection-error banner floats above open sheets (z-index 30) and
@@ -580,28 +587,6 @@ button.player-row {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-/* Label + input on one line (active-room room-name field). */
-.field-inline {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.field-inline > span {
-  flex-shrink: 0;
-  font-size: 0.8rem;
-  color: var(--text-dim);
-}
-.field-inline input {
-  flex: 1;
-  min-width: 0;
-  width: auto;
-}
-.field-inline .room-name-display {
-  flex: 1;
-  min-width: 0;
 }
 
 /* GM-only controls, tucked into a collapsed disclosure. */
@@ -1691,12 +1676,6 @@ label.setting-row {
 .name-gate-card .big {
   width: 100%;
   margin-top: 6px;
-}
-
-.room-name-display {
-  color: var(--text-h);
-  font-weight: 600;
-  word-break: break-word;
 }
 
 /* the "clear view" button is intentionally quiet */

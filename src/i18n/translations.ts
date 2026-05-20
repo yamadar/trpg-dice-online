@@ -140,6 +140,7 @@ const ja: Dict = {
   'result.damage': '{value}ダメージ',
   'result.damageNamed': '{name} {value}ダメージ',
   'result.judgment': '{name} 判定の結果 {value}',
+  'result.judgmentUnnamed': '判定の結果 {value}',
   'result.hiddenRoll': '{name} が隠しロールを行いました',
   'result.faces': '出目内訳',
 
@@ -186,6 +187,7 @@ const ja: Dict = {
   'room.codeCreateHint': 'コードを入力すると指定のコードで作成、空のままだと自動生成します。',
   'room.code': 'ルームコード',
   'room.changeCode': 'コードを変更',
+  'room.changeName': '名前を変更',
   'room.newCodePlaceholder': '新しいコード',
   'room.codeChangeHint': 'コードを変更すると参加者も自動的に新しいコードへ移ります。',
   'room.copy': 'リンクをコピー',
@@ -375,6 +377,7 @@ const en: Dict = {
   'result.damage': '{value} damage',
   'result.damageNamed': '{name}: {value} damage',
   'result.judgment': 'Result of {name} check: {value}',
+  'result.judgmentUnnamed': 'Result: {value}',
   'result.hiddenRoll': '{name} made a hidden roll',
   'result.faces': 'Dice faces',
 
@@ -421,6 +424,7 @@ const en: Dict = {
   'room.codeCreateHint': 'Enter a code to use it, or leave it blank for a random one.',
   'room.code': 'Room code',
   'room.changeCode': 'Change code',
+  'room.changeName': 'Change name',
   'room.newCodePlaceholder': 'New code',
   'room.codeChangeHint': 'Changing the code moves every player to the new code automatically.',
   'room.copy': 'Copy link',

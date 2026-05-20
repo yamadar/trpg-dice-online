@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { getCachedTranslation, seedTranslation } from '../i18n/translator'
-import { useFieldNotice } from '../hooks/useFieldNotice'
 import { loadLastRoomCode } from '../storage/room'
 import { loadFullLog } from '../storage/roomLog'
 import { buildRoomExport, roomExportFilename, type TranslationRecord } from '../storage/roomExport'
@@ -38,7 +37,16 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   const [createCode, setCreateCode] = useState('')
   const [createName, setCreateName] = useState('')
   const [copied, setCopied] = useState(false)
-  // Host-only field for changing the live room's code.
+  // Host-only fields for renaming the room and changing its code.
+  const [newRoomName, setNewRoomName] = useState(session.roomName)
+  // Track the synced room name so an external change (the host renamed it
+  // in another way, the welcome snapshot landed) resets the editor — done
+  // during render rather than in an effect.
+  const [syncedRoomName, setSyncedRoomName] = useState(session.roomName)
+  if (syncedRoomName !== session.roomName) {
+    setSyncedRoomName(session.roomName)
+    setNewRoomName(session.roomName)
+  }
   const [newCode, setNewCode] = useState('')
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
   // File-picker ref + error flag for importing a room from an export file.
@@ -49,8 +57,12 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   const busy = status === 'connecting'
   const online = role !== 'offline'
 
-  // Toast once the room-name edit settles (on blur or when the sheet closes).
-  const roomNameNotice = useFieldNotice(() => onNotice(t('toast.roomName')))
+  const handleChangeRoomName = () => {
+    const next = newRoomName.trim()
+    if (next === session.roomName.trim()) return
+    session.setRoomName(next)
+    onNotice(t('toast.roomName'))
+  }
 
   // A committed room-code change is worth a toast on top of the feed
   // marker. roomCode only goes code→code on a real change (host action).
@@ -408,33 +420,28 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
           </div>
           <p className="hint">{t('room.shareHint')}</p>
 
-          {role === 'host' ? (
-            <label className="field-inline">
-              <span>{t('room.name')}</span>
-              <input
-                type="text"
-                value={session.roomName}
-                maxLength={40}
-                placeholder={t('room.namePlaceholder')}
-                onChange={(e) => {
-                  session.setRoomName(e.target.value)
-                  roomNameNotice.markChanged()
-                }}
-                onBlur={roomNameNotice.flush}
-              />
-            </label>
-          ) : (
-            session.roomName.trim() && (
-              <div className="field-inline">
-                <span>{t('room.name')}</span>
-                <p className="room-name-display">{session.roomName}</p>
-              </div>
-            )
-          )}
-
           {role === 'host' && (
             <details className="gm-section">
               <summary>{t('room.gmSection')}</summary>
+              <div className="field">
+                <span>{t('room.name')}</span>
+                <div className="room-code-edit">
+                  <input
+                    type="text"
+                    value={newRoomName}
+                    placeholder={t('room.namePlaceholder')}
+                    maxLength={40}
+                    onChange={(e) => setNewRoomName(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    disabled={newRoomName.trim() === session.roomName.trim()}
+                    onClick={handleChangeRoomName}
+                  >
+                    {t('room.changeName')}
+                  </button>
+                </div>
+              </div>
               <div className="field">
                 <span>{t('room.changeCode')}</span>
                 <div className="room-code-edit">

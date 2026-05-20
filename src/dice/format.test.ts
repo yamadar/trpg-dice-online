@@ -47,6 +47,12 @@ describe('formatRollText', () => {
     expect(formatRollText(ja, r, true)).toBe('Dodge 判定の結果 15')
   })
 
+  it('formats an unnamed judgment roll without a name placeholder', () => {
+    const r = roll({ kind: 'judgment', patternName: '', value: 11 })
+    expect(formatRollText(en, r, true)).toBe('Result: 11')
+    expect(formatRollText(ja, r, true)).toBe('判定の結果 11')
+  })
+
   it('hides the value of a hidden roll from players who cannot see it', () => {
     const r = roll({ hidden: true, playerName: 'GM' })
     expect(formatRollText(en, r, false)).toBe('GM made a hidden roll')
