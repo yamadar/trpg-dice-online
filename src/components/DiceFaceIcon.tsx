@@ -31,9 +31,9 @@ const HEXAGON = regularPolygon(6, -Math.PI / 2) // D20 top-down silhouette
 // pentagonal trapezohedron (its actual face is a kite).
 const RHOMBUS = [
   `${CX},${(CY - R * 0.98).toFixed(2)}`,
-  `${(CX + R * 0.82).toFixed(2)},${CY}`,
+  `${(CX + R * 0.92).toFixed(2)},${CY}`,
   `${CX},${(CY + R * 0.98).toFixed(2)}`,
-  `${(CX - R * 0.82).toFixed(2)},${CY}`,
+  `${(CX - R * 0.92).toFixed(2)},${CY}`,
 ].join(' ')
 
 /** Font size that keeps the number comfortably inside each shape. */
