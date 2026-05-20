@@ -27,7 +27,16 @@ export interface Character {
    * picture has been attached.
    */
   image?: string
+  /**
+   * Per-character preference: whether the private memo is included in
+   * an exported file. Persisted locally; not transmitted or written to
+   * the export itself.
+   */
+  exportMemo?: boolean
 }
 
 /** The fields of a character the user can edit directly. */
-export type CharacterEdits = Pick<Character, 'name' | 'background' | 'memo' | 'lang' | 'image'>
+export type CharacterEdits = Pick<
+  Character,
+  'name' | 'background' | 'memo' | 'lang' | 'image' | 'exportMemo'
+>

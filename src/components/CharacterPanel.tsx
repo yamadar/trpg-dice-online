@@ -28,9 +28,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
     importCharacter,
   } = characters
 
-  const [showDetails, setShowDetails] = useState(false)
   const [importError, setImportError] = useState(false)
-  const [exportMemo, setExportMemo] = useState(false)
   // Portrait state: a spinner-style busy flag while an image is processed,
   // an error flag, and whether the full-size viewer is open.
   const [imageBusy, setImageBusy] = useState(false)
@@ -47,7 +45,6 @@ export function CharacterPanel({ characters, onNotice }: Props) {
 
   const handleCreate = () => {
     createCharacter('', lang)
-    setShowDetails(true)
   }
 
   const handleDelete = () => {
@@ -60,9 +57,10 @@ export function CharacterPanel({ characters, onNotice }: Props) {
 
   const handleExport = () => {
     if (!activeCharacter) return
-    const blob = new Blob([exportCharacterJSON(activeCharacter, exportMemo)], {
-      type: 'application/json',
-    })
+    const blob = new Blob(
+      [exportCharacterJSON(activeCharacter, activeCharacter.exportMemo ?? false)],
+      { type: 'application/json' },
+    )
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -80,8 +78,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
       .text()
       .then((text) => importCharacter(text))
       .then((ok) => {
-        if (ok) setShowDetails(true)
-        else setImportError(true)
+        if (!ok) setImportError(true)
       })
       .catch(() => setImportError(true))
   }
@@ -155,103 +152,94 @@ export function CharacterPanel({ characters, onNotice }: Props) {
             />
           </label>
 
-          <button
-            type="button"
-            className="link disclosure"
-            aria-expanded={showDetails}
-            onClick={() => setShowDetails((v) => !v)}
-          >
-            {showDetails ? '▾' : '▸'} {t('character.details')}
-          </button>
-
-          {showDetails && (
-            <div className="char-details">
-              <div className="field">
-                <span>{t('character.image')}</span>
-                {activeCharacter.image ? (
-                  <div className="char-image-row">
-                    <button
-                      type="button"
-                      className="char-image-thumb"
-                      aria-label={t('character.imageView')}
-                      onClick={() => setLightboxOpen(true)}
-                    >
-                      <img src={activeCharacter.image} alt={activeCharacter.name} />
-                    </button>
-                    <div className="char-image-actions">
-                      <button type="button" onClick={handlePickImage} disabled={imageBusy}>
-                        {t('character.imageChange')}
-                      </button>
-                      <button type="button" className="link danger" onClick={handleRemoveImage}>
-                        {t('character.imageRemove')}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button type="button" onClick={handlePickImage} disabled={imageBusy}>
-                    {t('character.imageAdd')}
+          <div className="char-details">
+            <div className="field">
+              <span>{t('character.image')}</span>
+              {activeCharacter.image ? (
+                <div className="char-image-row">
+                  <button
+                    type="button"
+                    className="char-image-thumb"
+                    aria-label={t('character.imageView')}
+                    onClick={() => setLightboxOpen(true)}
+                  >
+                    <img src={activeCharacter.image} alt={activeCharacter.name} />
                   </button>
-                )}
-                {imageBusy && <p className="hint">{t('character.imageProcessing')}</p>}
-                {imageError && (
-                  <p className="banner error" role="alert">
-                    {t('character.imageError')}
-                  </p>
-                )}
-                <input
-                  ref={imageInputRef}
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={handleImageFile}
-                />
-              </div>
-              <label className="field">
-                <span>{t('character.background')}</span>
-                <textarea
-                  rows={3}
-                  value={activeCharacter.background}
-                  maxLength={1000}
-                  placeholder={t('character.backgroundPlaceholder')}
-                  onChange={(e) => {
-                    updateCharacter(activeCharacter.id, { background: e.target.value })
-                    detailNotice.markChanged()
-                  }}
-                  onBlur={detailNotice.flush}
-                />
-              </label>
-              <label className="field">
-                <span>{t('character.memo')}</span>
-                <textarea
-                  rows={3}
-                  value={activeCharacter.memo}
-                  maxLength={2000}
-                  placeholder={t('character.memoPlaceholder')}
-                  onChange={(e) => {
-                    updateCharacter(activeCharacter.id, { memo: e.target.value })
-                    detailNotice.markChanged()
-                  }}
-                  onBlur={detailNotice.flush}
-                />
-              </label>
-              <label className="checkbox">
-                <input
-                  type="checkbox"
-                  checked={exportMemo}
-                  onChange={(e) => setExportMemo(e.target.checked)}
-                />
-                <span>{t('character.exportMemo')}</span>
-              </label>
-              <div className="char-actions">
-                <button type="button" onClick={handleExport}>
-                  {t('character.export')}
+                  <div className="char-image-actions">
+                    <button type="button" onClick={handlePickImage} disabled={imageBusy}>
+                      {t('character.imageChange')}
+                    </button>
+                    <button type="button" className="link danger" onClick={handleRemoveImage}>
+                      {t('character.imageRemove')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button type="button" onClick={handlePickImage} disabled={imageBusy}>
+                  {t('character.imageAdd')}
                 </button>
-                <button type="button" className="link danger" onClick={handleDelete}>
-                  {t('character.delete')}
-                </button>
-              </div>
+              )}
+              {imageBusy && <p className="hint">{t('character.imageProcessing')}</p>}
+              {imageError && (
+                <p className="banner error" role="alert">
+                  {t('character.imageError')}
+                </p>
+              )}
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={handleImageFile}
+              />
             </div>
-          )}
+            <label className="field">
+              <span>{t('character.background')}</span>
+              <textarea
+                rows={5}
+                value={activeCharacter.background}
+                maxLength={1000}
+                placeholder={t('character.backgroundPlaceholder')}
+                onChange={(e) => {
+                  updateCharacter(activeCharacter.id, { background: e.target.value })
+                  detailNotice.markChanged()
+                }}
+                onBlur={detailNotice.flush}
+              />
+            </label>
+            <label className="field">
+              <span>{t('character.memo')}</span>
+              <textarea
+                rows={5}
+                value={activeCharacter.memo}
+                maxLength={2000}
+                placeholder={t('character.memoPlaceholder')}
+                onChange={(e) => {
+                  updateCharacter(activeCharacter.id, { memo: e.target.value })
+                  detailNotice.markChanged()
+                }}
+                onBlur={detailNotice.flush}
+              />
+            </label>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={activeCharacter.exportMemo ?? false}
+                onChange={(e) =>
+                  updateCharacter(activeCharacter.id, { exportMemo: e.target.checked })
+                }
+              />
+              <span>{t('character.exportMemo')}</span>
+            </label>
+            <div className="char-actions">
+              <button type="button" onClick={handleExport}>
+                {t('character.export')}
+              </button>
+              <button type="button" className="link danger" onClick={handleDelete}>
+                {t('character.delete')}
+              </button>
+            </div>
+          </div>
         </>
       )}
 

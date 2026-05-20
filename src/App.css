@@ -1531,10 +1531,6 @@ label.setting-row {
   flex-shrink: 0;
   white-space: nowrap;
 }
-.disclosure {
-  padding: 4px 0;
-  font-size: 0.85rem;
-}
 .char-details {
   display: flex;
   flex-direction: column;
