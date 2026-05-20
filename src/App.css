@@ -293,6 +293,23 @@
 .app-banner .icon-x {
   color: inherit;
 }
+
+/* "Dice & Chat" brand heading: small bubble-and-d20 icon followed by the
+   localised app name. inline-flex keeps the icon optically centred with
+   the text without fighting baseline alignment across scripts. */
+.brand-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.brand-mark {
+  display: block;
+  flex-shrink: 0;
+  /* Slightly larger than 1em so the icon reads as a proper logo mark
+     instead of disappearing next to bold heading text. */
+  width: 1.15em;
+  height: 1.15em;
+}
 .sheet-body {
   overflow-y: auto;
   padding: 4px;

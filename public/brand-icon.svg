@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Dice &amp; Chat</title>
+  <defs>
+    <linearGradient id="g" x1="32" y1="16" x2="488" y2="496" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5B8DF6"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+  </defs>
+  <!-- Speech bubble: circle body with a tail extending to the lower-left.
+       The arc enters the tail at ~130° (bottom-left of circle) and exits at
+       ~170° (left side, slightly below mid). A single path so the outline
+       stays continuous and stroke-linejoin keeps the corners crisp. -->
+  <path d="M 270,15
+           A 215,215 0 1 1 131.8,394.7
+           L 35,478
+           L 58.3,267.3
+           A 215,215 0 0 1 270,15 Z"
+        fill="none" stroke="url(#g)" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- D20 inside the bubble: outer hexagon + inscribed hexagram + "20".
+       Same construction as favicon.svg but scaled down to sit inside the
+       bubble with comfortable padding. -->
+  <g stroke="#fff" stroke-width="12" stroke-linejoin="round" fill="none">
+    <polygon points="270,90 391.2,160 391.2,300 270,370 148.8,300 148.8,160" fill="url(#g)"/>
+    <polygon points="270,90 391.2,300 148.8,300"/>
+    <polygon points="270,370 148.8,160 391.2,160"/>
+  </g>
+  <text x="270" y="230" text-anchor="middle" dominant-baseline="central"
+        font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif"
+        font-weight="800" font-size="115" fill="#fff" letter-spacing="-4">20</text>
+</svg>
