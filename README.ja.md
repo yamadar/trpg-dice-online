@@ -80,8 +80,8 @@ Pages へ公開されます。本番のベースパスは `/trpg-dice-online/` �
 
 ## ドキュメント
 
-- 要件定義・実装プラン: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
-- リアルタイム翻訳 API の調査: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
+- 要件定義・実装プラン: [`docs/REQUIREMENTS.ja.md`](docs/REQUIREMENTS.ja.md)
+- リアルタイム翻訳 API の調査: [`docs/TRANSLATION_API_RESEARCH.ja.md`](docs/TRANSLATION_API_RESEARCH.ja.md)
 
 ## ライセンス
 
