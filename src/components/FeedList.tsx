@@ -244,7 +244,7 @@ export function FeedList({
   return (
     <ul className="feed" ref={listRef} onScroll={onScroll}>
       {feed.length === 0 &&
-        (emptyState !== undefined ? (
+        (emptyState != null ? (
           <li className="feed-empty">{emptyState}</li>
         ) : (
           <li className="hint feed-empty">{t('feed.empty')}</li>
