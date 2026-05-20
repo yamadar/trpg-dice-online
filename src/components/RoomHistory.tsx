@@ -10,10 +10,12 @@ import {
   deleteSession,
   listSessions,
   loadFullLog,
+  loadSessionPortraits,
   type SessionSummary,
 } from '../storage/roomLog'
-import { FeedList } from './FeedList'
+import { FeedList, type FeedDetailTarget } from './FeedList'
 import { Lightbox } from './Lightbox'
+import { PlayerDetailCard } from './PlayerDetailCard'
 
 const FILTERS: FeedFilter[] = ['all', 'rolls', 'chat', 'files']
 
@@ -33,18 +35,26 @@ interface LoadedLog {
 
 /**
  * Browse the durable logs of past room sessions. The list view shows every
- * stored session; opening one renders its whole feed read-only. Sessions
- * can be deleted individually or all at once.
+ * stored session; opening one renders its whole feed read-only, and
+ * tapping a player name surfaces that player's character snapshot (with
+ * the last-known portrait). Sessions can be deleted individually or all
+ * at once.
  */
 export function RoomHistory({ playerId, onBack }: Props) {
   const { t, lang } = useI18n()
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null)
   const [selected, setSelected] = useState<SessionSummary | null>(null)
-  // The loaded log is tagged with its session id, so a result that lands
-  // after the selection moved on is simply ignored at render time.
+  // The loaded log and portrait map are tagged with their session id, so a
+  // result that lands after the selection moved on is dropped at render
+  // time rather than overwriting the newer view.
   const [log, setLog] = useState<{ sessionId: string; data: LoadedLog } | null>(null)
+  const [portraitState, setPortraitState] = useState<
+    { sessionId: string; map: Record<string, string> } | null
+  >(null)
   const [filter, setFilter] = useState<FeedFilter>('all')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  // The entry whose name was tapped, opening a read-only player detail.
+  const [detail, setDetail] = useState<FeedDetailTarget | null>(null)
 
   const refresh = useCallback(() => {
     void listSessions().then(setSessions)
@@ -58,33 +68,42 @@ export function RoomHistory({ playerId, onBack }: Props) {
     setSelected(s)
     setFilter('all')
     setLightboxIndex(null)
+    setDetail(null)
   }, [])
 
   const closeSession = useCallback(() => {
     setSelected(null)
     setLightboxIndex(null)
+    setDetail(null)
   }, [])
 
-  // Load the selected session's whole durable log for read-only browsing.
-  // The result is tagged with its session id; a stale load that resolves
-  // after the selection moved on is dropped by `loadedLog` below.
+  // Load the selected session's full log and its per-player portrait map
+  // in parallel. Both are tagged with the session id so a stale result is
+  // dropped by `loadedLog` / `portraits` below.
   useEffect(() => {
     if (!selected) return
     const sid = selected.sessionId
-    void loadFullLog(sid).then((entries) => {
-      setLog({
-        sessionId: sid,
-        data: {
-          history: entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult),
-          chat: entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage),
-          markers: entries.filter((e) => e.kind === 'marker').map((e) => e.data as SystemMarker),
-        },
-      })
-    })
+    void Promise.all([loadFullLog(sid), loadSessionPortraits(sid)]).then(
+      ([entries, portraits]) => {
+        setLog({
+          sessionId: sid,
+          data: {
+            history: entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult),
+            chat: entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage),
+            markers: entries
+              .filter((e) => e.kind === 'marker')
+              .map((e) => e.data as SystemMarker),
+          },
+        })
+        setPortraitState({ sessionId: sid, map: portraits })
+      },
+    )
   }, [selected])
 
-  // Only the log that matches the current selection — null while loading.
+  // Only the log / portraits that match the current selection.
   const loadedLog = selected && log?.sessionId === selected.sessionId ? log.data : null
+  const portraits =
+    selected && portraitState?.sessionId === selected.sessionId ? portraitState.map : {}
 
   const handleDelete = (s: SessionSummary) => {
     if (!window.confirm(t('history.deleteConfirm'))) return
@@ -97,7 +116,10 @@ export function RoomHistory({ playerId, onBack }: Props) {
   }
 
   const feed = useMemo(
-    () => (loadedLog ? buildFeed(loadedLog.history, loadedLog.chat, loadedLog.markers, filter) : []),
+    () =>
+      loadedLog
+        ? buildFeed(loadedLog.history, loadedLog.chat, loadedLog.markers, filter)
+        : [],
     [loadedLog, filter],
   )
 
@@ -120,7 +142,29 @@ export function RoomHistory({ playerId, onBack }: Props) {
     [images],
   )
 
-  // --- detail view: one past session's read-only feed ---------------------
+  // --- detail view: a player's character snapshot from this session ------
+  if (selected && detail) {
+    return (
+      <div className="room-history">
+        <div className="history-head">
+          <button type="button" className="link" onClick={() => setDetail(null)}>
+            ← {t('room.back')}
+          </button>
+        </div>
+        <PlayerDetailCard
+          player={null}
+          playerId={detail.playerId}
+          displayName={detail.name}
+          characterName={detail.characterName}
+          background={detail.background}
+          image={portraits[detail.playerId]}
+          isSelf={detail.playerId === playerId}
+        />
+      </div>
+    )
+  }
+
+  // --- session view: one past session's read-only feed -------------------
   if (selected) {
     return (
       <div className="room-history">
@@ -155,7 +199,7 @@ export function RoomHistory({ playerId, onBack }: Props) {
             hasOlder={false}
             onLoadOlder={() => {}}
             pending={[]}
-            onOpenDetail={() => {}}
+            onOpenDetail={setDetail}
             onOpenImage={openImage}
           />
         )}
@@ -171,7 +215,7 @@ export function RoomHistory({ playerId, onBack }: Props) {
     )
   }
 
-  // --- list view: every stored past session -------------------------------
+  // --- list view: every stored past session ------------------------------
   return (
     <div className="room-history">
       <div className="history-head">

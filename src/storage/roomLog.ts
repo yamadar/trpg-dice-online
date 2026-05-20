@@ -19,9 +19,10 @@
  */
 
 const DB_NAME = 'trpg-dice'
-const DB_VERSION = 2
+const DB_VERSION = 3
 const STORE = 'roomLog'
 const META = 'sessions'
+const PORTRAITS = 'sessionPortraits'
 
 /** Which feed list an entry belongs to. */
 export type LogKind = 'roll' | 'chat' | 'marker'
@@ -54,6 +55,17 @@ interface SessionRecord {
 export interface SessionSummary extends SessionRecord {
   /** Number of log entries the session holds. */
   count: number
+}
+
+/** Per-session snapshot of a player's character portrait (last known). */
+interface PortraitRecord {
+  /** `${sessionId}:${playerId}` — composite, so an upsert overwrites. */
+  pk: string
+  sessionId: string
+  playerId: string
+  /** `image/*` data URL; empty (absent) when the player has no portrait. */
+  image: string
+  updatedAt: number
 }
 
 /** Identifies the session a freshly logged entry belongs to. */
@@ -136,6 +148,12 @@ function openDb(): Promise<IDBDatabase | null> {
       // v1 stored entries keyed by room code with no session metadata.
       if (event.oldVersion >= 1 && event.oldVersion < 2) {
         migrateV1(logStore, metaStore)
+      }
+      // v3 added per-session portrait snapshots, so a past session can
+      // surface the last-known character image of each player.
+      if (!db.objectStoreNames.contains(PORTRAITS)) {
+        const ps = db.createObjectStore(PORTRAITS, { keyPath: 'pk' })
+        ps.createIndex('bySession', 'sessionId')
       }
     }
     req.onsuccess = () => {
@@ -378,7 +396,7 @@ export async function deleteSession(sessionId: string | null): Promise<void> {
   if (!db) return
   await new Promise<void>((resolve) => {
     try {
-      const tx = db.transaction([STORE, META], 'readwrite')
+      const tx = db.transaction([STORE, META, PORTRAITS], 'readwrite')
       const cursor = tx
         .objectStore(STORE)
         .index('bySessionAt')
@@ -391,6 +409,17 @@ export async function deleteSession(sessionId: string | null): Promise<void> {
         }
       }
       tx.objectStore(META).delete(sessionId)
+      const portraitCursor = tx
+        .objectStore(PORTRAITS)
+        .index('bySession')
+        .openCursor(IDBKeyRange.only(sessionId))
+      portraitCursor.onsuccess = () => {
+        const cur = portraitCursor.result
+        if (cur) {
+          cur.delete()
+          cur.continue()
+        }
+      }
       tx.oncomplete = () => resolve()
       tx.onerror = () => resolve()
     } catch {
@@ -405,13 +434,106 @@ export async function deleteAllSessions(): Promise<void> {
   if (!db) return
   await new Promise<void>((resolve) => {
     try {
-      const tx = db.transaction([STORE, META], 'readwrite')
+      const tx = db.transaction([STORE, META, PORTRAITS], 'readwrite')
       tx.objectStore(STORE).clear()
       tx.objectStore(META).clear()
+      tx.objectStore(PORTRAITS).clear()
       tx.oncomplete = () => resolve()
       tx.onerror = () => resolve()
     } catch {
       resolve()
+    }
+  })
+}
+
+/**
+ * Upsert one player's last-known portrait for the given session. An empty
+ * `image` deletes the record so a portrait removal does not leave a stale
+ * snapshot behind. A no-op when there is no session.
+ */
+export async function savePortraitForSession(
+  sessionId: string | null,
+  playerId: string,
+  image: string,
+): Promise<void> {
+  if (!sessionId) return
+  const db = await openDb()
+  if (!db) return
+  try {
+    const tx = db.transaction(PORTRAITS, 'readwrite')
+    const store = tx.objectStore(PORTRAITS)
+    const pk = `${sessionId}:${playerId}`
+    if (image) {
+      const rec: PortraitRecord = {
+        pk,
+        sessionId,
+        playerId,
+        image,
+        updatedAt: Date.now(),
+      }
+      store.put(rec)
+    } else {
+      store.delete(pk)
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Bulk variant: persist every entry in a portrait map in one transaction.
+ * Used when the welcome snapshot lands a whole roster's portraits at once.
+ */
+export async function savePortraitsForSession(
+  sessionId: string | null,
+  images: Record<string, string>,
+): Promise<void> {
+  if (!sessionId) return
+  const entries = Object.entries(images)
+  if (entries.length === 0) return
+  const db = await openDb()
+  if (!db) return
+  try {
+    const tx = db.transaction(PORTRAITS, 'readwrite')
+    const store = tx.objectStore(PORTRAITS)
+    const now = Date.now()
+    for (const [playerId, image] of entries) {
+      const pk = `${sessionId}:${playerId}`
+      if (image) {
+        store.put({ pk, sessionId, playerId, image, updatedAt: now })
+      } else {
+        store.delete(pk)
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Load every stored portrait for the given session, keyed by player id. */
+export async function loadSessionPortraits(
+  sessionId: string,
+): Promise<Record<string, string>> {
+  if (!sessionId) return {}
+  const db = await openDb()
+  if (!db) return {}
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(PORTRAITS, 'readonly')
+      const req = tx
+        .objectStore(PORTRAITS)
+        .index('bySession')
+        .getAll(IDBKeyRange.only(sessionId))
+      req.onsuccess = () => {
+        const out: Record<string, string> = {}
+        for (const r of (req.result as PortraitRecord[]) ?? []) {
+          out[r.playerId] = r.image
+        }
+        resolve(out)
+      }
+      req.onerror = () => resolve({})
+    } catch {
+      resolve({})
     }
   })
 }

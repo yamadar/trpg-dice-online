@@ -27,6 +27,8 @@ import {
   deleteSession,
   loadRecentLog,
   newSessionId,
+  savePortraitForSession,
+  savePortraitsForSession,
   type LogTarget,
 } from '../storage/roomLog'
 import {
@@ -275,6 +277,9 @@ export function useSession(): Session {
       if (image) next[id] = image
       else delete next[id]
       setPlayerImages(next)
+      // Persist to the per-session portrait store so a past session's
+      // history view can show the last-known portrait of each player.
+      void savePortraitForSession(sessionIdRef.current, id, image)
     },
     [setPlayerImages],
   )
@@ -449,6 +454,7 @@ export function useSession(): Session {
             }
             if (ownImageRef.current) images[playerId] = ownImageRef.current
             setPlayerImages(images)
+            void savePortraitsForSession(sessionIdRef.current, images)
           }
           setHistory((prev) => mergeById(prev, msg.snapshot.history, MAX_HISTORY))
           setChat((prev) => mergeById(prev, msg.snapshot.chat, MAX_CHAT))
@@ -1120,6 +1126,16 @@ export function useSession(): Session {
       return () => clearInterval(timer)
     }
   }, [role])
+
+  // When the session id first arrives (create / join / resume), persist
+  // the local player's portrait so a fresh session always carries one
+  // entry for the GM — putPlayerImage's per-update save misses the case
+  // where the portrait was set before any room existed.
+  useEffect(() => {
+    if (sessionId && ownImageRef.current) {
+      void savePortraitForSession(sessionId, playerId, ownImageRef.current)
+    }
+  }, [sessionId, playerId])
 
   // Tear down the peer when the app unmounts.
   useEffect(() => () => roomRef.current?.close(), [])
