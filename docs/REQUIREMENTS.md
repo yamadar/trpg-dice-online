@@ -434,6 +434,14 @@ traffic, so the app stays a fully static site.
 
 ## 6. データモデル / Data Model
 
+> 実装の型から重要なフィールドだけを抜粋した概念図。フラグ・スナップショット系の
+> フィールド（`Pattern.hidden` / `RollResult.isGM` / `ChatMessage.file` 等）は
+> 実コードを参照のこと。
+> A conceptual sketch — only the key fields, drawn from the implementation
+> types. Flag / snapshot fields like `Pattern.hidden`, `RollResult.isGM` and
+> `ChatMessage.file` are kept out of the sketch; see the source for the
+> full shape.
+
 ```ts
 DiceType   = 'D4'|'D6'|'D8'|'D10'|'D12'|'D20'|'D100'
 PatternKind = 'damage' | 'judgment'

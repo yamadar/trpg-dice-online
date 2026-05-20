@@ -34,9 +34,10 @@ TRPG セッション用のオンラインダイスローラーです。ダイス
   the lobby and delete sessions one by one or all at once. Tapping a player
   name in the past feed shows the character snapshot and last-known portrait.
 - **Online rooms / オンラインルーム** — separate Create / Join screens lead
-  to a 4-8 character room code; history, chat and the player list are shared
-  peer-to-peer. Joining keeps your pre-join rolls, and a reload re-hosts
-  (GM) or re-joins (player) the same room automatically.
+  to a room code (at least 4 characters; auto-generated codes are 6);
+  history, chat and the player list are shared peer-to-peer. Joining
+  keeps your pre-join rolls, and a reload re-hosts (GM) or re-joins
+  (player) the same room automatically.
 - **GM controls / GM 専用設定** — the GM section bundles room renaming and
   code change behind a collapsed disclosure, and the GM's exit reads
   "Close room" so it is clear it ends the session for everyone.
