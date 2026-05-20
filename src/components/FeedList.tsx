@@ -10,6 +10,7 @@ import { playerColor } from '../players/colors'
 import { feedName } from '../players/identity'
 import { formatDiceSummary, formatRollText } from '../dice/format'
 import { ChatAttachment } from './ChatAttachment'
+import { DiceFaceIcon } from './DiceFaceIcon'
 
 /** Identity snapshot opened in the player-detail card when a name is tapped. */
 export interface FeedDetailTarget {
@@ -174,7 +175,12 @@ const FeedRollItem = memo(function FeedRollItem({
         <p className="roll-detail">
           {formatDiceSummary(r.diceCount, r.diceType, r.modifier)}
           {' · '}
-          {t('result.faces')}: [{r.faces.join(', ')}]
+          {t('result.faces')}:{' '}
+          <span className="face-list">
+            {r.faces.map((v, i) => (
+              <DiceFaceIcon key={i} diceType={r.diceType} value={v} />
+            ))}
+          </span>
           {r.hidden && isGM && ' 🔒'}
         </p>
       )}
