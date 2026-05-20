@@ -254,6 +254,12 @@ An SPA where players roll TRPG dice and share results with other players in real
 - Single-page application.
 - Fully static; no own server.
 - Responsive layout (desktop / mobile).
+- Installable as a PWA: a web manifest, full-size icons (192 / 512 /
+  maskable / 1024 for Apple touch) and a precaching service worker let
+  the site be added to the iOS / Android home screen and launched in a
+  standalone window without browser chrome. Offline is out of scope —
+  the app is realtime P2P — so the service worker only precaches the
+  app shell.
 - MIT License.
 
 ## 5. Tech Stack
@@ -602,3 +608,12 @@ Commit after each step.
   ending the room (or a client receiving that notice) tags the session
   as closed, after which the next visit to the same code mints a fresh
   entry.
+- v1.64 — Ship as an installable PWA. A web manifest (standalone display,
+  midnight `theme_color`), PNG icons (192, 512, maskable 512, Apple
+  touch 1024) and a precaching service worker (vite-plugin-pwa,
+  `autoUpdate`) let the site be added to the iOS / Android home screen
+  and launched in a full-screen window without browser chrome. The
+  browser favicon switches from the SVG-only setup to a proper `.ico`
+  with the SVG kept as a higher-DPI fallback for desktop tabs. The
+  service worker only precaches the app shell — offline play is out of
+  scope because the app is realtime P2P.

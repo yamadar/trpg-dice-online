@@ -244,6 +244,12 @@
 - SPA（シングルページ）。
 - 完全な静的サイト。サーバー不要。
 - レスポンシブ（PC / モバイル）。
+- PWA としてインストール可能。Web マニフェスト・各サイズのアイコン
+  （192 / 512 / maskable / Apple touch 1024）・アプリシェルを
+  precache する Service Worker を備え、iOS / Android のホーム画面に
+  追加するとブラウザ UI のない全画面ウィンドウで起動できる。リアルタイム
+  P2P アプリのためオフライン動作は対象外。Service Worker はアプリ
+  シェルの precache のみ行う。
 - ライセンス: MIT。
 
 ## 5. 技術スタック
@@ -570,3 +576,11 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   セッションがあればその sessionId を再利用するようにした。GM が明示的に
   ルームを閉じる（クライアント側はその通知を受け取る）と `closed: true` が
   立ち、その後同じコードで入室すると新しい履歴になる。
+- v1.64 — インストール可能な PWA として公開。Web マニフェスト（standalone
+  表示・midnight テーマに揃えた `theme_color`）、PNG アイコン群（192・512・
+  maskable 512・Apple touch 1024）、vite-plugin-pwa による Service Worker
+  （`autoUpdate`）を追加し、iOS / Android のホーム画面に追加すれば
+  ブラウザ UI のない全画面ウィンドウで起動できる。ブラウザの favicon は
+  SVG のみだった構成から `.ico` を主・SVG を高 DPI フォールバックとする
+  構成に変更。Service Worker はアプリシェルのみ precache する
+  （リアルタイム P2P アプリのためオフライン動作は対象外）。
