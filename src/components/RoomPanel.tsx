@@ -37,16 +37,12 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   const [createCode, setCreateCode] = useState('')
   const [createName, setCreateName] = useState('')
   const [copied, setCopied] = useState(false)
-  // Host-only fields for renaming the room and changing its code.
+  // Host-only fields for renaming the room and changing its code. The
+  // panel is mounted only while open, so `useState(session.roomName)`
+  // re-seeds with the current name each time the sheet is reopened; the
+  // host's `session.roomName` only changes via this same editor while it
+  // is open, so no external resync is needed.
   const [newRoomName, setNewRoomName] = useState(session.roomName)
-  // Track the synced room name so an external change (the host renamed it
-  // in another way, the welcome snapshot landed) resets the editor — done
-  // during render rather than in an effect.
-  const [syncedRoomName, setSyncedRoomName] = useState(session.roomName)
-  if (syncedRoomName !== session.roomName) {
-    setSyncedRoomName(session.roomName)
-    setNewRoomName(session.roomName)
-  }
   const [newCode, setNewCode] = useState('')
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
   // File-picker ref + error flag for importing a room from an export file.
