@@ -14,21 +14,33 @@ TRPG セッション用のオンラインダイスローラーです。ダイス
 
 - **Dice (A) / ダイス** — choose the count and type before every roll
   (`D4, D6, D8, D10, D12, D20, D100`). `D100` rolls two d10 as digits, where
-  `00` reads as 100.
+  `00` reads as 100. Rolled face values appear as small shape icons that
+  match each die's top-down silhouette.
 - **Modifier (B) / 補正** — apply a signed `+/-` modifier to the result.
 - **Kind (C) / 種類** — `damage` or `judgment`. Damage shows
-  `{pattern} {value} damage`; judgment shows `Result of {pattern} check: {value}`.
+  `{pattern} {value} damage`; judgment shows `Result of {pattern} check: {value}`,
+  or just `Result: {value}` when no pattern name is set.
 - **Characters / キャラクター** — keep multiple player characters (name,
-  shared background, private memo, pattern list), switch between them, and
+  shared background, private memo, optional portrait, pattern list, per-
+  character "include memo in export" preference), switch between them, and
   export / import them as JSON. Acting as a character shows the name as
   `Character（Player）`.
 - **Patterns / パターン** — bundle A + B + C, name it, save it (per character),
   and reload it later. Quick-roll a saved pattern in one click.
 - **History & Chat feed / 履歴とチャット** — rolls and chat share one
-  chronological feed with an All / Rolls / Chat filter.
-- **Online rooms / オンラインルーム** — create a room to become the GM, or join
-  one with a 6-character code. History, chat and the player list are shared
-  peer-to-peer; joining keeps your pre-join rolls.
+  chronological feed with an All / Rolls / Chat / Files filter.
+- **Past room history / 過去のルーム履歴** — every past session is kept in
+  a durable per-session log; browse the read-only feed of an old room from
+  the lobby and delete sessions one by one or all at once. Tapping a player
+  name in the past feed shows the character snapshot and last-known portrait.
+- **Online rooms / オンラインルーム** — separate Create / Join screens lead
+  to a room code (at least 4 characters; auto-generated codes are 6);
+  history, chat and the player list are shared peer-to-peer. Joining
+  keeps your pre-join rolls, and a reload re-hosts (GM) or re-joins
+  (player) the same room automatically.
+- **GM controls / GM 専用設定** — the GM section bundles room renaming and
+  code change behind a collapsed disclosure, and the GM's exit reads
+  "Close room" so it is clear it ends the session for everyone.
 - **GM hidden rolls / GM の隠しロール** — the GM can hide a roll's value; other
   players only see that a hidden roll happened.
 - **Player colors & typing indicator / 参加者カラーと入力中表示** — every
