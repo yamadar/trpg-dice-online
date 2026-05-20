@@ -10,9 +10,11 @@
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon-1024.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Online TRPG dice roller with rooms, chat and GM hidden rolls / オンラインTRPGダイスローラー" />
-    <!-- PWA: lets iOS launch the app full-screen from the home screen.
-         apple-mobile-web-app-capable is the legacy name; mobile-web-app-capable
-         is the modern equivalent honoured by Android/Chrome. -->
+    <!-- PWA: standalone launch on iOS is driven by apple-mobile-web-app-capable;
+         Android / Chrome derives the same behaviour from the web manifest's
+         `display: standalone` and ignores these metas. mobile-web-app-capable
+         is kept as a best-effort hint for older Chromium-based browsers that
+         predate full manifest support. -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="TRPG Dice" />
