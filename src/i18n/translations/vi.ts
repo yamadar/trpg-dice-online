@@ -63,9 +63,15 @@ export const vi: Dict = {
   'tutorial.room.title': 'Chia sẻ trong phòng',
   'tutorial.room.body':
     'Từ «Phòng», tạo phòng (bạn trở thành GM) hoặc tham gia bằng mã. GM có thể đặt hoặc đổi mã phòng, và tự kết nối lại nếu mất kết nối.',
+  'tutorial.pastRooms.title': 'Phòng trước đây',
+  'tutorial.pastRooms.body':
+    'Mỗi phiên được lưu lại dưới dạng nhật ký chỉ đọc. Trên màn hình «Phòng», chạm «Phòng trước đây» để mở lại một phiên cũ; nhật ký có thể xóa từng cái hoặc tất cả cùng lúc.',
   'tutorial.chat.title': 'Trò chuyện & đính kèm',
   'tutorial.chat.body':
     'Trò chuyện trong dòng tin và đính kèm ảnh hoặc tệp. Dùng «@tên» để làm nổi bật tin nhắn, và chạm tên trong dòng tin để mở hồ sơ người chơi đó.',
+  'tutorial.translate.title': 'Dịch chat',
+  'tutorial.translate.body':
+    'Bật «Tự động dịch» trong Cài đặt để chat của những người chơi khác được dịch sang ngôn ngữ giao diện. Chạm «Bản gốc» trên tin nhắn đã dịch để xem nội dung được gửi nguyên bản.',
   'tutorial.settings.title': 'Cài đặt & trợ giúp',
   'tutorial.settings.body':
     'Thay đổi tên người chơi, ngôn ngữ và chủ đề màu, cũng như mở lại hướng dẫn này từ Cài đặt (⚙) ở trên phải.',

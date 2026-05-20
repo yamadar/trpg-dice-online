@@ -63,9 +63,15 @@ export const es: Dict = {
   'tutorial.room.title': 'Compartir en una sala',
   'tutorial.room.body':
     'Desde «Sala» crea una sala (te conviertes en GM) o únete con un código. El GM puede elegir o cambiar el código, y la reconexión es automática si se cae.',
+  'tutorial.pastRooms.title': 'Salas anteriores',
+  'tutorial.pastRooms.body':
+    'Cada sesión se guarda como un registro de solo lectura. En la pantalla «Sala» toca «Salas anteriores» para volver a abrir una sesión anterior; puedes borrar los registros uno a uno o todos a la vez.',
   'tutorial.chat.title': 'Chat y adjuntos',
   'tutorial.chat.body':
     'Chatea en el feed y adjunta imágenes o archivos. Usa «@nombre» para marcar un mensaje, y toca un nombre del feed para abrir el perfil de ese jugador.',
+  'tutorial.translate.title': 'Traducir el chat',
+  'tutorial.translate.body':
+    'Activa «Traducción automática» en Ajustes para traducir el chat de otras personas a tu idioma de interfaz. Toca «Original» en un mensaje traducido para ver el texto tal como se envió.',
   'tutorial.settings.title': 'Ajustes y ayuda',
   'tutorial.settings.body':
     'Cambia tu nombre de jugador, idioma y tema de color, y vuelve a abrir esta guía desde Ajustes (⚙) arriba a la derecha.',

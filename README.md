@@ -43,7 +43,11 @@ all from a static page with no backend server.
   color, and a subtle indicator shows who is typing.
 - **Room awareness** — join/leave events appear in the feed, and closing
   the room as GM notifies every player gracefully.
-- **Multilingual** — the UI is available in 19 languages.
+- **Multilingual & auto-translate** — the UI is available in 19 languages.
+  Optional chat auto-translation renders messages from other players in your
+  UI language; it prefers the on-device Chrome Translator API and falls back
+  to the keyless [MyMemory](https://mymemory.translated.net/) REST API. Tap
+  "Original" on a translated message to see what was sent.
 
 ## How online sharing works
 
@@ -69,6 +73,23 @@ npm test         # run the unit tests
 npm run lint     # lint the source
 npm run build    # production build into dist/
 ```
+
+## Configuration
+
+WebRTC needs a TURN relay to connect players whose networks block UDP or use
+symmetric NAT (common on café / public Wi-Fi). By default the app uses the
+Open Relay Project's free public TURN servers — fine for casual use, but
+best-effort. For a dependable relay, copy `.env.example` to `.env` and set:
+
+- `VITE_TURN_URLS` — comma-separated TURN URLs. Include a TCP/443 `turns:`
+  entry so it works where UDP is blocked.
+- `VITE_TURN_USERNAME` — TURN username.
+- `VITE_TURN_CREDENTIAL` — TURN credential / password.
+
+To use these in the GitHub Pages deploy, add them as repository secrets and
+pass them through the build step in `.github/workflows/deploy.yml`. Free
+options include a [Metered](https://www.metered.ca/) free tier or self-hosting
+[coturn](https://github.com/coturn/coturn).
 
 ## Deployment
 

@@ -20,7 +20,7 @@
 - **GM 暗骰** — GM 可隱藏點數，其他人只看到發生了暗骰。
 - **玩家顏色與輸入提示** — 每位參與者有穩定顏色；提示器低調顯示誰在輸入。
 - **房間動態** — 加入/離開會寫入動態，GM 關閉房間時會通知所有人。
-- **多語言** — 介面支援 19 種語言。
+- **多語言與自動翻譯** — 介面支援 19 種語言。可選的自動翻譯會把其他玩家的聊天翻譯為你的介面語言；優先使用裝置上的 Chrome Translator API，無法使用時回退到無需金鑰的 [MyMemory](https://mymemory.translated.net/) REST API。在已翻譯的訊息上點擊「原文」可看到對方原本送出的內容。
 
 ## 線上共享原理
 
@@ -42,6 +42,16 @@ npm test         # 執行單元測試
 npm run lint     # 程式檢查
 npm run build    # 正式建置至 dist/
 ```
+
+## 設定（TURN 中繼）
+
+當玩家所在網路封鎖 UDP 或使用對稱式 NAT（公共 Wi-Fi 常見）時，WebRTC 需要 TURN 中繼才能建立連線。預設會回退到 Open Relay Project 的免費公共 TURN 伺服器——適合試用但屬於「盡力而為」。若要使用穩定的中繼，將 `.env.example` 複製為 `.env` 並設定：
+
+- `VITE_TURN_URLS` — 以逗號分隔的 TURN URL。請包含 TCP/443 的 `turns:` 項目，讓 UDP 被封鎖的網路也能連通。
+- `VITE_TURN_USERNAME` — TURN 使用者名稱。
+- `VITE_TURN_CREDENTIAL` — TURN 認證資訊（密碼）。
+
+若要在 GitHub Pages 部署中使用，請將其加入 Repository Secrets，並在 `.github/workflows/deploy.yml` 的建置步驟中傳入。免費選項包括 [Metered](https://www.metered.ca/) 的免費方案，或自架 [coturn](https://github.com/coturn/coturn)。
 
 ## 部署
 

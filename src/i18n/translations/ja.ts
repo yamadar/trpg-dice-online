@@ -63,9 +63,15 @@ export const ja: Dict = {
   'tutorial.room.title': 'ルームで共有',
   'tutorial.room.body':
     '「ルーム」でルームを作成（GM になる）するか、コードで参加します。GM はルームコードを指定・変更でき、通信が切れても自動で再接続します。',
+  'tutorial.pastRooms.title': '過去のルーム',
+  'tutorial.pastRooms.body':
+    '各セッションは読み取り専用のログとして残ります。「ルーム」画面の「過去のルーム」から過去のセッションを開けます。ログは 1 件ずつ、または全件まとめて削除できます。',
   'tutorial.chat.title': 'チャットと添付',
   'tutorial.chat.body':
     'フィードでチャットができ、画像やファイルも添付できます。「@名前」で相手にメッセージを強調表示でき、フィードの名前をタップすると相手の情報を確認できます。',
+  'tutorial.translate.title': 'チャットの自動翻訳',
+  'tutorial.translate.body':
+    '設定で「自動翻訳」を ON にすると、他プレイヤーのチャットが表示言語に翻訳されます。翻訳されたメッセージで「原文」をタップすると、相手が送ったままの文を確認できます。',
   'tutorial.settings.title': '設定とヘルプ',
   'tutorial.settings.body':
     'プレイヤー名・言語・カラーテーマの変更や、このガイドの再表示は、右上の設定（⚙）から行えます。',

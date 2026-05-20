@@ -42,7 +42,12 @@ statique sans serveur.
   couleur stable et un indicateur discret montre qui tape.
 - **Événements de salle** — entrées/sorties apparaissent dans le fil ;
   fermer la salle en tant que MJ notifie tout le monde proprement.
-- **Multilingue** — l'interface gère 19 langues.
+- **Multilingue & traduction automatique** — l'interface gère 19 langues.
+  La traduction automatique facultative affiche les messages des autres
+  joueurs dans la langue de votre interface ; elle privilégie l'API Chrome
+  Translator sur l'appareil et bascule sur l'API REST sans clé de
+  [MyMemory](https://mymemory.translated.net/). Touchez « Original » sur
+  un message traduit pour voir le texte tel qu'il a été envoyé.
 
 ## Comment fonctionne le partage
 
@@ -68,6 +73,27 @@ npm test         # exécuter les tests
 npm run lint     # lint
 npm run build    # build de production dans dist/
 ```
+
+## Configuration (relais TURN)
+
+WebRTC a besoin d'un relais TURN pour connecter les joueurs dont le
+réseau bloque UDP ou utilise un NAT symétrique (fréquent sur Wi-Fi
+public). Par défaut, l'application utilise les serveurs TURN publics
+gratuits de l'Open Relay Project — suffisants pour un usage occasionnel
+mais en « best effort ». Pour un relais fiable, copiez `.env.example`
+vers `.env` et renseignez :
+
+- `VITE_TURN_URLS` — URLs TURN séparées par des virgules. Incluez une
+  entrée `turns:` en TCP/443 pour que cela fonctionne quand UDP est
+  bloqué.
+- `VITE_TURN_USERNAME` — nom d'utilisateur TURN.
+- `VITE_TURN_CREDENTIAL` — identifiant TURN (mot de passe).
+
+Pour les utiliser dans le déploiement GitHub Pages, ajoutez-les comme
+secrets du dépôt et passez-les dans l'étape de build de
+`.github/workflows/deploy.yml`. Options gratuites : l'offre gratuite de
+[Metered](https://www.metered.ca/) ou l'auto-hébergement de
+[coturn](https://github.com/coturn/coturn).
 
 ## Déploiement
 

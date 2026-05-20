@@ -39,7 +39,13 @@ czasie rzeczywistym — wszystko ze statycznej strony bez backendu.
   a dyskretny wskaźnik pokazuje, kto pisze.
 - **Zdarzenia pokoju** — wejścia/wyjścia trafiają do strumienia, a
   zamknięcie pokoju przez MG poprawnie powiadamia wszystkich.
-- **Wielojęzyczność** — interfejs obsługuje 19 języków.
+- **Wielojęzyczność i automatyczne tłumaczenie** — interfejs obsługuje
+  19 języków. Opcjonalne automatyczne tłumaczenie pokazuje wiadomości
+  innych graczy w języku interfejsu; preferuje API Chrome Translator na
+  urządzeniu i przechodzi na REST API
+  [MyMemory](https://mymemory.translated.net/) bez klucza, gdy nie jest
+  dostępne. Dotknij „Oryginał” na przetłumaczonej wiadomości, aby
+  zobaczyć tekst tak, jak został wysłany.
 
 ## Jak działa udostępnianie
 
@@ -65,6 +71,25 @@ npm test         # uruchom testy
 npm run lint     # lint
 npm run build    # produkcyjny build w dist/
 ```
+
+## Konfiguracja (przekaźnik TURN)
+
+WebRTC potrzebuje przekaźnika TURN, aby łączyć graczy w sieci blokującej
+UDP albo używającej NAT symetrycznego (typowe w publicznym Wi-Fi).
+Domyślnie aplikacja używa darmowych publicznych serwerów TURN Open Relay
+Project — wystarczających do okazjonalnego użytku, ale „best effort”. Dla
+niezawodnego przekaźnika skopiuj `.env.example` do `.env` i ustaw:
+
+- `VITE_TURN_URLS` — adresy TURN oddzielone przecinkami. Dodaj wpis
+  `turns:` przez TCP/443, by działało także w sieciach z zablokowanym
+  UDP.
+- `VITE_TURN_USERNAME` — nazwa użytkownika TURN.
+- `VITE_TURN_CREDENTIAL` — dane uwierzytelniające TURN (hasło).
+
+Aby użyć ich we wdrożeniu na GitHub Pages, dodaj je jako sekrety
+repozytorium i przekaż w kroku build w `.github/workflows/deploy.yml`.
+Darmowe opcje: darmowy plan [Metered](https://www.metered.ca/) lub
+samodzielne hostowanie [coturn](https://github.com/coturn/coturn).
 
 ## Wdrożenie
 

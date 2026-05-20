@@ -63,9 +63,15 @@ export const tr: Dict = {
   'tutorial.room.title': 'Bir odada paylaş',
   'tutorial.room.body':
     '«Oda»dan oda oluştur (GM olursun) ya da bir kodla katıl. GM oda kodunu seçip değiştirebilir; bağlantı koparsa otomatik yeniden bağlanır.',
+  'tutorial.pastRooms.title': 'Önceki odalar',
+  'tutorial.pastRooms.body':
+    'Her oturum salt okunur kayıt olarak saklanır. «Oda» ekranında «Önceki odalar»a dokunarak geçmiş bir oturumu yeniden açabilirsin; kayıtları tek tek ya da tümünü birden silebilirsin.',
   'tutorial.chat.title': 'Sohbet ve ekler',
   'tutorial.chat.body':
     'Akışta sohbet et ve görsel ya da dosya ekle. «@ad» ile birine mesajı vurgula; akıştaki bir ada dokununca o oyuncunun profili açılır.',
+  'tutorial.translate.title': 'Sohbeti çevir',
+  'tutorial.translate.body':
+    'Ayarlar\'da «Otomatik çeviri»yi açtığında diğer oyuncuların sohbeti arayüz diline çevrilir. Çevrilmiş bir mesajda «Özgün»e dokunarak gönderilen metni olduğu gibi görebilirsin.',
   'tutorial.settings.title': 'Ayarlar ve yardım',
   'tutorial.settings.body':
     'Oyuncu adını, dili ve renk temasını değiştirebilir, bu rehberi yeniden açabilirsin: sağ üstteki Ayarlar (⚙).',

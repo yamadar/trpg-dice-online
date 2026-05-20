@@ -31,7 +31,11 @@
 - **玩家颜色与输入提示** — 每位参与者拥有稳定颜色；提示器低调显示谁在
   输入。
 - **房间动态** — 加入/离开会写入动态，GM 关闭房间时会通知所有人。
-- **多语言** — 界面支持 19 种语言。
+- **多语言与自动翻译** — 界面支持 19 种语言。可选的自动翻译会把其他玩家
+  的聊天翻译为你的界面语言；优先使用设备上的 Chrome Translator API，无法
+  使用时回退到无需密钥的
+  [MyMemory](https://mymemory.translated.net/) REST API。在已翻译的消息上
+  点击「原文」可查看对方原本发送的内容。
 
 ## 在线共享原理
 
@@ -55,6 +59,23 @@ npm test         # 运行单元测试
 npm run lint     # 代码检查
 npm run build    # 生产构建至 dist/
 ```
+
+## 配置（TURN 中继）
+
+当玩家所在网络封禁 UDP 或使用对称型 NAT（公共 Wi-Fi 常见）时，WebRTC
+需要 TURN 中继才能建立连接。默认会回退到 Open Relay Project 的免费公共
+TURN 服务器——足以试用，但属于「尽力而为」。要使用稳定的中继，请将
+`.env.example` 复制为 `.env` 并设置：
+
+- `VITE_TURN_URLS` — 用逗号分隔的 TURN URL。请包含通过 TCP/443 的
+  `turns:` 条目，以便在封禁 UDP 的网络仍能连通。
+- `VITE_TURN_USERNAME` — TURN 用户名。
+- `VITE_TURN_CREDENTIAL` — TURN 凭据（密码）。
+
+若要在 GitHub Pages 部署中使用，请将其添加为仓库 Secrets，并在
+`.github/workflows/deploy.yml` 的构建步骤中传入。免费选择包括
+[Metered](https://www.metered.ca/) 免费额度或自托管
+[coturn](https://github.com/coturn/coturn)。
 
 ## 部署
 

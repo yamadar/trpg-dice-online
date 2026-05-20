@@ -63,9 +63,15 @@ export const zhCN: Dict = {
   'tutorial.room.title': '在房间中共享',
   'tutorial.room.body':
     '从「房间」创建房间（你将成为 GM）或用代码加入。GM 可以选择或更改房间代码，断线时会自动重连。',
+  'tutorial.pastRooms.title': '过往房间',
+  'tutorial.pastRooms.body':
+    '每场会话都会保存为只读日志。在「房间」界面点击「过往房间」可重新查看之前的会话，记录可以逐条删除，也可以一次全部清空。',
   'tutorial.chat.title': '聊天与附件',
   'tutorial.chat.body':
     '在动态中聊天，并可附上图片或文件。用「@姓名」高亮指定玩家的消息，点击动态中的姓名可查看该玩家信息。',
+  'tutorial.translate.title': '翻译聊天',
+  'tutorial.translate.body':
+    '在「设置」中打开「自动翻译」，其他玩家的聊天会翻译为你的界面语言。在已翻译的消息上点击「原文」可查看对方发送的原始内容。',
   'tutorial.settings.title': '设置与帮助',
   'tutorial.settings.body':
     '玩家名、语言、配色主题的修改，以及重新打开本指南，都可以在右上角的设置（⚙）中进行。',

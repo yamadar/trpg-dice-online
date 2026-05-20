@@ -63,9 +63,15 @@ export const en: Dict = {
   'tutorial.room.title': 'Share in a room',
   'tutorial.room.body':
     'From "Room", create a room (become GM) or join with a code. The GM can choose or change the room code, and a dropped connection reconnects automatically.',
+  'tutorial.pastRooms.title': 'Past rooms',
+  'tutorial.pastRooms.body':
+    'Every session is kept as a read-only log. From the Room screen tap "Past rooms" to revisit a previous session, and delete logs one by one or all at once.',
   'tutorial.chat.title': 'Chat & attachments',
   'tutorial.chat.body':
     'Chat in the feed and attach images or files. Use "@name" to flag a message for someone, and tap a name in the feed to open that player profile.',
+  'tutorial.translate.title': 'Translate chat',
+  'tutorial.translate.body':
+    'Turn on "Auto-translate" in Settings to translate other players\' chat into your UI language. Tap "Original" on a translated message to see what was sent.',
   'tutorial.settings.title': 'Settings & help',
   'tutorial.settings.body':
     'Change your player name, language and colour theme, and reopen this guide, from Settings (⚙) at the top right.',
