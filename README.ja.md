@@ -1,6 +1,6 @@
 # TRPG オンラインダイス
 
-[English README](README.md)
+**Languages:** [English](README.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [한국어](README.ko.md) · [Italiano](README.it.md) · [Русский](README.ru.md) · [ไทย](README.th.md) · [Türkçe](README.tr.md) · [Bahasa Indonesia](README.id.md) · [Polski](README.pl.md) · [Tiếng Việt](README.vi.md) · [हिन्दी](README.hi.md) · [العربية](README.ar.md) · [Українська](README.uk.md)
 
 TRPG セッション用のオンラインダイスローラーです。ダイスを振り、再利用できる
 パターンを保存し、結果・履歴・チャットを仲間とリアルタイムで共有できます。
@@ -45,7 +45,7 @@ TRPG セッション用のオンラインダイスローラーです。ダイス
   入力中かを控えめなインジケータで表示します。
 - **ルーム状況** — 入退室イベントはフィードに記録され、GM がルームを閉じる
   と全員に正しく通知されます。
-- **多言語対応** — UI を日本語と英語で切り替えられます。
+- **多言語対応** — UI は 19 言語に対応しています。
 
 ## オンライン共有の仕組み
 

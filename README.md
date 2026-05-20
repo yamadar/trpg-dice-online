@@ -1,6 +1,6 @@
 # TRPG Online Dice
 
-[日本語版 README](README.ja.md)
+**Languages:** [English](README.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [한국어](README.ko.md) · [Italiano](README.it.md) · [Русский](README.ru.md) · [ไทย](README.th.md) · [Türkçe](README.tr.md) · [Bahasa Indonesia](README.id.md) · [Polski](README.pl.md) · [Tiếng Việt](README.vi.md) · [हिन्दी](README.hi.md) · [العربية](README.ar.md) · [Українська](README.uk.md)
 
 An online dice roller for tabletop RPG sessions. Roll dice, save reusable
 patterns, and share results, history and chat with your party in real time —
@@ -43,7 +43,7 @@ all from a static page with no backend server.
   color, and a subtle indicator shows who is typing.
 - **Room awareness** — join/leave events appear in the feed, and closing
   the room as GM notifies every player gracefully.
-- **Bilingual** — switch the UI between Japanese and English.
+- **Multilingual** — the UI is available in 19 languages.
 
 ## How online sharing works
 
