@@ -60,9 +60,9 @@ export function BrandIcon({
       <defs>
         <linearGradient
           id={gradId}
-          x1="32"
+          x1="16"
           y1="16"
-          x2="488"
+          x2="496"
           y2="496"
           gradientUnits="userSpaceOnUse"
         >
@@ -71,29 +71,29 @@ export function BrandIcon({
         </linearGradient>
       </defs>
       <path
-        d="M 270,15 A 215,215 0 1 1 131.8,394.7 L 35,478 L 58.3,267.3 A 215,215 0 0 1 270,15 Z"
+        d="M 256,11 A 245,245 0 1 1 201,495 Q 80,510 22,482 L 55,397 A 245,245 0 0 1 256,11 Z"
         fill="none"
         stroke={`url(#${gradId})`}
-        strokeWidth="26"
+        strokeWidth="22"
         strokeLinejoin="round"
         strokeLinecap="round"
       />
       <g stroke="#fff" strokeWidth="12" strokeLinejoin="round" fill="none">
         <polygon
-          points="270,90 391.2,160 391.2,300 270,370 148.8,300 148.8,160"
+          points="255,49 398.8,132 398.8,298 255,381 111.2,298 111.2,132"
           fill={`url(#${gradId})`}
         />
-        <polygon points="270,90 391.2,300 148.8,300" />
-        <polygon points="270,370 148.8,160 391.2,160" />
+        <polygon points="255,49 398.8,298 111.2,298" />
+        <polygon points="255,381 111.2,132 398.8,132" />
       </g>
       <text
-        x="270"
-        y="230"
+        x="255"
+        y="215"
         textAnchor="middle"
         dominantBaseline="central"
         fontFamily="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif"
         fontWeight={800}
-        fontSize={115}
+        fontSize={135}
         fill="#fff"
         letterSpacing="-4"
       >
