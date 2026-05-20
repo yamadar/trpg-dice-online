@@ -85,6 +85,25 @@
   max-width: 100%;
 }
 
+/* Generic segmented control (font size picker, etc.). */
+.seg-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+}
+.seg-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+}
+.seg-btn.active {
+  background: var(--accent-2);
+  color: #fff;
+}
+
 /* --- theme picker --- */
 .theme-grid {
   display: grid;
