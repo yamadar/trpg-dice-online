@@ -8,15 +8,15 @@
   </defs>
   <!-- Speech bubble: a near-canvas-filling circle with a teardrop tail
        protruding into the bottom-left corner. The tail's upper edge runs
-       almost straight from (47,383) on the bubble down to the tip at
-       (5,482); the lower edge is a tight quadratic curve that sweeps back
-       up to the bubble outline at (201,495). The two attach angles (≈149°
-       upper, ≈103° lower) and an offset gradient endpoint mirror the PWA
-       PNG icon. -->
+       from (55,397) on the bubble to the tip at (22,482); the lower edge
+       is a tight quadratic curve that sweeps back up to the bubble
+       outline at (201,495). Tip and control point are kept inboard by at
+       least half the stroke width so the rounded join cannot render
+       outside the 0..512 viewBox in any browser. -->
   <path d="M 256,11
            A 245,245 0 1 1 201,495
-           Q 70,524 5,482
-           L 47,383
+           Q 80,510 22,482
+           L 55,397
            A 245,245 0 0 1 256,11 Z"
         fill="none" stroke="url(#g)" stroke-width="22" stroke-linejoin="round" stroke-linecap="round"/>
   <!-- D20 (hexagon + inscribed hexagram + "20") inside the bubble.
