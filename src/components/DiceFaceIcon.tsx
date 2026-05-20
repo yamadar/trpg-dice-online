@@ -43,10 +43,12 @@ function digitFontSize(value: number, diceType: DiceType): number {
   if (diceType === 'D4') return 10
   const n = String(value).length
   const base = n >= 3 ? 8 : n === 2 ? 10 : 12
-  // D8 / D20 lose detail when their face decomposition is drawn at icon
-  // size; instead the value is shown prominently in the centre.
-  const prominent = diceType === 'D8' || diceType === 'D20'
-  return prominent ? base + 3 : base
+  // D8 and D20 show the value prominently in the centre — their face
+  // decomposition is too cluttered at icon size. D20 has slightly less
+  // headroom inside its hexagon, so the boost is smaller than D8's.
+  if (diceType === 'D8') return base + 3
+  if (diceType === 'D20') return base + 2
+  return base
 }
 
 /**
