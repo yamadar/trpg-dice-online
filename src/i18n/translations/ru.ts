@@ -28,6 +28,7 @@ export const ru: Dict = {
   'dock.character': 'Персонаж',
   'dock.dice': 'Кости',
   'dock.patterns': 'Шаблоны',
+  'dock.nav': 'Навигация',
 
   'status.offline': 'Не в сети',
   'status.noCharacter': 'Нет (как игрок)',

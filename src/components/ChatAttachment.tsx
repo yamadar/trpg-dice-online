@@ -1,6 +1,7 @@
 import { useI18n } from '../i18n/useI18n'
 import type { ChatFile } from '../net/protocol'
 import { formatBytes, isImageType } from '../chat/attachment'
+import { AttachIcon } from './icons'
 
 interface Props {
   file: ChatFile
@@ -26,7 +27,7 @@ export function ChatAttachment({ file, onOpenImage }: Props) {
   return (
     <a className="chat-file" href={file.dataUrl} download={file.name}>
       <span className="chat-file-icon" aria-hidden="true">
-        📎
+        <AttachIcon size={18} />
       </span>
       <span className="chat-file-meta">
         <span className="chat-file-name">{file.name || t('chat.download')}</span>

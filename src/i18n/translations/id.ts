@@ -28,6 +28,7 @@ export const id: Dict = {
   'dock.character': 'Karakter',
   'dock.dice': 'Dadu',
   'dock.patterns': 'Pola',
+  'dock.nav': 'Navigasi',
 
   'status.offline': 'Luring',
   'status.noCharacter': 'Tidak ada (sebagai pemain)',

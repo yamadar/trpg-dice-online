@@ -28,6 +28,7 @@ export const ja: Dict = {
   'dock.character': 'キャラ',
   'dock.dice': 'ダイス',
   'dock.patterns': 'パターン',
+  'dock.nav': 'ナビゲーション',
 
   'status.offline': 'オフライン',
   'status.noCharacter': 'なし（PL 本人）',

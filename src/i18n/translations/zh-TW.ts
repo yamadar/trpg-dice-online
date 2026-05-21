@@ -28,6 +28,7 @@ export const zhTW: Dict = {
   'dock.character': '角色',
   'dock.dice': '骰子',
   'dock.patterns': '範本',
+  'dock.nav': '導覽',
 
   'status.offline': '離線',
   'status.noCharacter': '無（玩家本人）',

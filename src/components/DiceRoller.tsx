@@ -1,6 +1,7 @@
 import { useI18n } from '../i18n/useI18n'
 import { DICE_TYPES, PATTERN_KINDS, type Pattern } from '../dice/types'
 import { formatDiceSummary } from '../dice/format'
+import { DiceIcon } from './icons'
 
 export type Draft = Omit<Pattern, 'id'>
 
@@ -29,7 +30,7 @@ export function DiceRoller({ draft, onChange, isGM, onRoll, onSave }: Props) {
     <section className="panel">
       <h2>
         <span className="panel-icon" aria-hidden="true">
-          🎲
+          <DiceIcon size={20} />
         </span>
         {t('dice.section')}
       </h2>

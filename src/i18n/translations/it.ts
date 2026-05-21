@@ -28,6 +28,7 @@ export const it: Dict = {
   'dock.character': 'Personaggio',
   'dock.dice': 'Dadi',
   'dock.patterns': 'Modelli',
+  'dock.nav': 'Navigazione',
 
   'status.offline': 'Offline',
   'status.noCharacter': 'Nessuno (come giocatore)',

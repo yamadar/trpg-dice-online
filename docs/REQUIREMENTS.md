@@ -65,7 +65,13 @@ An SPA where players roll TRPG dice and share results with other players in real
 - History and chat are merged into a single chronological feed.
 - Each entry's time is shown as `H:mm`; a divider carrying the date (in the
   UI language) opens the feed and marks every day change.
-- A filter switches between All / Rolls only / Chat only / Files.
+- A filter switches between All / Rolls only / Chat only / Files. The
+  filter chips are icon-only (with the localised name as the accessible
+  label / tooltip) and share a unified visual vocabulary — Lucide for
+  All / Chat / Files, and a Game Icons d6 silhouette for Rolls (see
+  [CREDITS](CREDITS.md)). The same d6 silhouette is reused for every
+  other dice affordance (Dock "Dice", tutorial dice step) so the
+  concept reads with a single glyph everywhere.
 - Each participant gets a stable color so they are easy to tell apart.
 - The feed is laid out as chat-style bubbles: the local player's entries
   align right, every other participant's align left. Each entry shows a
@@ -645,3 +651,30 @@ Commit after each step.
   to a top border so the cue reads the same whether the row is mirrored
   right or kept left. The compact layout stays a dense one-line feed
   identified solely by the colored character name.
+- v1.67 — Unify every in-app icon under a single visual vocabulary.
+  The previous mix of hand-rolled SVGs and emoji glyphs is replaced
+  with one set: [Lucide](https://lucide.dev) (ISC) for UI chrome and
+  semantic concepts, plus the
+  [Game Icons](https://game-icons.net) `perspective-dice-six-faces-one`
+  by Delapouite (CC BY 3.0) as the single canonical dice silhouette.
+  The d6 (preferred over the d20 because it keeps its shape at 16–22 px)
+  is reused for the feed "Rolls" filter, the Dock dice button and the
+  tutorial dice step so the dice concept reads with one glyph
+  everywhere. Other replacements: feed filter chips become icon-only
+  (Lucide `Layers` / `MessageCircleMore` / `Paperclip` for All / Chat
+  / Files with the localised name carried by `aria-label` + `title`,
+  and a ≥36 px tap target via padding); Dock buttons use Lucide
+  `Users` / `Drama` / `Star` (Room / Character / Patterns); the
+  Settings header switches from "⚙" to Lucide `Settings`; the chat
+  composer's attach button and the in-feed file chip use Lucide
+  `Paperclip`; the character portrait's "Edit" pill uses Lucide
+  `Pencil`; the StatusBar player-count chip uses Lucide `Users`;
+  panel headings use the same icons as their Dock siblings; and the
+  tutorial steps render the matching icon at poster size (`Hand` for
+  welcome, `History` for past rooms, `Languages` for auto-translate,
+  etc.). The custom `BrandIcon` and the per-die `DiceFaceIcon` are
+  intentionally kept — the former is the app's brand mark, the
+  latter encodes each die's geometry as read by the feed.
+  Third-party attribution lives in
+  [`CREDITS.md`](CREDITS.md) /
+  [`CREDITS.ja.md`](CREDITS.ja.md).

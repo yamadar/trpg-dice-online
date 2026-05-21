@@ -28,6 +28,7 @@ export const de: Dict = {
   'dock.character': 'Charakter',
   'dock.dice': 'Würfel',
   'dock.patterns': 'Muster',
+  'dock.nav': 'Navigation',
 
   'status.offline': 'Offline',
   'status.noCharacter': 'Keiner (als Spieler)',

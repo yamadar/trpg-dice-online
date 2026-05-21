@@ -4,6 +4,7 @@ import { useFieldNotice } from '../hooks/useFieldNotice'
 import type { UseCharacters } from '../characters/useCharacters'
 import { exportCharacterJSON } from '../characters/io'
 import { prepareCharacterImage } from '../characters/image'
+import { CharacterIcon, EditIcon } from './icons'
 import { Lightbox } from './Lightbox'
 
 interface Props {
@@ -163,7 +164,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
     <section className="panel">
       <h2>
         <span className="panel-icon" aria-hidden="true">
-          🎭
+          <CharacterIcon size={20} />
         </span>
         {t('character.section')}
       </h2>
@@ -224,7 +225,9 @@ export function CharacterPanel({ characters, onNotice }: Props) {
               {activeCharacter.image ? (
                 <img src={activeCharacter.image} alt="" />
               ) : (
-                <span aria-hidden="true">🎭</span>
+                <span aria-hidden="true">
+                  <CharacterIcon size={28} />
+                </span>
               )}
             </button>
             <div className="char-card-body">
@@ -272,7 +275,9 @@ export function CharacterPanel({ characters, onNotice }: Props) {
                   </button>
                 ) : (
                   <div className="char-avatar-large" aria-hidden="true">
-                    <span className="char-avatar-placeholder">🎭</span>
+                    <span className="char-avatar-placeholder">
+                      <CharacterIcon size={56} />
+                    </span>
                   </div>
                 )}
                 <div className="char-avatar-edit" ref={imageMenuRef}>
@@ -284,7 +289,9 @@ export function CharacterPanel({ characters, onNotice }: Props) {
                     disabled={imageBusy}
                     onClick={() => setImageMenuOpen((v) => !v)}
                   >
-                    <span aria-hidden="true">✏️</span>
+                    <span aria-hidden="true">
+                      <EditIcon />
+                    </span>
                     {t('character.imageEdit')}
                   </button>
                   {imageMenuOpen && (

@@ -1,13 +1,30 @@
+import type { ComponentType } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import {
+  CharacterIcon,
+  DiceIcon,
+  PatternsIcon,
+  RoomIcon,
+  type IconProps,
+} from './icons'
 
 /** The on-demand panels reachable from the bottom dock. */
 export type SheetId = 'room' | 'character' | 'dice' | 'patterns'
 
-const ITEMS: { id: SheetId; icon: string; labelKey: string }[] = [
-  { id: 'room', icon: '👥', labelKey: 'dock.room' },
-  { id: 'character', icon: '🎭', labelKey: 'dock.character' },
-  { id: 'dice', icon: '🎲', labelKey: 'dock.dice' },
-  { id: 'patterns', icon: '⭐', labelKey: 'dock.patterns' },
+// Sized once so every dock icon matches the height the dock chrome
+// was originally tuned for (a touch larger than the inline `icon-svg`
+// default so the row's visual weight balances against the label).
+const DOCK_ICON_SIZE = 22
+
+const ITEMS: {
+  id: SheetId
+  Icon: ComponentType<IconProps>
+  labelKey: string
+}[] = [
+  { id: 'room', Icon: RoomIcon, labelKey: 'dock.room' },
+  { id: 'character', Icon: CharacterIcon, labelKey: 'dock.character' },
+  { id: 'dice', Icon: DiceIcon, labelKey: 'dock.dice' },
+  { id: 'patterns', Icon: PatternsIcon, labelKey: 'dock.patterns' },
 ]
 
 interface Props {
@@ -19,19 +36,19 @@ interface Props {
 export function Dock({ active, onOpen }: Props) {
   const { t } = useI18n()
   return (
-    <nav className="dock" aria-label={t('settings.title')}>
-      {ITEMS.map((item) => (
+    <nav className="dock" aria-label={t('dock.nav')}>
+      {ITEMS.map(({ id, Icon, labelKey }) => (
         <button
-          key={item.id}
+          key={id}
           type="button"
-          className={item.id === active ? 'dock-btn active' : 'dock-btn'}
-          aria-pressed={item.id === active}
-          onClick={() => onOpen(item.id)}
+          className={id === active ? 'dock-btn active' : 'dock-btn'}
+          aria-pressed={id === active}
+          onClick={() => onOpen(id)}
         >
           <span className="dock-icon" aria-hidden="true">
-            {item.icon}
+            <Icon size={DOCK_ICON_SIZE} />
           </span>
-          <span className="dock-label">{t(item.labelKey)}</span>
+          <span className="dock-label">{t(labelKey)}</span>
         </button>
       ))}
     </nav>

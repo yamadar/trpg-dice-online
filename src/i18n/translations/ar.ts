@@ -28,6 +28,7 @@ export const ar: Dict = {
   'dock.character': 'الشخصية',
   'dock.dice': 'النرد',
   'dock.patterns': 'القوالب',
+  'dock.nav': 'تنقل',
 
   'status.offline': 'غير متصل',
   'status.noCharacter': 'لا شيء (كلاعب)',

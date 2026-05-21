@@ -4,7 +4,7 @@ import { useFieldNotice } from '../hooks/useFieldNotice'
 import { LanguageToggle } from './LanguageToggle'
 import { ThemeToggle } from './ThemeToggle'
 import { FontSizeToggle } from './FontSizeToggle'
-import { BrandIcon, CloseIcon } from './icons'
+import { BrandIcon, CloseIcon, SettingsIcon } from './icons'
 
 interface Props {
   name: string
@@ -49,7 +49,7 @@ export function SettingsMenu({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
-        ⚙
+        <SettingsIcon size={20} />
       </button>
 
       {open && (

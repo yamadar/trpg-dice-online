@@ -10,6 +10,7 @@ import { playerColor } from '../players/colors'
 import { composeName } from '../players/identity'
 import type { Session } from '../hooks/useSession'
 import { RoomHistory } from './RoomHistory'
+import { RoomIcon } from './icons'
 
 interface Props {
   session: Session
@@ -265,7 +266,7 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
     <section className="panel">
       <h2>
         <span className="panel-icon" aria-hidden="true">
-          👥
+          <RoomIcon size={20} />
         </span>
         {t('room.section')}
       </h2>

@@ -28,6 +28,7 @@ export const tr: Dict = {
   'dock.character': 'Karakter',
   'dock.dice': 'Zar',
   'dock.patterns': 'Şablonlar',
+  'dock.nav': 'Gezinme',
 
   'status.offline': 'Çevrimdışı',
   'status.noCharacter': 'Yok (oyuncu olarak)',

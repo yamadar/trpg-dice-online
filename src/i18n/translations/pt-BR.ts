@@ -28,6 +28,7 @@ export const ptBR: Dict = {
   'dock.character': 'Personagem',
   'dock.dice': 'Dados',
   'dock.patterns': 'Padrões',
+  'dock.nav': 'Navegação',
 
   'status.offline': 'Offline',
   'status.noCharacter': 'Nenhum (como jogador)',

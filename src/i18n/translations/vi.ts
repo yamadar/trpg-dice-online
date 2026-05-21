@@ -28,6 +28,7 @@ export const vi: Dict = {
   'dock.character': 'Nhân vật',
   'dock.dice': 'Xúc xắc',
   'dock.patterns': 'Mẫu',
+  'dock.nav': 'Điều hướng',
 
   'status.offline': 'Ngoại tuyến',
   'status.noCharacter': 'Không có (là người chơi)',

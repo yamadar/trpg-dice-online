@@ -1,7 +1,7 @@
 import { useI18n } from '../i18n/useI18n'
 import type { Pattern } from '../dice/types'
 import { formatDiceSummary } from '../dice/format'
-import { CloseIcon } from './icons'
+import { CloseIcon, PatternsIcon } from './icons'
 
 interface Props {
   /** Whether a character is active (patterns belong to a character). */
@@ -39,7 +39,7 @@ export function PatternList({
     <section className="panel">
       <h2>
         <span className="panel-icon" aria-hidden="true">
-          ⭐
+          <PatternsIcon size={20} />
         </span>
         {t('pattern.section')}
       </h2>

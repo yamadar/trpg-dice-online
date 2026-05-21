@@ -5,7 +5,7 @@ import type { ChatFile } from '../net/protocol'
 import { MAX_ATTACHMENT_BYTES, formatBytes, isImageType, readAttachment } from '../chat/attachment'
 import { resolveMentions } from '../chat/mentions'
 import { useMentionAutocomplete } from '../hooks/useMentionAutocomplete'
-import { CloseIcon } from './icons'
+import { AttachIcon, CloseIcon } from './icons'
 
 interface Props {
   session: Session
@@ -77,7 +77,7 @@ export function ChatComposer({ session, onNotice }: Props) {
             <img className="attach-pending-thumb" src={pending.dataUrl} alt={pending.name} />
           ) : (
             <span className="attach-pending-icon" aria-hidden="true">
-              📎
+              <AttachIcon size={20} />
             </span>
           )}
           <span className="attach-pending-name">{pending.name}</span>
@@ -126,7 +126,7 @@ export function ChatComposer({ session, onNotice }: Props) {
           disabled={attaching}
           onClick={() => fileInputRef.current?.click()}
         >
-          📎
+          <AttachIcon size={20} />
         </button>
         <input
           ref={chatInputRef}
