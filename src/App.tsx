@@ -260,6 +260,7 @@ function App() {
       <main className="app-main">
         <ActivityPanel
           session={session}
+          characters={characters.characters}
           compact={compact}
           onNotice={flash}
           onOpenRoom={() => setOpenSheet('room')}

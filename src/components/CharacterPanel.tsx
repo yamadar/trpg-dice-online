@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { useFieldNotice } from '../hooks/useFieldNotice'
 import type { UseCharacters } from '../characters/useCharacters'
@@ -12,8 +12,15 @@ interface Props {
 }
 
 /**
- * Character management: pick the active character, edit its name /
- * background / private memo, and export or import characters.
+ * Character management. Laid out as six zones so each block has one
+ * clear job and adjacent actions don't get confused with each other:
+ *
+ * 1. Switcher (select an active character)
+ * 2. Add a character (new / import — both grow the collection)
+ * 3. Character card (avatar + name + 1-line background — a summary)
+ * 4. Edit fields (name, image, background, memo)
+ * 5. Export (option + button)
+ * 6. Danger zone (delete — isolated at the bottom)
  */
 export function CharacterPanel({ characters, onNotice }: Props) {
   const { t, lang } = useI18n()
@@ -34,8 +41,49 @@ export function CharacterPanel({ characters, onNotice }: Props) {
   const [imageBusy, setImageBusy] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  // GitHub-style "Edit" popover next to the profile picture.
+  const [imageMenuOpen, setImageMenuOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  const imageMenuRef = useRef<HTMLDivElement>(null)
+
+  // Close the image-edit popover on outside click or Escape so it
+  // behaves like other lightweight menus across the app. `e.target` on
+  // a `MouseEvent` is typed as `EventTarget | null` and is not
+  // guaranteed to be a DOM Node (eg. when synthesised in tests), so
+  // guard before calling `.contains`.
+  useEffect(() => {
+    if (!imageMenuOpen) return
+    const onPointer = (e: MouseEvent) => {
+      const target = e.target
+      if (!(target instanceof Node)) return
+      if (imageMenuRef.current && !imageMenuRef.current.contains(target)) {
+        setImageMenuOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setImageMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [imageMenuOpen])
+
+  // Close the popover if the active character changes (or is cleared)
+  // while it is open — otherwise the menu would stay "open" in state
+  // and pop back up the next time a character is selected. Done with
+  // the "set state during render" pattern React recommends over an
+  // effect, to avoid cascading renders.
+  const [popoverCharId, setPopoverCharId] = useState<string | null>(
+    activeCharacter?.id ?? null,
+  )
+  if (popoverCharId !== (activeCharacter?.id ?? null)) {
+    setPopoverCharId(activeCharacter?.id ?? null)
+    setImageMenuOpen(false)
+  }
 
   // One toast after a burst of name edits settles, not per keystroke.
   // Toast once the name edit settles (on blur or when the sheet closes).
@@ -85,7 +133,10 @@ export function CharacterPanel({ characters, onNotice }: Props) {
 
   // Attach / replace the portrait: the picked file is downscaled and
   // compressed (see characters/image.ts) before it is stored.
-  const handlePickImage = () => imageInputRef.current?.click()
+  const handlePickImage = () => {
+    setImageMenuOpen(false)
+    imageInputRef.current?.click()
+  }
 
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -104,6 +155,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
   }
 
   const handleRemoveImage = () => {
+    setImageMenuOpen(false)
     if (activeCharacter) updateCharacter(activeCharacter.id, { image: undefined })
   }
 
@@ -116,69 +168,145 @@ export function CharacterPanel({ characters, onNotice }: Props) {
         {t('character.section')}
       </h2>
 
-      <div className="char-switch">
-        <label className="field">
-          <span>{t('character.activeLabel')}</span>
-          <select value={activeId ?? ''} onChange={(e) => setActiveId(e.target.value || null)}>
-            <option value="">{t('character.asPlayer')}</option>
-            {list.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name || t('character.unnamed')}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="button" onClick={handleCreate}>
-          {t('character.create')}
-        </button>
+      {/* === Zone 1: switcher === */}
+      <label className="field">
+        <span>{t('character.activeLabel')}</span>
+        <select value={activeId ?? ''} onChange={(e) => setActiveId(e.target.value || null)}>
+          <option value="">{t('character.asPlayer')}</option>
+          {list.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name || t('character.unnamed')}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {/* === Zone 2: add a character (creation + import grouped) === */}
+      <div className="char-add">
+        <h3>{t('character.addSection')}</h3>
+        <div className="char-add-buttons">
+          <button type="button" onClick={handleCreate}>
+            <span aria-hidden="true">+ </span>
+            {t('character.create')}
+          </button>
+          <button type="button" onClick={() => fileInputRef.current?.click()}>
+            <span aria-hidden="true">+ </span>
+            {t('character.import')}
+          </button>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          hidden
+          onChange={handleImportFile}
+        />
+        {importError && (
+          <p className="banner error" role="alert">
+            {t('character.importError')}
+          </p>
+        )}
       </div>
 
       {list.length === 0 && <p className="hint">{t('character.empty')}</p>}
 
       {activeCharacter && (
         <>
-          <label className="field">
-            <span>{t('character.name')}</span>
-            <input
-              type="text"
-              value={activeCharacter.name}
-              maxLength={40}
-              placeholder={t('character.namePlaceholder')}
-              onChange={(e) => {
-                updateCharacter(activeCharacter.id, { name: e.target.value })
-                nameNotice.markChanged()
-              }}
-              onBlur={nameNotice.flush}
-            />
-          </label>
-
-          <div className="char-details">
-            <div className="field">
-              <span>{t('character.image')}</span>
+          {/* === Zone 3: character card (visual summary) === */}
+          <div className="char-card">
+            <button
+              type="button"
+              className="char-card-avatar"
+              disabled={!activeCharacter.image}
+              aria-label={t('character.imageView')}
+              onClick={() => activeCharacter.image && setLightboxOpen(true)}
+            >
               {activeCharacter.image ? (
-                <div className="char-image-row">
+                <img src={activeCharacter.image} alt="" />
+              ) : (
+                <span aria-hidden="true">🎭</span>
+              )}
+            </button>
+            <div className="char-card-body">
+              <p className="char-card-name">
+                {activeCharacter.name || t('character.unnamed')}
+              </p>
+              {activeCharacter.background && (
+                <p className="char-card-background">{activeCharacter.background}</p>
+              )}
+            </div>
+          </div>
+
+          {/* === Zone 4: edit fields === */}
+          <div className="char-details">
+            <label className="field">
+              <span>{t('character.name')}</span>
+              <input
+                type="text"
+                value={activeCharacter.name}
+                maxLength={40}
+                placeholder={t('character.namePlaceholder')}
+                onChange={(e) => {
+                  updateCharacter(activeCharacter.id, { name: e.target.value })
+                  nameNotice.markChanged()
+                }}
+                onBlur={nameNotice.flush}
+              />
+            </label>
+
+            <div className="field char-avatar-field">
+              <span>{t('character.image')}</span>
+              {/* GitHub-style portrait: a large circular avatar with an
+                  "Edit" pill button overlaid bottom-left that opens a
+                  small popover offering upload (and remove, if present). */}
+              <div className="char-avatar-area">
+                {activeCharacter.image ? (
                   <button
                     type="button"
-                    className="char-image-thumb"
+                    className="char-avatar-large"
                     aria-label={t('character.imageView')}
                     onClick={() => setLightboxOpen(true)}
+                    disabled={imageBusy}
                   >
-                    <img src={activeCharacter.image} alt={activeCharacter.name} />
+                    <img src={activeCharacter.image} alt="" />
                   </button>
-                  <div className="char-image-actions">
-                    <button type="button" onClick={handlePickImage} disabled={imageBusy}>
-                      {t('character.imageChange')}
-                    </button>
-                    <button type="button" className="link danger" onClick={handleRemoveImage}>
-                      {t('character.imageRemove')}
-                    </button>
+                ) : (
+                  <div className="char-avatar-large" aria-hidden="true">
+                    <span className="char-avatar-placeholder">🎭</span>
                   </div>
+                )}
+                <div className="char-avatar-edit" ref={imageMenuRef}>
+                  <button
+                    type="button"
+                    className="char-avatar-edit-trigger"
+                    aria-haspopup="true"
+                    aria-expanded={imageMenuOpen}
+                    disabled={imageBusy}
+                    onClick={() => setImageMenuOpen((v) => !v)}
+                  >
+                    <span aria-hidden="true">✏️</span>
+                    {t('character.imageEdit')}
+                  </button>
+                  {imageMenuOpen && (
+                    // No `role="menu"` here — the contents are a simple
+                    // list of buttons. A real ARIA menu would require
+                    // full keyboard (arrow / Home / End) navigation,
+                    // which this lightweight popover does not implement.
+                    <div className="char-avatar-edit-menu">
+                      <button type="button" onClick={handlePickImage}>
+                        {activeCharacter.image
+                          ? t('character.imageChange')
+                          : t('character.imageAdd')}
+                      </button>
+                      {activeCharacter.image && (
+                        <button type="button" className="danger" onClick={handleRemoveImage}>
+                          {t('character.imageRemove')}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <button type="button" onClick={handlePickImage} disabled={imageBusy}>
-                  {t('character.imageAdd')}
-                </button>
-              )}
+              </div>
               {imageBusy && <p className="hint">{t('character.imageProcessing')}</p>}
               {imageError && (
                 <p className="banner error" role="alert">
@@ -193,6 +321,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
                 onChange={handleImageFile}
               />
             </div>
+
             <label className="field">
               <span>{t('character.background')}</span>
               <textarea
@@ -207,6 +336,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
                 onBlur={detailNotice.flush}
               />
             </label>
+
             <label className="field">
               <span>{t('character.memo')}</span>
               <textarea
@@ -221,6 +351,10 @@ export function CharacterPanel({ characters, onNotice }: Props) {
                 onBlur={detailNotice.flush}
               />
             </label>
+          </div>
+
+          {/* === Zone 5: export (option + button kept together) === */}
+          <div className="char-export">
             <label className="checkbox">
               <input
                 type="checkbox"
@@ -231,34 +365,18 @@ export function CharacterPanel({ characters, onNotice }: Props) {
               />
               <span>{t('character.exportMemo')}</span>
             </label>
-            <div className="char-actions">
-              <button type="button" onClick={handleExport}>
-                {t('character.export')}
-              </button>
-              <button type="button" className="link danger" onClick={handleDelete}>
-                {t('character.delete')}
-              </button>
-            </div>
+            <button type="button" onClick={handleExport}>
+              {t('character.export')}
+            </button>
+          </div>
+
+          {/* === Zone 6: danger zone (delete) === */}
+          <div className="char-danger">
+            <button type="button" className="link danger" onClick={handleDelete}>
+              {t('character.delete')}
+            </button>
           </div>
         </>
-      )}
-
-      <div className="char-io">
-        <button type="button" onClick={() => fileInputRef.current?.click()}>
-          {t('character.import')}
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json,.json"
-          hidden
-          onChange={handleImportFile}
-        />
-      </div>
-      {importError && (
-        <p className="banner error" role="alert">
-          {t('character.importError')}
-        </p>
       )}
 
       {lightboxOpen && activeCharacter?.image && (

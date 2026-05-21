@@ -67,15 +67,20 @@ An SPA where players roll TRPG dice and share results with other players in real
   UI language) opens the feed and marks every day change.
 - A filter switches between All / Rolls only / Chat only / Files.
 - Each participant gets a stable color so they are easy to tell apart.
+- The feed is laid out as chat-style bubbles: the local player's entries
+  align right, every other participant's align left. Each entry shows a
+  circular avatar — the character's portrait when one is set, otherwise
+  a flat disc in the participant's color.
 - Feed entries from the GM show a GM mark next to the name.
 - Clearing the feed requires a confirmation dialog to avoid accidental loss.
 - A run of identical consecutive system messages (e.g. "X joined") is
   folded into one line with a trailing "(n)" count.
 - The settings menu can switch the feed to a compact layout: each entry is
-  packed onto one row (time · name · content), the player-color dot is
-  dropped and the name shows only the character (no "（Player）"); the time
-  sits in a fixed left gutter and a long message wraps with its later
-  lines aligned under the name. The choice is remembered in the browser.
+  packed onto one row (time · name · content), the avatar, the player-color
+  dot and the "（Player）" suffix are dropped so only the character name
+  remains (the colored name identifies the speaker); the time sits in a
+  fixed left gutter and a long message wraps with its later lines aligned
+  under the name. The choice is remembered in the browser.
 - With auto-translate on, chat is translated into the UI language. The
   on-device Chrome Translator is preferred and MyMemory is the automatic
   fallback when it is unavailable. Each message flips back to its
@@ -632,3 +637,11 @@ Commit after each step.
   string `trpg-dice-room-log`) are intentionally left unchanged so
   existing users' data, saved exports and open connections keep
   working.
+- v1.66 — Feed switches to a LINE / Messenger style bubble layout: the
+  local player's rolls and chat align right, everyone else's align left.
+  A 36 px circular avatar sits next to each entry, showing the
+  character's portrait when one is set and falling back to a flat disc
+  in the player's color. The roll-kind accent moves from a left border
+  to a top border so the cue reads the same whether the row is mirrored
+  right or kept left. The compact layout stays a dense one-line feed
+  identified solely by the colored character name.

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
+import type { Character } from '../characters/types'
 import { buildFeed, isRoomExitMarker, type FeedFilter, type SystemMarker } from '../feed/feed'
 import { isImageType } from '../chat/attachment'
 import type { ChatFile, ChatMessage } from '../net/protocol'
@@ -28,6 +29,9 @@ const FEED_WINDOW = 200
 
 interface Props {
   session: Session
+  /** The local user's character collection — drives the per-character
+   *  avatar lookup for the local player's feed entries. */
+  characters: Character[]
   /** Denser feed layout; the toggle for it lives in the settings menu. */
   compact: boolean
   /** Surfaces attachment errors as a toast. */
@@ -42,7 +46,7 @@ interface Props {
  * image lightbox. Older history (beyond the live window) is paged in from
  * the durable log on demand.
  */
-export function ActivityPanel({ session, compact, onNotice, onOpenRoom }: Props) {
+export function ActivityPanel({ session, characters, compact, onNotice, onOpenRoom }: Props) {
   const { t } = useI18n()
   const [filter, setFilter] = useState<FeedFilter>('all')
   // The feed entry whose name was tapped, opening the player-detail card.
@@ -86,6 +90,30 @@ export function ActivityPanel({ session, compact, onNotice, onOpenRoom }: Props)
     }
     return list
   }, [feed])
+
+  // The avatar lookup map (key: `${playerId}|${characterName}`). The
+  // session-wide map tracks observed (player, character) → image for the
+  // room. On top, the local user's `characters[]` is the canonical source
+  // for their own portraits, so we drop every self-prefixed entry from
+  // the session map first and re-add only the characters that still have
+  // an image. This way a portrait removed from a non-active character
+  // (which never broadcasts) does not linger as a stale avatar. An
+  // unnamed character with an image still gets layered (under the
+  // `${selfId}|` empty-suffix key) so a brand-new character with an
+  // uploaded portrait can already show its avatar before being named.
+  const characterImages = useMemo(() => {
+    const map: Record<string, string | undefined> = {}
+    const selfPrefix = `${session.playerId}|`
+    for (const [key, value] of Object.entries(session.characterImages)) {
+      if (!key.startsWith(selfPrefix)) map[key] = value
+    }
+    for (const c of characters) {
+      if (c.image) {
+        map[`${session.playerId}|${c.name ?? ''}`] = c.image
+      }
+    }
+    return map
+  }, [session.characterImages, session.playerId, characters])
 
   // Items older than the most recent room exit belong to a room left behind.
   const lastExitAt = useMemo(() => {
@@ -206,6 +234,7 @@ export function ActivityPanel({ session, compact, onNotice, onOpenRoom }: Props)
         hasOlder={hasOlder}
         onLoadOlder={loadOlder}
         pending={pending}
+        characterImages={characterImages}
         onOpenDetail={setDetail}
         onOpenImage={openLightbox}
         emptyState={emptyState}

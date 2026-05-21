@@ -102,8 +102,14 @@ export function RoomHistory({ playerId, onBack }: Props) {
 
   // Only the log / portraits that match the current selection.
   const loadedLog = selected && log?.sessionId === selected.sessionId ? log.data : null
-  const portraits =
-    selected && portraitState?.sessionId === selected.sessionId ? portraitState.map : {}
+  // Wrap in `useMemo` so the empty-object fallback doesn't get a fresh
+  // identity every render, which would invalidate downstream `useMemo`s
+  // that take it as a dep.
+  const portraits = useMemo(
+    () =>
+      selected && portraitState?.sessionId === selected.sessionId ? portraitState.map : {},
+    [selected, portraitState],
+  )
 
   const handleDelete = (s: SessionSummary) => {
     if (!window.confirm(t('history.deleteConfirm'))) return
@@ -141,6 +147,24 @@ export function RoomHistory({ playerId, onBack }: Props) {
     },
     [images],
   )
+
+  // Past sessions only store one portrait per playerId (the last one
+  // observed). We re-key it as `${playerId}|${characterName}` for every
+  // (player, character) pair that appears in the feed so the new lookup
+  // shape works — a best-effort mapping that gives back the same avatar
+  // the previous version would have shown.
+  const characterImagesFromPortraits = useMemo(() => {
+    const map: Record<string, string | undefined> = {}
+    for (const item of feed) {
+      const speaker =
+        item.kind === 'chat' ? item.message : item.kind === 'roll' ? item.roll : null
+      if (!speaker) continue
+      const portrait = portraits[speaker.playerId]
+      if (!portrait) continue
+      map[`${speaker.playerId}|${speaker.characterName ?? ''}`] = portrait
+    }
+    return map
+  }, [feed, portraits])
 
   // --- detail view: a player's character snapshot from this session ------
   if (selected && detail) {
@@ -199,6 +223,7 @@ export function RoomHistory({ playerId, onBack }: Props) {
             hasOlder={false}
             onLoadOlder={() => {}}
             pending={[]}
+            characterImages={characterImagesFromPortraits}
             onOpenDetail={setDetail}
             onOpenImage={openImage}
           />

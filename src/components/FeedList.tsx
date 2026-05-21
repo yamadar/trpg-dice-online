@@ -49,12 +49,44 @@ const FeedSystemItem = memo(function FeedSystemItem({
   )
 })
 
+/**
+ * Circular avatar shown next to each feed item — the character portrait
+ * when one is set, otherwise a flat player-color disc. The avatar is
+ * purely decorative (the speaker-name button right next to it is the
+ * announced source), so the wrappers stay `aria-hidden` without any
+ * hidden text inside that AT would never reach. Memoized so a stable
+ * image / color does not invalidate the parent item.
+ */
+const FeedAvatar = memo(function FeedAvatar({
+  image,
+  color,
+}: {
+  image: string | undefined
+  color: string
+}) {
+  if (image) {
+    return (
+      <span className="feed-avatar" aria-hidden="true">
+        <img src={image} alt="" />
+      </span>
+    )
+  }
+  return (
+    <span
+      className="feed-avatar feed-avatar-dot"
+      style={{ background: color }}
+      aria-hidden="true"
+    />
+  )
+})
+
 const FeedChatItem = memo(function FeedChatItem({
   message: m,
   archived,
   pending,
   compact,
   playerId,
+  characterImages,
   onOpenDetail,
   onOpenImage,
 }: {
@@ -65,6 +97,10 @@ const FeedChatItem = memo(function FeedChatItem({
   /** The compact feed shows just the character name, no player-color dot. */
   compact: boolean
   playerId: string
+  /** Map of `${playerId}|${characterName}` → latest image observed for
+   *  that character. Lets a feed item keep the right avatar after the
+   *  speaking player has switched away from that character. */
+  characterImages: Record<string, string | undefined>
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
 }) {
@@ -85,46 +121,53 @@ const FeedChatItem = memo(function FeedChatItem({
         archived ? ' archived' : ''
       }${pending ? ' pending' : ''}`}
     >
-      <div className="feed-line">
-        <span className="player-dot" style={{ background: color }} />
-        <button
-          type="button"
-          className="feed-name"
-          style={{ color }}
-          onClick={() =>
-            onOpenDetail({
-              playerId: m.playerId,
-              name: m.playerName,
-              characterName: m.characterName ?? '',
-              background: m.background ?? '',
-            })
-          }
-        >
-          {feedName(m.playerName, m.characterName ?? '', compact)}
-        </button>
-        {m.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
-        {pending ? (
-          <span className="pending-tag">{t('chat.pending')}</span>
-        ) : (
-          <time>{formatClock(new Date(m.timestamp))}</time>
+      {!compact && (
+        <FeedAvatar
+          image={characterImages[`${m.playerId}|${m.characterName ?? ''}`]}
+          color={color}
+        />
+      )}
+      <div className="feed-bubble">
+        <div className="feed-line">
+          <button
+            type="button"
+            className="feed-name"
+            style={{ color }}
+            onClick={() =>
+              onOpenDetail({
+                playerId: m.playerId,
+                name: m.playerName,
+                characterName: m.characterName ?? '',
+                background: m.background ?? '',
+              })
+            }
+          >
+            {feedName(m.playerName, m.characterName ?? '', compact)}
+          </button>
+          {m.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
+          {pending ? (
+            <span className="pending-tag">{t('chat.pending')}</span>
+          ) : (
+            <time>{formatClock(new Date(m.timestamp))}</time>
+          )}
+        </div>
+        {m.text && (
+          <p className={`chat-text${translating ? ' translating' : ''}`}>
+            {showTranslation ? translated : m.text}
+          </p>
         )}
+        {/* The original / translation toggle sits with the message it flips. */}
+        {autoTranslate && translated !== null && (
+          <button
+            type="button"
+            className="link chat-trans-toggle"
+            onClick={() => setShowOriginal((v) => !v)}
+          >
+            {showOriginal ? t('chat.viewTranslation') : t('chat.viewOriginal')}
+          </button>
+        )}
+        {m.file && <ChatAttachment file={m.file} onOpenImage={onOpenImage} />}
       </div>
-      {m.text && (
-        <p className={`chat-text${translating ? ' translating' : ''}`}>
-          {showTranslation ? translated : m.text}
-        </p>
-      )}
-      {/* The original / translation toggle sits with the message it flips. */}
-      {autoTranslate && translated !== null && (
-        <button
-          type="button"
-          className="link chat-trans-toggle"
-          onClick={() => setShowOriginal((v) => !v)}
-        >
-          {showOriginal ? t('chat.viewTranslation') : t('chat.viewOriginal')}
-        </button>
-      )}
-      {m.file && <ChatAttachment file={m.file} onOpenImage={onOpenImage} />}
     </li>
   )
 })
@@ -134,6 +177,8 @@ const FeedRollItem = memo(function FeedRollItem({
   archived,
   isGM,
   compact,
+  playerId,
+  characterImages,
   onOpenDetail,
 }: {
   roll: RollResult
@@ -141,52 +186,64 @@ const FeedRollItem = memo(function FeedRollItem({
   isGM: boolean
   /** The compact feed shows just the character name, no player-color dot. */
   compact: boolean
+  playerId: string
+  characterImages: Record<string, string | undefined>
   onOpenDetail: (target: FeedDetailTarget) => void
 }) {
   const { t } = useI18n()
   const canSee = isGM || !r.hidden
   const isHidden = r.hidden && !canSee
+  const own = r.playerId === playerId
   const color = playerColor(r.playerId)
   const fullName = r.playerName || t('player.anon')
   return (
-    <li className={`feed-roll roll ${isHidden ? 'hidden' : r.kind}${archived ? ' archived' : ''}`}>
-      <div className="feed-line">
-        <span className="player-dot" style={{ background: color }} />
-        <button
-          type="button"
-          className="feed-name"
-          style={{ color }}
-          onClick={() =>
-            onOpenDetail({
-              playerId: r.playerId,
-              name: fullName,
-              characterName: r.characterName ?? '',
-              background: r.background ?? '',
-            })
-          }
-        >
-          {feedName(fullName, r.characterName ?? '', compact)}
-        </button>
-        {r.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
-        <time>{formatClock(new Date(r.timestamp))}</time>
-      </div>
-      <p className="roll-text">{formatRollText(t, r, canSee)}</p>
-      {!isHidden && (
-        <p className="roll-detail">
-          {formatDiceSummary(r.diceCount, r.diceType, r.modifier)}
-          {' · '}
-          {t('result.faces')}:{' '}
-          <span className="face-list" aria-hidden="true">
-            {r.faces.map((v, i) => (
-              <DiceFaceIcon key={i} diceType={r.diceType} value={v} />
-            ))}
-          </span>
-          {/* The icons are decorative; this readable summary is what AT
-              actually announces. */}
-          <span className="visually-hidden">{r.faces.join(', ')}</span>
-          {r.hidden && isGM && ' 🔒'}
-        </p>
+    <li
+      className={`feed-roll roll ${isHidden ? 'hidden' : r.kind}${own ? ' own' : ''}${archived ? ' archived' : ''}`}
+    >
+      {!compact && (
+        <FeedAvatar
+          image={characterImages[`${r.playerId}|${r.characterName ?? ''}`]}
+          color={color}
+        />
       )}
+      <div className="feed-bubble">
+        <div className="feed-line">
+          <button
+            type="button"
+            className="feed-name"
+            style={{ color }}
+            onClick={() =>
+              onOpenDetail({
+                playerId: r.playerId,
+                name: fullName,
+                characterName: r.characterName ?? '',
+                background: r.background ?? '',
+              })
+            }
+          >
+            {feedName(fullName, r.characterName ?? '', compact)}
+          </button>
+          {r.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
+          <time>{formatClock(new Date(r.timestamp))}</time>
+        </div>
+        <p className="roll-text">{formatRollText(t, r, canSee)}</p>
+        {!isHidden && (
+          <p className="roll-detail">
+            {formatDiceSummary(r.diceCount, r.diceType, r.modifier)}
+            {' · '}
+            {t('result.faces')}:{' '}
+            <span className="face-list" aria-hidden="true">
+              {r.faces.map((v, i) => (
+                <DiceFaceIcon key={i} diceType={r.diceType} value={v} />
+              ))}
+            </span>
+            {/* The icons are decorative; this readable summary is what AT
+                actually announces. */}
+            <span className="visually-hidden">{r.faces.join(', ')}</span>
+            {r.hidden && isGM && ' 🔒'}
+          </p>
+        )}
+      </div>
     </li>
   )
 })
@@ -204,6 +261,10 @@ interface Props {
   onLoadOlder: () => void
   /** Chat queued for an offline GM, shown as pending below the feed. */
   pending: ChatMessage[]
+  /** Character portraits keyed by `${playerId}|${characterName}` — used
+   *  for the per-message avatar so a feed entry keeps the right portrait
+   *  after the speaker has switched to a different character. */
+  characterImages: Record<string, string | undefined>
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
   /** Overrides the default "nothing here yet" hint when the feed is empty. */
@@ -220,6 +281,7 @@ export function FeedList({
   hasOlder,
   onLoadOlder,
   pending,
+  characterImages,
   onOpenDetail,
   onOpenImage,
   emptyState,
@@ -271,6 +333,7 @@ export function FeedList({
               archived={archived}
               compact={compact}
               playerId={playerId}
+              characterImages={characterImages}
               onOpenDetail={onOpenDetail}
               onOpenImage={onOpenImage}
             />
@@ -282,6 +345,8 @@ export function FeedList({
               archived={archived}
               isGM={isGM}
               compact={compact}
+              playerId={playerId}
+              characterImages={characterImages}
               onOpenDetail={onOpenDetail}
             />
           )
@@ -305,6 +370,7 @@ export function FeedList({
           pending
           compact={compact}
           playerId={playerId}
+          characterImages={characterImages}
           onOpenDetail={onOpenDetail}
           onOpenImage={onOpenImage}
         />
