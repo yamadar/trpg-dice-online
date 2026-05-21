@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState, type ComponentType } from 'react'
+import type { IconProps } from './icons'
 import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
 import type { Character } from '../characters/types'
@@ -26,7 +27,7 @@ import {
 // users on parity with the previous text labels. The "rolls" chip uses
 // the same d6 silhouette as the Dock's dice button and the tutorial's
 // dice step, so the dice concept reads with a single unified glyph.
-const FILTERS: { id: FeedFilter; Icon: ComponentType }[] = [
+const FILTERS: { id: FeedFilter; Icon: ComponentType<IconProps> }[] = [
   { id: 'all', Icon: AllIcon },
   { id: 'rolls', Icon: DiceIcon },
   { id: 'chat', Icon: ChatIcon },
