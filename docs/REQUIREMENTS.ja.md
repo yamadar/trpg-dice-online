@@ -649,9 +649,11 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   あり）、Escape / バックドロップクリック / 右上の × でキャンセル、
   破壊的確認ではキャンセルボタンに初期フォーカス（うっかり Enter
   で実行してしまわないため）、閉じた後は呼び出し元のフォーカス
-  位置に戻す。`<ConfirmProvider>` を app ルートに設置し、各所からは
-  `useConfirm()` フックで利用する。19 言語に
-  `common.confirm` / `common.cancel` キーを追加。
+  位置に戻す（`preventScroll: true` でモバイルのスクロールジャンプを
+  防止）、Tab はカード内でループ。`<ConfirmProvider>` を app ルートに
+  設置し、各所からは `useConfirm()` フックで利用する。19 言語に
+  3 つの新キー（`common.confirm` / `common.cancel`、加えて title 省略時の
+  フォールバック aria 名に使う `common.confirmDialog`）を追加。
 - v1.69 — 設定パネルの各所にアイコンを付与。タイトル「設定」の先頭に
   Settings 歯車を置き（パネルを開いたヘッダボタンと同じアイコンに
   揃え、トリガーとパネルが連続した一つの面に見えるようにする）、
