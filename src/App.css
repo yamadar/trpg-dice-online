@@ -1528,7 +1528,10 @@ label.setting-row {
 .settings {
   position: relative;
 }
-.icon-btn {
+/* The settings gear button — scoped via the direct-child combinator so the
+   bigger panel style does not leak onto every `.icon-btn` (sheet close,
+   feed clear, app-banner close, etc.). */
+.settings > .icon-btn {
   width: 40px;
   height: 40px;
   display: flex;
