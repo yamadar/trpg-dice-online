@@ -1614,64 +1614,208 @@ label.setting-row {
 }
 
 /* --- character panel --- */
-.char-switch {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  margin-bottom: 8px;
-}
-.char-switch .field {
-  flex: 1;
-  margin-bottom: 0;
-}
-.char-switch > button {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
+/* The character panel is organised into five zones — switcher, add,
+   summary card, edit fields, export, and danger — separated by margins
+   and thin rules so each block reads as its own job. */
 .char-details {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-.char-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: space-between;
-  align-items: center;
-}
-.char-io {
-  margin-top: 8px;
+  margin-top: 16px;
 }
 
-/* --- character portrait --- */
-.char-image-row {
+/* Zone 1b: add a character (new / import grouped under one heading). */
+.char-add {
+  margin-top: 12px;
+}
+.char-add h3 {
+  margin: 0 0 6px;
+}
+.char-add-buttons {
+  display: flex;
+  gap: 6px;
+}
+.char-add-buttons button {
+  flex: 1;
+}
+
+/* Zone 2: summary card for the active character — avatar plus a single
+   line each for name and background. The background is truncated with
+   an ellipsis so it never wraps regardless of length. */
+.char-card {
   display: flex;
   gap: 12px;
-  align-items: flex-start;
+  align-items: center;
+  padding: 12px;
+  margin-top: 16px;
+  background: var(--panel-2);
+  border-radius: 10px;
 }
-/* A small tappable thumbnail; the full image opens in the lightbox. */
-.char-image-thumb {
+.char-card-avatar {
   flex-shrink: 0;
-  width: 72px;
-  height: 72px;
+  width: 56px;
+  height: 56px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 50%;
   overflow: hidden;
   background: var(--bg);
+  color: var(--text-dim);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 }
-.char-image-thumb img {
+.char-card-avatar:disabled {
+  cursor: default;
+  /* The placeholder face is intentionally muted, not "disabled"-looking. */
+  opacity: 1;
+}
+.char-card-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-.char-image-actions {
+.char-card-body {
+  flex: 1;
+  /* min-width: 0 lets the ellipsis kick in inside a flex parent. */
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
+  gap: 2px;
+}
+.char-card-name,
+.char-card-background {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.char-card-name {
+  font-weight: 600;
+  color: var(--text-h);
+  font-size: 1.05rem;
+}
+.char-card-background {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+/* Zone 4: export — the "include memo" toggle is kept right next to the
+   button it scopes to, so the relationship is obvious. */
+.char-export {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Zone 5: danger zone — isolated at the very bottom with its own thin
+   rule, so destructive deletion can never be confused with the export
+   or edit blocks above. */
+.char-danger {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* --- character portrait (GitHub-style avatar + Edit popover) ---
+   Large circular avatar centred under the "画像" label, with a small
+   "Edit" pill button overlaid at the bottom-left that opens a popover
+   for upload / remove. The avatar itself opens the lightbox when an
+   image is present. */
+.char-avatar-field {
+  /* The avatar block is centred; keep the field label left-aligned. */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.char-avatar-area {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 4px auto 8px;
+}
+.char-avatar-large {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.char-avatar-large:disabled {
+  cursor: not-allowed;
+}
+.char-avatar-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.char-avatar-placeholder {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+.char-avatar-edit {
+  position: absolute;
+  /* Hang off the bottom-left so the trigger and its popover do not
+     cover the face. Slight negative offsets make the button visually
+     pop out a bit, GitHub-style. */
+  bottom: -4px;
+  left: -8px;
+}
+.char-avatar-edit-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.char-avatar-edit-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 10;
+  min-width: 180px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+.char-avatar-edit-menu button {
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  color: inherit;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+.char-avatar-edit-menu button:hover:not(:disabled) {
+  background: var(--bg);
+}
+.char-avatar-edit-menu button.danger {
+  color: var(--danger);
 }
 /* The portrait inside the tapped-player detail card. */
 .player-card-image {
