@@ -13,17 +13,20 @@ UI 部品（クローズ・ゴミ箱・フィードフィルタの「すべて�
 
 - ライセンス: [ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE)
 
-### Game Icons — `dice-twenty-faces-twenty`
+### Game Icons — `perspective-dice-six-faces-one`
 
-フィードフィルタ「ダイス」に使う 20 面ダイスのシルエットは
-[game-icons.net](https://game-icons.net/1x1/delapouite/dice-twenty-faces-twenty.html)
-の素材です。
+UI 全体のダイス表象（フィードフィルタ「ダイス」、Dock の「ダイス」、
+チュートリアルの「ダイスを振る」ステップ）に使う 6 面ダイスの
+透視シルエットは
+[game-icons.net](https://game-icons.net/1x1/delapouite/perspective-dice-six-faces-one.html)
+の素材です。小さい表示サイズ（16–22 px）でも形が崩れない d6 を採用し、
+ディテールが詰まりすぎる d20 は使っていません。
 
 - 作者: **Delapouite** (https://delapouite.com)
 - ライセンス: **CC BY 3.0** — https://creativecommons.org/licenses/by/3.0/deed.ja
 - 変更点: 原本の `fill="#000"` を `currentColor` に置換し、周囲の
   テキストカラーを継承するようにしました。
-- ファイル: [`src/assets/icons/dice-twenty-faces-twenty.svg`](../src/assets/icons/dice-twenty-faces-twenty.svg)
+- ファイル: [`src/assets/icons/perspective-dice-six-faces-one.svg`](../src/assets/icons/perspective-dice-six-faces-one.svg)
   に SVG コメント形式で同じ帰属を残しています。同じパスデータは
   [`src/components/icons.tsx`](../src/components/icons.tsx) の
-  `D20Icon` コンポーネントにもインライン化しています。
+  `DiceIcon` コンポーネントにもインライン化しています。

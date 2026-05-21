@@ -69,7 +69,9 @@
   フィルタチップはアイコンのみ（多言語ラベルは `aria-label` と
   ツールチップで保持）で、UI 全体と統一感のあるアイコン体系を採用する。
   「すべて / チャット / ファイル」は Lucide、「ダイス」は Game Icons の
-  20 面ダイス（CC BY 3.0、[CREDITS](CREDITS.ja.md) 参照）。
+  6 面ダイス透視シルエット（CC BY 3.0、[CREDITS](CREDITS.ja.md) 参照）。
+  同じ d6 を Dock の「ダイス」やチュートリアルのダイスステップでも
+  使い、ダイスの表象を 1 つに統一する。
 - 参加者ごとに固有の色を割り当て、フィードと参加者一覧で見分けやすくする。
 - フィードはチャットアプリのバブル形式で表示する。自分の発言・ロールは
   右寄せ、他の参加者のものは左寄せに並べる。各エントリには円形アイコンを
@@ -613,17 +615,29 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   アクセントは左ボーダーから上ボーダーに変更し、左右どちらの行揃え
   でも視覚的に一定になるようにした。コンパクト表示は従来通り 1 行に
   詰めた密な一覧を保ち、色付きの名前のみで発言者を識別する。
-- v1.67 — アプリ内のアイコンを統一されたテーマで揃える。クローズ・
-  ゴミ箱の自前 SVG を Lucide の `X` / `Trash2` に差し替え、フィードの
-  フィルタチップをアイコンのみのボタンに変更する（Lucide `Layers` /
-  `MessageSquare` / `Paperclip` を「すべて / チャット / ファイル」、
-  Game Icons の 20 面ダイス（Delapouite, CC BY 3.0）を「ダイス」に
-  使用）。チップの余白を広げて各チップに 36px 以上のタップ領域を
-  確保する。多言語のフィルタ名は表示ラベルから `aria-label` と
-  `title` に移し、スクリーンリーダーとツールチップから引き続き
-  辿れるようにする。サードパーティ素材の帰属は
+- v1.67 — アプリ内のアイコンをすべて統一テーマに揃える。自前 SVG と
+  絵文字が混在していた状態を一掃し、UI 全体を
+  [Lucide](https://lucide.dev)（ISC、UI 部品・意味的概念）と
+  [Game Icons](https://game-icons.net) の `perspective-dice-six-faces-one`
+  （Delapouite, CC BY 3.0、ダイスの唯一の表象）に統一する。d6 を
+  選ぶ理由は、d20 と違い 16–22px の小さな表示でもシルエットが
+  崩れないため。同じ d6 をフィードフィルタ「ダイス」・Dock の
+  「ダイス」・チュートリアルのダイスステップで再利用し、ダイス
+  概念を 1 つのアイコンに集約する。その他の差し替え:
+  フィードフィルタチップをアイコンのみ化（Lucide `Layers` /
+  `MessageCircleMore` / `Paperclip` を「すべて / チャット /
+  ファイル」、多言語ラベルは `aria-label` と `title` に退避、
+  padding で 36px 以上のタップ領域を確保）。Dock のボタンは
+  Lucide `Users` / `Drama` / `Star`（ルーム / キャラ /
+  パターン）。設定ボタンは「⚙」から Lucide `Settings` に。チャット
+  コンポーザの添付ボタン、フィードのファイル添付チップは Lucide
+  `Paperclip` に。キャラクターポートレートの「編集」ピルは Lucide
+  `Pencil` に。StatusBar の参加者数チップは Lucide `Users` に。
+  各パネルの見出しアイコンも Dock と同じ図柄を使う。チュートリアルの
+  各ステップにも対応するアイコンを大きく表示（welcome は `Hand`、
+  過去のルームは `History`、自動翻訳は `Languages` など）。アプリの
+  ブランドマーク `BrandIcon` とフィード出目内訳の `DiceFaceIcon` は
+  そのまま残す。前者はブランド表象、後者はダイス形状そのものを
+  表す情報伝達アイコンのため。サードパーティ素材の帰属は
   [`docs/CREDITS.md`](docs/CREDITS.md) /
-  [`docs/CREDITS.ja.md`](docs/CREDITS.ja.md) に集約する。アプリの
-  ブランドマーク（`BrandIcon`）とフィードの出目内訳アイコン
-  （`DiceFaceIcon`）はそのまま残す。前者はブランド表象、後者は
-  ダイスの形状そのものを表す情報伝達アイコンのため。
+  [`docs/CREDITS.ja.md`](docs/CREDITS.ja.md) に集約する。

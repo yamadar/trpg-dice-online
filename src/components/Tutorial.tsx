@@ -1,17 +1,40 @@
-import { useState } from 'react'
+import { useState, type ComponentType } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import {
+  CharacterIcon,
+  ChatIcon,
+  DiceIcon,
+  PastRoomsIcon,
+  PatternsIcon,
+  RoomIcon,
+  SettingsIcon,
+  TranslateIcon,
+  WelcomeIcon,
+  type IconProps,
+} from './icons'
 
-/** The walkthrough steps, also reused as the in-app help. */
-const STEPS: { icon: string; titleKey: string; bodyKey: string }[] = [
-  { icon: '👋', titleKey: 'tutorial.welcome.title', bodyKey: 'tutorial.welcome.body' },
-  { icon: '🎲', titleKey: 'tutorial.dice.title', bodyKey: 'tutorial.dice.body' },
-  { icon: '🎭', titleKey: 'tutorial.character.title', bodyKey: 'tutorial.character.body' },
-  { icon: '⭐', titleKey: 'tutorial.patterns.title', bodyKey: 'tutorial.patterns.body' },
-  { icon: '👥', titleKey: 'tutorial.room.title', bodyKey: 'tutorial.room.body' },
-  { icon: '📜', titleKey: 'tutorial.pastRooms.title', bodyKey: 'tutorial.pastRooms.body' },
-  { icon: '💬', titleKey: 'tutorial.chat.title', bodyKey: 'tutorial.chat.body' },
-  { icon: '🌐', titleKey: 'tutorial.translate.title', bodyKey: 'tutorial.translate.body' },
-  { icon: '⚙', titleKey: 'tutorial.settings.title', bodyKey: 'tutorial.settings.body' },
+// The tutorial card displays each step's icon at a poster-like size so
+// the metaphor reads at a glance. Sized in one place so every step keeps
+// the same visual weight.
+const TUTORIAL_ICON_SIZE = 44
+
+/** The walkthrough steps, also reused as the in-app help. Each step
+ *  picks the same canonical icon used in the matching dock / chrome
+ *  surface, so the tutorial mirrors what the user sees in the app. */
+const STEPS: {
+  Icon: ComponentType<IconProps>
+  titleKey: string
+  bodyKey: string
+}[] = [
+  { Icon: WelcomeIcon, titleKey: 'tutorial.welcome.title', bodyKey: 'tutorial.welcome.body' },
+  { Icon: DiceIcon, titleKey: 'tutorial.dice.title', bodyKey: 'tutorial.dice.body' },
+  { Icon: CharacterIcon, titleKey: 'tutorial.character.title', bodyKey: 'tutorial.character.body' },
+  { Icon: PatternsIcon, titleKey: 'tutorial.patterns.title', bodyKey: 'tutorial.patterns.body' },
+  { Icon: RoomIcon, titleKey: 'tutorial.room.title', bodyKey: 'tutorial.room.body' },
+  { Icon: PastRoomsIcon, titleKey: 'tutorial.pastRooms.title', bodyKey: 'tutorial.pastRooms.body' },
+  { Icon: ChatIcon, titleKey: 'tutorial.chat.title', bodyKey: 'tutorial.chat.body' },
+  { Icon: TranslateIcon, titleKey: 'tutorial.translate.title', bodyKey: 'tutorial.translate.body' },
+  { Icon: SettingsIcon, titleKey: 'tutorial.settings.title', bodyKey: 'tutorial.settings.body' },
 ]
 
 interface Props {
@@ -27,6 +50,7 @@ export function Tutorial({ onClose }: Props) {
   const [step, setStep] = useState(0)
   const isLast = step === STEPS.length - 1
   const current = STEPS[step]
+  const CurrentIcon = current.Icon
 
   return (
     <div className="tutorial" role="dialog" aria-modal="true">
@@ -37,7 +61,7 @@ export function Tutorial({ onClose }: Props) {
           </button>
         )}
         <div className="tutorial-icon" aria-hidden="true">
-          {current.icon}
+          <CurrentIcon size={TUTORIAL_ICON_SIZE} />
         </div>
         <h2>{t(current.titleKey)}</h2>
         <p className="tutorial-body">{t(current.bodyKey)}</p>

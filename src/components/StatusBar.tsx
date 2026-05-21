@@ -1,5 +1,6 @@
 import { useI18n } from '../i18n/useI18n'
 import type { RoomStatus } from '../net/room'
+import { RoomIcon } from './icons'
 
 interface Props {
   status: RoomStatus
@@ -39,7 +40,7 @@ export function StatusBar({
         <span className="stat-value">{roomLabel}</span>
         {roomCode && (
           <span className="stat-players" aria-label={t('room.players')}>
-            <span aria-hidden="true">👥</span> {playerCount}
+            <RoomIcon size={14} /> {playerCount}
           </span>
         )}
       </button>

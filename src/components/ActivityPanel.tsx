@@ -13,22 +13,24 @@ import { Lightbox } from './Lightbox'
 import { FeedList, type FeedDetailTarget } from './FeedList'
 import { ChatComposer } from './ChatComposer'
 import {
+  AllIcon,
+  AttachIcon,
   BrandIcon,
-  D20Icon,
-  FilterAllIcon,
-  FilterChatIcon,
-  FilterFilesIcon,
+  ChatIcon,
+  DiceIcon,
   TrashIcon,
 } from './icons'
 
 // Icon-only filter chips: an SVG glyph plus an `aria-label` / `title`
 // carrying the localised name. The accessible name keeps screen-reader
-// users on parity with the previous text labels.
+// users on parity with the previous text labels. The "rolls" chip uses
+// the same d6 silhouette as the Dock's dice button and the tutorial's
+// dice step, so the dice concept reads with a single unified glyph.
 const FILTERS: { id: FeedFilter; Icon: ComponentType }[] = [
-  { id: 'all', Icon: FilterAllIcon },
-  { id: 'rolls', Icon: D20Icon },
-  { id: 'chat', Icon: FilterChatIcon },
-  { id: 'files', Icon: FilterFilesIcon },
+  { id: 'all', Icon: AllIcon },
+  { id: 'rolls', Icon: DiceIcon },
+  { id: 'chat', Icon: ChatIcon },
+  { id: 'files', Icon: AttachIcon },
 ]
 
 /** Room history paged in on demand from the durable log. */

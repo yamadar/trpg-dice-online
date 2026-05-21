@@ -292,8 +292,14 @@
   justify-content: center;
 }
 .icon-svg {
-  display: block;
+  /* inline-block so a stand-alone icon sits next to text without breaking
+     onto a new line; flex-shrink: 0 keeps it from being squashed when its
+     parent is a flex row (filter chip / dock / icon-only button); and
+     vertical-align: middle aligns it with adjacent text baselines (e.g.
+     the player-count chip in the status bar). */
+  display: inline-block;
   flex-shrink: 0;
+  vertical-align: middle;
 }
 .app-banner .icon-btn {
   color: inherit;
