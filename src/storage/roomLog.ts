@@ -190,10 +190,11 @@ function openDb(): Promise<IDBDatabase | null> {
       // v4 re-keys portrait records to be per-character (not per-player),
       // so a session that saw the same player act as multiple characters
       // can show each character's own avatar in past-room history.
-      // Existing v3 records are re-keyed with an empty `characterName`;
-      // the load side then exposes them under `${playerId}|` and the
-      // history view falls back to that key when no per-character record
-      // is found, so old portraits still surface in past rooms.
+      // Existing v3 records are re-keyed (with an empty `characterName`
+      // when none was stored) into the new pk format; the load side
+      // then exposes them under `${playerId}|` and the history view
+      // falls back to that key when no per-character record is found,
+      // so old portraits still surface in past rooms.
       if (event.oldVersion >= 3 && event.oldVersion < 4) {
         const portraitsStore = tx!.objectStore(PORTRAITS)
         const cursor = portraitsStore.openCursor()
@@ -207,18 +208,26 @@ function openDb(): Promise<IDBDatabase | null> {
             image: string
             updatedAt: number
           }
-          // Skip records that somehow already carry the new shape.
-          if (typeof rec.characterName === 'string' && rec.pk.includes('|')) {
+          // The v3 pk format was `${sessionId}:${playerId}` — no `|`.
+          // The new format has `|` as the separator. A record that
+          // already matches the new format is left alone.
+          const isLegacy = !rec.pk.includes('|')
+          if (!isLegacy) {
             cur.continue()
             return
           }
-          const newPk = portraitPk(rec.sessionId, rec.playerId, '')
+          // Preserve a `characterName` field if a forward-compatible
+          // writer somehow set one with the old pk — that way we don't
+          // silently collapse two characters' portraits to one entry.
+          const characterName =
+            typeof rec.characterName === 'string' ? rec.characterName : ''
+          const newPk = portraitPk(rec.sessionId, rec.playerId, characterName)
           cur.delete()
           portraitsStore.put({
             pk: newPk,
             sessionId: rec.sessionId,
             playerId: rec.playerId,
-            characterName: '',
+            characterName,
             image: rec.image,
             updatedAt: rec.updatedAt,
           })

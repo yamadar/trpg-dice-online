@@ -228,6 +228,12 @@ export function useSession(): Session {
   // rather than racing — without it, the later batch could commit
   // first and the earlier batch's stale payload could overwrite it.
   const portraitFlushChainRef = useRef<Promise<void>>(Promise.resolve())
+  // Once a flushed offset crosses this many entries, the flush
+  // effect compacts the queue (slices off the prefix and resets the
+  // offset) so a long session of frequent portrait changes does not
+  // hold them all in memory forever. Tuned high enough that ordinary
+  // sessions never trip it but a pathological case is still bounded.
+  const PORTRAIT_QUEUE_COMPACT_AT = 64
 
 
   // Identity refs are written directly by updateIdentity so a re-sync can
@@ -1473,8 +1479,18 @@ export function useSession(): Session {
       const results = await Promise.all(
         Array.from(bySession, ([sid, images]) => saveCharacterPortraits(sid, images)),
       )
-      if (results.every((ok) => ok)) {
-        portraitFlushedCountRef.current = endIndex
+      if (!results.every((ok) => ok)) return
+      portraitFlushedCountRef.current = endIndex
+      // Compact the queue once a healthy chunk has been flushed, so a
+      // long session does not pile up portrait records in memory just
+      // because the offset advanced past them. `setState` here runs
+      // in the promise's microtask (not synchronously inside the
+      // effect body), and the functional updater drops the same
+      // prefix from whatever `prev` happens to be — so any new tail
+      // appended while the flush was in flight is preserved.
+      if (endIndex >= PORTRAIT_QUEUE_COMPACT_AT) {
+        portraitFlushedCountRef.current = 0
+        setPortraitQueue((prev) => prev.slice(endIndex))
       }
     })
   }, [portraitQueue])
