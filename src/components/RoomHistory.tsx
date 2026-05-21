@@ -181,7 +181,7 @@ export function RoomHistory({ playerId, onBack }: Props) {
           displayName={detail.name}
           characterName={detail.characterName}
           background={detail.background}
-          image={portraits[detail.playerId]}
+          image={characterImagesFromPortraits[`${detail.playerId}|${detail.characterName}`]}
           isSelf={detail.playerId === playerId}
         />
       </div>

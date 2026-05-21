@@ -327,9 +327,12 @@
 /* Pin the panel title row to the top of the sheet body so the heading
    (and the sheet's close icon above it) stays in view while the rest
    scrolls — the same fixed-header pattern as the past-rooms list. The
-   right padding clears the sheet-close button at top:8/right:8 (34px). */
-.sheet-body .panel > h2,
-.sheet-body .panel > .panel-head {
+   right padding clears the sheet-close button at top:8/right:8 (34px).
+   Scoped to a direct `.panel` child so a panel nested deeper (eg. the
+   read-only player-card embedded inside the past-rooms view) does not
+   add a second sticky row that would slide over the outer title. */
+.sheet-body > .panel > h2,
+.sheet-body > .panel > .panel-head {
   position: sticky;
   top: 0;
   z-index: 1;
@@ -748,18 +751,17 @@ button.player-row {
 }
 
 /* --- player-detail card (tapping a feed name) --- */
-.player-card-head {
+/* The title row carries the composed feed name and the GM / You badges.
+   `align-items: baseline` makes the small badges sit on the heading
+   baseline; `flex-wrap` lets them drop to a new line on narrow widths. */
+.player-card-title {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 12px;
 }
-.player-card-name {
-  font-size: 1.05rem;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.player-card-title-text {
+  word-break: break-word;
 }
 .player-card-fields {
   display: flex;
@@ -1065,12 +1067,6 @@ label.setting-row {
 }
 .feed-line time {
   margin-left: auto;
-  flex-shrink: 0;
-}
-.player-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
   flex-shrink: 0;
 }
 .feed-name {
@@ -1903,9 +1899,25 @@ button.char-avatar-large:disabled {
 .char-avatar-edit-menu button.danger {
   color: var(--danger);
 }
-/* The portrait inside the tapped-player detail card. */
+/* The portrait inside the tapped-player detail card. A fixed square
+   keeps the image inside the sheet whatever its natural size; the
+   bottom margin sets it apart from the player / character fields. */
 .player-card-image {
-  margin-top: 10px;
+  width: 160px;
+  height: 160px;
+  padding: 0;
+  margin: 0 0 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg);
+  cursor: pointer;
+}
+.player-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* --- chip rows (count / type / kind) --- */

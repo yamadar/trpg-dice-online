@@ -9,24 +9,27 @@ interface Props {
   player: Player | null
   /** The player id of the tapped feed entry (used for the color swatch). */
   playerId: string
-  /** Composed display name captured on the tapped feed entry. */
+  /** Composed display name ("Character（Player）" or just the player)
+   *  captured on the tapped feed entry — matches the speaker name shown
+   *  in the non-compact feed. */
   displayName: string
   /** Character name active when the entry was created (the snapshot). */
   characterName: string
   /** Character background at that time (the snapshot). */
   background: string
-  /** The player's current character portrait, synced from the room, if any. */
+  /** Portrait for that specific (player, character) pair — the same image
+   *  the feed avatar shows for the tapped entry, even after the speaker
+   *  has switched characters. */
   image?: string
   /** Whether the tapped entry belongs to the local player. */
   isSelf: boolean
 }
 
 /**
- * Read-only profile shown when a name in the feed is tapped. Character
- * details come from the tapped entry, not the live player, so a name
- * sent under an old character still shows that old character — even
- * after the player has switched characters. The portrait, by contrast,
- * is the player's current one (synced live, not part of the snapshot).
+ * Read-only profile shown when a name in the feed is tapped. Both the
+ * name and the portrait are taken from the tapped feed entry, so a name
+ * sent under an old character still shows that old character even after
+ * the player has switched.
  */
 export function PlayerDetailCard({
   player,
@@ -45,24 +48,24 @@ export function PlayerDetailCard({
   // The person name is not part of the snapshot; show the live one when
   // the player is still present.
   const playerName = player?.name.trim() ?? ''
+  // The same composed speaker name the non-compact feed shows. If
+  // `displayName` is empty (older / imported entries that never carried
+  // `playerName`), fall through to the character name so the heading
+  // still reads sensibly instead of "anon".
+  const title = displayName.trim() || character || t('player.anon')
 
   return (
     <section className="panel player-card">
-      <h2>{t('feed.playerDetail')}</h2>
-
-      <div className="player-card-head">
-        <span className="player-dot" style={{ background: color }} />
-        <span className="player-card-name" style={{ color }}>
-          {character || displayName || t('player.anon')}
-        </span>
+      <h2 className="player-card-title" style={{ color }}>
+        <span className="player-card-title-text">{title}</span>
         {player?.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
         {isSelf && <span className="badge you">{t('room.youBadge')}</span>}
-      </div>
+      </h2>
 
       {image && (
         <button
           type="button"
-          className="char-image-thumb player-card-image"
+          className="player-card-image"
           aria-label={t('character.imageView')}
           onClick={() => setLightboxOpen(true)}
         >
@@ -95,7 +98,7 @@ export function PlayerDetailCard({
 
       {lightboxOpen && image && (
         <Lightbox
-          images={[{ name: character || displayName || t('player.anon'), dataUrl: image }]}
+          images={[{ name: title, dataUrl: image }]}
           index={0}
           onIndexChange={() => {}}
           onClose={() => setLightboxOpen(false)}
