@@ -154,7 +154,7 @@ export function RoomHistory({ playerId, onBack }: Props) {
   // shape works — a best-effort mapping that gives back the same avatar
   // the previous version would have shown.
   const characterImagesFromPortraits = useMemo(() => {
-    const map: Record<string, string> = {}
+    const map: Record<string, string | undefined> = {}
     for (const item of feed) {
       const speaker =
         item.kind === 'chat' ? item.message : item.kind === 'roll' ? item.roll : null

@@ -51,17 +51,18 @@ const FeedSystemItem = memo(function FeedSystemItem({
 
 /**
  * Circular avatar shown next to each feed item — the character portrait
- * when one is set, otherwise a flat player-color disc. Memoized so a
- * stable image / color does not invalidate the parent item.
+ * when one is set, otherwise a flat player-color disc. The avatar is
+ * purely decorative (the speaker-name button right next to it is the
+ * announced source), so the wrappers stay `aria-hidden` without any
+ * hidden text inside that AT would never reach. Memoized so a stable
+ * image / color does not invalidate the parent item.
  */
 const FeedAvatar = memo(function FeedAvatar({
   image,
   color,
-  name,
 }: {
   image: string | undefined
   color: string
-  name: string
 }) {
   if (image) {
     return (
@@ -71,9 +72,11 @@ const FeedAvatar = memo(function FeedAvatar({
     )
   }
   return (
-    <span className="feed-avatar feed-avatar-dot" style={{ background: color }} aria-hidden="true">
-      <span className="visually-hidden">{name}</span>
-    </span>
+    <span
+      className="feed-avatar feed-avatar-dot"
+      style={{ background: color }}
+      aria-hidden="true"
+    />
   )
 })
 
@@ -97,7 +100,7 @@ const FeedChatItem = memo(function FeedChatItem({
   /** Map of `${playerId}|${characterName}` → latest image observed for
    *  that character. Lets a feed item keep the right avatar after the
    *  speaking player has switched away from that character. */
-  characterImages: Record<string, string>
+  characterImages: Record<string, string | undefined>
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
 }) {
@@ -118,11 +121,12 @@ const FeedChatItem = memo(function FeedChatItem({
         archived ? ' archived' : ''
       }${pending ? ' pending' : ''}`}
     >
-      <FeedAvatar
-        image={characterImages[`${m.playerId}|${m.characterName ?? ''}`]}
-        color={color}
-        name={m.playerName}
-      />
+      {!compact && (
+        <FeedAvatar
+          image={characterImages[`${m.playerId}|${m.characterName ?? ''}`]}
+          color={color}
+        />
+      )}
       <div className="feed-bubble">
         <div className="feed-line">
           <span className="player-dot" style={{ background: color }} />
@@ -184,7 +188,7 @@ const FeedRollItem = memo(function FeedRollItem({
   /** The compact feed shows just the character name, no player-color dot. */
   compact: boolean
   playerId: string
-  characterImages: Record<string, string>
+  characterImages: Record<string, string | undefined>
   onOpenDetail: (target: FeedDetailTarget) => void
 }) {
   const { t } = useI18n()
@@ -197,11 +201,12 @@ const FeedRollItem = memo(function FeedRollItem({
     <li
       className={`feed-roll roll ${isHidden ? 'hidden' : r.kind}${own ? ' own' : ''}${archived ? ' archived' : ''}`}
     >
-      <FeedAvatar
-        image={characterImages[`${r.playerId}|${r.characterName ?? ''}`]}
-        color={color}
-        name={fullName}
-      />
+      {!compact && (
+        <FeedAvatar
+          image={characterImages[`${r.playerId}|${r.characterName ?? ''}`]}
+          color={color}
+        />
+      )}
       <div className="feed-bubble">
         <div className="feed-line">
           <span className="player-dot" style={{ background: color }} />
@@ -261,7 +266,7 @@ interface Props {
   /** Character portraits keyed by `${playerId}|${characterName}` — used
    *  for the per-message avatar so a feed entry keeps the right portrait
    *  after the speaker has switched to a different character. */
-  characterImages: Record<string, string>
+  characterImages: Record<string, string | undefined>
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
   /** Overrides the default "nothing here yet" hint when the feed is empty. */

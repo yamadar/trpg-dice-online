@@ -109,9 +109,12 @@ export interface Session {
    * Character portrait images keyed by `${playerId}|${characterName}` — the
    * last image observed in this session for that (player, character) pair.
    * Lets the feed keep showing the right avatar on past messages after a
-   * player has switched to a different character.
+   * player has switched to a different character. Typed with explicit
+   * `| undefined` so consumers handle the missing-key case (an unobserved
+   * character collapses to the colored dot rather than reusing someone
+   * else's portrait).
    */
-  characterImages: Record<string, string>
+  characterImages: Record<string, string | undefined>
   history: RollResult[]
   chat: ChatMessage[]
   markers: SystemMarker[]
@@ -178,7 +181,7 @@ export function useSession(): Session {
    *  state from props"), so the entry survives across renders without
    *  needing the `useEffect` + `setState` that the React 19 lint rule
    *  bans. */
-  const [characterImages, setCharacterImages] = useState<Record<string, string>>({})
+  const [characterImages, setCharacterImages] = useState<Record<string, string | undefined>>({})
   /** Tracks the inputs that produced the current `characterImages`, so the
    *  render-phase update fires exactly when any of them changed. */
   const [characterImagesInputs, setCharacterImagesInputs] = useState<{
@@ -260,8 +263,19 @@ export function useSession(): Session {
     let map = characterImages
     let changed = false
     const put = (id: string, character: string, image: string) => {
-      if (!id || !character || !image) return
+      if (!id || !character) return
       const key = `${id}|${character}`
+      // An empty image is itself an observation — clear any prior entry
+      // so a portrait that was deleted does not linger as a stale avatar.
+      if (!image) {
+        if (!(key in map)) return
+        if (!changed) {
+          map = { ...map }
+          changed = true
+        }
+        delete map[key]
+        return
+      }
       if (map[key] === image) return
       if (!changed) {
         map = { ...map }
