@@ -24,11 +24,17 @@ import {
  * Delapouite (CC BY 3.0); see [`docs/CREDITS.md`](../../docs/CREDITS.md)
  * for attribution.
  *
- * Every icon renders at the current text color via SVG `currentColor`
- * and carries the `icon-svg` class so the app's centring rules apply.
- * Each icon accepts an optional `size` (number of px or CSS length) so a
- * call site can scale it for chrome (Dock 22 px, filter chips 18 px,
- * tutorial 44 px) without per-context CSS.
+ * Every Lucide-based icon plus `DiceIcon` renders at the current text
+ * color via SVG `currentColor` and carries the `icon-svg` class so the
+ * app's centring rules apply. Each accepts an optional `size` (number
+ * of px or CSS length) so a call site can scale it for chrome (Dock
+ * 22 px, filter chips 18 px, tutorial 44 px) without per-context CSS.
+ *
+ * `BrandIcon` is the deliberate exception: it bakes in its own gradient
+ * and white text, intentionally does NOT inherit `currentColor` (so the
+ * logo keeps its brand colours even inside a `background-clip: text`
+ * heading), and does not use `.icon-svg` because its callers size it
+ * via the `size` / `className` props.
  *
  * The repeated wrapper bodies (className / strokeWidth / aria-hidden)
  * are intentionally inlined per component rather than factored into a
