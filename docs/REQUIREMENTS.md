@@ -678,6 +678,19 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.71 — Per-character portraits in past-room history. The durable
+  portrait store moves from one record per `(sessionId, playerId)` to
+  one per `(sessionId, playerId, characterName)`. A v3→v4 IndexedDB
+  migration re-keys existing records with an empty character name and
+  the room-history view falls back to that legacy key when no
+  per-character record is found, so older sessions keep showing their
+  portraits. The session's in-memory `characterImages` derivation
+  now also drives the persistence: every (player, character) → image
+  observation lands on disk, and explicit clears (a portrait deleted
+  by the user) are persisted as deletes, while in-memory prunes (an
+  entry no longer referenced by the live window) leave disk untouched.
+  Fixes the past-rooms feed showing the current self portrait — or no
+  portrait at all — for entries whose character had since changed.
 - v1.70 — Replace every `window.confirm` (clear the feed, leave the
   room as GM, delete a character / saved pattern / past session,
   overwrite a saved pattern, delete all past sessions) with a themed

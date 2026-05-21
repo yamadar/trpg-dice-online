@@ -29,8 +29,8 @@ import {
   loadRecentLog,
   markSessionClosed,
   newSessionId,
-  savePortraitForSession,
-  savePortraitsForSession,
+  saveCharacterPortrait,
+  saveCharacterPortraits,
   type LogTarget,
 } from '../storage/roomLog'
 import {
@@ -202,6 +202,7 @@ export function useSession(): Session {
   // Mirrors reconnectingRef for rendering — the GM-offline banner reads it.
   const [reconnecting, setReconnecting] = useState(false)
 
+
   // Identity refs are written directly by updateIdentity so a re-sync can
   // read the new values synchronously.
   const nameRef = useRef(name)
@@ -285,6 +286,10 @@ export function useSession(): Session {
           changed = true
         }
         delete map[key]
+        // Persist the clear so the past-rooms view of this same session
+        // does not surface the now-removed portrait. `sessionId` is
+        // state (not a ref), so it is safe to read during render.
+        if (sessionId) void saveCharacterPortrait(sessionId, id, character, '')
         return
       }
       if (map[key] === image) return
@@ -293,6 +298,10 @@ export function useSession(): Session {
         changed = true
       }
       map[key] = image
+      // Persist the (player, character) → image observation so the
+      // past-rooms view can show the right avatar even after the entry
+      // has been pruned out of the live `characterImages` map.
+      if (sessionId) void saveCharacterPortrait(sessionId, id, character, image)
     }
     put(playerId, characterName, playerImages[playerId] ?? '')
     for (const p of playersState) {
@@ -393,16 +402,17 @@ export function useSession(): Session {
     setPlayerImagesState(next)
   }, [])
 
-  /** Set or clear one player's portrait. */
+  /** Set or clear one player's portrait. The matching
+   *  per-(player, character) persistence happens in the
+   *  `characterImages` derivation block above — once that map sees the
+   *  new image, it calls `saveCharacterPortrait` with the player's
+   *  current character name attached. */
   const putPlayerImage = useCallback(
     (id: string, image: string) => {
       const next = { ...playerImagesRef.current }
       if (image) next[id] = image
       else delete next[id]
       setPlayerImages(next)
-      // Persist to the per-session portrait store so a past session's
-      // history view can show the last-known portrait of each player.
-      void savePortraitForSession(sessionIdRef.current, id, image)
     },
     [setPlayerImages],
   )
@@ -596,7 +606,19 @@ export function useSession(): Session {
             }
             if (ownImageRef.current) images[playerId] = ownImageRef.current
             setPlayerImages(images)
-            void savePortraitsForSession(sessionIdRef.current, images)
+            // Persist per (playerId, characterName) — match the live
+            // `characterImages` shape so the past-rooms view shows the
+            // right avatar even after the player switches character.
+            const characterImagesSnapshot: Record<string, string> = {}
+            for (const p of msg.snapshot.players) {
+              const img = images[p.id]
+              if (img) characterImagesSnapshot[`${p.id}|${p.characterName ?? ''}`] = img
+            }
+            if (ownImageRef.current) {
+              characterImagesSnapshot[`${playerId}|${characterNameRef.current}`] =
+                ownImageRef.current
+            }
+            void saveCharacterPortraits(sessionIdRef.current, characterImagesSnapshot)
           }
           if (msg.snapshot.history.length || msg.snapshot.chat.length) {
             hasActivityRef.current = true
@@ -1308,14 +1330,21 @@ export function useSession(): Session {
   }, [role])
 
   // When the session id first arrives (create / join / resume), persist
-  // the local player's portrait so a fresh session always carries one
-  // entry for the GM — putPlayerImage's per-update save misses the case
-  // where the portrait was set before any room existed.
+  // the local player's current (character, portrait) so a fresh session
+  // always carries one entry for the GM — the characterImages derivation
+  // block's per-update save misses the case where the portrait was set
+  // before any room existed.
   useEffect(() => {
     if (sessionId && ownImageRef.current) {
-      void savePortraitForSession(sessionId, playerId, ownImageRef.current)
+      void saveCharacterPortrait(
+        sessionId,
+        playerId,
+        characterNameRef.current,
+        ownImageRef.current,
+      )
     }
   }, [sessionId, playerId])
+
 
   // Tear down the peer when the app unmounts.
   useEffect(() => () => roomRef.current?.close(), [])
