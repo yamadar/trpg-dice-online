@@ -27,32 +27,48 @@ interface PendingConfirm {
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const { t } = useI18n()
   const [pending, setPending] = useState<PendingConfirm | null>(null)
-  // The element that owned focus before the dialog opened, so we can
-  // restore it on close. A ref (not state) — restoring focus is a
-  // side-effect, not something React should re-render on.
+  // The element that owned focus before the FIRST dialog opened. Only
+  // captured on a null→pending transition: if a second `confirm()` call
+  // replaces a still-open dialog, we keep the original trigger so the
+  // eventual close restores focus to where the user actually started,
+  // not to a button inside the soon-to-be-unmounted previous dialog.
   const lastFocusRef = useRef<HTMLElement | null>(null)
+  // Mirror of the current resolver, kept in a ref. The unmount cleanup
+  // below reads through this ref instead of `setPending(...)` because
+  // React skips state updates while a component is unmounting — a
+  // setState-only cleanup could leave the caller's promise hanging.
+  const pendingResolverRef = useRef<((value: boolean) => void) | null>(null)
 
   const confirm = useCallback<ConfirmFn>((opts) => {
     return new Promise<boolean>((resolve) => {
       setPending((prev) => {
-        // A still-open dialog gets cancelled before we replace it, so
-        // its caller's promise never hangs.
-        prev?.resolve(false)
-        lastFocusRef.current = (document.activeElement as HTMLElement | null) ?? null
+        if (prev) {
+          // Cancel the still-open dialog without touching `lastFocusRef`
+          // — it already holds the original trigger element.
+          prev.resolve(false)
+        } else {
+          lastFocusRef.current = (document.activeElement as HTMLElement | null) ?? null
+        }
         return { opts, resolve }
       })
     })
   }, [])
 
+  // Keep the ref in sync with the currently rendered pending dialog so
+  // the unmount cleanup below can resolve it without going through
+  // `setState`.
+  useEffect(() => {
+    pendingResolverRef.current = pending?.resolve ?? null
+  }, [pending])
+
   // Hard-cancel any pending dialog if the provider itself unmounts (e.g.
   // a hot reload during development) so we never leak an unresolved
-  // promise into the caller's `await`.
+  // promise into the caller's `await`. Resolves through the ref because
+  // React drops setState updates issued during unmount.
   useEffect(() => {
     return () => {
-      setPending((prev) => {
-        prev?.resolve(false)
-        return null
-      })
+      pendingResolverRef.current?.(false)
+      pendingResolverRef.current = null
     }
   }, [])
 
@@ -114,6 +130,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const cardRef = useRef<HTMLDivElement | null>(null)
   const confirmBtnRef = useRef<HTMLButtonElement | null>(null)
   const cancelBtnRef = useRef<HTMLButtonElement | null>(null)
   // Per-instance ids so multiple dialogs (unit tests, future nesting)
@@ -122,17 +139,43 @@ export function ConfirmDialog({
   const titleId = `confirm-title-${instanceId}`
   const messageId = `confirm-message-${instanceId}`
 
-  // Escape cancels, like a native dialog. Registered in the *capture*
-  // phase and `stopImmediatePropagation`s the event so this dialog
-  // absorbs the keystroke — otherwise an Escape would also reach the
-  // window-level Escape handler on the Sheet sitting underneath, and
-  // close both the confirm and the sheet that opened it.
+  // Keystroke handling: Escape cancels (like a native dialog), Tab and
+  // Shift-Tab cycle focus *within* the dialog. The handler is registered
+  // in the *capture* phase and `stopImmediatePropagation`s anything it
+  // claims, so the keystroke does not also reach the window-level
+  // Escape handler on a Sheet sitting underneath (which would close
+  // both the confirm and its parent sheet).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
         e.stopImmediatePropagation()
         onCancel()
+        return
+      }
+      if (e.key !== 'Tab') return
+      // Focus trap: collect the focusable elements inside the card and
+      // wrap the focus when Tab tries to move out either end. Without
+      // this, Tab would walk to whatever lives behind the backdrop,
+      // which contradicts `aria-modal="true"` and confuses assistive
+      // tech users.
+      const card = cardRef.current
+      if (!card) return
+      const focusables = Array.from(
+        card.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      )
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      const active = document.activeElement as HTMLElement | null
+      if (e.shiftKey && (active === first || !card.contains(active))) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && (active === last || !card.contains(active))) {
+        e.preventDefault()
+        first.focus()
       }
     }
     window.addEventListener('keydown', onKey, true)
@@ -159,6 +202,7 @@ export function ConfirmDialog({
         aria-hidden="true"
       />
       <div
+        ref={cardRef}
         className="confirm-card"
         role="alertdialog"
         aria-modal="true"
