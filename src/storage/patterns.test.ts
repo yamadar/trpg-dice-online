@@ -1,48 +1,55 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { newPatternId } from './patterns'
 
+/**
+ * `newPatternId` mixes `Date.now()` (base-36) and the suffix
+ * `Math.random().toString(36).slice(2, 8)` — six base-36 characters
+ * of randomness. Math.random can in principle return a value whose
+ * base-36 expansion has fewer than six post-decimal digits (e.g. the
+ * extreme case of `Math.random() === 0` produces `"0"` and `.slice(2)`
+ * yields `''`), so format assertions are wrapped in stubbed-RNG
+ * `describe` blocks that pin the entropy. The prefix / format /
+ * uniqueness invariants the rest of the app cares about are then
+ * checked deterministically.
+ */
 describe('newPatternId', () => {
+  let mockRandom: ReturnType<typeof vi.spyOn>
+  let mockNow: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    mockRandom = vi.spyOn(Math, 'random')
+    mockNow = vi.spyOn(Date, 'now')
+    mockNow.mockReturnValue(1_700_000_000_000)
+    // Default: a non-degenerate `Math.random()` whose base-36
+    // expansion has at least six post-decimal digits, so the
+    // `slice(2, 8)` suffix is the full six characters. Specific
+    // tests override this. The implementation's `Math.random` value
+    // of e.g. `0.5` (`"0.i"`) would short the suffix, which the
+    // assertion below rejects on purpose.
+    mockRandom.mockReturnValue(0.123456789)
+  })
+
+  afterEach(() => {
+    mockRandom.mockRestore()
+    mockNow.mockRestore()
+  })
+
   it('starts with the `pat-` prefix so it is recognisable in stored data', () => {
     expect(newPatternId()).toMatch(/^pat-/)
   })
 
-  it('contains a timestamp segment and a random segment', () => {
-    // Format: pat-{base36 timestamp}-{base36 random chunk, 6 chars}
+  it('formats as `pat-{base36 timestamp}-{6 base36 chars}`', () => {
     expect(newPatternId()).toMatch(/^pat-[0-9a-z]+-[0-9a-z]{6}$/)
   })
 
-  // The uniqueness check pins the format under fixed clock + RNG values
-  // so it is not just probabilistic. The implementation interleaves
-  // `Date.now()` and `Math.random()` into the id, so feeding the same
-  // values back must yield the same id; feeding a different RNG draw
-  // must yield a different id. That is the actual guarantee the rest of
-  // the app cares about — collisions across rapidly-issued ids.
-  describe('with stubbed clock + RNG', () => {
-    let mockRandom: ReturnType<typeof vi.spyOn>
-    let mockNow: ReturnType<typeof vi.spyOn>
+  it('produces a stable id for fixed (now, random) inputs', () => {
+    const a = newPatternId()
+    const b = newPatternId()
+    expect(a).toBe(b)
+  })
 
-    beforeEach(() => {
-      mockRandom = vi.spyOn(Math, 'random')
-      mockNow = vi.spyOn(Date, 'now')
-    })
-
-    afterEach(() => {
-      mockRandom.mockRestore()
-      mockNow.mockRestore()
-    })
-
-    it('produces a stable id for fixed (now, random) inputs', () => {
-      mockNow.mockReturnValue(1_700_000_000_000)
-      mockRandom.mockReturnValue(0.5)
-      const a = newPatternId()
-      const b = newPatternId()
-      expect(a).toBe(b)
-    })
-
-    it('produces different ids when the RNG returns different values', () => {
-      mockNow.mockReturnValue(1_700_000_000_000)
-      mockRandom.mockReturnValueOnce(0.1).mockReturnValueOnce(0.9)
-      expect(newPatternId()).not.toBe(newPatternId())
-    })
+  it('produces different ids when the RNG returns different values', () => {
+    mockRandom.mockReturnValueOnce(0.1).mockReturnValueOnce(0.9)
+    expect(newPatternId()).not.toBe(newPatternId())
   })
 })
