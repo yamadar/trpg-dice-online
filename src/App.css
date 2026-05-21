@@ -975,14 +975,34 @@ label.setting-row {
   border-radius: 8px;
   padding: 2px;
 }
+/* Icon-only segmented control. Padding (not the inline icon size) drives
+   the tap target — 36×36 is comfortable on touch without making the
+   header chrome bulky. The accessible name comes from the parent
+   button's `aria-label`, so the SVG carries `aria-hidden`. */
 .filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: transparent;
-  padding: 3px 9px;
-  font-size: 0.8rem;
+  padding: 8px 10px;
+  min-width: 36px;
+  min-height: 36px;
+  color: var(--text-dim);
   border-radius: 6px;
+  cursor: pointer;
+}
+.filter-btn:hover {
+  color: var(--text-h);
+  background: var(--panel-2);
 }
 .filter-btn.active {
+  background: var(--accent-2);
+  color: #fff;
+}
+.filter-btn.active:hover {
+  /* Keep the active chip's painted background even on hover so the
+     selection cue does not invert as the pointer crosses it. */
   background: var(--accent-2);
   color: #fff;
 }

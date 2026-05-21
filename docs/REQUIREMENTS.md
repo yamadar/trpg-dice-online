@@ -65,7 +65,11 @@ An SPA where players roll TRPG dice and share results with other players in real
 - History and chat are merged into a single chronological feed.
 - Each entry's time is shown as `H:mm`; a divider carrying the date (in the
   UI language) opens the feed and marks every day change.
-- A filter switches between All / Rolls only / Chat only / Files.
+- A filter switches between All / Rolls only / Chat only / Files. The
+  filter chips are icon-only (with the localised name as the accessible
+  label / tooltip) and share a unified visual vocabulary — Lucide for
+  All / Chat / Files, and a Game Icons d20 silhouette for Rolls (see
+  [CREDITS](CREDITS.md)).
 - Each participant gets a stable color so they are easy to tell apart.
 - The feed is laid out as chat-style bubbles: the local player's entries
   align right, every other participant's align left. Each entry shows a
@@ -645,3 +649,17 @@ Commit after each step.
   to a top border so the cue reads the same whether the row is mirrored
   right or kept left. The compact layout stays a dense one-line feed
   identified solely by the colored character name.
+- v1.67 — Unify the in-app icons under a single visual vocabulary. The
+  inline hand-rolled SVGs for the close / trash glyphs are replaced
+  with their Lucide equivalents (`X`, `Trash2`), the feed filter chips
+  become icon-only buttons (Lucide `Layers` / `MessageSquare` /
+  `Paperclip` for all / chat / files, plus a Game Icons d20 silhouette
+  by Delapouite — CC BY 3.0 — for rolls), and the chip's padding is
+  bumped so each chip keeps a ≥36 px tap target. The localised filter
+  names move from the visible label into `aria-label` + `title` so
+  screen readers and tooltips still surface them. Third-party
+  attribution lives in [`docs/CREDITS.md`](docs/CREDITS.md) /
+  [`docs/CREDITS.ja.md`](docs/CREDITS.ja.md). The custom `BrandIcon`
+  and the per-die `DiceFaceIcon` are intentionally kept — the former
+  is the app's brand mark, the latter encodes the die's geometry as
+  read by the feed.

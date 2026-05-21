@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, type ComponentType } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
 import type { Character } from '../characters/types'
@@ -12,9 +12,24 @@ import { PlayerDetailCard } from './PlayerDetailCard'
 import { Lightbox } from './Lightbox'
 import { FeedList, type FeedDetailTarget } from './FeedList'
 import { ChatComposer } from './ChatComposer'
-import { BrandIcon, TrashIcon } from './icons'
+import {
+  BrandIcon,
+  D20Icon,
+  FilterAllIcon,
+  FilterChatIcon,
+  FilterFilesIcon,
+  TrashIcon,
+} from './icons'
 
-const FILTERS: FeedFilter[] = ['all', 'rolls', 'chat', 'files']
+// Icon-only filter chips: an SVG glyph plus an `aria-label` / `title`
+// carrying the localised name. The accessible name keeps screen-reader
+// users on parity with the previous text labels.
+const FILTERS: { id: FeedFilter; Icon: ComponentType }[] = [
+  { id: 'all', Icon: FilterAllIcon },
+  { id: 'rolls', Icon: D20Icon },
+  { id: 'chat', Icon: FilterChatIcon },
+  { id: 'files', Icon: FilterFilesIcon },
+]
 
 /** Room history paged in on demand from the durable log. */
 interface OlderEntries {
@@ -199,17 +214,22 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
         <h2>{t('feed.section')}</h2>
         <div className="feed-tools">
           <div className="feed-filter" role="group" aria-label={t('feed.section')}>
-            {FILTERS.map((f) => (
-              <button
-                key={f}
-                type="button"
-                className={f === filter ? 'filter-btn active' : 'filter-btn'}
-                aria-pressed={f === filter}
-                onClick={() => setFilter(f)}
-              >
-                {t(`feed.${f}`)}
-              </button>
-            ))}
+            {FILTERS.map(({ id, Icon }) => {
+              const label = t(`feed.${id}`)
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={id === filter ? 'filter-btn active' : 'filter-btn'}
+                  aria-pressed={id === filter}
+                  aria-label={label}
+                  title={label}
+                  onClick={() => setFilter(id)}
+                >
+                  <Icon />
+                </button>
+              )
+            })}
           </div>
           {feed.length > 0 && (
             <button
