@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
   type ReactNode,
@@ -62,7 +63,12 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     })
     // Restore focus to whatever had it when the dialog opened — keeps
     // keyboard users from being dropped at the top of the page.
-    lastFocusRef.current?.focus?.()
+    // `preventScroll: true` keeps the page from jumping if the prior
+    // focus target has scrolled off-screen behind the dialog (common
+    // on mobile when the on-screen keyboard had shifted the layout).
+    // Older Safari versions ignore the option but still re-focus, so
+    // the call is safe to make unconditionally.
+    lastFocusRef.current?.focus?.({ preventScroll: true })
     lastFocusRef.current = null
   }, [])
 
@@ -110,17 +116,27 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const confirmBtnRef = useRef<HTMLButtonElement | null>(null)
   const cancelBtnRef = useRef<HTMLButtonElement | null>(null)
+  // Per-instance ids so multiple dialogs (unit tests, future nesting)
+  // don't collide on `confirm-title` / `confirm-message`.
+  const instanceId = useId().replace(/:/g, '-')
+  const titleId = `confirm-title-${instanceId}`
+  const messageId = `confirm-message-${instanceId}`
 
-  // Escape cancels, like a native dialog.
+  // Escape cancels, like a native dialog. Registered in the *capture*
+  // phase and `stopImmediatePropagation`s the event so this dialog
+  // absorbs the keystroke — otherwise an Escape would also reach the
+  // window-level Escape handler on the Sheet sitting underneath, and
+  // close both the confirm and the sheet that opened it.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
+        e.stopImmediatePropagation()
         onCancel()
       }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
   }, [onCancel])
 
   // Focus the safe option on open: the cancel button for destructive
@@ -146,8 +162,8 @@ export function ConfirmDialog({
         className="confirm-card"
         role="alertdialog"
         aria-modal="true"
-        aria-labelledby={title ? 'confirm-title' : undefined}
-        aria-describedby="confirm-message"
+        aria-labelledby={title ? titleId : undefined}
+        aria-describedby={messageId}
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -159,11 +175,11 @@ export function ConfirmDialog({
           <CloseIcon />
         </button>
         {title && (
-          <h2 id="confirm-title" className="confirm-title">
+          <h2 id={titleId} className="confirm-title">
             {title}
           </h2>
         )}
-        <p id="confirm-message" className="confirm-message">
+        <p id={messageId} className="confirm-message">
           {message}
         </p>
         <div className="confirm-actions">
