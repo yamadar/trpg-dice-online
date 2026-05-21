@@ -1067,7 +1067,10 @@ label.setting-row {
   font-family: inherit;
   font-size: inherit;
   cursor: pointer;
-  max-width: 60%;
+  /* Let the name take its natural width — the bubble itself grows to
+     fit (capped by the row's max-width), so a name only collapses to
+     the ellipsis when the bubble is already at its limit. */
+  min-width: 0;
 }
 .feed-name:hover {
   text-decoration: underline;
