@@ -189,7 +189,9 @@ export function useSession(): Session {
     cn: string
     pi: Record<string, string>
     ps: Player[]
-  }>({ pid: '', cn: '', pi: {}, ps: [] })
+    h: RollResult[]
+    c: ChatMessage[]
+  }>({ pid: '', cn: '', pi: {}, ps: [], h: [], c: [] })
   const [history, setHistory] = useState<RollResult[]>([])
   const [chat, setChat] = useState<ChatMessage[]>([])
   const [markers, setMarkers] = useState<SystemMarker[]>([])
@@ -242,28 +244,37 @@ export function useSession(): Session {
 
   // Snapshot every observed (player, character, image) triple into
   // `characterImages` during render whenever its inputs have changed.
-  // Past entries are kept, so a feed item for a character the player has
-  // since switched away from still resolves to that character's
-  // last-known portrait. Uses the "adjust state during render" pattern
-  // React recommends for derived state — same shape as the
-  // `popoverCharId` reset in `CharacterPanel` — so the React 19 lint rule
-  // that bans `setState` inside `useEffect` is honoured.
+  // Past entries are kept while still referenced by the live feed window
+  // (history / chat are themselves capped), and unreferenced ones are
+  // pruned so the map cannot grow unbounded across long sessions or
+  // character churn. Uses the "adjust state during render" pattern React
+  // recommends for derived state — same shape as the `popoverCharId`
+  // reset in `CharacterPanel` — so the React 19 lint rule that bans
+  // `setState` inside `useEffect` is honoured.
   if (
     characterImagesInputs.pid !== playerId ||
     characterImagesInputs.cn !== characterName ||
     characterImagesInputs.pi !== playerImages ||
-    characterImagesInputs.ps !== playersState
+    characterImagesInputs.ps !== playersState ||
+    characterImagesInputs.h !== history ||
+    characterImagesInputs.c !== chat
   ) {
     setCharacterImagesInputs({
       pid: playerId,
       cn: characterName,
       pi: playerImages,
       ps: playersState,
+      h: history,
+      c: chat,
     })
     let map = characterImages
     let changed = false
     const put = (id: string, character: string, image: string) => {
-      if (!id || !character) return
+      // An empty character name is allowed — a player who just created
+      // a character and uploaded a portrait before naming it is still
+      // identified by `${id}|`. Multiple unnamed characters from the
+      // same player collide on that key (rare; last write wins).
+      if (!id) return
       const key = `${id}|${character}`
       // An empty image is itself an observation — clear any prior entry
       // so a portrait that was deleted does not linger as a stale avatar.
@@ -286,6 +297,26 @@ export function useSession(): Session {
     put(playerId, characterName, playerImages[playerId] ?? '')
     for (const p of playersState) {
       put(p.id, p.characterName, playerImages[p.id] ?? '')
+    }
+    // Prune keys that no live observation or feed entry references. Each
+    // entry only survives if its (playerId, characterName) pair appears
+    // in current identity, the current roster, or a roll / chat still
+    // inside the in-memory feed window.
+    const needed = new Set<string>()
+    const noteKey = (id: string, cn: string) => {
+      if (id) needed.add(`${id}|${cn}`)
+    }
+    noteKey(playerId, characterName)
+    for (const p of playersState) noteKey(p.id, p.characterName)
+    for (const r of history) noteKey(r.playerId, r.characterName ?? '')
+    for (const m of chat) noteKey(m.playerId, m.characterName ?? '')
+    for (const key of Object.keys(map)) {
+      if (needed.has(key)) continue
+      if (!changed) {
+        map = { ...map }
+        changed = true
+      }
+      delete map[key]
     }
     if (changed) setCharacterImages(map)
   }

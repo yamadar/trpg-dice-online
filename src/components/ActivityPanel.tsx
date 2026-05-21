@@ -97,7 +97,10 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
   // for their own portraits, so we drop every self-prefixed entry from
   // the session map first and re-add only the characters that still have
   // an image. This way a portrait removed from a non-active character
-  // (which never broadcasts) does not linger as a stale avatar.
+  // (which never broadcasts) does not linger as a stale avatar. An
+  // unnamed character with an image still gets layered (under the
+  // `${selfId}|` empty-suffix key) so a brand-new character with an
+  // uploaded portrait can already show its avatar before being named.
   const characterImages = useMemo(() => {
     const map: Record<string, string | undefined> = {}
     const selfPrefix = `${session.playerId}|`
@@ -105,8 +108,8 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
       if (!key.startsWith(selfPrefix)) map[key] = value
     }
     for (const c of characters) {
-      if (c.name && c.image) {
-        map[`${session.playerId}|${c.name}`] = c.image
+      if (c.image) {
+        map[`${session.playerId}|${c.name ?? ''}`] = c.image
       }
     }
     return map
