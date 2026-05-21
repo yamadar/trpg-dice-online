@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
+import type { Character } from '../characters/types'
 import { buildFeed, isRoomExitMarker, type FeedFilter, type SystemMarker } from '../feed/feed'
 import { isImageType } from '../chat/attachment'
 import type { ChatFile, ChatMessage } from '../net/protocol'
@@ -28,6 +29,9 @@ const FEED_WINDOW = 200
 
 interface Props {
   session: Session
+  /** The local user's character collection — drives the per-character
+   *  avatar lookup for the local player's feed entries. */
+  characters: Character[]
   /** Denser feed layout; the toggle for it lives in the settings menu. */
   compact: boolean
   /** Surfaces attachment errors as a toast. */
@@ -42,7 +46,7 @@ interface Props {
  * image lightbox. Older history (beyond the live window) is paged in from
  * the durable log on demand.
  */
-export function ActivityPanel({ session, compact, onNotice, onOpenRoom }: Props) {
+export function ActivityPanel({ session, characters, compact, onNotice, onOpenRoom }: Props) {
   const { t } = useI18n()
   const [filter, setFilter] = useState<FeedFilter>('all')
   // The feed entry whose name was tapped, opening the player-detail card.
@@ -86,6 +90,21 @@ export function ActivityPanel({ session, compact, onNotice, onOpenRoom }: Props)
     }
     return list
   }, [feed])
+
+  // The avatar lookup map (key: `${playerId}|${characterName}`). The
+  // session-wide map already tracks observed (player, character) → image
+  // for everyone in the room; on top of that we layer the local user's
+  // characters because they hold the absolute latest image (the user
+  // might edit a non-active character, which never broadcasts).
+  const characterImages = useMemo(() => {
+    const map = { ...session.characterImages }
+    for (const c of characters) {
+      if (c.name && c.image) {
+        map[`${session.playerId}|${c.name}`] = c.image
+      }
+    }
+    return map
+  }, [session.characterImages, session.playerId, characters])
 
   // Items older than the most recent room exit belong to a room left behind.
   const lastExitAt = useMemo(() => {
@@ -206,7 +225,7 @@ export function ActivityPanel({ session, compact, onNotice, onOpenRoom }: Props)
         hasOlder={hasOlder}
         onLoadOlder={loadOlder}
         pending={pending}
-        playerImages={session.playerImages}
+        characterImages={characterImages}
         onOpenDetail={setDetail}
         onOpenImage={openLightbox}
         emptyState={emptyState}

@@ -105,6 +105,13 @@ export interface Session {
   players: Player[]
   /** Character portrait images keyed by player id (synced apart from the roster). */
   playerImages: Record<string, string>
+  /**
+   * Character portrait images keyed by `${playerId}|${characterName}` — the
+   * last image observed in this session for that (player, character) pair.
+   * Lets the feed keep showing the right avatar on past messages after a
+   * player has switched to a different character.
+   */
+  characterImages: Record<string, string>
   history: RollResult[]
   chat: ChatMessage[]
   markers: SystemMarker[]
@@ -163,6 +170,23 @@ export function useSession(): Session {
   /** Character portrait images keyed by player id — synced apart from the
    *  roster, so the frequent `players` broadcast stays small. */
   const [playerImages, setPlayerImagesState] = useState<Record<string, string>>({})
+  /** Per-character portrait map (`${playerId}|${characterName}` → image) —
+   *  updated whenever a (player, character, image) observation lands, so a
+   *  feed item for a character the player has since switched away from
+   *  still shows that character's last-known portrait. Updated below via
+   *  render-phase setState (matching the codebase's pattern for "derive
+   *  state from props"), so the entry survives across renders without
+   *  needing the `useEffect` + `setState` that the React 19 lint rule
+   *  bans. */
+  const [characterImages, setCharacterImages] = useState<Record<string, string>>({})
+  /** Tracks the inputs that produced the current `characterImages`, so the
+   *  render-phase update fires exactly when any of them changed. */
+  const [characterImagesInputs, setCharacterImagesInputs] = useState<{
+    pid: string
+    cn: string
+    pi: Record<string, string>
+    ps: Player[]
+  }>({ pid: '', cn: '', pi: {}, ps: [] })
   const [history, setHistory] = useState<RollResult[]>([])
   const [chat, setChat] = useState<ChatMessage[]>([])
   const [markers, setMarkers] = useState<SystemMarker[]>([])
@@ -212,6 +236,45 @@ export function useSession(): Session {
     roomNameRef.current = roomName
     outboxRef.current = outbox
   })
+
+  // Snapshot every observed (player, character, image) triple into
+  // `characterImages` during render whenever its inputs have changed.
+  // Past entries are kept, so a feed item for a character the player has
+  // since switched away from still resolves to that character's
+  // last-known portrait. Uses the "adjust state during render" pattern
+  // React recommends for derived state — same shape as the
+  // `popoverCharId` reset in `CharacterPanel` — so the React 19 lint rule
+  // that bans `setState` inside `useEffect` is honoured.
+  if (
+    characterImagesInputs.pid !== playerId ||
+    characterImagesInputs.cn !== characterName ||
+    characterImagesInputs.pi !== playerImages ||
+    characterImagesInputs.ps !== playersState
+  ) {
+    setCharacterImagesInputs({
+      pid: playerId,
+      cn: characterName,
+      pi: playerImages,
+      ps: playersState,
+    })
+    let map = characterImages
+    let changed = false
+    const put = (id: string, character: string, image: string) => {
+      if (!id || !character || !image) return
+      const key = `${id}|${character}`
+      if (map[key] === image) return
+      if (!changed) {
+        map = { ...map }
+        changed = true
+      }
+      map[key] = image
+    }
+    put(playerId, characterName, playerImages[playerId] ?? '')
+    for (const p of playersState) {
+      put(p.id, p.characterName, playerImages[p.id] ?? '')
+    }
+    if (changed) setCharacterImages(map)
+  }
 
   /** True once a graceful room close was received, so the following
    *  connection drop is not reported as an unexpected error. */
@@ -1245,6 +1308,7 @@ export function useSession(): Session {
     leaveRoom,
     players,
     playerImages,
+    characterImages,
     history,
     chat,
     markers,

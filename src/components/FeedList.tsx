@@ -83,7 +83,7 @@ const FeedChatItem = memo(function FeedChatItem({
   pending,
   compact,
   playerId,
-  playerImages,
+  characterImages,
   onOpenDetail,
   onOpenImage,
 }: {
@@ -94,7 +94,10 @@ const FeedChatItem = memo(function FeedChatItem({
   /** The compact feed shows just the character name, no player-color dot. */
   compact: boolean
   playerId: string
-  playerImages: Record<string, string>
+  /** Map of `${playerId}|${characterName}` → latest image observed for
+   *  that character. Lets a feed item keep the right avatar after the
+   *  speaking player has switched away from that character. */
+  characterImages: Record<string, string>
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
 }) {
@@ -115,7 +118,11 @@ const FeedChatItem = memo(function FeedChatItem({
         archived ? ' archived' : ''
       }${pending ? ' pending' : ''}`}
     >
-      <FeedAvatar image={playerImages[m.playerId]} color={color} name={m.playerName} />
+      <FeedAvatar
+        image={characterImages[`${m.playerId}|${m.characterName ?? ''}`]}
+        color={color}
+        name={m.playerName}
+      />
       <div className="feed-bubble">
         <div className="feed-line">
           <span className="player-dot" style={{ background: color }} />
@@ -168,7 +175,7 @@ const FeedRollItem = memo(function FeedRollItem({
   isGM,
   compact,
   playerId,
-  playerImages,
+  characterImages,
   onOpenDetail,
 }: {
   roll: RollResult
@@ -177,7 +184,7 @@ const FeedRollItem = memo(function FeedRollItem({
   /** The compact feed shows just the character name, no player-color dot. */
   compact: boolean
   playerId: string
-  playerImages: Record<string, string>
+  characterImages: Record<string, string>
   onOpenDetail: (target: FeedDetailTarget) => void
 }) {
   const { t } = useI18n()
@@ -190,7 +197,11 @@ const FeedRollItem = memo(function FeedRollItem({
     <li
       className={`feed-roll roll ${isHidden ? 'hidden' : r.kind}${own ? ' own' : ''}${archived ? ' archived' : ''}`}
     >
-      <FeedAvatar image={playerImages[r.playerId]} color={color} name={fullName} />
+      <FeedAvatar
+        image={characterImages[`${r.playerId}|${r.characterName ?? ''}`]}
+        color={color}
+        name={fullName}
+      />
       <div className="feed-bubble">
         <div className="feed-line">
           <span className="player-dot" style={{ background: color }} />
@@ -247,8 +258,10 @@ interface Props {
   onLoadOlder: () => void
   /** Chat queued for an offline GM, shown as pending below the feed. */
   pending: ChatMessage[]
-  /** Character portraits keyed by player id — used for the per-message avatar. */
-  playerImages: Record<string, string>
+  /** Character portraits keyed by `${playerId}|${characterName}` — used
+   *  for the per-message avatar so a feed entry keeps the right portrait
+   *  after the speaker has switched to a different character. */
+  characterImages: Record<string, string>
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
   /** Overrides the default "nothing here yet" hint when the feed is empty. */
@@ -265,7 +278,7 @@ export function FeedList({
   hasOlder,
   onLoadOlder,
   pending,
-  playerImages,
+  characterImages,
   onOpenDetail,
   onOpenImage,
   emptyState,
@@ -317,7 +330,7 @@ export function FeedList({
               archived={archived}
               compact={compact}
               playerId={playerId}
-              playerImages={playerImages}
+              characterImages={characterImages}
               onOpenDetail={onOpenDetail}
               onOpenImage={onOpenImage}
             />
@@ -330,7 +343,7 @@ export function FeedList({
               isGM={isGM}
               compact={compact}
               playerId={playerId}
-              playerImages={playerImages}
+              characterImages={characterImages}
               onOpenDetail={onOpenDetail}
             />
           )
@@ -354,7 +367,7 @@ export function FeedList({
           pending
           compact={compact}
           playerId={playerId}
-          playerImages={playerImages}
+          characterImages={characterImages}
           onOpenDetail={onOpenDetail}
           onOpenImage={onOpenImage}
         />
