@@ -1416,8 +1416,8 @@ export function useSession(): Session {
   useEffect(() => {
     const start = portraitFlushedCountRef.current
     if (start >= portraitQueue.length) return
+    const endIndex = portraitQueue.length
     const tail = portraitQueue.slice(start)
-    portraitFlushedCountRef.current = portraitQueue.length
 
     // Coalesce + group: each session gets a single map of
     // `${playerId}|${characterName}` → image (latest wins).
@@ -1430,9 +1430,18 @@ export function useSession(): Session {
       }
       map[`${w.playerId}|${w.characterName}`] = w.image
     }
-    for (const [sid, images] of bySession) {
-      void saveCharacterPortraits(sid, images)
-    }
+
+    // Wait for the bulk writes to commit before advancing the offset.
+    // `saveCharacterPortraits` returns `false` when the IndexedDB store
+    // is unavailable / blocked / aborted, in which case the deltas
+    // stay in the queue and the next render's effect run retries.
+    void Promise.all(
+      Array.from(bySession, ([sid, images]) => saveCharacterPortraits(sid, images)),
+    ).then((results) => {
+      if (results.every((ok) => ok)) {
+        portraitFlushedCountRef.current = endIndex
+      }
+    })
   }, [portraitQueue])
 
 

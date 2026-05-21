@@ -637,17 +637,24 @@ export async function saveCharacterPortrait(
  * one transaction. The map is keyed by `${playerId}|${characterName}`,
  * matching the in-memory `Session.characterImages` shape, so the welcome
  * snapshot can persist the whole roster at once.
+ *
+ * Returns `true` when the IndexedDB transaction committed cleanly and
+ * `false` when the store was unavailable, the transaction was aborted,
+ * or the call could not even be issued. Callers (e.g. the session's
+ * portrait queue flush) use this to decide whether to advance their
+ * "already flushed" offset — a false return leaves the deltas in
+ * place so the next effect run can retry.
  */
 export async function saveCharacterPortraits(
   sessionId: string | null,
   images: Record<string, string>,
-): Promise<void> {
-  if (!sessionId) return
+): Promise<boolean> {
+  if (!sessionId) return false
   const entries = Object.entries(images)
-  if (entries.length === 0) return
+  if (entries.length === 0) return true
   const db = await openDb()
-  if (!db) return
-  await new Promise<void>((resolve) => {
+  if (!db) return false
+  return new Promise<boolean>((resolve) => {
     try {
       const tx = db.transaction(PORTRAITS, 'readwrite')
       const store = tx.objectStore(PORTRAITS)
@@ -664,10 +671,11 @@ export async function saveCharacterPortraits(
           store.delete(pk)
         }
       }
-      tx.oncomplete = () => resolve()
-      tx.onerror = () => resolve()
+      tx.oncomplete = () => resolve(true)
+      tx.onerror = () => resolve(false)
+      tx.onabort = () => resolve(false)
     } catch {
-      resolve()
+      resolve(false)
     }
   })
 }
