@@ -9,7 +9,7 @@ import { useId } from 'react'
 export function CloseIcon() {
   return (
     <svg
-      className="x-icon"
+      className="icon-svg"
       width="18"
       height="18"
       viewBox="0 0 16 16"
@@ -21,6 +21,32 @@ export function CloseIcon() {
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+/** Trash / waste-basket icon. Used as a minimal label for "clear view"
+ *  actions where the action removes items from the visible list. Inherits
+ *  the parent's colour via currentColor so it fades with the surrounding
+ *  text in muted contexts. */
+export function TrashIcon() {
+  return (
+    <svg
+      className="icon-svg"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M3 4h10M6 4V2.5h4V4M5 4l.6 9.2a1 1 0 0 0 1 .8h2.8a1 1 0 0 0 1-.8L11 4"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
       />
     </svg>
   )

@@ -11,6 +11,7 @@ import { PlayerDetailCard } from './PlayerDetailCard'
 import { Lightbox } from './Lightbox'
 import { FeedList, type FeedDetailTarget } from './FeedList'
 import { ChatComposer } from './ChatComposer'
+import { BrandIcon, TrashIcon } from './icons'
 
 const FILTERS: FeedFilter[] = ['all', 'rolls', 'chat', 'files']
 
@@ -151,6 +152,10 @@ export function ActivityPanel({ session, compact, onNotice, onOpenRoom }: Props)
   const offlineEmpty = session.role === 'offline' && filter === 'all'
   const emptyState = offlineEmpty ? (
     <div className="feed-empty-card">
+      <h3 className="feed-empty-brand brand-heading gradient-heading">
+        <BrandIcon className="brand-mark" />
+        <span>{t('app.title')}</span>
+      </h3>
       <p className="feed-empty-title">{t('feed.empty')}</p>
       <p className="feed-empty-hint">{t('feed.emptyRollHint')}</p>
       <p className="feed-empty-hint">{t('feed.emptyShareHint')}</p>
@@ -179,8 +184,14 @@ export function ActivityPanel({ session, compact, onNotice, onOpenRoom }: Props)
             ))}
           </div>
           {feed.length > 0 && (
-            <button type="button" className="link feed-clear" onClick={clearFeed}>
-              {t('feed.clear')}
+            <button
+              type="button"
+              className="icon-btn feed-clear"
+              onClick={clearFeed}
+              aria-label={t('feed.clear')}
+              title={t('feed.clear')}
+            >
+              <TrashIcon />
             </button>
           )}
         </div>

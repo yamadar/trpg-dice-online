@@ -280,17 +280,20 @@
   background: var(--panel-2);
 }
 
-/* Buttons whose only content is an SVG "X" — keep it perfectly centered. */
-.icon-x {
+/* Buttons whose only content is an inline SVG icon (close, trash, etc.) —
+   `.icon-btn` centres the icon, `.icon-svg` keeps the SVG itself from
+   being squashed by any flex parent. Generic naming on purpose so future
+   icon-only buttons can reuse it without confusion. */
+.icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
-.x-icon {
+.icon-svg {
   display: block;
   flex-shrink: 0;
 }
-.app-banner .icon-x {
+.app-banner .icon-btn {
   color: inherit;
 }
 
@@ -982,6 +985,23 @@ label.setting-row {
   margin: 0;
   max-width: 28em;
 }
+.feed-empty-brand {
+  font-size: 1.5rem;
+  margin: 0;
+}
+/* Shared gradient-text utility for app-brand headings. The text glyphs
+   become a window onto the gradient by clipping the background and
+   setting `color: transparent`. Icons inside must use explicit fill /
+   stroke colours (eg. `BrandIcon`'s baked-in gradient) — `currentColor`
+   icons such as `CloseIcon` / `TrashIcon` would inherit `transparent`
+   and disappear, so they should not be placed inside without an own
+   `color` override. */
+.gradient-heading {
+  background: linear-gradient(90deg, var(--accent), var(--judgment));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 .feed-empty-title {
   color: var(--text-dim);
   font-size: 0.9rem;
@@ -1508,7 +1528,10 @@ label.setting-row {
 .settings {
   position: relative;
 }
-.icon-btn {
+/* The settings gear button — scoped via the direct-child combinator so the
+   bigger panel style does not leak onto every `.icon-btn` (sheet close,
+   feed clear, app-banner close, etc.). */
+.settings > .icon-btn {
   width: 40px;
   height: 40px;
   display: flex;
@@ -1715,10 +1738,6 @@ label.setting-row {
 }
 .name-gate-card h1 {
   font-size: 1.5rem;
-  background: linear-gradient(90deg, var(--accent), var(--judgment));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
 }
 .name-gate-card .field {
   margin-top: 16px;
@@ -1728,10 +1747,22 @@ label.setting-row {
   margin-top: 6px;
 }
 
-/* the "clear view" button is intentionally quiet */
+/* the "clear view" button is intentionally quiet — icon-only, dim color.
+   min-width/min-height keep a touch-friendly hit area (≥32×32) while the
+   icon itself stays small and unobtrusive. */
 .feed-clear {
   color: var(--text-dim);
-  font-size: 0.78rem;
+  background: transparent;
+  border: none;
+  padding: 8px;
+  min-width: 32px;
+  min-height: 32px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.feed-clear:hover {
+  color: var(--text-h);
+  background: var(--panel-2);
 }
 
 /* --- tutorial / help overlay --- */

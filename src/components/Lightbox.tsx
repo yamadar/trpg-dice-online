@@ -89,7 +89,7 @@ export function Lightbox({ images, index, onIndexChange, onClose }: Props) {
     >
       <button
         type="button"
-        className="lightbox-close icon-x"
+        className="lightbox-close icon-btn"
         aria-label={t('lightbox.close')}
         onClick={(e) => {
           e.stopPropagation()
