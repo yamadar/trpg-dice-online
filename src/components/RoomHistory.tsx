@@ -199,6 +199,7 @@ export function RoomHistory({ playerId, onBack }: Props) {
             hasOlder={false}
             onLoadOlder={() => {}}
             pending={[]}
+            playerImages={portraits}
             onOpenDetail={setDetail}
             onOpenImage={openImage}
           />

@@ -206,6 +206,7 @@ export function ActivityPanel({ session, compact, onNotice, onOpenRoom }: Props)
         hasOlder={hasOlder}
         onLoadOlder={loadOlder}
         pending={pending}
+        playerImages={session.playerImages}
         onOpenDetail={setDetail}
         onOpenImage={openLightbox}
         emptyState={emptyState}
