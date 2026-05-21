@@ -245,6 +245,86 @@
   font-weight: 600;
 }
 
+/* --- in-app confirm dialog ---
+   A themed `window.confirm` replacement: a small dialog card centred
+   over a dimmed backdrop. The full overlay stack, from back to front:
+       z 30 — .sheet-layer        (room / character / dice / patterns)
+       z 40 — .toast              (lightweight notices)
+       z 50 — .lightbox           (image viewer over a sheet)
+       z 60 — .app-banner         (connection error strip)
+       z 60 — .tutorial           (walkthrough modal)
+       z 70 — .confirm-layer      (this — sits above everything else)
+   The confirm sits on top so an "are you sure?" prompt is always
+   reachable even when raised from inside the tutorial or while a
+   connection banner is showing. */
+.confirm-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.confirm-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+.confirm-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  padding: 20px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.confirm-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.confirm-close:hover {
+  background: var(--panel-2);
+  color: var(--text-h);
+}
+.confirm-title {
+  font-size: 1rem;
+  margin: 0;
+  padding-right: 30px; /* clear the close button */
+  color: var(--text-h);
+}
+.confirm-message {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--text);
+  /* Preserve any embedded newlines a caller put in the message. */
+  white-space: pre-line;
+}
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.confirm-actions button {
+  min-width: 96px;
+}
+
 /* --- sheet (on-demand panel) --- */
 .sheet-layer {
   position: fixed;

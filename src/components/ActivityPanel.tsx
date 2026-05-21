@@ -8,6 +8,7 @@ import { isImageType } from '../chat/attachment'
 import type { ChatFile, ChatMessage } from '../net/protocol'
 import type { RollResult } from '../dice/types'
 import { loadFullLog } from '../storage/roomLog'
+import { useConfirm } from '../hooks/useConfirm'
 import { Sheet } from './Sheet'
 import { PlayerDetailCard } from './PlayerDetailCard'
 import { Lightbox } from './Lightbox'
@@ -171,12 +172,13 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
   }, [session.sessionId])
 
   // Clearing the feed is destructive, so require a deliberate confirmation.
-  const clearFeed = () => {
-    if (window.confirm(t('feed.clearConfirm'))) {
-      session.clearFeed()
-      setOlder(EMPTY_OLDER)
-      setReachedOldest(false)
-    }
+  const confirm = useConfirm()
+  const clearFeed = async () => {
+    const ok = await confirm({ message: t('feed.clearConfirm'), destructive: true })
+    if (!ok) return
+    session.clearFeed()
+    setOlder(EMPTY_OLDER)
+    setReachedOldest(false)
   }
 
   const typing = session.typingNames

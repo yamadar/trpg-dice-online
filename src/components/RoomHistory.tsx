@@ -13,6 +13,7 @@ import {
   loadSessionPortraits,
   type SessionSummary,
 } from '../storage/roomLog'
+import { useConfirm } from '../hooks/useConfirm'
 import { FeedList, type FeedDetailTarget } from './FeedList'
 import { Lightbox } from './Lightbox'
 import { PlayerDetailCard } from './PlayerDetailCard'
@@ -111,13 +112,16 @@ export function RoomHistory({ playerId, onBack }: Props) {
     [selected, portraitState],
   )
 
-  const handleDelete = (s: SessionSummary) => {
-    if (!window.confirm(t('history.deleteConfirm'))) return
+  const confirm = useConfirm()
+  const handleDelete = async (s: SessionSummary) => {
+    const ok = await confirm({ message: t('history.deleteConfirm'), destructive: true })
+    if (!ok) return
     void deleteSession(s.sessionId).then(refresh)
   }
 
-  const handleDeleteAll = () => {
-    if (!window.confirm(t('history.deleteAllConfirm'))) return
+  const handleDeleteAll = async () => {
+    const ok = await confirm({ message: t('history.deleteAllConfirm'), destructive: true })
+    if (!ok) return
     void deleteAllSessions().then(refresh)
   }
 

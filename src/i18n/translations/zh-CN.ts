@@ -2,6 +2,9 @@ import type { Dict } from '../translations'
 
 export const zhCN: Dict = {
   'app.title': 'Dice & Chat',
+  'common.confirm': '确认',
+  'common.cancel': '取消',
+  'common.confirmDialog': '确认',
   'app.tagline': '让线上 TRPG 跑团更轻松',
   'lang.label': '语言',
   'translate.auto': '自动翻译',

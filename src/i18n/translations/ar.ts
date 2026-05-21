@@ -2,6 +2,9 @@ import type { Dict } from '../translations'
 
 export const ar: Dict = {
   'app.title': 'Dice & Chat',
+  'common.confirm': 'تأكيد',
+  'common.cancel': 'إلغاء',
+  'common.confirmDialog': 'تأكيد',
   'app.tagline': 'جلسات TRPG عبر الإنترنت بسهولة',
   'lang.label': 'اللغة',
   'translate.auto': 'ترجمة تلقائية',
