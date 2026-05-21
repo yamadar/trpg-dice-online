@@ -213,13 +213,16 @@ export function useSession(): Session {
     characterName: string
     image: string
   }
-  // Portrait writes batched by the `characterImages` derivation block —
-  // an effect below flushes them to IndexedDB after commit so the
-  // derivation block stays render-pure (no ref access, no IndexedDB
-  // side-effects during render).
-  const [pendingPortraitSaves, setPendingPortraitSaves] = useState<ReadonlyArray<PortraitSave>>(
-    [],
-  )
+  // Append-only queue of portrait writes. The `characterImages`
+  // derivation block appends new deltas during render (via a functional
+  // `setState` so concurrent commits do not clobber each other); the
+  // flush effect below reads from `portraitFlushedCountRef.current` to
+  // `length` and saves only the new tail, then advances the ref. This
+  // splits the rules cleanly: the derivation never touches a ref or
+  // calls `setState` inside an effect — neither pattern the React 19
+  // strict-effect lint rules ban.
+  const [portraitQueue, setPortraitQueue] = useState<ReadonlyArray<PortraitSave>>([])
+  const portraitFlushedCountRef = useRef(0)
 
 
   // Identity refs are written directly by updateIdentity so a re-sync can
@@ -363,12 +366,13 @@ export function useSession(): Session {
       delete map[key]
     }
     if (changed) setCharacterImages(map)
-    // Hand off the staged saves to the flush effect. Replaces the
-    // previous batch — the effect runs after each commit, so by the
-    // time another derivation produces fresh deltas, the previous
-    // batch has already been written.
+    // Append the staged deltas to the persistent queue. Functional
+    // `setState` guarantees consecutive derivations layer onto each
+    // other instead of clobbering — the flush effect's offset ref
+    // (`portraitFlushedCountRef`) skips already-written entries.
     if (portraitDeltas.length > 0) {
-      setPendingPortraitSaves(portraitDeltas)
+      const newBatch = portraitDeltas
+      setPortraitQueue((prev) => prev.concat(newBatch))
     }
   }
 
@@ -1387,20 +1391,25 @@ export function useSession(): Session {
     }
   }, [sessionId, playerId])
 
-  // Flush every batch of buffered portrait deltas to IndexedDB. The
-  // derivation block above only stages the (player, character) → image
-  // changes — actually touching IndexedDB happens here so React can
-  // re-run the derivation under StrictMode / concurrent rendering
-  // without duplicating writes. Each delta carries the `sessionId`
-  // observed when it was staged, so a fast `leaveRoom` / `goOffline`
-  // that clears the live `sessionIdRef` between staging and flushing
-  // cannot strand a portrait write under the wrong session.
+  // Flush the unprocessed tail of `portraitQueue` to IndexedDB. The
+  // derivation block above only appends deltas — actually touching
+  // IndexedDB happens here so React can safely re-run the derivation
+  // under StrictMode / concurrent rendering without duplicating writes.
+  // `portraitFlushedCountRef` marks the boundary between "already
+  // written" and "new" entries, so multiple commits between effect
+  // runs cannot drop or double-up any save. Each delta also carries
+  // its own `sessionId` snapshot, so a fast `leaveRoom` / `goOffline`
+  // that clears `sessionIdRef` between staging and flushing still
+  // writes to the right session.
   useEffect(() => {
-    if (pendingPortraitSaves.length === 0) return
-    for (const w of pendingPortraitSaves) {
+    const start = portraitFlushedCountRef.current
+    if (start >= portraitQueue.length) return
+    for (let i = start; i < portraitQueue.length; i++) {
+      const w = portraitQueue[i]
       void saveCharacterPortrait(w.sessionId, w.playerId, w.characterName, w.image)
     }
-  }, [pendingPortraitSaves])
+    portraitFlushedCountRef.current = portraitQueue.length
+  }, [portraitQueue])
 
 
   // Tear down the peer when the app unmounts.
