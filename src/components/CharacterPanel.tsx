@@ -162,7 +162,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
         {t('character.section')}
       </h2>
 
-      {/* === Zone 1a: switcher === */}
+      {/* === Zone 1: switcher === */}
       <label className="field">
         <span>{t('character.activeLabel')}</span>
         <select value={activeId ?? ''} onChange={(e) => setActiveId(e.target.value || null)}>
@@ -175,15 +175,17 @@ export function CharacterPanel({ characters, onNotice }: Props) {
         </select>
       </label>
 
-      {/* === Zone 1b: add a character (creation + import grouped) === */}
+      {/* === Zone 2: add a character (creation + import grouped) === */}
       <div className="char-add">
         <h3>{t('character.addSection')}</h3>
         <div className="char-add-buttons">
           <button type="button" onClick={handleCreate}>
-            + {t('character.create')}
+            <span aria-hidden="true">+ </span>
+            {t('character.create')}
           </button>
           <button type="button" onClick={() => fileInputRef.current?.click()}>
-            + {t('character.import')}
+            <span aria-hidden="true">+ </span>
+            {t('character.import')}
           </button>
         </div>
         <input
@@ -204,7 +206,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
 
       {activeCharacter && (
         <>
-          {/* === Zone 2: character card (visual summary) === */}
+          {/* === Zone 3: character card (visual summary) === */}
           <div className="char-card">
             <button
               type="button"
@@ -229,7 +231,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
             </div>
           </div>
 
-          {/* === Zone 3: edit fields === */}
+          {/* === Zone 4: edit fields === */}
           <div className="char-details">
             <label className="field">
               <span>{t('character.name')}</span>
@@ -271,7 +273,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
                   <button
                     type="button"
                     className="char-avatar-edit-trigger"
-                    aria-haspopup="menu"
+                    aria-haspopup="true"
                     aria-expanded={imageMenuOpen}
                     disabled={imageBusy}
                     onClick={() => setImageMenuOpen((v) => !v)}
@@ -345,7 +347,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
             </label>
           </div>
 
-          {/* === Zone 4: export (option + button kept together) === */}
+          {/* === Zone 5: export (option + button kept together) === */}
           <div className="char-export">
             <label className="checkbox">
               <input
@@ -362,7 +364,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
             </button>
           </div>
 
-          {/* === Zone 5: danger zone (delete) === */}
+          {/* === Zone 6: danger zone (delete) === */}
           <div className="char-danger">
             <button type="button" className="link danger" onClick={handleDelete}>
               {t('character.delete')}

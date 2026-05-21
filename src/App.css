@@ -1073,20 +1073,67 @@ label.setting-row {
   text-decoration: underline;
 }
 
-.roll {
-  border-left: 3px solid var(--border);
+/* LINE / Messenger style: each entry is a row with an avatar + a bubble.
+   Other people's items align left with the avatar leading; own items
+   mirror via row-reverse so they sit on the right and read at a glance. */
+.feed-chat,
+.feed-roll {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 100%;
+}
+.feed-chat.own,
+.feed-roll.own {
+  flex-direction: row-reverse;
+}
+.feed-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
   background: var(--panel-2);
-  border-radius: 0 8px 8px 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.feed-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.feed-bubble {
+  min-width: 0;
+  max-width: calc(100% - 44px);
+  display: flex;
+  flex-direction: column;
+}
+/* The avatar carries the identity, so the small player-dot inside the
+   meta line is redundant. It is kept in the markup for compact mode and
+   styling lookups but hidden in the standard layout. */
+.feed-chat .feed-line .player-dot,
+.feed-roll .feed-line .player-dot {
+  display: none;
+}
+/* Roll bubble: panel-tinted card with a top stripe coloured by the kind
+   (damage / judgment / hidden). A top stripe instead of a left border so
+   the cue does not flip sides when own items mirror right via row-reverse. */
+.feed-roll .feed-bubble {
+  background: var(--panel-2);
+  border-radius: 8px;
   padding: 8px 12px;
+  border-top: 3px solid var(--border);
 }
-.roll.damage {
-  border-left-color: var(--damage);
+.feed-roll.damage .feed-bubble {
+  border-top-color: var(--damage);
 }
-.roll.judgment {
-  border-left-color: var(--judgment);
+.feed-roll.judgment .feed-bubble {
+  border-top-color: var(--judgment);
 }
-.roll.hidden {
-  border-left-color: var(--gm);
+.feed-roll.hidden .feed-bubble {
+  border-top-color: var(--gm);
 }
 .roll-text {
   font-size: 1.05rem;
@@ -1117,17 +1164,18 @@ label.setting-row {
   overflow: visible;
 }
 
-.feed-chat {
+/* Chat bubble sits inside the row. Own messages pick up an accent tint;
+   a message that @mentions the local player (or @all) shows a warm
+   highlight independent of own/other. */
+.feed-chat .feed-bubble {
   background: var(--panel-2);
   border-radius: 8px;
   padding: 6px 10px;
 }
-.feed-chat.own {
-  /* Tint follows the active theme's accent. */
+.feed-chat.own .feed-bubble {
   background: color-mix(in srgb, var(--accent-2) 22%, transparent);
 }
-/* A message that @mentions the local player (or @all). */
-.feed-chat.mentioned {
+.feed-chat.mentioned .feed-bubble {
   background: rgba(251, 191, 36, 0.14);
   border-left: 3px solid #fbbf24;
   padding-left: 7px;
@@ -1195,6 +1243,8 @@ label.setting-row {
 /* A chat message queued for an offline GM — shown but not yet sent. */
 .feed-chat.pending {
   opacity: 0.72;
+}
+.feed-chat.pending .feed-bubble {
   border-left: 3px dashed var(--text-dim);
   padding-left: 7px;
 }
@@ -1225,6 +1275,23 @@ label.setting-row {
   /* The left padding reserves the time gutter; the name starts at its edge. */
   padding: 3px 9px 3px 3.7em;
   font-size: 0.82rem;
+  /* Drop the LINE-style bubble look in the dense single-line layout. */
+  background: transparent;
+  border-top: 0;
+  border-radius: 0;
+  gap: 0;
+}
+/* Own and mentioned bubbles also lose their fill / accent in compact view —
+   the colored name is the sole identity cue here. */
+.activity.compact .feed-chat .feed-bubble,
+.activity.compact .feed-chat.own .feed-bubble,
+.activity.compact .feed-chat.mentioned .feed-bubble,
+.activity.compact .feed-roll .feed-bubble {
+  display: contents;
+}
+/* Avatars are dropped from the dense view; the colored name carries identity. */
+.activity.compact .feed-avatar {
+  display: none;
 }
 /* Unwrap the meta line so the name joins the message's text flow. */
 .activity.compact .feed-line {
@@ -1752,9 +1819,14 @@ label.setting-row {
   overflow: hidden;
   background: var(--bg);
   color: var(--text-dim);
+}
+/* Pointer cursor only when the avatar is a real button (an image is set
+   and clicking opens the lightbox). The placeholder div has no
+   interaction, so it keeps the default cursor. */
+button.char-avatar-large {
   cursor: pointer;
 }
-.char-avatar-large:disabled {
+button.char-avatar-large:disabled {
   cursor: not-allowed;
 }
 .char-avatar-large img {
