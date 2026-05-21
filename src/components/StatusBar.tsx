@@ -39,7 +39,15 @@ export function StatusBar({
         <span className="stat-key">{t('room.section')}</span>
         <span className="stat-value">{roomLabel}</span>
         {roomCode && (
-          <span className="stat-players" aria-label={t('room.players')}>
+          // The label-with-count is composed into a single `aria-label` so
+          // screen readers announce "Players: 3" rather than just "3" or
+          // just the label. Visually the row still reads as "[icon] 3";
+          // the icon is `aria-hidden` (set inside `RoomIcon`) so it does
+          // not duplicate the label.
+          <span
+            className="stat-players"
+            aria-label={`${t('room.players')}: ${playerCount}`}
+          >
             <RoomIcon size={14} /> {playerCount}
           </span>
         )}
