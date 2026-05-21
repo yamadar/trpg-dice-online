@@ -89,14 +89,28 @@ interface PortraitRecord {
 
 /** Compose the composite key used by `sessionPortraits`. Kept in one
  *  place so the encoding (and the separator choice) is consistent
- *  between writes, reads and the migration. */
-function portraitPk(sessionId: string, playerId: string, characterName: string): string {
+ *  between writes, reads and the migration. Exported (alongside the
+ *  legacy detector below) so unit tests can pin the schema invariants
+ *  without bringing IndexedDB into the test environment. */
+export function portraitPk(
+  sessionId: string,
+  playerId: string,
+  characterName: string,
+): string {
   return `${sessionId}|${playerId}|${encodeURIComponent(characterName)}`
 }
 
+/** True for a v3-shaped portrait pk (`${sessionId}:${playerId}`).
+ *  v4 keys always contain the `|` separator, so a missing one tells
+ *  the migration that the record needs re-keying. */
+export function isLegacyPortraitPk(pk: string): boolean {
+  return !pk.includes('|')
+}
+
 /** The map shape used in memory by the session and the room history:
- *  `${playerId}|${characterName}` → image data URL. */
-function characterImagesKey(playerId: string, characterName: string): string {
+ *  `${playerId}|${characterName}` → image data URL. Exported so call
+ *  sites that build the map (and tests) can share one definition. */
+export function characterImagesKey(playerId: string, characterName: string): string {
   return `${playerId}|${characterName}`
 }
 
@@ -211,8 +225,7 @@ function openDb(): Promise<IDBDatabase | null> {
           // The v3 pk format was `${sessionId}:${playerId}` — no `|`.
           // The new format has `|` as the separator. A record that
           // already matches the new format is left alone.
-          const isLegacy = !rec.pk.includes('|')
-          if (!isLegacy) {
+          if (!isLegacyPortraitPk(rec.pk)) {
             cur.continue()
             return
           }
