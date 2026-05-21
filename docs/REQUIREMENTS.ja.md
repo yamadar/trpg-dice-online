@@ -641,6 +641,15 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   表す情報伝達アイコンのため。サードパーティ素材の帰属は
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md) に集約する。
+- v1.72 — UI Chrome の永続化・テーマ設定周りで unit test がなかった
+  純粋ヘルパー群にテストを追加した。新規 `.test.ts`:
+  カラーテーマ ID 列・ガード (`src/theme/themes.test.ts`)、文字サイズ
+  スケール列・ガード (`src/theme/fontScale.test.ts`)、型付き
+  `localStorage` ラッパ (`src/storage/local.test.ts`)、その上に
+  乗っている各設定モジュール（コンパクト表示・文字サイズ・テーマ・
+  自動翻訳・最終ルームコード・チュートリアル既読・パターン ID
+  生成）。約 74 件のテストを追加し、アプリが読み出す値と保存形式の
+  対応関係を CI 上で固定する。
 - v1.71 — 過去のルーム履歴で「キャラクター別のポートレート」を
   再現できるようにする。永続化されているポートレートのキーを
   `(sessionId, playerId)` → `(sessionId, playerId, characterName)` に
