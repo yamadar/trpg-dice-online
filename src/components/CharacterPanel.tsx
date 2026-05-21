@@ -74,10 +74,16 @@ export function CharacterPanel({ characters, onNotice }: Props) {
 
   // Close the popover if the active character changes (or is cleared)
   // while it is open — otherwise the menu would stay "open" in state
-  // and pop back up the next time a character is selected.
-  useEffect(() => {
+  // and pop back up the next time a character is selected. Done with
+  // the "set state during render" pattern React recommends over an
+  // effect, to avoid cascading renders.
+  const [popoverCharId, setPopoverCharId] = useState<string | null>(
+    activeCharacter?.id ?? null,
+  )
+  if (popoverCharId !== (activeCharacter?.id ?? null)) {
+    setPopoverCharId(activeCharacter?.id ?? null)
     setImageMenuOpen(false)
-  }, [activeCharacter?.id])
+  }
 
   // One toast after a burst of name edits settles, not per keystroke.
   // Toast once the name edit settles (on blur or when the sheet closes).
