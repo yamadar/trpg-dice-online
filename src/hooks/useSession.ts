@@ -29,8 +29,8 @@ import {
   loadRecentLog,
   markSessionClosed,
   newSessionId,
-  savePortraitForSession,
-  savePortraitsForSession,
+  saveCharacterPortrait,
+  saveCharacterPortraits,
   type LogTarget,
 } from '../storage/roomLog'
 import {
@@ -202,6 +202,40 @@ export function useSession(): Session {
   // Mirrors reconnectingRef for rendering — the GM-offline banner reads it.
   const [reconnecting, setReconnecting] = useState(false)
 
+  /** Type of a single buffered portrait save. Empty `image` means a
+   *  delete. The `sessionId` is captured at stage-time (not read from
+   *  the live ref at flush-time) so a portrait change made just before
+   *  the user leaves the room still persists to the right session even
+   *  if `sessionIdRef` has already been cleared by `goOffline`. */
+  type PortraitSave = {
+    sessionId: string
+    playerId: string
+    characterName: string
+    image: string
+  }
+  // Append-only queue of portrait writes. The `characterImages`
+  // derivation block appends new deltas during render (via a functional
+  // `setState` so concurrent commits do not clobber each other); the
+  // flush effect below reads from `portraitFlushedCountRef.current` to
+  // `length` and saves only the new tail, then advances the ref. This
+  // splits the rules cleanly: the derivation never touches a ref or
+  // calls `setState` inside an effect — neither pattern the React 19
+  // strict-effect lint rules ban.
+  const [portraitQueue, setPortraitQueue] = useState<ReadonlyArray<PortraitSave>>([])
+  const portraitFlushedCountRef = useRef(0)
+  // Promise chain so concurrent flush effects (a second commit landing
+  // before the first IndexedDB transaction resolves) write in order
+  // rather than racing — without it, the later batch could commit
+  // first and the earlier batch's stale payload could overwrite it.
+  const portraitFlushChainRef = useRef<Promise<void>>(Promise.resolve())
+  // Once a flushed offset crosses this many entries, the flush
+  // effect compacts the queue (slices off the prefix and resets the
+  // offset) so a long session of frequent portrait changes does not
+  // hold them all in memory forever. Tuned high enough that ordinary
+  // sessions never trip it but a pathological case is still bounded.
+  const PORTRAIT_QUEUE_COMPACT_AT = 64
+
+
   // Identity refs are written directly by updateIdentity so a re-sync can
   // read the new values synchronously.
   const nameRef = useRef(name)
@@ -269,6 +303,10 @@ export function useSession(): Session {
     })
     let map = characterImages
     let changed = false
+    // Batched writes carry their own `sessionId` snapshot so a fast
+    // leave/offline cannot strand them.
+    const portraitDeltas: PortraitSave[] = []
+    const stageSid = sessionId
     const put = (id: string, character: string, image: string) => {
       // An empty character name is allowed — a player who just created
       // a character and uploaded a portrait before naming it is still
@@ -285,6 +323,17 @@ export function useSession(): Session {
           changed = true
         }
         delete map[key]
+        // Stage the clear for the effect below — keeps this derivation
+        // block free of IndexedDB side-effects so React can re-run it
+        // safely under StrictMode / concurrent rendering.
+        if (stageSid) {
+          portraitDeltas.push({
+            sessionId: stageSid,
+            playerId: id,
+            characterName: character,
+            image: '',
+          })
+        }
         return
       }
       if (map[key] === image) return
@@ -293,6 +342,15 @@ export function useSession(): Session {
         changed = true
       }
       map[key] = image
+      // Stage the new (player, character) → image observation.
+      if (stageSid) {
+        portraitDeltas.push({
+          sessionId: stageSid,
+          playerId: id,
+          characterName: character,
+          image,
+        })
+      }
     }
     put(playerId, characterName, playerImages[playerId] ?? '')
     for (const p of playersState) {
@@ -319,6 +377,14 @@ export function useSession(): Session {
       delete map[key]
     }
     if (changed) setCharacterImages(map)
+    // Append the staged deltas to the persistent queue. Functional
+    // `setState` guarantees consecutive derivations layer onto each
+    // other instead of clobbering — the flush effect's offset ref
+    // (`portraitFlushedCountRef`) skips already-written entries.
+    if (portraitDeltas.length > 0) {
+      const newBatch = portraitDeltas
+      setPortraitQueue((prev) => prev.concat(newBatch))
+    }
   }
 
   /** True once a graceful room close was received, so the following
@@ -393,16 +459,19 @@ export function useSession(): Session {
     setPlayerImagesState(next)
   }, [])
 
-  /** Set or clear one player's portrait. */
+  /** Set or clear one player's portrait. The matching
+   *  per-(player, character) persistence happens by way of the
+   *  `characterImages` derivation block above: when that block sees a
+   *  new (or cleared) image, it pushes a delta onto `portraitQueue`,
+   *  and a separate `useEffect` further down coalesces / groups those
+   *  deltas and writes them via `saveCharacterPortraits` — keeping
+   *  IndexedDB I/O out of the render phase. */
   const putPlayerImage = useCallback(
     (id: string, image: string) => {
       const next = { ...playerImagesRef.current }
       if (image) next[id] = image
       else delete next[id]
       setPlayerImages(next)
-      // Persist to the per-session portrait store so a past session's
-      // history view can show the last-known portrait of each player.
-      void savePortraitForSession(sessionIdRef.current, id, image)
     },
     [setPlayerImages],
   )
@@ -449,12 +518,24 @@ export function useSession(): Session {
             roomRef.current?.dropClient(ghostId)
           }
           peerPlayersRef.current.set(peerId, player)
+          // Filter the snapshot's images down to the current roster.
+          // Disconnected players' entries are kept in
+          // `playerImagesRef` (see `handleClientDisconnect`) so the
+          // durable per-character record this session has persisted
+          // does not get mistakenly wiped; but a new client must not
+          // see images of players no longer in the room.
+          const roster = buildRoster()
+          const rosterIds = new Set(roster.map((p) => p.id))
+          const snapshotImages: Record<string, string> = {}
+          for (const [id, img] of Object.entries(playerImagesRef.current)) {
+            if (rosterIds.has(id) && img) snapshotImages[id] = img
+          }
           const snapshot: Snapshot = {
-            players: buildRoster(),
+            players: roster,
             history: historyRef.current.map(redactRoll),
             chat: chatRef.current,
             roomName: roomNameRef.current,
-            images: { ...playerImagesRef.current },
+            images: snapshotImages,
           }
           roomRef.current?.sendTo(peerId, { t: 'welcome', snapshot })
           broadcastPlayers()
@@ -596,7 +677,19 @@ export function useSession(): Session {
             }
             if (ownImageRef.current) images[playerId] = ownImageRef.current
             setPlayerImages(images)
-            void savePortraitsForSession(sessionIdRef.current, images)
+            // Persist per (playerId, characterName) — match the live
+            // `characterImages` shape so the past-rooms view shows the
+            // right avatar even after the player switches character.
+            const characterImagesSnapshot: Record<string, string> = {}
+            for (const p of msg.snapshot.players) {
+              const img = images[p.id]
+              if (img) characterImagesSnapshot[`${p.id}|${p.characterName ?? ''}`] = img
+            }
+            if (ownImageRef.current) {
+              characterImagesSnapshot[`${playerId}|${characterNameRef.current}`] =
+                ownImageRef.current
+            }
+            void saveCharacterPortraits(sessionIdRef.current, characterImagesSnapshot)
           }
           if (msg.snapshot.history.length || msg.snapshot.chat.length) {
             hasActivityRef.current = true
@@ -697,9 +790,16 @@ export function useSession(): Session {
       if (peerPlayersRef.current.delete(peerId)) {
         broadcastPlayers()
         if (gone) {
-          // Drop the departed player's portrait so it is not carried in
-          // later welcome snapshots.
-          putPlayerImage(gone.id, '')
+          // The departed player's portrait is intentionally *kept* in
+          // `playerImagesRef`. The welcome-snapshot composition below
+          // filters to current roster members, so a disconnected
+          // player's image never reaches a new client — but the
+          // in-memory entry survives so the per-character durable
+          // portrait this session has already persisted is never
+          // mistakenly deleted by the `characterImages` derivation
+          // (which would otherwise observe `image: ''` and stage a
+          // disk delete). A future rejoin will overwrite this entry
+          // with whatever portrait the player brings back.
           const shown = composeName(gone.name, gone.characterName)
           addMarker('playerLeft', { playerName: shown })
           roomRef.current?.broadcast({
@@ -711,7 +811,7 @@ export function useSession(): Session {
         }
       }
     },
-    [addMarker, broadcastPlayers, putPlayerImage],
+    [addMarker, broadcastPlayers],
   )
 
   const ensureRoom = useCallback((): RoomManager => {
@@ -1308,14 +1408,93 @@ export function useSession(): Session {
   }, [role])
 
   // When the session id first arrives (create / join / resume), persist
-  // the local player's portrait so a fresh session always carries one
-  // entry for the GM — putPlayerImage's per-update save misses the case
-  // where the portrait was set before any room existed.
+  // the local player's current (character, portrait) so a fresh session
+  // always carries one entry for the GM — the characterImages derivation
+  // block's per-update save misses the case where the portrait was set
+  // before any room existed.
   useEffect(() => {
     if (sessionId && ownImageRef.current) {
-      void savePortraitForSession(sessionId, playerId, ownImageRef.current)
+      void saveCharacterPortrait(
+        sessionId,
+        playerId,
+        characterNameRef.current,
+        ownImageRef.current,
+      )
     }
   }, [sessionId, playerId])
+
+  // Flush the unprocessed tail of `portraitQueue` to IndexedDB. The
+  // derivation block above only appends deltas — actually touching
+  // IndexedDB happens here so React can safely re-run the derivation
+  // under StrictMode / concurrent rendering without duplicating writes.
+  // `portraitFlushedCountRef` marks the boundary between "already
+  // written" and "new" entries, so multiple commits between effect
+  // runs cannot drop or double-up any save. Each delta also carries
+  // its own `sessionId` snapshot, so a fast `leaveRoom` / `goOffline`
+  // that clears `sessionIdRef` between staging and flushing still
+  // writes to the right session.
+  //
+  // Two optimisations live here:
+  //   1. Coalesce by `(sessionId, playerId, characterName)`: only the
+  //      last image observed in the tail is written, which is the
+  //      desired last-write-wins semantics anyway.
+  //   2. Group by `sessionId` and use the bulk
+  //      `saveCharacterPortraits` API so the whole batch lands in a
+  //      single IndexedDB transaction per session.
+  //
+  // The queue itself is left intact (we only advance the offset ref)
+  // — in practice it grows by one or two entries per portrait change,
+  // so trimming it would not pay back the bookkeeping cost.
+  useEffect(() => {
+    const start = portraitFlushedCountRef.current
+    if (start >= portraitQueue.length) return
+    const endIndex = portraitQueue.length
+    const tail = portraitQueue.slice(start)
+
+    // Coalesce + group: each session gets a single map of
+    // `${playerId}|${characterName}` → image (latest wins).
+    const bySession = new Map<string, Record<string, string>>()
+    for (const w of tail) {
+      let map = bySession.get(w.sessionId)
+      if (!map) {
+        map = {}
+        bySession.set(w.sessionId, map)
+      }
+      map[`${w.playerId}|${w.characterName}`] = w.image
+    }
+
+    // Chain this batch off the previous flush so the IndexedDB writes
+    // happen in commit order. A naive concurrent fire would let the
+    // older batch's transaction commit *after* the newer one, replacing
+    // the latest portrait with stale data (IndexedDB is last-write-
+    // wins per transaction). `saveCharacterPortraits` returns `false`
+    // when the store is unavailable / blocked / aborted, in which case
+    // the deltas stay in the queue and the next render's effect run
+    // retries from the same offset.
+    portraitFlushChainRef.current = portraitFlushChainRef.current.then(async () => {
+      // A previous run on the same chain may have already covered this
+      // range (multiple effect runs queue up before any of them
+      // executes). Re-check the offset before redoing the work.
+      if (portraitFlushedCountRef.current >= endIndex) return
+      const results = await Promise.all(
+        Array.from(bySession, ([sid, images]) => saveCharacterPortraits(sid, images)),
+      )
+      if (!results.every((ok) => ok)) return
+      portraitFlushedCountRef.current = endIndex
+      // Compact the queue once a healthy chunk has been flushed, so a
+      // long session does not pile up portrait records in memory just
+      // because the offset advanced past them. `setState` here runs
+      // in the promise's microtask (not synchronously inside the
+      // effect body), and the functional updater drops the same
+      // prefix from whatever `prev` happens to be — so any new tail
+      // appended while the flush was in flight is preserved.
+      if (endIndex >= PORTRAIT_QUEUE_COMPACT_AT) {
+        portraitFlushedCountRef.current = 0
+        setPortraitQueue((prev) => prev.slice(endIndex))
+      }
+    })
+  }, [portraitQueue])
+
 
   // Tear down the peer when the app unmounts.
   useEffect(() => () => roomRef.current?.close(), [])

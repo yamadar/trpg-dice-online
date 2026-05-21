@@ -10,7 +10,7 @@ import {
   deleteSession,
   listSessions,
   loadFullLog,
-  loadSessionPortraits,
+  loadSessionCharacterPortraits,
   type SessionSummary,
 } from '../storage/roomLog'
 import { useConfirm } from '../hooks/useConfirm'
@@ -78,13 +78,16 @@ export function RoomHistory({ playerId, onBack }: Props) {
     setDetail(null)
   }, [])
 
-  // Load the selected session's full log and its per-player portrait map
-  // in parallel. Both are tagged with the session id so a stale result is
-  // dropped by `loadedLog` / `portraits` below.
+  // Load the selected session's full log and its per-(player, character)
+  // portrait map in parallel. Both are tagged with the session id so a
+  // stale result is dropped by `loadedLog` / `portraits` below. The
+  // portrait map is keyed by `${playerId}|${characterName}` — same shape
+  // as the live `Session.characterImages` — so it can be handed straight
+  // to `FeedList` without re-keying.
   useEffect(() => {
     if (!selected) return
     const sid = selected.sessionId
-    void Promise.all([loadFullLog(sid), loadSessionPortraits(sid)]).then(
+    void Promise.all([loadFullLog(sid), loadSessionCharacterPortraits(sid)]).then(
       ([entries, portraits]) => {
         setLog({
           sessionId: sid,
@@ -152,20 +155,23 @@ export function RoomHistory({ playerId, onBack }: Props) {
     [images],
   )
 
-  // Past sessions only store one portrait per playerId (the last one
-  // observed). We re-key it as `${playerId}|${characterName}` for every
-  // (player, character) pair that appears in the feed so the new lookup
-  // shape works — a best-effort mapping that gives back the same avatar
-  // the previous version would have shown.
+  // The persisted map is already keyed by `${playerId}|${characterName}`
+  // (the same shape `FeedList` expects), so it is used as-is. Legacy
+  // (v3) records were migrated forward with an empty `characterName`,
+  // so they land under `${playerId}|` — falling back to that key keeps
+  // old sessions' portraits visible until a new per-character record
+  // overrides them.
   const characterImagesFromPortraits = useMemo(() => {
-    const map: Record<string, string | undefined> = {}
+    const map: Record<string, string | undefined> = { ...portraits }
     for (const item of feed) {
       const speaker =
         item.kind === 'chat' ? item.message : item.kind === 'roll' ? item.roll : null
       if (!speaker) continue
-      const portrait = portraits[speaker.playerId]
-      if (!portrait) continue
-      map[`${speaker.playerId}|${speaker.characterName ?? ''}`] = portrait
+      const cn = speaker.characterName ?? ''
+      const key = `${speaker.playerId}|${cn}`
+      if (map[key]) continue
+      const legacy = portraits[`${speaker.playerId}|`]
+      if (legacy) map[key] = legacy
     }
     return map
   }, [feed, portraits])
