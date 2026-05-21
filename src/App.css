@@ -247,13 +247,20 @@
 
 /* --- in-app confirm dialog ---
    A themed `window.confirm` replacement: a small dialog card centred
-   over a dimmed backdrop. Lives at a higher z-index than the sheet
-   (`.sheet-layer` z: 30) and the settings drawer so any
-   "are-you-sure?" pops up above the panel it was triggered from. */
+   over a dimmed backdrop. The full overlay stack, from back to front:
+       z 30 — .sheet-layer        (room / character / dice / patterns)
+       z 40 — .toast              (lightweight notices)
+       z 50 — .lightbox           (image viewer over a sheet)
+       z 60 — .app-banner         (connection error strip)
+       z 60 — .tutorial           (walkthrough modal)
+       z 70 — .confirm-layer      (this — sits above everything else)
+   The confirm sits on top so an "are you sure?" prompt is always
+   reachable even when raised from inside the tutorial or while a
+   connection banner is showing. */
 .confirm-layer {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 70;
   display: flex;
   align-items: center;
   justify-content: center;
