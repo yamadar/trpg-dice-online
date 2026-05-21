@@ -48,8 +48,11 @@ export function PlayerDetailCard({
   // The person name is not part of the snapshot; show the live one when
   // the player is still present.
   const playerName = player?.name.trim() ?? ''
-  // The same composed speaker name the non-compact feed shows.
-  const title = displayName.trim() || t('player.anon')
+  // The same composed speaker name the non-compact feed shows. If
+  // `displayName` is empty (older / imported entries that never carried
+  // `playerName`), fall through to the character name so the heading
+  // still reads sensibly instead of "anon".
+  const title = displayName.trim() || character || t('player.anon')
 
   return (
     <section className="panel player-card">
