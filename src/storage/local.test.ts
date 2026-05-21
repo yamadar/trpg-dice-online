@@ -2,12 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadJSON, loadString, saveJSON, saveString } from './local'
 
 /**
- * Minimal in-memory localStorage substitute. Vitest runs in a node
- * environment (per the project's `CLAUDE.md`), so the real DOM
- * `localStorage` isn't available; this stand-in exposes the same
- * `getItem` / `setItem` shape and lets the tests pin both the happy
- * path and the failure-recovery branches (the wrappers swallow any
- * underlying throw and degrade to the fallback / no-op).
+ * Minimal in-memory localStorage substitute. Vitest is configured to
+ * run in a node environment (see `vite.config.ts` —
+ * `test.environment = 'node'`), so the real DOM `localStorage` isn't
+ * available; this stand-in exposes the same `getItem` / `setItem`
+ * shape and lets the tests pin both the happy path and the
+ * failure-recovery branches (the wrappers swallow any underlying
+ * throw and degrade to the fallback / no-op).
  */
 class MemoryStorage {
   private map = new Map<string, string>()
