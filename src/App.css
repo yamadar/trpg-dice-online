@@ -1691,7 +1691,7 @@ label.setting-row {
   margin-top: 16px;
 }
 
-/* Zone 1b: add a character (new / import grouped under one heading). */
+/* Zone 2: add a character (new / import grouped under one heading). */
 .char-add {
   margin-top: 12px;
 }
@@ -1706,7 +1706,7 @@ label.setting-row {
   flex: 1;
 }
 
-/* Zone 2: summary card for the active character — avatar plus a single
+/* Zone 3: summary card for the active character — avatar plus a single
    line each for name and background. The background is truncated with
    an ellipsis so it never wraps regardless of length. */
 .char-card {
@@ -1770,7 +1770,7 @@ label.setting-row {
   font-size: 0.85rem;
 }
 
-/* Zone 4: export — the "include memo" toggle is kept right next to the
+/* Zone 5: export — the "include memo" toggle is kept right next to the
    button it scopes to, so the relationship is obvious. */
 .char-export {
   display: flex;
@@ -1781,7 +1781,7 @@ label.setting-row {
   border-top: 1px solid var(--border);
 }
 
-/* Zone 5: danger zone — isolated at the very bottom with its own thin
+/* Zone 6: danger zone — isolated at the very bottom with its own thin
    rule, so destructive deletion can never be confused with the export
    or edit blocks above. */
 .char-danger {
