@@ -4,7 +4,18 @@ import { useFieldNotice } from '../hooks/useFieldNotice'
 import { LanguageToggle } from './LanguageToggle'
 import { ThemeToggle } from './ThemeToggle'
 import { FontSizeToggle } from './FontSizeToggle'
-import { BrandIcon, CloseIcon, SettingsIcon } from './icons'
+import {
+  BrandIcon,
+  CloseIcon,
+  CompactIcon,
+  FontSizeIcon,
+  HelpIcon,
+  InfoIcon,
+  PlayerIcon,
+  SettingsIcon,
+  ThemeIcon,
+  TranslateIcon,
+} from './icons'
 
 interface Props {
   name: string
@@ -67,9 +78,21 @@ export function SettingsMenu({
               <CloseIcon />
             </button>
             <div className="settings-body">
-              <h2 className="settings-title">{t('settings.title')}</h2>
+              {/* The title carries a Settings cog at its leading edge so
+                  the panel reads as a labelled section at a glance — the
+                  same icon as the header button that opened it, so the
+                  affordance and the panel feel like one continuous
+                  surface. */}
+              <h2 className="settings-title">
+                <SettingsIcon size={22} />
+                <span>{t('settings.title')}</span>
+              </h2>
+
               <label className="setting-row">
-                <span>{t('player.name')}</span>
+                <span className="setting-label">
+                  <PlayerIcon />
+                  <span>{t('player.name')}</span>
+                </span>
                 <input
                   type="text"
                   value={name}
@@ -84,13 +107,22 @@ export function SettingsMenu({
               </label>
 
               <div className="settings-group">
-                <h3>{t('settings.groupLanguage')}</h3>
+                <h3 className="settings-group-title">
+                  <TranslateIcon size={16} />
+                  <span>{t('settings.groupLanguage')}</span>
+                </h3>
                 <div className="setting-row">
-                  <span>{t('lang.label')}</span>
+                  <span className="setting-label">
+                    <TranslateIcon size={16} />
+                    <span>{t('lang.label')}</span>
+                  </span>
                   <LanguageToggle />
                 </div>
                 <label className="setting-row">
-                  <span>{t('translate.auto')}</span>
+                  <span className="setting-label">
+                    <TranslateIcon size={16} />
+                    <span>{t('translate.auto')}</span>
+                  </span>
                   <input
                     type="checkbox"
                     className="toggle"
@@ -101,13 +133,22 @@ export function SettingsMenu({
               </div>
 
               <div className="settings-group">
-                <h3>{t('settings.groupAppearance')}</h3>
+                <h3 className="settings-group-title">
+                  <ThemeIcon size={16} />
+                  <span>{t('settings.groupAppearance')}</span>
+                </h3>
                 <div className="setting-row">
-                  <span>{t('fontSize.label')}</span>
+                  <span className="setting-label">
+                    <FontSizeIcon />
+                    <span>{t('fontSize.label')}</span>
+                  </span>
                   <FontSizeToggle />
                 </div>
                 <label className="setting-row">
-                  <span>{t('feed.compact')}</span>
+                  <span className="setting-label">
+                    <CompactIcon />
+                    <span>{t('feed.compact')}</span>
+                  </span>
                   <input
                     type="checkbox"
                     className="toggle"
@@ -115,14 +156,20 @@ export function SettingsMenu({
                     onChange={onToggleCompact}
                   />
                 </label>
-                <div className="field">
-                  <span>{t('theme.title')}</span>
+                <div className="field setting-row">
+                  <span className="setting-label">
+                    <ThemeIcon />
+                    <span>{t('theme.title')}</span>
+                  </span>
                   <ThemeToggle />
                 </div>
               </div>
 
               <div className="settings-about">
-                <h3>{t('settings.about')}</h3>
+                <h3 className="settings-group-title">
+                  <InfoIcon size={16} />
+                  <span>{t('settings.about')}</span>
+                </h3>
                 <p className="about-title brand-heading">
                   <BrandIcon className="brand-mark" />
                   <span>{t('app.title')}</span>
@@ -146,7 +193,8 @@ export function SettingsMenu({
                     onOpenHelp()
                   }}
                 >
-                  {t('settings.help')}
+                  <HelpIcon />
+                  <span>{t('settings.help')}</span>
                 </button>
               </div>
             </div>

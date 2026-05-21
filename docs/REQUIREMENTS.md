@@ -678,6 +678,15 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.69 — Surface icons throughout the settings panel. The panel title
+  ("Settings") now sits next to the Settings cog (the same icon as the
+  header trigger, so the affordance and the opened panel feel like one
+  continuous surface). Each settings row and group header gets an icon
+  by its label so the panel reads as a glanceable list:
+  `User` (player name), `Languages` (language / auto-translate +
+  the "Language & translation" group), `ALargeSmall` (font size),
+  `Rows3` (compact feed), `Palette` (theme + "Appearance" group),
+  `Info` ("About" group), and `HelpCircle` (open the in-app help).
 - v1.68 — Trim the feed header. The "Dice & Chat" section title is
   removed (the rest of the chrome makes the feed's identity obvious),
   and the filter chip group is centred on the row with the "clear view"

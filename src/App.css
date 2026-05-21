@@ -1712,6 +1712,30 @@ label.setting-row {
   /* Keep the title clear of the floating × close button. */
   padding-right: 30px;
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Group title (h3) and row label both render as "icon + text" with the
+   icon vertically centred on the label baseline. Sharing one rule keeps
+   the visual rhythm consistent across the panel. */
+.settings-group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.setting-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* The "open the in-app help" button shows its icon to the left of the
+   label and centres the whole pair within the full-width button. */
+.settings-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 /* The scrolling region. The × button is a sibling, not a child, so it
    stays pinned to the panel while this body scrolls. */
@@ -2143,4 +2167,6 @@ button.char-avatar-large:disabled {
 .settings-help-btn {
   width: 100%;
   margin-top: 12px;
+  /* Inline flex / gap is layered on top by the rule next to .settings-title
+     so the icon and label sit centred together. */
 }
