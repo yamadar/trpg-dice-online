@@ -70,11 +70,15 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const settle = useCallback((value: boolean) => {
+    // Resolve through a local copy of the resolver and only then clear
+    // the ref / state. If the provider unmounts immediately after
+    // `settle()` (hot reload, root remount), React may drop the queued
+    // state update — calling the resolver directly here makes sure the
+    // caller's promise is always settled.
+    const resolver = pendingResolverRef.current
     pendingResolverRef.current = null
-    setPending((prev) => {
-      prev?.resolve(value)
-      return null
-    })
+    resolver?.(value)
+    setPending(null)
     // Restore focus to whatever had it when the dialog opened — keeps
     // keyboard users from being dropped at the top of the page.
     // `preventScroll: true` keeps the page from jumping if the prior
@@ -147,10 +151,12 @@ export function ConfirmDialog({
 
   // Keystroke handling: Escape cancels (like a native dialog), Tab and
   // Shift-Tab cycle focus *within* the dialog. The handler is registered
-  // in the *capture* phase and `stopImmediatePropagation`s anything it
-  // claims, so the keystroke does not also reach the window-level
-  // Escape handler on a Sheet sitting underneath (which would close
-  // both the confirm and its parent sheet).
+  // in the *capture* phase. For Escape it also calls
+  // `stopImmediatePropagation()` so the keystroke does not reach the
+  // window-level Escape handler on a Sheet sitting underneath (which
+  // would close both the confirm and its parent sheet). Tab only needs
+  // `preventDefault()` — the browser is the only other consumer of
+  // Tab here and we just want to override its default focus walk.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
