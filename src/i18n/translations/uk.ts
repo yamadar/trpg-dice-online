@@ -149,6 +149,7 @@ export const uk: Dict = {
   'result.faces': 'Грані кубиків',
 
   'feed.section': 'Кубики та чат',
+  'feed.filter': 'Фільтр',
   'feed.all': 'Усе',
   'feed.rolls': 'Кидки',
   'feed.chat': 'Чат',

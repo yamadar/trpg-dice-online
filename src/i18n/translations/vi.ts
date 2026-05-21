@@ -149,6 +149,7 @@ export const vi: Dict = {
   'result.faces': 'Mặt xúc xắc',
 
   'feed.section': 'Xúc xắc & Trò chuyện',
+  'feed.filter': 'Bộ lọc',
   'feed.all': 'Tất cả',
   'feed.rolls': 'Lần tung',
   'feed.chat': 'Trò chuyện',

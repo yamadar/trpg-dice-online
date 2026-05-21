@@ -149,6 +149,7 @@ export const ja: Dict = {
   'result.faces': '出目内訳',
 
   'feed.section': 'ダイス & チャット',
+  'feed.filter': 'フィルター',
   'feed.all': 'すべて',
   'feed.rolls': 'ダイス',
   'feed.chat': 'チャット',

@@ -149,6 +149,7 @@ export const ko: Dict = {
   'result.faces': '주사위 면',
 
   'feed.section': '주사위 & 채팅',
+  'feed.filter': '필터',
   'feed.all': '전체',
   'feed.rolls': '굴림',
   'feed.chat': '채팅',

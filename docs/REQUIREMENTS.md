@@ -678,3 +678,13 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.68 — Trim the feed header. The "Dice & Chat" section title is
+  removed (the rest of the chrome makes the feed's identity obvious),
+  and the filter chip group is centred on the row with the "clear view"
+  trash button parked in a fixed slot on the right. The slot is always
+  in the layout (an invisible placeholder reserves it when the trash
+  button is hidden), so chips no longer shift sideways as the feed
+  flips between empty and non-empty. The section keeps its accessible
+  name via `aria-label`, and the filter group gets a dedicated
+  `feed.filter` i18n key (added to all 19 locales) so its `role="group"`
+  no longer reuses the section title.

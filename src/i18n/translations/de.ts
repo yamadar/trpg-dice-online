@@ -149,6 +149,7 @@ export const de: Dict = {
   'result.faces': 'Würfelaugen',
 
   'feed.section': 'Würfel & Chat',
+  'feed.filter': 'Filter',
   'feed.all': 'Alle',
   'feed.rolls': 'Würfe',
   'feed.chat': 'Chat',

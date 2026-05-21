@@ -149,6 +149,7 @@ export const ru: Dict = {
   'result.faces': 'Грани костей',
 
   'feed.section': 'Кости и чат',
+  'feed.filter': 'Фильтр',
   'feed.all': 'Всё',
   'feed.rolls': 'Броски',
   'feed.chat': 'Чат',

@@ -967,11 +967,35 @@ label.setting-row {
 }
 
 /* --- activity feed --- */
-.feed-tools {
+/* Feed header: 3-column grid that centres the filter chips and reserves
+   a fixed slot on the right for the "clear view" trash button. The left
+   spacer matches the right slot's reserved width so the chips stay on
+   the optical centre line; the placeholder span keeps the slot occupied
+   even when the trash button is not rendered (empty feed), so chips
+   don't jump when entries appear or are cleared. */
+.feed-head {
+  display: grid;
+  grid-template-columns: var(--feed-clear-slot, 36px) auto var(--feed-clear-slot, 36px);
+  align-items: center;
+  gap: 0 8px;
+}
+.feed-head .feed-filter {
+  justify-self: center;
+}
+.feed-head-end {
+  justify-self: end;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 8px;
+  /* Match the trash button's tap-target footprint exactly so visible /
+     hidden states share the same outer rectangle. */
+  width: var(--feed-clear-slot, 36px);
+  height: var(--feed-clear-slot, 36px);
+  justify-content: center;
+}
+.feed-clear-placeholder {
+  display: block;
+  width: var(--feed-clear-slot, 36px);
+  height: var(--feed-clear-slot, 36px);
 }
 .feed-filter {
   display: flex;

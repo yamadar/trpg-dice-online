@@ -212,29 +212,41 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
   ) : undefined
 
   return (
-    <section className={`panel activity${compact ? ' compact' : ''}`}>
-      <div className="panel-head">
-        <h2>{t('feed.section')}</h2>
-        <div className="feed-tools">
-          <div className="feed-filter" role="group" aria-label={t('feed.section')}>
-            {FILTERS.map(({ id, Icon }) => {
-              const label = t(`feed.${id}`)
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={id === filter ? 'filter-btn active' : 'filter-btn'}
-                  aria-pressed={id === filter}
-                  aria-label={label}
-                  title={label}
-                  onClick={() => setFilter(id)}
-                >
-                  <Icon />
-                </button>
-              )
-            })}
-          </div>
-          {feed.length > 0 && (
+    // The h2 / section title that used to read "Dice & Chat" was removed
+    // (the rest of the screen makes the feed's identity obvious). Its
+    // labelling job moves onto the section element via `aria-label`, so
+    // assistive tech still picks the feed up as a labelled region.
+    <section
+      className={`panel activity${compact ? ' compact' : ''}`}
+      aria-label={t('feed.section')}
+    >
+      <div className="panel-head feed-head">
+        {/* A 3-column grid (spacer · centred filter chips · trash slot)
+            keeps the chips visually centred regardless of whether the
+            clear button is currently visible. The trash slot is always
+            in the DOM and reserves the same width either way, so
+            entering / leaving an empty feed does not nudge the chips. */}
+        <span className="feed-head-spacer" aria-hidden="true" />
+        <div className="feed-filter" role="group" aria-label={t('feed.filter')}>
+          {FILTERS.map(({ id, Icon }) => {
+            const label = t(`feed.${id}`)
+            return (
+              <button
+                key={id}
+                type="button"
+                className={id === filter ? 'filter-btn active' : 'filter-btn'}
+                aria-pressed={id === filter}
+                aria-label={label}
+                title={label}
+                onClick={() => setFilter(id)}
+              >
+                <Icon />
+              </button>
+            )
+          })}
+        </div>
+        <div className="feed-head-end">
+          {feed.length > 0 ? (
             <button
               type="button"
               className="icon-btn feed-clear"
@@ -244,6 +256,11 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
             >
               <TrashIcon />
             </button>
+          ) : (
+            // Invisible placeholder that occupies the exact slot the
+            // trash button would — keeps the chip group's centre line
+            // stable across feed.length === 0 / > 0.
+            <span className="feed-clear-placeholder" aria-hidden="true" />
           )}
         </div>
       </div>

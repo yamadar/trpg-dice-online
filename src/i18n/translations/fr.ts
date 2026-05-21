@@ -149,6 +149,7 @@ export const fr: Dict = {
   'result.faces': 'Faces des dés',
 
   'feed.section': 'Dés et tchat',
+  'feed.filter': 'Filtre',
   'feed.all': 'Tout',
   'feed.rolls': 'Jets',
   'feed.chat': 'Tchat',

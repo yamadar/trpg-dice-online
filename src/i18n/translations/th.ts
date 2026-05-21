@@ -149,6 +149,7 @@ export const th: Dict = {
   'result.faces': 'หน้าลูกเต๋า',
 
   'feed.section': 'ลูกเต๋าและแชท',
+  'feed.filter': 'ตัวกรอง',
   'feed.all': 'ทั้งหมด',
   'feed.rolls': 'การทอย',
   'feed.chat': 'แชท',

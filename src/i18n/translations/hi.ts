@@ -149,6 +149,7 @@ export const hi: Dict = {
   'result.faces': 'पासे के फलक',
 
   'feed.section': 'पासे और चैट',
+  'feed.filter': 'फ़िल्टर',
   'feed.all': 'सभी',
   'feed.rolls': 'रोल',
   'feed.chat': 'चैट',
