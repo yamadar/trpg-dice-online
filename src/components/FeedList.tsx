@@ -129,7 +129,6 @@ const FeedChatItem = memo(function FeedChatItem({
       )}
       <div className="feed-bubble">
         <div className="feed-line">
-          <span className="player-dot" style={{ background: color }} />
           <button
             type="button"
             className="feed-name"
@@ -209,7 +208,6 @@ const FeedRollItem = memo(function FeedRollItem({
       )}
       <div className="feed-bubble">
         <div className="feed-line">
-          <span className="player-dot" style={{ background: color }} />
           <button
             type="button"
             className="feed-name"

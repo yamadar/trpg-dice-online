@@ -231,9 +231,9 @@ export function CharacterPanel({ characters, onNotice }: Props) {
               <p className="char-card-name">
                 {activeCharacter.name || t('character.unnamed')}
               </p>
-              <p className="char-card-background">
-                {activeCharacter.background || '—'}
-              </p>
+              {activeCharacter.background && (
+                <p className="char-card-background">{activeCharacter.background}</p>
+              )}
             </div>
           </div>
 

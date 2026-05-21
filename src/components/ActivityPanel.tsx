@@ -92,12 +92,18 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
   }, [feed])
 
   // The avatar lookup map (key: `${playerId}|${characterName}`). The
-  // session-wide map already tracks observed (player, character) → image
-  // for everyone in the room; on top of that we layer the local user's
-  // characters because they hold the absolute latest image (the user
-  // might edit a non-active character, which never broadcasts).
+  // session-wide map tracks observed (player, character) → image for the
+  // room. On top, the local user's `characters[]` is the canonical source
+  // for their own portraits, so we drop every self-prefixed entry from
+  // the session map first and re-add only the characters that still have
+  // an image. This way a portrait removed from a non-active character
+  // (which never broadcasts) does not linger as a stale avatar.
   const characterImages = useMemo(() => {
-    const map = { ...session.characterImages }
+    const map: Record<string, string | undefined> = {}
+    const selfPrefix = `${session.playerId}|`
+    for (const [key, value] of Object.entries(session.characterImages)) {
+      if (!key.startsWith(selfPrefix)) map[key] = value
+    }
     for (const c of characters) {
       if (c.name && c.image) {
         map[`${session.playerId}|${c.name}`] = c.image

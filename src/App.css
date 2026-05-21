@@ -1113,13 +1113,6 @@ label.setting-row {
   display: flex;
   flex-direction: column;
 }
-/* The avatar carries the identity, so the small player-dot inside the
-   meta line is redundant. It is kept in the markup for compact mode and
-   styling lookups but hidden in the standard layout. */
-.feed-chat .feed-line .player-dot,
-.feed-roll .feed-line .player-dot {
-  display: none;
-}
 /* Roll bubble: panel-tinted card with a top stripe coloured by the kind
    (damage / judgment / hidden). A top stripe instead of a left border so
    the cue does not flip sides when own items mirror right via row-reverse. */
@@ -1300,10 +1293,6 @@ label.setting-row {
 .activity.compact .feed-line {
   display: contents;
   font-size: 0.82rem;
-}
-/* The player-color dot is redundant with the colored name in this view. */
-.activity.compact .player-dot {
-  display: none;
 }
 /* Gaps between the name, the GM badge and the message in the one-block flow. */
 .activity.compact .feed-name {
