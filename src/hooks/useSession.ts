@@ -1401,14 +1401,38 @@ export function useSession(): Session {
   // its own `sessionId` snapshot, so a fast `leaveRoom` / `goOffline`
   // that clears `sessionIdRef` between staging and flushing still
   // writes to the right session.
+  //
+  // Two optimisations live here:
+  //   1. Coalesce by `(sessionId, playerId, characterName)`: only the
+  //      last image observed in the tail is written, which is the
+  //      desired last-write-wins semantics anyway.
+  //   2. Group by `sessionId` and use the bulk
+  //      `saveCharacterPortraits` API so the whole batch lands in a
+  //      single IndexedDB transaction per session.
+  //
+  // The queue itself is left intact (we only advance the offset ref)
+  // — in practice it grows by one or two entries per portrait change,
+  // so trimming it would not pay back the bookkeeping cost.
   useEffect(() => {
     const start = portraitFlushedCountRef.current
     if (start >= portraitQueue.length) return
-    for (let i = start; i < portraitQueue.length; i++) {
-      const w = portraitQueue[i]
-      void saveCharacterPortrait(w.sessionId, w.playerId, w.characterName, w.image)
-    }
+    const tail = portraitQueue.slice(start)
     portraitFlushedCountRef.current = portraitQueue.length
+
+    // Coalesce + group: each session gets a single map of
+    // `${playerId}|${characterName}` → image (latest wins).
+    const bySession = new Map<string, Record<string, string>>()
+    for (const w of tail) {
+      let map = bySession.get(w.sessionId)
+      if (!map) {
+        map = {}
+        bySession.set(w.sessionId, map)
+      }
+      map[`${w.playerId}|${w.characterName}`] = w.image
+    }
+    for (const [sid, images] of bySession) {
+      void saveCharacterPortraits(sid, images)
+    }
   }, [portraitQueue])
 
 
