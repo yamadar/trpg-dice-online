@@ -83,7 +83,7 @@ export function ChatComposer({ session, onNotice }: Props) {
           <span className="attach-pending-name">{pending.name}</span>
           <button
             type="button"
-            className="link icon-x attach-pending-remove"
+            className="link icon-btn attach-pending-remove"
             aria-label={t('chat.removeAttachment')}
             onClick={() => setPending(null)}
           >

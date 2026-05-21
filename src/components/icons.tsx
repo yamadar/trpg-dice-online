@@ -9,7 +9,7 @@ import { useId } from 'react'
 export function CloseIcon() {
   return (
     <svg
-      className="x-icon"
+      className="icon-svg"
       width="18"
       height="18"
       viewBox="0 0 16 16"
@@ -33,7 +33,7 @@ export function CloseIcon() {
 export function TrashIcon() {
   return (
     <svg
-      className="x-icon"
+      className="icon-svg"
       width="16"
       height="16"
       viewBox="0 0 16 16"

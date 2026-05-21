@@ -96,7 +96,7 @@ export function PatternList({
                 </button>
                 <button
                   type="button"
-                  className="link danger icon-x"
+                  className="link danger icon-btn"
                   aria-label={t('pattern.delete')}
                   onClick={() => handleDelete(p)}
                 >

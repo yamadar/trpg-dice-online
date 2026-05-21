@@ -186,7 +186,7 @@ export function ActivityPanel({ session, compact, onNotice, onOpenRoom }: Props)
           {feed.length > 0 && (
             <button
               type="button"
-              className="icon-x feed-clear"
+              className="icon-btn feed-clear"
               onClick={clearFeed}
               aria-label={t('feed.clear')}
               title={t('feed.clear')}

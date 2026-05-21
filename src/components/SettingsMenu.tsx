@@ -60,7 +60,7 @@ export function SettingsMenu({
                 placement as the other modals' close button. */}
             <button
               type="button"
-              className="sheet-close icon-x"
+              className="sheet-close icon-btn"
               aria-label={t('settings.close')}
               onClick={() => setOpen(false)}
             >

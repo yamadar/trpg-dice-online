@@ -248,7 +248,7 @@ function App() {
               : t('room.hostLost')}
           <button
             type="button"
-            className="link icon-x"
+            className="link icon-btn"
             aria-label={t('settings.close')}
             onClick={session.clearError}
           >

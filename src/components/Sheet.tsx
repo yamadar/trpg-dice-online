@@ -29,7 +29,7 @@ export function Sheet({ children, onClose }: Props) {
       <div className="sheet">
         <button
           type="button"
-          className="sheet-close icon-x"
+          className="sheet-close icon-btn"
           aria-label={t('settings.close')}
           onClick={onClose}
         >

@@ -280,17 +280,20 @@
   background: var(--panel-2);
 }
 
-/* Buttons whose only content is an SVG "X" — keep it perfectly centered. */
-.icon-x {
+/* Buttons whose only content is an inline SVG icon (close, trash, etc.) —
+   `.icon-btn` centres the icon, `.icon-svg` keeps the SVG itself from
+   being squashed by any flex parent. Generic naming on purpose so future
+   icon-only buttons can reuse it without confusion. */
+.icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
-.x-icon {
+.icon-svg {
   display: block;
   flex-shrink: 0;
 }
-.app-banner .icon-x {
+.app-banner .icon-btn {
   color: inherit;
 }
 
