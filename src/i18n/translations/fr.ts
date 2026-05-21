@@ -2,6 +2,8 @@ import type { Dict } from '../translations'
 
 export const fr: Dict = {
   'app.title': 'Dice & Chat',
+  'common.confirm': 'Confirmer',
+  'common.cancel': 'Annuler',
   'app.tagline': 'Vos sessions de JdR en ligne, simplifiées',
   'lang.label': 'Langue',
   'translate.auto': 'Traduction automatique',

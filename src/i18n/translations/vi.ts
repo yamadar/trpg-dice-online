@@ -2,6 +2,8 @@ import type { Dict } from '../translations'
 
 export const vi: Dict = {
   'app.title': 'Dice & Chat',
+  'common.confirm': 'Xác nhận',
+  'common.cancel': 'Huỷ',
   'app.tagline': 'Phiên TRPG trực tuyến dễ dàng hơn',
   'lang.label': 'Ngôn ngữ',
   'translate.auto': 'Tự động dịch',

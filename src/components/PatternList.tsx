@@ -1,6 +1,7 @@
 import { useI18n } from '../i18n/useI18n'
 import type { Pattern } from '../dice/types'
 import { formatDiceSummary } from '../dice/format'
+import { useConfirm } from '../hooks/useConfirm'
 import { CloseIcon, PatternsIcon } from './icons'
 
 interface Props {
@@ -28,11 +29,16 @@ export function PatternList({
   onMove,
 }: Props) {
   const { t } = useI18n()
+  const confirm = useConfirm()
 
   // Deleting a saved pattern is permanent, so require a confirmation.
-  const handleDelete = (pattern: Pattern) => {
+  const handleDelete = async (pattern: Pattern) => {
     const name = pattern.name || t('pattern.unnamed')
-    if (window.confirm(t('pattern.deleteConfirm', { name }))) onDelete(pattern.id)
+    const ok = await confirm({
+      message: t('pattern.deleteConfirm', { name }),
+      destructive: true,
+    })
+    if (ok) onDelete(pattern.id)
   }
 
   return (

@@ -9,6 +9,7 @@ import { normalizeRoomCode, type ChatMessage, type Player } from '../net/protoco
 import { playerColor } from '../players/colors'
 import { composeName } from '../players/identity'
 import type { Session } from '../hooks/useSession'
+import { useConfirm } from '../hooks/useConfirm'
 import { RoomHistory } from './RoomHistory'
 import { RoomIcon } from './icons'
 
@@ -122,8 +123,15 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   }
 
   // The GM is also the host: closing ends the room for everyone, so confirm.
-  const handleLeave = () => {
-    if (role === 'host' && !window.confirm(t('room.leaveConfirmGM'))) return
+  const confirm = useConfirm()
+  const handleLeave = async () => {
+    if (role === 'host') {
+      const ok = await confirm({
+        message: t('room.leaveConfirmGM'),
+        destructive: true,
+      })
+      if (!ok) return
+    }
     session.leaveRoom()
   }
 

@@ -7,6 +7,7 @@ import { rollPattern } from './dice/roll'
 import type { Pattern } from './dice/types'
 import { isTutorialSeen, markTutorialSeen } from './storage/tutorial'
 import { loadCompactFeed, saveCompactFeed } from './storage/display'
+import { useConfirm } from './hooks/useConfirm'
 import { CloseIcon } from './components/icons'
 import { StatusBar } from './components/StatusBar'
 import { NameGate } from './components/NameGate'
@@ -150,7 +151,8 @@ function App() {
     [roller, session],
   )
 
-  const handleSave = useCallback(() => {
+  const confirm = useConfirm()
+  const handleSave = useCallback(async () => {
     const characterId = characters.activeId
     if (!characterId) {
       flash(t('pattern.needCharacter'), 'error')
@@ -166,14 +168,15 @@ function App() {
       (p) => p.name === name && p.kind === draft.kind,
     )
     if (existing) {
-      if (!window.confirm(t('pattern.replaceConfirm', { name }))) return
+      const ok = await confirm({ message: t('pattern.replaceConfirm', { name }) })
+      if (!ok) return
       characters.updatePattern(characterId, existing.id, { ...draft, name })
       flash(t('toast.patternUpdated'))
     } else {
       characters.addPattern(characterId, { ...draft, name })
       flash(t('toast.patternSaved'))
     }
-  }, [draft, characters, flash, t])
+  }, [draft, characters, flash, t, confirm])
 
   // Loading a pattern into the builder opens the dice sheet to tweak/roll it.
   const handleLoad = useCallback((p: Pattern) => {

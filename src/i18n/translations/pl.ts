@@ -2,6 +2,8 @@ import type { Dict } from '../translations'
 
 export const pl: Dict = {
   'app.title': 'Dice & Chat',
+  'common.confirm': 'Potwierdź',
+  'common.cancel': 'Anuluj',
   'app.tagline': 'Sesje TRPG online — prościej niż kiedykolwiek',
   'lang.label': 'Język',
   'translate.auto': 'Tłumacz automatycznie',

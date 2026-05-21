@@ -245,6 +245,79 @@
   font-weight: 600;
 }
 
+/* --- in-app confirm dialog ---
+   A themed `window.confirm` replacement: a small dialog card centred
+   over a dimmed backdrop. Lives at a higher z-index than the sheet
+   (`.sheet-layer` z: 30) and the settings drawer so any
+   "are-you-sure?" pops up above the panel it was triggered from. */
+.confirm-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.confirm-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+.confirm-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  padding: 20px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.confirm-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.confirm-close:hover {
+  background: var(--panel-2);
+  color: var(--text-h);
+}
+.confirm-title {
+  font-size: 1rem;
+  margin: 0;
+  padding-right: 30px; /* clear the close button */
+  color: var(--text-h);
+}
+.confirm-message {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--text);
+  /* Preserve any embedded newlines a caller put in the message. */
+  white-space: pre-line;
+}
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.confirm-actions button {
+  min-width: 96px;
+}
+
 /* --- sheet (on-demand panel) --- */
 .sheet-layer {
   position: fixed;

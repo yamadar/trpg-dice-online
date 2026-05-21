@@ -4,6 +4,7 @@ import { useFieldNotice } from '../hooks/useFieldNotice'
 import type { UseCharacters } from '../characters/useCharacters'
 import { exportCharacterJSON } from '../characters/io'
 import { prepareCharacterImage } from '../characters/image'
+import { useConfirm } from '../hooks/useConfirm'
 import { CharacterIcon, EditIcon } from './icons'
 import { Lightbox } from './Lightbox'
 
@@ -96,12 +97,16 @@ export function CharacterPanel({ characters, onNotice }: Props) {
     createCharacter('', lang)
   }
 
-  const handleDelete = () => {
+  const confirm = useConfirm()
+  const handleDelete = async () => {
     if (!activeCharacter) return
     const name = activeCharacter.name || t('character.unnamed')
-    if (window.confirm(t('character.deleteConfirm', { name }))) {
-      deleteCharacter(activeCharacter.id)
-    }
+    const ok = await confirm({
+      message: t('character.deleteConfirm', { name }),
+      destructive: true,
+    })
+    if (!ok) return
+    deleteCharacter(activeCharacter.id)
   }
 
   const handleExport = () => {

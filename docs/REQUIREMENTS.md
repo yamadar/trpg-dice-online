@@ -678,6 +678,18 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.70 — Replace every `window.confirm` (clear the feed, leave the
+  room as GM, delete a character / saved pattern / past session,
+  overwrite a saved pattern, delete all past sessions) with a themed
+  in-app dialog that matches the rest of the chrome (dark panel, app
+  buttons, app fonts). The dialog is centred over a dimmed backdrop,
+  closes on Escape / backdrop click / the corner "×", focuses the
+  cancel button on destructive confirms (so a stray Enter does not
+  fire the destructive action), restores focus to the previously
+  focused element on close, and is wired via a `<ConfirmProvider>` at
+  the app root and a `useConfirm()` hook. Two new i18n keys
+  (`common.confirm`, `common.cancel`) ship the default button labels
+  across all 19 locales.
 - v1.69 — Surface icons throughout the settings panel. The panel title
   ("Settings") now sits next to the Settings cog (the same icon as the
   header trigger, so the affordance and the opened panel feel like one
