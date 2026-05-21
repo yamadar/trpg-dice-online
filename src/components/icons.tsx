@@ -71,8 +71,8 @@ export function BrandIcon({
         </linearGradient>
       </defs>
       <path
-        d="M 256,11 A 245,245 0 1 1 201,495 Q 80,510 22,482 L 55,397 A 245,245 0 0 1 256,11 Z"
-        fill="none"
+        d="M 256,11 A 245,245 0 1 1 124,463 L 22,501 L 55,397 A 245,245 0 0 1 256,11 Z"
+        fill="#fff"
         stroke={`url(#${gradId})`}
         strokeWidth="22"
         strokeLinejoin="round"
