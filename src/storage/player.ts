@@ -15,7 +15,11 @@ export function getPlayerId(): string {
   } catch {
     /* sessionStorage may be unavailable */
   }
-  const id = `usr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+  // Pad the random suffix to a stable eight-character length —
+  // `Math.random().toString(36)` is shorter than that when the draw
+  // lands on a low / round value (e.g. `0.5` → `"0.i"`).
+  const suffix = Math.random().toString(36).slice(2, 10).padEnd(8, '0')
+  const id = `usr-${Date.now().toString(36)}-${suffix}`
   try {
     sessionStorage.setItem(ID_KEY, id)
   } catch {

@@ -2,15 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { newPatternId } from './patterns'
 
 /**
- * `newPatternId` mixes `Date.now()` (base-36) and the suffix
- * `Math.random().toString(36).slice(2, 8)` — six base-36 characters
- * of randomness. Math.random can in principle return a value whose
- * base-36 expansion has fewer than six post-decimal digits (e.g. the
- * extreme case of `Math.random() === 0` produces `"0"` and `.slice(2)`
- * yields `''`), so format assertions are wrapped in stubbed-RNG
- * `describe` blocks that pin the entropy. The prefix / format /
- * uniqueness invariants the rest of the app cares about are then
- * checked deterministically.
+ * `newPatternId` interleaves `Date.now()` (base-36) and the suffix
+ * `Math.random().toString(36).slice(2, 8)` — padded to six characters
+ * (`padEnd(6, '0')`) so a low-entropy draw like `0.5` (`"0.i"`) cannot
+ * silently shorten the suffix. The tests stub the clock and the RNG
+ * so they pin the format unconditionally — including the degenerate
+ * `Math.random() === 0` case the padding is there to defend against.
  */
 describe('newPatternId', () => {
   let mockRandom: ReturnType<typeof vi.spyOn>
@@ -20,12 +17,8 @@ describe('newPatternId', () => {
     mockRandom = vi.spyOn(Math, 'random')
     mockNow = vi.spyOn(Date, 'now')
     mockNow.mockReturnValue(1_700_000_000_000)
-    // Default: a non-degenerate `Math.random()` whose base-36
-    // expansion has at least six post-decimal digits, so the
-    // `slice(2, 8)` suffix is the full six characters. Specific
-    // tests override this. The implementation's `Math.random` value
-    // of e.g. `0.5` (`"0.i"`) would short the suffix, which the
-    // assertion below rejects on purpose.
+    // Default: a typical mid-range RNG draw — long enough that the
+    // padding does not kick in.
     mockRandom.mockReturnValue(0.123456789)
   })
 
@@ -38,8 +31,22 @@ describe('newPatternId', () => {
     expect(newPatternId()).toMatch(/^pat-/)
   })
 
-  it('formats as `pat-{base36 timestamp}-{6 base36 chars}`', () => {
+  it('formats as `pat-{base36 timestamp}-{exactly 6 base36 chars}`', () => {
     expect(newPatternId()).toMatch(/^pat-[0-9a-z]+-[0-9a-z]{6}$/)
+  })
+
+  it('pads the suffix when the RNG returns a short base-36 expansion', () => {
+    // `Math.random()` returning `0.5` yields `"0.i"` and a one-char
+    // slice — the implementation pads it back up to six chars so the
+    // shape stays stable.
+    mockRandom.mockReturnValue(0.5)
+    expect(newPatternId()).toMatch(/^pat-[0-9a-z]+-[0-9a-z]{6}$/)
+    expect(newPatternId()).toBe('pat-' + (1_700_000_000_000).toString(36) + '-i00000')
+  })
+
+  it('pads even the degenerate `Math.random() === 0` case', () => {
+    mockRandom.mockReturnValue(0)
+    expect(newPatternId()).toMatch(/^pat-[0-9a-z]+-0{6}$/)
   })
 
   it('produces a stable id for fixed (now, random) inputs', () => {

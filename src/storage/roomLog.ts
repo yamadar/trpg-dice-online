@@ -122,9 +122,12 @@ export interface LogTarget {
   role: 'host' | 'client'
 }
 
-/** Mint a fresh, unique session id. */
+/** Mint a fresh, unique session id. The random suffix is padded so
+ *  every id has a stable six-character random tail — `Math.random()`'s
+ *  base-36 expansion can otherwise be shorter (e.g. `0.5` → `"0.i"`). */
 export function newSessionId(): string {
-  return `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+  const suffix = Math.random().toString(36).slice(2, 8).padEnd(6, '0')
+  return `s-${Date.now().toString(36)}-${suffix}`
 }
 
 let dbPromise: Promise<IDBDatabase | null> | null = null
