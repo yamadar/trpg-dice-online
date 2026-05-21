@@ -982,6 +982,16 @@ label.setting-row {
   margin: 0;
   max-width: 28em;
 }
+.feed-empty-brand {
+  /* Same gradient-clip treatment as the NameGate H1 so the empty feed
+     reads as a soft "welcome" header. */
+  font-size: 1.5rem;
+  margin: 0;
+  background: linear-gradient(90deg, var(--accent), var(--judgment));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 .feed-empty-title {
   color: var(--text-dim);
   font-size: 0.9rem;
@@ -1728,10 +1738,18 @@ label.setting-row {
   margin-top: 6px;
 }
 
-/* the "clear view" button is intentionally quiet */
+/* the "clear view" button is intentionally quiet — icon-only, dim color */
 .feed-clear {
   color: var(--text-dim);
-  font-size: 0.78rem;
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.feed-clear:hover {
+  color: var(--text-h);
+  background: var(--panel-2);
 }
 
 /* --- tutorial / help overlay --- */
