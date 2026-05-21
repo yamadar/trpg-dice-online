@@ -4,6 +4,7 @@ export const ja: Dict = {
   'app.title': 'Dice & Chat',
   'common.confirm': '実行',
   'common.cancel': 'キャンセル',
+  'common.confirmDialog': '確認',
   'app.tagline': 'オンラインTRPGセッションを簡単に',
   'lang.label': '言語',
   'translate.auto': '自動翻訳',

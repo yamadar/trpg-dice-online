@@ -4,6 +4,7 @@ export const tr: Dict = {
   'app.title': 'Dice & Chat',
   'common.confirm': 'Onayla',
   'common.cancel': 'İptal',
+  'common.confirmDialog': 'Onay',
   'app.tagline': 'Çevrimiçi TRPG oturumları artık kolay',
   'lang.label': 'Dil',
   'translate.auto': 'Otomatik çeviri',

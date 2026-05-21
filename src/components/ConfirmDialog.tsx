@@ -41,6 +41,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
   const confirm = useCallback<ConfirmFn>((opts) => {
     return new Promise<boolean>((resolve) => {
+      // Update the ref synchronously, before `setPending` schedules the
+      // render, so an unmount that happens before the matching effect
+      // runs still has the latest resolver to clean up with.
+      pendingResolverRef.current = resolve
       setPending((prev) => {
         if (prev) {
           // Cancel the still-open dialog without touching `lastFocusRef`
@@ -54,13 +58,6 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  // Keep the ref in sync with the currently rendered pending dialog so
-  // the unmount cleanup below can resolve it without going through
-  // `setState`.
-  useEffect(() => {
-    pendingResolverRef.current = pending?.resolve ?? null
-  }, [pending])
-
   // Hard-cancel any pending dialog if the provider itself unmounts (e.g.
   // a hot reload during development) so we never leak an unresolved
   // promise into the caller's `await`. Resolves through the ref because
@@ -73,6 +70,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const settle = useCallback((value: boolean) => {
+    pendingResolverRef.current = null
     setPending((prev) => {
       prev?.resolve(value)
       return null
@@ -94,6 +92,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       {pending && (
         <ConfirmDialog
           title={pending.opts.title}
+          // Fallback accessible name when the caller does not supply a
+          // visible title — screen readers should announce the dialog
+          // as e.g. "Confirmation" instead of an unnamed alertdialog.
+          dialogLabel={t('common.confirmDialog')}
           message={pending.opts.message}
           confirmLabel={pending.opts.confirmLabel ?? t('common.confirm')}
           cancelLabel={pending.opts.cancelLabel ?? t('common.cancel')}
@@ -108,6 +110,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
 interface ConfirmDialogProps {
   title?: string
+  /** Fallback accessible name used when no `title` is supplied — keeps
+   *  the alertdialog from being announced as unnamed. */
+  dialogLabel: string
   message: string
   confirmLabel: string
   cancelLabel: string
@@ -123,6 +128,7 @@ interface ConfirmDialogProps {
  */
 export function ConfirmDialog({
   title,
+  dialogLabel,
   message,
   confirmLabel,
   cancelLabel,
@@ -206,7 +212,11 @@ export function ConfirmDialog({
         className="confirm-card"
         role="alertdialog"
         aria-modal="true"
+        // When a visible title is shown, point assistive tech at it
+        // through `aria-labelledby`. Otherwise fall back to a localised
+        // generic name so the dialog is never announced as unnamed.
         aria-labelledby={title ? titleId : undefined}
+        aria-label={title ? undefined : dialogLabel}
         aria-describedby={messageId}
         onClick={(e) => e.stopPropagation()}
       >

@@ -4,6 +4,7 @@ export const pl: Dict = {
   'app.title': 'Dice & Chat',
   'common.confirm': 'Potwierdź',
   'common.cancel': 'Anuluj',
+  'common.confirmDialog': 'Potwierdzenie',
   'app.tagline': 'Sesje TRPG online — prościej niż kiedykolwiek',
   'lang.label': 'Język',
   'translate.auto': 'Tłumacz automatycznie',

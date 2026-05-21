@@ -4,6 +4,7 @@ export const ko: Dict = {
   'app.title': 'Dice & Chat',
   'common.confirm': '확인',
   'common.cancel': '취소',
+  'common.confirmDialog': '확인',
   'app.tagline': '온라인 TRPG 세션을 손쉽게',
   'lang.label': '언어',
   'translate.auto': '자동 번역',
