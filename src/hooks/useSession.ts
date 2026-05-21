@@ -203,8 +203,16 @@ export function useSession(): Session {
   const [reconnecting, setReconnecting] = useState(false)
 
   /** Type of a single buffered portrait save. Empty `image` means a
-   *  delete. Kept narrow so it lives nicely inside React state. */
-  type PortraitSave = { playerId: string; characterName: string; image: string }
+   *  delete. The `sessionId` is captured at stage-time (not read from
+   *  the live ref at flush-time) so a portrait change made just before
+   *  the user leaves the room still persists to the right session even
+   *  if `sessionIdRef` has already been cleared by `goOffline`. */
+  type PortraitSave = {
+    sessionId: string
+    playerId: string
+    characterName: string
+    image: string
+  }
   // Portrait writes batched by the `characterImages` derivation block —
   // an effect below flushes them to IndexedDB after commit so the
   // derivation block stays render-pure (no ref access, no IndexedDB
@@ -281,7 +289,10 @@ export function useSession(): Session {
     })
     let map = characterImages
     let changed = false
+    // Batched writes carry their own `sessionId` snapshot so a fast
+    // leave/offline cannot strand them.
     const portraitDeltas: PortraitSave[] = []
+    const stageSid = sessionId
     const put = (id: string, character: string, image: string) => {
       // An empty character name is allowed — a player who just created
       // a character and uploaded a portrait before naming it is still
@@ -301,7 +312,14 @@ export function useSession(): Session {
         // Stage the clear for the effect below — keeps this derivation
         // block free of IndexedDB side-effects so React can re-run it
         // safely under StrictMode / concurrent rendering.
-        portraitDeltas.push({ playerId: id, characterName: character, image: '' })
+        if (stageSid) {
+          portraitDeltas.push({
+            sessionId: stageSid,
+            playerId: id,
+            characterName: character,
+            image: '',
+          })
+        }
         return
       }
       if (map[key] === image) return
@@ -311,7 +329,14 @@ export function useSession(): Session {
       }
       map[key] = image
       // Stage the new (player, character) → image observation.
-      portraitDeltas.push({ playerId: id, characterName: character, image })
+      if (stageSid) {
+        portraitDeltas.push({
+          sessionId: stageSid,
+          playerId: id,
+          characterName: character,
+          image,
+        })
+      }
     }
     put(playerId, characterName, playerImages[playerId] ?? '')
     for (const p of playersState) {
@@ -1366,15 +1391,14 @@ export function useSession(): Session {
   // derivation block above only stages the (player, character) → image
   // changes — actually touching IndexedDB happens here so React can
   // re-run the derivation under StrictMode / concurrent rendering
-  // without duplicating writes. The buffer is left as-is (not cleared
-  // via setState) because the next observation simply replaces it; the
-  // effect's dependency reference changes only when a new batch lands.
+  // without duplicating writes. Each delta carries the `sessionId`
+  // observed when it was staged, so a fast `leaveRoom` / `goOffline`
+  // that clears the live `sessionIdRef` between staging and flushing
+  // cannot strand a portrait write under the wrong session.
   useEffect(() => {
     if (pendingPortraitSaves.length === 0) return
-    const sid = sessionIdRef.current
-    if (!sid) return
     for (const w of pendingPortraitSaves) {
-      void saveCharacterPortrait(sid, w.playerId, w.characterName, w.image)
+      void saveCharacterPortrait(w.sessionId, w.playerId, w.characterName, w.image)
     }
   }, [pendingPortraitSaves])
 
