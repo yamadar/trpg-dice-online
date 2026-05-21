@@ -985,7 +985,11 @@ label.setting-row {
   margin: 0;
   max-width: 28em;
 }
-.feed-empty-brand {
+/* The brand line in the empty-feed card. `.panel h3` (text-dim, 0.9rem)
+   would otherwise win on specificity over plain `.feed-empty-brand`, so
+   we scope these overrides under `.panel` too — same NameGate-sized
+   1.5rem and gradient text. */
+.panel .feed-empty-brand {
   font-size: 1.5rem;
   margin: 0;
 }
@@ -1000,6 +1004,13 @@ label.setting-row {
   background: linear-gradient(90deg, var(--accent), var(--judgment));
   -webkit-background-clip: text;
   background-clip: text;
+  color: transparent;
+}
+/* Re-assert the gradient's `color: transparent` inside any panel — the
+   `.panel h3` rule sets `color: var(--text-dim)` with higher specificity
+   than the single-class utility above, which would otherwise hide the
+   gradient behind a flat dim colour. */
+.panel .gradient-heading {
   color: transparent;
 }
 .feed-empty-title {
