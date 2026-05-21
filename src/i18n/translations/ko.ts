@@ -28,6 +28,7 @@ export const ko: Dict = {
   'dock.character': '캐릭터',
   'dock.dice': '주사위',
   'dock.patterns': '패턴',
+  'dock.nav': '내비게이션',
 
   'status.offline': '오프라인',
   'status.noCharacter': '없음 (플레이어 본인)',

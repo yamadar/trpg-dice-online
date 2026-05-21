@@ -28,6 +28,7 @@ export const es: Dict = {
   'dock.character': 'Personaje',
   'dock.dice': 'Dados',
   'dock.patterns': 'Patrones',
+  'dock.nav': 'Navegación',
 
   'status.offline': 'Sin conexión',
   'status.noCharacter': 'Ninguno (como jugador)',

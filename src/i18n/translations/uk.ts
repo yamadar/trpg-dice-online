@@ -28,6 +28,7 @@ export const uk: Dict = {
   'dock.character': 'Персонаж',
   'dock.dice': 'Кубики',
   'dock.patterns': 'Шаблони',
+  'dock.nav': 'Навігація',
 
   'status.offline': 'Не в мережі',
   'status.noCharacter': 'Немає (як гравець)',

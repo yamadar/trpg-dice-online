@@ -28,6 +28,7 @@ export const th: Dict = {
   'dock.character': 'ตัวละคร',
   'dock.dice': 'ลูกเต๋า',
   'dock.patterns': 'รูปแบบ',
+  'dock.nav': 'นำทาง',
 
   'status.offline': 'ออฟไลน์',
   'status.noCharacter': 'ไม่มี (เป็นผู้เล่นเอง)',

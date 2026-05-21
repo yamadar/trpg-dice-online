@@ -28,6 +28,7 @@ export const hi: Dict = {
   'dock.character': 'पात्र',
   'dock.dice': 'पासे',
   'dock.patterns': 'पैटर्न',
+  'dock.nav': 'नेविगेशन',
 
   'status.offline': 'ऑफ़लाइन',
   'status.noCharacter': 'कोई नहीं (खिलाड़ी के रूप में)',

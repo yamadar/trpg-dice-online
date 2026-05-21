@@ -36,7 +36,7 @@ interface Props {
 export function Dock({ active, onOpen }: Props) {
   const { t } = useI18n()
   return (
-    <nav className="dock" aria-label={t('settings.title')}>
+    <nav className="dock" aria-label={t('dock.nav')}>
       {ITEMS.map(({ id, Icon, labelKey }) => (
         <button
           key={id}

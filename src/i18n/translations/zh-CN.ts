@@ -28,6 +28,7 @@ export const zhCN: Dict = {
   'dock.character': '角色',
   'dock.dice': '骰子',
   'dock.patterns': '模板',
+  'dock.nav': '导航',
 
   'status.offline': '离线',
   'status.noCharacter': '无（玩家本人）',
