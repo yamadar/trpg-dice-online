@@ -223,6 +223,11 @@ export function useSession(): Session {
   // strict-effect lint rules ban.
   const [portraitQueue, setPortraitQueue] = useState<ReadonlyArray<PortraitSave>>([])
   const portraitFlushedCountRef = useRef(0)
+  // Promise chain so concurrent flush effects (a second commit landing
+  // before the first IndexedDB transaction resolves) write in order
+  // rather than racing — without it, the later batch could commit
+  // first and the earlier batch's stale payload could overwrite it.
+  const portraitFlushChainRef = useRef<Promise<void>>(Promise.resolve())
 
 
   // Identity refs are written directly by updateIdentity so a re-sync can
@@ -1452,13 +1457,22 @@ export function useSession(): Session {
       map[`${w.playerId}|${w.characterName}`] = w.image
     }
 
-    // Wait for the bulk writes to commit before advancing the offset.
-    // `saveCharacterPortraits` returns `false` when the IndexedDB store
-    // is unavailable / blocked / aborted, in which case the deltas
-    // stay in the queue and the next render's effect run retries.
-    void Promise.all(
-      Array.from(bySession, ([sid, images]) => saveCharacterPortraits(sid, images)),
-    ).then((results) => {
+    // Chain this batch off the previous flush so the IndexedDB writes
+    // happen in commit order. A naive concurrent fire would let the
+    // older batch's transaction commit *after* the newer one, replacing
+    // the latest portrait with stale data (IndexedDB is last-write-
+    // wins per transaction). `saveCharacterPortraits` returns `false`
+    // when the store is unavailable / blocked / aborted, in which case
+    // the deltas stay in the queue and the next render's effect run
+    // retries from the same offset.
+    portraitFlushChainRef.current = portraitFlushChainRef.current.then(async () => {
+      // A previous run on the same chain may have already covered this
+      // range (multiple effect runs queue up before any of them
+      // executes). Re-check the offset before redoing the work.
+      if (portraitFlushedCountRef.current >= endIndex) return
+      const results = await Promise.all(
+        Array.from(bySession, ([sid, images]) => saveCharacterPortraits(sid, images)),
+      )
       if (results.every((ok) => ok)) {
         portraitFlushedCountRef.current = endIndex
       }
