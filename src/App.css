@@ -273,7 +273,9 @@
   position: absolute;
   top: 8px;
   right: 8px;
-  z-index: 1;
+  /* Above the panel's sticky header (z-index: 1) so the close button
+     stays clickable even when the title row is pinned to the top. */
+  z-index: 2;
   width: 34px;
   height: 34px;
   border-radius: 8px;
@@ -315,11 +317,26 @@
 }
 .sheet-body {
   overflow-y: auto;
-  padding: 4px;
+  padding: 0;
 }
 .sheet-body .panel {
   border: none;
   border-radius: 0;
+  padding: 0 16px 16px;
+}
+/* Pin the panel title row to the top of the sheet body so the heading
+   (and the sheet's close icon above it) stays in view while the rest
+   scrolls — the same fixed-header pattern as the past-rooms list. The
+   right padding clears the sheet-close button at top:8/right:8 (34px). */
+.sheet-body .panel > h2,
+.sheet-body .panel > .panel-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--panel);
+  margin: 0 -16px 12px;
+  padding: 14px 56px 12px 16px;
+  border-bottom: 1px solid var(--border);
 }
 @media (min-width: 721px) {
   .sheet {
@@ -997,10 +1014,11 @@ label.setting-row {
 /* The brand line in the empty-feed card. `.panel h3` (text-dim, 0.9rem)
    would otherwise win on specificity over plain `.feed-empty-brand`, so
    we scope these overrides under `.panel` too — same NameGate-sized
-   1.5rem and gradient text. */
+   1.5rem and gradient text. The bottom margin sets the brand mark apart
+   from the hints that follow, giving the logo room to breathe. */
 .panel .feed-empty-brand {
   font-size: 1.5rem;
-  margin: 0;
+  margin: 0 0 14px;
 }
 /* Shared gradient-text utility for app-brand headings. The text glyphs
    become a window onto the gradient by clipping the background and
@@ -1683,9 +1701,13 @@ label.setting-row {
   margin-top: 16px;
 }
 
-/* Zone 2: add a character (new / import grouped under one heading). */
+/* Zone 2: add a character (new / import grouped under one heading). A
+   rule below the buttons sets this zone off from the zones that follow
+   (active character card / edit fields / etc.). */
 .char-add {
   margin-top: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
 .char-add h3 {
   margin: 0 0 6px;
