@@ -678,6 +678,17 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.72 — Backfill unit-test coverage for the pure helpers that drive
+  the chrome's persistence and visual configuration. New `.test.ts`
+  files for the colour-theme registry / id guard
+  (`src/theme/themes.test.ts`), the text-size scale registry / guard
+  (`src/theme/fontScale.test.ts`), the typed `localStorage` wrappers
+  (`src/storage/local.test.ts`) and the small per-preference modules
+  built on them — display preferences (`compactFeed`, `fontScale`),
+  colour theme, auto-translate flag, last room code, tutorial-seen
+  flag, and the pattern id generator. The suite grows by ~74 tests
+  and pins exactly the values the rest of the app reads back from
+  storage.
 - v1.71 — Per-character portraits in past-room history. The durable
   portrait store moves from one record per `(sessionId, playerId)` to
   one per `(sessionId, playerId, characterName)`. A v3→v4 IndexedDB
