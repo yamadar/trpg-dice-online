@@ -6,19 +6,22 @@
       <stop offset="1" stop-color="#8B5CF6"/>
     </linearGradient>
   </defs>
-  <!-- Speech bubble: a near-canvas-filling circle with a teardrop tail
-       protruding into the bottom-left corner. The tail's upper edge runs
-       from (55,397) on the bubble to the tip at (22,482); the lower edge
-       is a tight quadratic curve that sweeps back up to the bubble
-       outline at (201,495). Tip and control point are kept inboard by at
-       least half the stroke width so the rounded join cannot render
-       outside the 0..512 viewBox in any browser. -->
+  <!-- Speech bubble: a near-canvas-filling circle with an isoceles
+       triangular tail protruding into the bottom-left corner.
+       Geometry: the tail tip sits on the same horizontal as the bubble's
+       bottom (y=501, i.e. centre 256 + radius 245). With upper attach
+       fixed at (55,397), the upper edge length is √(33² + 104²) ≈ 109.
+       Solving for a point on the bubble circle at the same distance
+       from the tip gives the lower attach (124,463), making both tail
+       edges essentially equal length. The interior is filled white so
+       anything behind the icon does not show through and the d20 reads
+       cleanly inside. -->
   <path d="M 256,11
-           A 245,245 0 1 1 201,495
-           Q 80,510 22,482
+           A 245,245 0 1 1 124,463
+           L 22,501
            L 55,397
            A 245,245 0 0 1 256,11 Z"
-        fill="none" stroke="url(#g)" stroke-width="22" stroke-linejoin="round" stroke-linecap="round"/>
+        fill="#fff" stroke="url(#g)" stroke-width="22" stroke-linejoin="round" stroke-linecap="round"/>
   <!-- D20 (hexagon + inscribed hexagram + "20") centred inside the bubble.
        Sits at the canvas centre so the tail extends below it without
        pushing the die off-axis. -->
