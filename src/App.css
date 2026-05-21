@@ -983,10 +983,14 @@ label.setting-row {
   max-width: 28em;
 }
 .feed-empty-brand {
-  /* Same gradient-clip treatment as the NameGate H1 so the empty feed
-     reads as a soft "welcome" header. */
   font-size: 1.5rem;
   margin: 0;
+}
+/* Shared gradient-text utility for app-brand headings. The text glyphs
+   become a window onto the gradient by clipping the background; the SVG
+   icons sitting next to the text are unaffected because they paint with
+   their own fill/stroke colours rather than `color`. */
+.gradient-heading {
   background: linear-gradient(90deg, var(--accent), var(--judgment));
   -webkit-background-clip: text;
   background-clip: text;
@@ -1725,10 +1729,6 @@ label.setting-row {
 }
 .name-gate-card h1 {
   font-size: 1.5rem;
-  background: linear-gradient(90deg, var(--accent), var(--judgment));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
 }
 .name-gate-card .field {
   margin-top: 16px;
@@ -1738,12 +1738,16 @@ label.setting-row {
   margin-top: 6px;
 }
 
-/* the "clear view" button is intentionally quiet — icon-only, dim color */
+/* the "clear view" button is intentionally quiet — icon-only, dim color.
+   min-width/min-height keep a touch-friendly hit area (≥32×32) while the
+   icon itself stays small and unobtrusive. */
 .feed-clear {
   color: var(--text-dim);
   background: transparent;
   border: none;
-  padding: 6px;
+  padding: 8px;
+  min-width: 32px;
+  min-height: 32px;
   cursor: pointer;
   border-radius: 6px;
 }

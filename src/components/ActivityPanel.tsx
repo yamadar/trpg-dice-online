@@ -152,7 +152,7 @@ export function ActivityPanel({ session, compact, onNotice, onOpenRoom }: Props)
   const offlineEmpty = session.role === 'offline' && filter === 'all'
   const emptyState = offlineEmpty ? (
     <div className="feed-empty-card">
-      <h2 className="feed-empty-brand brand-heading">
+      <h2 className="feed-empty-brand brand-heading gradient-heading">
         <BrandIcon className="brand-mark" />
         <span>{t('app.title')}</span>
       </h2>
