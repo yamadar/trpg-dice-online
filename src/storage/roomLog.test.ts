@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import {
   characterImagesKey,
   isLegacyPortraitPk,
+  newSessionId,
   pickReusableSessionId,
   portraitPk,
   type SessionRecord,
@@ -124,5 +125,53 @@ describe('characterImagesKey', () => {
 
   it('keeps the legacy-friendly empty character name as `${playerId}|`', () => {
     expect(characterImagesKey('p1', '')).toBe('p1|')
+  })
+})
+
+describe('newSessionId', () => {
+  let mockRandom: ReturnType<typeof vi.spyOn>
+  let mockNow: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    mockRandom = vi.spyOn(Math, 'random')
+    mockNow = vi.spyOn(Date, 'now')
+    mockNow.mockReturnValue(1_700_000_000_000)
+    mockRandom.mockReturnValue(0.123456789)
+  })
+
+  afterEach(() => {
+    mockRandom.mockRestore()
+    mockNow.mockRestore()
+  })
+
+  it('starts with the `s-` prefix the IndexedDB pk format relies on', () => {
+    expect(newSessionId()).toMatch(/^s-/)
+  })
+
+  it('formats as `s-{base36 timestamp}-{exactly 6 base36 chars}`', () => {
+    expect(newSessionId()).toMatch(/^s-[0-9a-z]+-[0-9a-z]{6}$/)
+  })
+
+  it('pads the suffix when the RNG returns a short base-36 expansion', () => {
+    // `Math.random() === 0.5` yields the one-char slice `"i"`. The
+    // implementation pads it back to six chars so the shape stays
+    // stable for downstream pk composition.
+    mockRandom.mockReturnValue(0.5)
+    expect(newSessionId()).toMatch(/^s-[0-9a-z]+-[0-9a-z]{6}$/)
+    expect(newSessionId()).toBe('s-' + (1_700_000_000_000).toString(36) + '-i00000')
+  })
+
+  it('pads even the degenerate `Math.random() === 0` case', () => {
+    mockRandom.mockReturnValue(0)
+    expect(newSessionId()).toMatch(/^s-[0-9a-z]+-0{6}$/)
+  })
+
+  it('produces a stable id for fixed (now, random) inputs', () => {
+    expect(newSessionId()).toBe(newSessionId())
+  })
+
+  it('produces different ids when the RNG returns different values', () => {
+    mockRandom.mockReturnValueOnce(0.1).mockReturnValueOnce(0.9)
+    expect(newSessionId()).not.toBe(newSessionId())
   })
 })
