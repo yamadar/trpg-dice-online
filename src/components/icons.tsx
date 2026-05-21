@@ -1,16 +1,22 @@
 import { useId } from 'react'
 import {
+  ALargeSmall,
   Drama,
   Hand,
+  HelpCircle,
   History,
+  Info,
   Languages,
   Layers,
   MessageCircleMore,
   Paperclip,
+  Palette,
   Pencil,
+  Rows3,
   Settings,
   Star,
   Trash2,
+  User,
   Users,
   X,
 } from 'lucide-react'
@@ -224,6 +230,91 @@ export function PastRoomsIcon({ size = 22 }: IconProps) {
 export function TranslateIcon({ size = 22 }: IconProps) {
   return (
     <Languages
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/* ---- Settings panel rows ---- */
+
+/** Single person — used for the "player name" row in the settings
+ *  panel (distinct from `RoomIcon` which is a group of people for
+ *  the room concept). */
+export function PlayerIcon({ size = 16 }: IconProps) {
+  return (
+    <User
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Aa (large + small "A") — font / text-size row in the settings
+ *  panel. */
+export function FontSizeIcon({ size = 16 }: IconProps) {
+  return (
+    <ALargeSmall
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Stack of dense rows — the compact-feed toggle. */
+export function CompactIcon({ size = 16 }: IconProps) {
+  return (
+    <Rows3
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Painter palette — colour theme row in the settings panel. */
+export function ThemeIcon({ size = 16 }: IconProps) {
+  return (
+    <Palette
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Question mark in a circle — the "open the in-app help / walkthrough"
+ *  affordance, plus any inline help target. */
+export function HelpIcon({ size = 16 }: IconProps) {
+  return (
+    <HelpCircle
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Lowercase "i" in a circle — the "About this app" group header in the
+ *  settings panel. */
+export function InfoIcon({ size = 16 }: IconProps) {
+  return (
+    <Info
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}
