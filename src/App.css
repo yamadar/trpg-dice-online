@@ -987,9 +987,12 @@ label.setting-row {
   margin: 0;
 }
 /* Shared gradient-text utility for app-brand headings. The text glyphs
-   become a window onto the gradient by clipping the background; the SVG
-   icons sitting next to the text are unaffected because they paint with
-   their own fill/stroke colours rather than `color`. */
+   become a window onto the gradient by clipping the background and
+   setting `color: transparent`. Icons inside must use explicit fill /
+   stroke colours (eg. `BrandIcon`'s baked-in gradient) — `currentColor`
+   icons such as `CloseIcon` / `TrashIcon` would inherit `transparent`
+   and disappear, so they should not be placed inside without an own
+   `color` override. */
 .gradient-heading {
   background: linear-gradient(90deg, var(--accent), var(--judgment));
   -webkit-background-clip: text;
