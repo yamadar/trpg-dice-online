@@ -149,6 +149,7 @@ export const it: Dict = {
   'result.faces': 'Facce dei dadi',
 
   'feed.section': 'Dadi e chat',
+  'feed.filter': 'Filtro',
   'feed.all': 'Tutto',
   'feed.rolls': 'Tiri',
   'feed.chat': 'Chat',

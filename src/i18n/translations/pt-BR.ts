@@ -149,6 +149,7 @@ export const ptBR: Dict = {
   'result.faces': 'Faces dos dados',
 
   'feed.section': 'Dados e chat',
+  'feed.filter': 'Filtro',
   'feed.all': 'Tudo',
   'feed.rolls': 'Rolagens',
   'feed.chat': 'Chat',

@@ -149,6 +149,7 @@ export const id: Dict = {
   'result.faces': 'Wajah dadu',
 
   'feed.section': 'Dadu & Obrolan',
+  'feed.filter': 'Filter',
   'feed.all': 'Semua',
   'feed.rolls': 'Lemparan',
   'feed.chat': 'Obrolan',

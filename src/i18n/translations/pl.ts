@@ -149,6 +149,7 @@ export const pl: Dict = {
   'result.faces': 'Ściany kości',
 
   'feed.section': 'Kości i czat',
+  'feed.filter': 'Filtr',
   'feed.all': 'Wszystko',
   'feed.rolls': 'Rzuty',
   'feed.chat': 'Czat',

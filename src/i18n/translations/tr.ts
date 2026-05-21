@@ -149,6 +149,7 @@ export const tr: Dict = {
   'result.faces': 'Zar yüzleri',
 
   'feed.section': 'Zar ve sohbet',
+  'feed.filter': 'Filtre',
   'feed.all': 'Tümü',
   'feed.rolls': 'Atışlar',
   'feed.chat': 'Sohbet',

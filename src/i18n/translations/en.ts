@@ -149,6 +149,7 @@ export const en: Dict = {
   'result.faces': 'Dice faces',
 
   'feed.section': 'Dice & Chat',
+  'feed.filter': 'Filter',
   'feed.all': 'All',
   'feed.rolls': 'Rolls',
   'feed.chat': 'Chat',

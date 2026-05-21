@@ -149,6 +149,7 @@ export const ar: Dict = {
   'result.faces': 'وجوه النرد',
 
   'feed.section': 'النرد والدردشة',
+  'feed.filter': 'تصفية',
   'feed.all': 'الكل',
   'feed.rolls': 'الرميات',
   'feed.chat': 'الدردشة',

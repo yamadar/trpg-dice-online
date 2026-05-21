@@ -149,6 +149,7 @@ export const zhTW: Dict = {
   'result.faces': '骰面',
 
   'feed.section': '骰子與聊天',
+  'feed.filter': '篩選',
   'feed.all': '全部',
   'feed.rolls': '骰子',
   'feed.chat': '聊天',
