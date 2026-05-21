@@ -1614,7 +1614,7 @@ label.setting-row {
 }
 
 /* --- character panel --- */
-/* The character panel is organised into five zones — switcher, add,
+/* The character panel is organised into six zones — switcher, add,
    summary card, edit fields, export, and danger — separated by margins
    and thin rules so each block reads as its own job. */
 .char-details {

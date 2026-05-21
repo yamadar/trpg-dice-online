@@ -12,7 +12,7 @@ interface Props {
 }
 
 /**
- * Character management. Laid out as five zones so each block has one
+ * Character management. Laid out as six zones so each block has one
  * clear job and adjacent actions don't get confused with each other:
  *
  * 1. Switcher (select an active character)
@@ -48,11 +48,16 @@ export function CharacterPanel({ characters, onNotice }: Props) {
   const imageMenuRef = useRef<HTMLDivElement>(null)
 
   // Close the image-edit popover on outside click or Escape so it
-  // behaves like other lightweight menus across the app.
+  // behaves like other lightweight menus across the app. `e.target` on
+  // a `MouseEvent` is typed as `EventTarget | null` and is not
+  // guaranteed to be a DOM Node (eg. when synthesised in tests), so
+  // guard before calling `.contains`.
   useEffect(() => {
     if (!imageMenuOpen) return
     const onPointer = (e: MouseEvent) => {
-      if (imageMenuRef.current && !imageMenuRef.current.contains(e.target as Node)) {
+      const target = e.target
+      if (!(target instanceof Node)) return
+      if (imageMenuRef.current && !imageMenuRef.current.contains(target)) {
         setImageMenuOpen(false)
       }
     }
@@ -66,6 +71,13 @@ export function CharacterPanel({ characters, onNotice }: Props) {
       document.removeEventListener('keydown', onKey)
     }
   }, [imageMenuOpen])
+
+  // Close the popover if the active character changes (or is cleared)
+  // while it is open — otherwise the menu would stay "open" in state
+  // and pop back up the next time a character is selected.
+  useEffect(() => {
+    setImageMenuOpen(false)
+  }, [activeCharacter?.id])
 
   // One toast after a burst of name edits settles, not per keystroke.
   // Toast once the name edit settles (on blur or when the sheet closes).
@@ -268,19 +280,18 @@ export function CharacterPanel({ characters, onNotice }: Props) {
                     {t('character.imageEdit')}
                   </button>
                   {imageMenuOpen && (
-                    <div className="char-avatar-edit-menu" role="menu">
-                      <button type="button" role="menuitem" onClick={handlePickImage}>
+                    // No `role="menu"` here — the contents are a simple
+                    // list of buttons. A real ARIA menu would require
+                    // full keyboard (arrow / Home / End) navigation,
+                    // which this lightweight popover does not implement.
+                    <div className="char-avatar-edit-menu">
+                      <button type="button" onClick={handlePickImage}>
                         {activeCharacter.image
                           ? t('character.imageChange')
                           : t('character.imageAdd')}
                       </button>
                       {activeCharacter.image && (
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="danger"
-                          onClick={handleRemoveImage}
-                        >
+                        <button type="button" className="danger" onClick={handleRemoveImage}>
                           {t('character.imageRemove')}
                         </button>
                       )}
