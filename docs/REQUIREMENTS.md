@@ -676,5 +676,5 @@ Commit after each step.
   intentionally kept — the former is the app's brand mark, the
   latter encodes each die's geometry as read by the feed.
   Third-party attribution lives in
-  [`docs/CREDITS.md`](docs/CREDITS.md) /
-  [`docs/CREDITS.ja.md`](docs/CREDITS.ja.md).
+  [`CREDITS.md`](CREDITS.md) /
+  [`CREDITS.ja.md`](CREDITS.ja.md).

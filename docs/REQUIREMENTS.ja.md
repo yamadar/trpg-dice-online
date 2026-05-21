@@ -639,5 +639,5 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   ブランドマーク `BrandIcon` とフィード出目内訳の `DiceFaceIcon` は
   そのまま残す。前者はブランド表象、後者はダイス形状そのものを
   表す情報伝達アイコンのため。サードパーティ素材の帰属は
-  [`docs/CREDITS.md`](docs/CREDITS.md) /
-  [`docs/CREDITS.ja.md`](docs/CREDITS.ja.md) に集約する。
+  [`CREDITS.md`](CREDITS.md) /
+  [`CREDITS.ja.md`](CREDITS.ja.md) に集約する。

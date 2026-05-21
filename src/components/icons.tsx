@@ -236,6 +236,12 @@ export function TranslateIcon({ size = 22 }: IconProps) {
  * color. See `src/assets/icons/perspective-dice-six-faces-one.svg` for
  * the canonical (attributed) source file.
  *
+ * The path is duplicated here (and in the asset SVG) so the icon ships
+ * as a plain React component — no `dangerouslySetInnerHTML`, no extra
+ * fetch. `icons.test.ts` asserts the two copies stay in lock-step, so a
+ * future change to the upstream icon must update both files in one
+ * commit or CI fails.
+ *
  * Used for every dice-related affordance in the UI — the feed "Rolls"
  * filter, the Dock's dice panel and the tutorial dice step — so the
  * concept reads with a single recognisable silhouette wherever it
