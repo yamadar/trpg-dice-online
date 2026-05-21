@@ -254,7 +254,7 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
             displayName={detail.name}
             characterName={detail.characterName}
             background={detail.background}
-            image={session.playerImages[detail.playerId]}
+            image={characterImages[`${detail.playerId}|${detail.characterName}`]}
             isSelf={detail.playerId === session.playerId}
           />
         </Sheet>
