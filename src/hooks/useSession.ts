@@ -202,6 +202,17 @@ export function useSession(): Session {
   // Mirrors reconnectingRef for rendering — the GM-offline banner reads it.
   const [reconnecting, setReconnecting] = useState(false)
 
+  /** Type of a single buffered portrait save. Empty `image` means a
+   *  delete. Kept narrow so it lives nicely inside React state. */
+  type PortraitSave = { playerId: string; characterName: string; image: string }
+  // Portrait writes batched by the `characterImages` derivation block —
+  // an effect below flushes them to IndexedDB after commit so the
+  // derivation block stays render-pure (no ref access, no IndexedDB
+  // side-effects during render).
+  const [pendingPortraitSaves, setPendingPortraitSaves] = useState<ReadonlyArray<PortraitSave>>(
+    [],
+  )
+
 
   // Identity refs are written directly by updateIdentity so a re-sync can
   // read the new values synchronously.
@@ -270,6 +281,7 @@ export function useSession(): Session {
     })
     let map = characterImages
     let changed = false
+    const portraitDeltas: PortraitSave[] = []
     const put = (id: string, character: string, image: string) => {
       // An empty character name is allowed — a player who just created
       // a character and uploaded a portrait before naming it is still
@@ -286,10 +298,10 @@ export function useSession(): Session {
           changed = true
         }
         delete map[key]
-        // Persist the clear so the past-rooms view of this same session
-        // does not surface the now-removed portrait. `sessionId` is
-        // state (not a ref), so it is safe to read during render.
-        if (sessionId) void saveCharacterPortrait(sessionId, id, character, '')
+        // Stage the clear for the effect below — keeps this derivation
+        // block free of IndexedDB side-effects so React can re-run it
+        // safely under StrictMode / concurrent rendering.
+        portraitDeltas.push({ playerId: id, characterName: character, image: '' })
         return
       }
       if (map[key] === image) return
@@ -298,10 +310,8 @@ export function useSession(): Session {
         changed = true
       }
       map[key] = image
-      // Persist the (player, character) → image observation so the
-      // past-rooms view can show the right avatar even after the entry
-      // has been pruned out of the live `characterImages` map.
-      if (sessionId) void saveCharacterPortrait(sessionId, id, character, image)
+      // Stage the new (player, character) → image observation.
+      portraitDeltas.push({ playerId: id, characterName: character, image })
     }
     put(playerId, characterName, playerImages[playerId] ?? '')
     for (const p of playersState) {
@@ -328,6 +338,13 @@ export function useSession(): Session {
       delete map[key]
     }
     if (changed) setCharacterImages(map)
+    // Hand off the staged saves to the flush effect. Replaces the
+    // previous batch — the effect runs after each commit, so by the
+    // time another derivation produces fresh deltas, the previous
+    // batch has already been written.
+    if (portraitDeltas.length > 0) {
+      setPendingPortraitSaves(portraitDeltas)
+    }
   }
 
   /** True once a graceful room close was received, so the following
@@ -1344,6 +1361,22 @@ export function useSession(): Session {
       )
     }
   }, [sessionId, playerId])
+
+  // Flush every batch of buffered portrait deltas to IndexedDB. The
+  // derivation block above only stages the (player, character) → image
+  // changes — actually touching IndexedDB happens here so React can
+  // re-run the derivation under StrictMode / concurrent rendering
+  // without duplicating writes. The buffer is left as-is (not cleared
+  // via setState) because the next observation simply replaces it; the
+  // effect's dependency reference changes only when a new batch lands.
+  useEffect(() => {
+    if (pendingPortraitSaves.length === 0) return
+    const sid = sessionIdRef.current
+    if (!sid) return
+    for (const w of pendingPortraitSaves) {
+      void saveCharacterPortrait(sid, w.playerId, w.characterName, w.image)
+    }
+  }, [pendingPortraitSaves])
 
 
   // Tear down the peer when the app unmounts.
