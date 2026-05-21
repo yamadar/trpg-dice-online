@@ -449,10 +449,12 @@ export function useSession(): Session {
   }, [])
 
   /** Set or clear one player's portrait. The matching
-   *  per-(player, character) persistence happens in the
-   *  `characterImages` derivation block above — once that map sees the
-   *  new image, it calls `saveCharacterPortrait` with the player's
-   *  current character name attached. */
+   *  per-(player, character) persistence happens by way of the
+   *  `characterImages` derivation block above: when that block sees a
+   *  new (or cleared) image, it pushes a delta onto `portraitQueue`,
+   *  and a separate `useEffect` further down coalesces / groups those
+   *  deltas and writes them via `saveCharacterPortraits` — keeping
+   *  IndexedDB I/O out of the render phase. */
   const putPlayerImage = useCallback(
     (id: string, image: string) => {
       const next = { ...playerImagesRef.current }
@@ -505,12 +507,24 @@ export function useSession(): Session {
             roomRef.current?.dropClient(ghostId)
           }
           peerPlayersRef.current.set(peerId, player)
+          // Filter the snapshot's images down to the current roster.
+          // Disconnected players' entries are kept in
+          // `playerImagesRef` (see `handleClientDisconnect`) so the
+          // durable per-character record this session has persisted
+          // does not get mistakenly wiped; but a new client must not
+          // see images of players no longer in the room.
+          const roster = buildRoster()
+          const rosterIds = new Set(roster.map((p) => p.id))
+          const snapshotImages: Record<string, string> = {}
+          for (const [id, img] of Object.entries(playerImagesRef.current)) {
+            if (rosterIds.has(id) && img) snapshotImages[id] = img
+          }
           const snapshot: Snapshot = {
-            players: buildRoster(),
+            players: roster,
             history: historyRef.current.map(redactRoll),
             chat: chatRef.current,
             roomName: roomNameRef.current,
-            images: { ...playerImagesRef.current },
+            images: snapshotImages,
           }
           roomRef.current?.sendTo(peerId, { t: 'welcome', snapshot })
           broadcastPlayers()
@@ -765,9 +779,16 @@ export function useSession(): Session {
       if (peerPlayersRef.current.delete(peerId)) {
         broadcastPlayers()
         if (gone) {
-          // Drop the departed player's portrait so it is not carried in
-          // later welcome snapshots.
-          putPlayerImage(gone.id, '')
+          // The departed player's portrait is intentionally *kept* in
+          // `playerImagesRef`. The welcome-snapshot composition below
+          // filters to current roster members, so a disconnected
+          // player's image never reaches a new client — but the
+          // in-memory entry survives so the per-character durable
+          // portrait this session has already persisted is never
+          // mistakenly deleted by the `characterImages` derivation
+          // (which would otherwise observe `image: ''` and stage a
+          // disk delete). A future rejoin will overwrite this entry
+          // with whatever portrait the player brings back.
           const shown = composeName(gone.name, gone.characterName)
           addMarker('playerLeft', { playerName: shown })
           roomRef.current?.broadcast({
@@ -779,7 +800,7 @@ export function useSession(): Session {
         }
       }
     },
-    [addMarker, broadcastPlayers, putPlayerImage],
+    [addMarker, broadcastPlayers],
   )
 
   const ensureRoom = useCallback((): RoomManager => {
