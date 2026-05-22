@@ -98,10 +98,11 @@
   エクスポートできる。書庫からルームの状態を復元できるだけの情報を含む。
 - エクスポートした ZIP 書庫を読み込み、その内容でルームを復元できる
   （読み込んだ本人がホストとしてルームを再開する）。
-- フィードの名前をタップすると、その発言・ロール時点のキャラクター名・
-  プレイヤー名・背景情報をカードで表示する（PC・モバイル両対応）。表示は
-  タップした項目のキャラクターのスナップショットで、その後プレイヤーが
-  キャラクターを変更しても当時のキャラクターが表示される。
+- フィードの名前をタップすると、そのキャラクターの最新の名前・
+  プレイヤー名・背景情報をカードで表示する（PC・モバイル両対応）。
+  キャラクターの同一性は `characterId` で参照され、同じ characterId
+  の過去発言は現在の名前・背景・ポートレートで表示される
+  （`sessionCharacters` の per-character レコードを表示権威とする）。
 
 ### 3.7 オンライン共有
 - ルームを作成・参加でき、ロール履歴・チャット・参加者一覧を共有する。
@@ -297,12 +298,13 @@ PatternKind = 'damage' | 'judgment'
 Lang        = 'ja' | 'en'
 
 Pattern    = { id, name, kind, diceType, diceCount, modifier }
+// RollResult / ChatMessage は発信者を (playerId, characterId) だけで
+// 識別する。名前・キャラ名・背景・GM マークは sessionCharacters の
+// per-character レコードから表示時に引く（v1.74 で同梱廃止）。
 RollResult = { id, patternName, kind, diceType, diceCount,
-               faces: number[], modifier, value, playerId,
-               playerName, characterId, characterName, background,
-               isGM, hidden, timestamp }
-ChatMessage = { id, playerId, playerName, characterId, characterName,
-                background, isGM, text, timestamp, lang, ... }
+               faces: number[], modifier, value, playerId, characterId,
+               hidden, timestamp }
+ChatMessage = { id, playerId, characterId, text, timestamp, lang, ... }
 // Player はアクティブキャラクターの公開情報のみ持つ。メモは同期されない。
 Player      = { id, name, isGM, characterId, characterName, background, lang }
 Character   = { id, name, background, memo, patterns: Pattern[], lang,
@@ -650,6 +652,22 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   表す情報伝達アイコンのため。サードパーティ素材の帰属は
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md) に集約する。
+- v1.74 — フィードのスナップショット同梱を廃止し、発信者情報の
+  表示権威を per-(player, character) レコード（`sessionCharacters`）に
+  集約する。`ChatMessage` / `RollResult` から `playerName` /
+  `characterName` / `background` / `isGM` の 4 つのスナップショット
+  フィールドを削除し、各エントリは `(playerId, characterId)` だけで
+  発信者を識別する。フィードの表示（名前・キャラ名・背景・GM
+  マーク・ポートレート）はすべて `sessionCharacters` の最新観測値から
+  引く。これに伴い、**v1.20** の「発信後にキャラを変更しても古い
+  発言は当時のキャラ名で表示する」仕様は撤回する：同じキャラの過去
+  発言には現在のキャラ名・背景が表示される（キャラの同一性は
+  characterId が決め、表示属性はストアの最新値が決める）。IndexedDB
+  は v6 にバンプし、物理ストア名を `sessionPortraits` →
+  `sessionCharacters` にリネーム（v5→v6 マイグレーションで全レコード
+  をコピー後、旧ストアを削除）。型・ストア名・概念名のズレが解消し、
+  発信者情報の経路は画像と同じ「per-character ストアのみ」に統一
+  された。
 - v1.73 — キャラクター別のセッションレコード化と、ルーム履歴
   エクスポートの v5 化。`Player` / `Identity` / `ChatMessage` /
   `RollResult` に既存の `characterName` スナップショットに加えて
