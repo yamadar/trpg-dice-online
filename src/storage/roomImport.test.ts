@@ -6,7 +6,15 @@ import type { LogEntry } from './roomLog'
 import type { Player } from '../net/protocol'
 
 const players: Player[] = [
-  { id: 'p1', name: 'Alice', isGM: true, characterName: 'Mage', background: 'wise', lang: 'ja' },
+  {
+    id: 'p1',
+    name: 'Alice',
+    isGM: true,
+    characterId: 'ch-alice',
+    characterName: 'Mage',
+    background: 'wise',
+    lang: 'ja',
+  },
 ]
 
 // A data URL whose base64 decodes to the ASCII bytes for "hello".
@@ -40,7 +48,7 @@ function parsed(zip: Uint8Array) {
 describe('parseRoomImport', () => {
   it('round-trips a built export back to its room and entries', () => {
     const result = parsed(
-      buildRoomExport({ code: 'ABCDEF', name: 'Session' }, players, entries, [], 1),
+      buildRoomExport({ code: 'ABCDEF', name: 'Session' }, players, entries, [], [], 1),
     )
     expect(result.roomCode).toBe('ABCDEF')
     expect(result.roomName).toBe('Session')
@@ -49,7 +57,7 @@ describe('parseRoomImport', () => {
   })
 
   it('re-inlines a chat attachment from the archive as its original data URL', () => {
-    const result = parsed(buildRoomExport({ code: 'ABCDEF', name: '' }, players, entries, [], 1))
+    const result = parsed(buildRoomExport({ code: 'ABCDEF', name: '' }, players, entries, [], [], 1))
     const chat = result.entries.find((e) => (e.data as { id: string }).id === 'c2')
     const file = (chat?.data as { file: { dataUrl?: string; path?: string } }).file
     expect(file.dataUrl).toBe(HELLO_URL)
@@ -58,9 +66,63 @@ describe('parseRoomImport', () => {
 
   it('round-trips cached chat translations', () => {
     const result = parsed(
-      buildRoomExport({ code: 'ABCDEF', name: '' }, players, entries, translations, 1),
+      buildRoomExport({ code: 'ABCDEF', name: '' }, players, entries, translations, [], 1),
     )
     expect(result.translations).toEqual(translations)
+  })
+
+  it('round-trips per-(player, character) records with portraits', () => {
+    const characters = [
+      {
+        pk: 's1|p1|ch-alice',
+        sessionId: 's1',
+        playerId: 'p1',
+        characterId: 'ch-alice',
+        playerName: 'Mage（Alice）',
+        characterName: 'Mage',
+        background: 'wise',
+        isGM: true,
+        image: HELLO_URL,
+        updatedAt: 1234,
+      },
+      {
+        pk: 's1|p2|',
+        sessionId: 's1',
+        playerId: 'p2',
+        characterId: '',
+        playerName: 'Bob',
+        characterName: '',
+        background: '',
+        isGM: false,
+        image: '',
+        updatedAt: 1234,
+      },
+    ]
+    const result = parsed(
+      buildRoomExport({ code: 'ABCDEF', name: '' }, players, [], [], characters, 1),
+    )
+    expect(result.characters).toHaveLength(2)
+    const alice = result.characters.find((c) => c.playerId === 'p1')!
+    expect(alice.characterId).toBe('ch-alice')
+    expect(alice.playerName).toBe('Mage（Alice）')
+    expect(alice.background).toBe('wise')
+    expect(alice.isGM).toBe(true)
+    // The portrait is re-inlined from the archive file as the original
+    // data URL — the inverse of the export side's split-out step.
+    expect(alice.image).toBe(HELLO_URL)
+    const bob = result.characters.find((c) => c.playerId === 'p2')!
+    expect(bob.image).toBe('')
+  })
+
+  it('treats a v4-or-older archive as having no character records', () => {
+    const manifest = {
+      type: 'trpg-dice-room-log',
+      version: 4,
+      room: { code: 'ABCDEF', name: '' },
+      entries: [],
+    }
+    const zip = zipSync({ 'room.json': strToU8(JSON.stringify(manifest)) })
+    expect(parsed(zip).characters).toEqual([])
   })
 
   it('drops malformed translation records', () => {

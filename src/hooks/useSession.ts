@@ -24,14 +24,17 @@ import { saveLastRoomCode } from '../storage/room'
 import {
   appendLogEntries,
   appendLogEntry,
+  characterImagesKey,
   deleteSession,
   findReusableSession,
+  legacyCharacterIdFromName,
   loadRecentLog,
   markSessionClosed,
   newSessionId,
-  saveCharacterPortrait,
-  saveCharacterPortraits,
+  saveSessionCharacter,
+  saveSessionCharacters,
   type LogTarget,
+  type SessionCharacterDraft,
 } from '../storage/roomLog'
 import {
   clearActiveRoom,
@@ -160,6 +163,7 @@ export function useSession(): Session {
   const playerId = useMemo(() => getPlayerId(), [])
 
   const [name, setNameState] = useState<string>(loadPlayerName)
+  const [characterId, setCharacterIdState] = useState('')
   const [characterName, setCharacterNameState] = useState('')
   const [background, setBackgroundState] = useState('')
   const [lang, setLangState] = useState<Lang>('ja')
@@ -202,17 +206,14 @@ export function useSession(): Session {
   // Mirrors reconnectingRef for rendering — the GM-offline banner reads it.
   const [reconnecting, setReconnecting] = useState(false)
 
-  /** Type of a single buffered portrait save. Empty `image` means a
-   *  delete. The `sessionId` is captured at stage-time (not read from
-   *  the live ref at flush-time) so a portrait change made just before
-   *  the user leaves the room still persists to the right session even
-   *  if `sessionIdRef` has already been cleared by `goOffline`. */
+  /** Type of a single buffered (player, character) record save. The
+   *  `sessionId` is captured at stage-time (not read from the live ref
+   *  at flush-time) so an observation made just before the user leaves
+   *  the room still persists to the right session even if
+   *  `sessionIdRef` has already been cleared by `goOffline`. */
   type PortraitSave = {
     sessionId: string
-    playerId: string
-    characterName: string
-    image: string
-  }
+  } & SessionCharacterDraft
   // Append-only queue of portrait writes. The `characterImages`
   // derivation block appends new deltas during render (via a functional
   // `setState` so concurrent commits do not clobber each other); the
@@ -239,6 +240,7 @@ export function useSession(): Session {
   // Identity refs are written directly by updateIdentity so a re-sync can
   // read the new values synchronously.
   const nameRef = useRef(name)
+  const characterIdRef = useRef(characterId)
   const characterNameRef = useRef(characterName)
   const backgroundRef = useRef(background)
   const langRef = useRef(lang)
@@ -276,7 +278,7 @@ export function useSession(): Session {
     outboxRef.current = outbox
   })
 
-  // Snapshot every observed (player, character, image) triple into
+  // Snapshot every observed (player, character) record into
   // `characterImages` during render whenever its inputs have changed.
   // Past entries are kept while still referenced by the live feed window
   // (history / chat are themselves capped), and unreferenced ones are
@@ -307,67 +309,81 @@ export function useSession(): Session {
     // leave/offline cannot strand them.
     const portraitDeltas: PortraitSave[] = []
     const stageSid = sessionId
-    const put = (id: string, character: string, image: string) => {
-      // An empty character name is allowed — a player who just created
-      // a character and uploaded a portrait before naming it is still
-      // identified by `${id}|`. Multiple unnamed characters from the
-      // same player collide on that key (rare; last write wins).
+    // Resolve the characterId from a speaker. The live roster carries
+    // the real `Character.id`; entries replayed from the durable log
+    // may predate the field, so fall back to `legacyCharacterIdFromName`
+    // — the same synthesised id the v4→v5 migration used. That way an
+    // old persisted row and a fresh observation of the same character
+    // land on the same `${playerId}|${characterId}` key.
+    const resolveCid = (cid: string | undefined, cn: string | undefined): string => {
+      if (cid !== undefined && cid !== '') return cid
+      return legacyCharacterIdFromName(cn ?? '')
+    }
+    const put = (record: SessionCharacterDraft) => {
+      const id = record.playerId
       if (!id) return
-      const key = `${id}|${character}`
-      // An empty image is itself an observation — clear any prior entry
-      // so a portrait that was deleted does not linger as a stale avatar.
-      if (!image) {
-        if (!(key in map)) return
+      const key = characterImagesKey(id, record.characterId)
+      // Track the latest image observation under the per-character key.
+      if (!record.image) {
+        // An empty image is itself an observation; clear any stale entry
+        // so a removed portrait does not linger as a wrong avatar.
+        if (key in map) {
+          if (!changed) {
+            map = { ...map }
+            changed = true
+          }
+          delete map[key]
+        }
+      } else if (map[key] !== record.image) {
         if (!changed) {
           map = { ...map }
           changed = true
         }
-        delete map[key]
-        // Stage the clear for the effect below — keeps this derivation
-        // block free of IndexedDB side-effects so React can re-run it
-        // safely under StrictMode / concurrent rendering.
-        if (stageSid) {
-          portraitDeltas.push({
-            sessionId: stageSid,
-            playerId: id,
-            characterName: character,
-            image: '',
-          })
-        }
-        return
+        map[key] = record.image
       }
-      if (map[key] === image) return
-      if (!changed) {
-        map = { ...map }
-        changed = true
-      }
-      map[key] = image
-      // Stage the new (player, character) → image observation.
+      // Stage the full record (not just the image) for the flush
+      // effect — speaker fields land in IndexedDB alongside the image so
+      // room history can render past entries without the live session.
       if (stageSid) {
-        portraitDeltas.push({
-          sessionId: stageSid,
-          playerId: id,
-          characterName: character,
-          image,
-        })
+        portraitDeltas.push({ sessionId: stageSid, ...record })
       }
     }
-    put(playerId, characterName, playerImages[playerId] ?? '')
+    // The local player's current (character) snapshot — always staged so
+    // the durable record carries the name / background even when there
+    // is no portrait yet.
+    put({
+      playerId,
+      characterId,
+      playerName: composeName(name, characterName),
+      characterName,
+      background,
+      isGM: role === 'host',
+      image: playerImages[playerId] ?? '',
+    })
     for (const p of playersState) {
-      put(p.id, p.characterName, playerImages[p.id] ?? '')
+      if (p.id === playerId) continue
+      put({
+        playerId: p.id,
+        characterId: p.characterId ?? '',
+        playerName: composeName(p.name, p.characterName),
+        characterName: p.characterName,
+        background: p.background,
+        isGM: p.isGM,
+        image: playerImages[p.id] ?? '',
+      })
     }
     // Prune keys that no live observation or feed entry references. Each
-    // entry only survives if its (playerId, characterName) pair appears
+    // entry only survives if its (playerId, characterId) pair appears
     // in current identity, the current roster, or a roll / chat still
     // inside the in-memory feed window.
     const needed = new Set<string>()
-    const noteKey = (id: string, cn: string) => {
-      if (id) needed.add(`${id}|${cn}`)
+    const noteKey = (id: string, cid: string) => {
+      if (id) needed.add(characterImagesKey(id, cid))
     }
-    noteKey(playerId, characterName)
-    for (const p of playersState) noteKey(p.id, p.characterName)
-    for (const r of history) noteKey(r.playerId, r.characterName ?? '')
-    for (const m of chat) noteKey(m.playerId, m.characterName ?? '')
+    noteKey(playerId, characterId)
+    for (const p of playersState) noteKey(p.id, p.characterId ?? '')
+    for (const r of history) noteKey(r.playerId, resolveCid(r.characterId, r.characterName))
+    for (const m of chat) noteKey(m.playerId, resolveCid(m.characterId, m.characterName))
     for (const key of Object.keys(map)) {
       if (needed.has(key)) continue
       if (!changed) {
@@ -481,6 +497,7 @@ export function useSession(): Session {
       id: playerId,
       name: nameRef.current,
       isGM: asGM,
+      characterId: characterIdRef.current,
       characterName: characterNameRef.current,
       background: backgroundRef.current,
       lang: langRef.current,
@@ -555,10 +572,11 @@ export function useSession(): Session {
             // Take only the known identity fields from the (untrusted)
             // client message — never let it overwrite the host-side id or
             // the isGM flag (which `hello` already fixed to false).
-            const { name, characterName, background, lang } = msg.identity
+            const { name, characterId, characterName, background, lang } = msg.identity
             peerPlayersRef.current.set(peerId, {
               ...existing,
               name,
+              characterId,
               characterName,
               background,
               lang,
@@ -677,19 +695,35 @@ export function useSession(): Session {
             }
             if (ownImageRef.current) images[playerId] = ownImageRef.current
             setPlayerImages(images)
-            // Persist per (playerId, characterName) — match the live
-            // `characterImages` shape so the past-rooms view shows the
-            // right avatar even after the player switches character.
-            const characterImagesSnapshot: Record<string, string> = {}
+            // Persist the per-(player, character) snapshot — speaker
+            // fields go in alongside the image so room history can
+            // render past entries without the live session.
+            const drafts: SessionCharacterDraft[] = []
             for (const p of msg.snapshot.players) {
-              const img = images[p.id]
-              if (img) characterImagesSnapshot[`${p.id}|${p.characterName ?? ''}`] = img
+              drafts.push({
+                playerId: p.id,
+                characterId: p.characterId ?? '',
+                playerName: composeName(p.name, p.characterName),
+                characterName: p.characterName,
+                background: p.background,
+                isGM: p.isGM,
+                image: images[p.id] ?? '',
+              })
             }
-            if (ownImageRef.current) {
-              characterImagesSnapshot[`${playerId}|${characterNameRef.current}`] =
-                ownImageRef.current
+            // Cover the local player too in case the snapshot's roster
+            // entry has not yet been refreshed with the current portrait.
+            if (!msg.snapshot.players.some((p) => p.id === playerId)) {
+              drafts.push({
+                playerId,
+                characterId: characterIdRef.current,
+                playerName: composeName(nameRef.current, characterNameRef.current),
+                characterName: characterNameRef.current,
+                background: backgroundRef.current,
+                isGM: false,
+                image: ownImageRef.current,
+              })
             }
-            void saveCharacterPortraits(sessionIdRef.current, characterImagesSnapshot)
+            void saveSessionCharacters(sessionIdRef.current, drafts)
           }
           if (msg.snapshot.history.length || msg.snapshot.chat.length) {
             hasActivityRef.current = true
@@ -1171,11 +1205,19 @@ export function useSession(): Session {
         // An imported room is a fresh session, distinct from any earlier
         // run under the same code.
         const sid = newSessionId()
-        // Persist the imported history first, then show its recent window.
-        await appendLogEntries(
-          { sessionId: sid, roomCode: hosted, roomName: data.roomName, role: 'host' },
-          data.entries,
-        )
+        // Persist the imported history and the per-(player, character)
+        // records in parallel — both are tagged with the new session id
+        // so the room-history view can render past entries (names,
+        // backgrounds, GM mark, portraits) without the live session.
+        await Promise.all([
+          appendLogEntries(
+            { sessionId: sid, roomCode: hosted, roomName: data.roomName, role: 'host' },
+            data.entries,
+          ),
+          data.characters.length > 0
+            ? saveSessionCharacters(sid, data.characters)
+            : Promise.resolve(true),
+        ])
         const rolls = data.entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult)
         const chats = data.entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage)
         const marks = data.entries
@@ -1228,6 +1270,7 @@ export function useSession(): Session {
         playerId,
         playerName: composeName(nameRef.current, characterNameRef.current) || '???',
         isGM: roleRef.current === 'host',
+        characterId: characterIdRef.current,
         characterName: characterNameRef.current,
         background: backgroundRef.current,
         text: trimmed,
@@ -1296,6 +1339,7 @@ export function useSession(): Session {
         t: 'identity',
         identity: {
           name: nameRef.current,
+          characterId: characterIdRef.current,
           characterName: characterNameRef.current,
           background: backgroundRef.current,
           lang: langRef.current,
@@ -1310,6 +1354,10 @@ export function useSession(): Session {
         nameRef.current = patch.name
         setNameState(patch.name)
         savePlayerName(patch.name)
+      }
+      if (patch.characterId !== undefined) {
+        characterIdRef.current = patch.characterId
+        setCharacterIdState(patch.characterId)
       }
       if (patch.characterName !== undefined) {
         characterNameRef.current = patch.characterName
@@ -1408,19 +1456,21 @@ export function useSession(): Session {
   }, [role])
 
   // When the session id first arrives (create / join / resume), persist
-  // the local player's current (character, portrait) so a fresh session
-  // always carries one entry for the GM — the characterImages derivation
-  // block's per-update save misses the case where the portrait was set
-  // before any room existed.
+  // the local player's current (character) snapshot so a fresh session
+  // always carries one entry — the characterImages derivation block's
+  // per-update save misses the case where the (character, portrait)
+  // was set before any room existed.
   useEffect(() => {
-    if (sessionId && ownImageRef.current) {
-      void saveCharacterPortrait(
-        sessionId,
-        playerId,
-        characterNameRef.current,
-        ownImageRef.current,
-      )
-    }
+    if (!sessionId) return
+    void saveSessionCharacter(sessionId, {
+      playerId,
+      characterId: characterIdRef.current,
+      playerName: composeName(nameRef.current, characterNameRef.current),
+      characterName: characterNameRef.current,
+      background: backgroundRef.current,
+      isGM: roleRef.current === 'host',
+      image: ownImageRef.current,
+    })
   }, [sessionId, playerId])
 
   // Flush the unprocessed tail of `portraitQueue` to IndexedDB. The
@@ -1435,15 +1485,15 @@ export function useSession(): Session {
   // writes to the right session.
   //
   // Two optimisations live here:
-  //   1. Coalesce by `(sessionId, playerId, characterName)`: only the
-  //      last image observed in the tail is written, which is the
-  //      desired last-write-wins semantics anyway.
+  //   1. Coalesce by `(sessionId, playerId, characterId)`: only the
+  //      last observation in the tail is written — the desired
+  //      last-write-wins semantics anyway.
   //   2. Group by `sessionId` and use the bulk
-  //      `saveCharacterPortraits` API so the whole batch lands in a
+  //      `saveSessionCharacters` API so the whole batch lands in a
   //      single IndexedDB transaction per session.
   //
   // The queue itself is left intact (we only advance the offset ref)
-  // — in practice it grows by one or two entries per portrait change,
+  // — in practice it grows by one or two entries per observation,
   // so trimming it would not pay back the bookkeeping cost.
   useEffect(() => {
     const start = portraitFlushedCountRef.current
@@ -1451,43 +1501,53 @@ export function useSession(): Session {
     const endIndex = portraitQueue.length
     const tail = portraitQueue.slice(start)
 
-    // Coalesce + group: each session gets a single map of
-    // `${playerId}|${characterName}` → image (latest wins).
-    const bySession = new Map<string, Record<string, string>>()
+    // Coalesce + group: each session gets the latest draft for each
+    // (playerId, characterId) key.
+    const bySession = new Map<string, Map<string, SessionCharacterDraft>>()
     for (const w of tail) {
-      let map = bySession.get(w.sessionId)
-      if (!map) {
-        map = {}
-        bySession.set(w.sessionId, map)
+      let drafts = bySession.get(w.sessionId)
+      if (!drafts) {
+        drafts = new Map()
+        bySession.set(w.sessionId, drafts)
       }
-      map[`${w.playerId}|${w.characterName}`] = w.image
+      drafts.set(characterImagesKey(w.playerId, w.characterId), {
+        playerId: w.playerId,
+        characterId: w.characterId,
+        playerName: w.playerName,
+        characterName: w.characterName,
+        background: w.background,
+        isGM: w.isGM,
+        image: w.image,
+      })
     }
 
     // Chain this batch off the previous flush so the IndexedDB writes
     // happen in commit order. A naive concurrent fire would let the
     // older batch's transaction commit *after* the newer one, replacing
-    // the latest portrait with stale data (IndexedDB is last-write-
-    // wins per transaction). `saveCharacterPortraits` returns `false`
-    // when the store is unavailable / blocked / aborted, in which case
-    // the deltas stay in the queue and the next render's effect run
-    // retries from the same offset.
+    // the latest record with stale data (IndexedDB is last-write-wins
+    // per transaction). `saveSessionCharacters` returns `false` when
+    // the store is unavailable / blocked / aborted, in which case the
+    // deltas stay in the queue and the next render's effect run retries
+    // from the same offset.
     portraitFlushChainRef.current = portraitFlushChainRef.current.then(async () => {
       // A previous run on the same chain may have already covered this
       // range (multiple effect runs queue up before any of them
       // executes). Re-check the offset before redoing the work.
       if (portraitFlushedCountRef.current >= endIndex) return
       const results = await Promise.all(
-        Array.from(bySession, ([sid, images]) => saveCharacterPortraits(sid, images)),
+        Array.from(bySession, ([sid, drafts]) =>
+          saveSessionCharacters(sid, [...drafts.values()]),
+        ),
       )
       if (!results.every((ok) => ok)) return
       portraitFlushedCountRef.current = endIndex
       // Compact the queue once a healthy chunk has been flushed, so a
-      // long session does not pile up portrait records in memory just
-      // because the offset advanced past them. `setState` here runs
-      // in the promise's microtask (not synchronously inside the
-      // effect body), and the functional updater drops the same
-      // prefix from whatever `prev` happens to be — so any new tail
-      // appended while the flush was in flight is preserved.
+      // long session does not pile up records in memory just because
+      // the offset advanced past them. `setState` here runs in the
+      // promise's microtask (not synchronously inside the effect
+      // body), and the functional updater drops the same prefix from
+      // whatever `prev` happens to be — so any new tail appended
+      // while the flush was in flight is preserved.
       if (endIndex >= PORTRAIT_QUEUE_COMPACT_AT) {
         portraitFlushedCountRef.current = 0
         setPortraitQueue((prev) => prev.slice(endIndex))
@@ -1502,7 +1562,7 @@ export function useSession(): Session {
   // Offline: the player list is just the current player.
   const players: Player[] =
     role === 'offline'
-      ? [{ id: playerId, name, isGM: false, characterName, background, lang }]
+      ? [{ id: playerId, name, isGM: false, characterId, characterName, background, lang }]
       : playersState
 
   // Self is excluded; stale entries are pruned by the interval above.

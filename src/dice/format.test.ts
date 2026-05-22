@@ -20,6 +20,7 @@ function roll(over: Partial<RollResult>): RollResult {
     playerId: 'p',
     playerName: 'Mage',
     isGM: false,
+    characterId: '',
     characterName: '',
     background: '',
     hidden: false,

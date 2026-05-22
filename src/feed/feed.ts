@@ -1,5 +1,6 @@
 import type { RollResult } from '../dice/types'
 import type { ChatMessage } from '../net/protocol'
+import { characterImagesKey, legacyCharacterIdFromName } from '../storage/roomLog'
 
 /**
  * System markers annotate the feed with room-membership events. They are
@@ -46,6 +47,19 @@ export type FeedItem =
   | { kind: 'chat'; id: string; at: number; message: ChatMessage }
   /** `count` folds a run of identical consecutive markers — 1 when alone. */
   | { kind: 'system'; id: string; at: number; marker: SystemMarker; count: number }
+
+/** Resolve the `${playerId}|${characterId}` key for a feed speaker, with
+ *  the `legacyCharacterIdFromName` fallback for entries that predate the
+ *  `characterId` field. Exported so both the live and read-only feeds
+ *  look up the same per-character row in `sessionCharacters`. */
+export function speakerImageKey(speaker: {
+  playerId: string
+  characterId?: string
+  characterName?: string
+}): string {
+  const cid = speaker.characterId || legacyCharacterIdFromName(speaker.characterName ?? '')
+  return characterImagesKey(speaker.playerId, cid)
+}
 
 /** Whether two markers describe the same event for the same player / room. */
 function sameMarker(a: SystemMarker, b: SystemMarker): boolean {

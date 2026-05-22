@@ -8,7 +8,7 @@
 
 import { strFromU8, unzipSync } from 'fflate'
 import { normalizeRoomCode } from '../net/protocol'
-import type { LogEntry, LogKind } from './roomLog'
+import type { LogEntry, LogKind, SessionCharacterDraft } from './roomLog'
 import type { TranslationRecord } from './roomExport'
 
 /** A room export parsed and ready to restore. */
@@ -18,6 +18,10 @@ export interface RoomImport {
   entries: LogEntry[]
   /** Cached chat translations carried in the archive (v3+), if any. */
   translations: TranslationRecord[]
+  /** Per-(player, character) records (v5+), reconstructed with their
+   *  portrait data URL inlined. Empty when reading a v4-or-older
+   *  archive. */
+  characters: SessionCharacterDraft[]
 }
 
 function isLogKind(value: unknown): value is LogKind {
@@ -89,6 +93,41 @@ function parseEntry(raw: unknown, files: Record<string, Uint8Array>): LogEntry |
 }
 
 /**
+ * Validate one per-(player, character) record from the manifest. The
+ * archive stores the portrait as a separate file at `imagePath`; this
+ * re-inlines it as a base64 data URL so the result matches the live
+ * `SessionCharacterDraft` shape. Returns null when the record is too
+ * malformed to render.
+ */
+function parseCharacter(
+  raw: unknown,
+  files: Record<string, Uint8Array>,
+): SessionCharacterDraft | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  if (typeof r.playerId !== 'string' || r.playerId === '') return null
+  const characterId = typeof r.characterId === 'string' ? r.characterId : ''
+  let image = ''
+  if (typeof r.imagePath === 'string' && r.imagePath !== '') {
+    const bytes = files[r.imagePath]
+    if (bytes) {
+      const type = typeof r.imageType === 'string' ? r.imageType : 'image/png'
+      // Defend against a manifest that names a non-image type at this slot.
+      image = type.startsWith('image/') ? bytesToDataUrl(bytes, type) : ''
+    }
+  }
+  return {
+    playerId: r.playerId,
+    characterId,
+    playerName: typeof r.playerName === 'string' ? r.playerName : '',
+    characterName: typeof r.characterName === 'string' ? r.characterName : '',
+    background: typeof r.background === 'string' ? r.background : '',
+    isGM: r.isGM === true,
+    image,
+  }
+}
+
+/**
  * Parse a room-export ZIP. Returns the room identity and its durable-log
  * entries (attachments re-inlined), or null if the bytes are not a
  * recognizable room export.
@@ -126,10 +165,17 @@ export function parseRoomImport(zipBytes: Uint8Array): RoomImport | null {
     const tr = parseTranslation(raw)
     if (tr) translations.push(tr)
   }
+  const rawCharacters = Array.isArray(m.characters) ? m.characters : []
+  const characters: SessionCharacterDraft[] = []
+  for (const raw of rawCharacters) {
+    const c = parseCharacter(raw, files)
+    if (c) characters.push(c)
+  }
   return {
     roomCode,
     roomName: typeof room.name === 'string' ? room.name : '',
     entries,
     translations,
+    characters,
   }
 }

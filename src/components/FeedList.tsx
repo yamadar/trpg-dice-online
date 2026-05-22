@@ -2,7 +2,7 @@ import { Fragment, memo, useEffect, useRef, useState, type ReactNode } from 'rea
 import { useI18n } from '../i18n/useI18n'
 import { useTranslatedText } from '../i18n/useTranslatedText'
 import type { TFn } from '../i18n/context'
-import type { FeedItem, SystemMarker } from '../feed/feed'
+import { speakerImageKey, type FeedItem, type SystemMarker } from '../feed/feed'
 import { formatClock, formatFeedDate, sameDay } from '../feed/datetime'
 import type { ChatFile, ChatMessage } from '../net/protocol'
 import type { RollResult } from '../dice/types'
@@ -15,6 +15,10 @@ import { DiceFaceIcon } from './DiceFaceIcon'
 /** Identity snapshot opened in the player-detail card when a name is tapped. */
 export interface FeedDetailTarget {
   playerId: string
+  /** Active character id at the time of the entry. Empty for older
+   *  rolls / chats that predate the field; the card then falls back to
+   *  the character name for the portrait lookup. */
+  characterId: string
   name: string
   characterName: string
   background: string
@@ -97,7 +101,7 @@ const FeedChatItem = memo(function FeedChatItem({
   /** The compact feed shows just the character name, no player-color dot. */
   compact: boolean
   playerId: string
-  /** Map of `${playerId}|${characterName}` → latest image observed for
+  /** Map of `${playerId}|${characterId}` → latest image observed for
    *  that character. Lets a feed item keep the right avatar after the
    *  speaking player has switched away from that character. */
   characterImages: Record<string, string | undefined>
@@ -123,7 +127,7 @@ const FeedChatItem = memo(function FeedChatItem({
     >
       {!compact && (
         <FeedAvatar
-          image={characterImages[`${m.playerId}|${m.characterName ?? ''}`]}
+          image={characterImages[speakerImageKey(m)]}
           color={color}
         />
       )}
@@ -136,6 +140,7 @@ const FeedChatItem = memo(function FeedChatItem({
             onClick={() =>
               onOpenDetail({
                 playerId: m.playerId,
+                characterId: m.characterId ?? '',
                 name: m.playerName,
                 characterName: m.characterName ?? '',
                 background: m.background ?? '',
@@ -202,7 +207,7 @@ const FeedRollItem = memo(function FeedRollItem({
     >
       {!compact && (
         <FeedAvatar
-          image={characterImages[`${r.playerId}|${r.characterName ?? ''}`]}
+          image={characterImages[speakerImageKey(r)]}
           color={color}
         />
       )}
@@ -215,6 +220,7 @@ const FeedRollItem = memo(function FeedRollItem({
             onClick={() =>
               onOpenDetail({
                 playerId: r.playerId,
+                characterId: r.characterId ?? '',
                 name: fullName,
                 characterName: r.characterName ?? '',
                 background: r.background ?? '',
@@ -261,7 +267,7 @@ interface Props {
   onLoadOlder: () => void
   /** Chat queued for an offline GM, shown as pending below the feed. */
   pending: ChatMessage[]
-  /** Character portraits keyed by `${playerId}|${characterName}` — used
+  /** Character portraits keyed by `${playerId}|${characterId}` — used
    *  for the per-message avatar so a feed entry keeps the right portrait
    *  after the speaker has switched to a different character. */
   characterImages: Record<string, string | undefined>

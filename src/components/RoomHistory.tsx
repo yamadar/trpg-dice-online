@@ -14,6 +14,7 @@ import {
   type SessionSummary,
 } from '../storage/roomLog'
 import { useConfirm } from '../hooks/useConfirm'
+import { speakerImageKey } from '../feed/feed'
 import { FeedList, type FeedDetailTarget } from './FeedList'
 import { Lightbox } from './Lightbox'
 import { PlayerDetailCard } from './PlayerDetailCard'
@@ -81,9 +82,12 @@ export function RoomHistory({ playerId, onBack }: Props) {
   // Load the selected session's full log and its per-(player, character)
   // portrait map in parallel. Both are tagged with the session id so a
   // stale result is dropped by `loadedLog` / `portraits` below. The
-  // portrait map is keyed by `${playerId}|${characterName}` — same shape
+  // portrait map is keyed by `${playerId}|${characterId}` — same shape
   // as the live `Session.characterImages` — so it can be handed straight
-  // to `FeedList` without re-keying.
+  // to `FeedList` without re-keying. Older feed entries that predate
+  // the `characterId` field fall back to `legacyCharacterIdFromName`
+  // inside `speakerImageKey`, hitting the rows the v4→v5 migration
+  // synthesised under `@n:<encoded characterName>`.
   useEffect(() => {
     if (!selected) return
     const sid = selected.sessionId
@@ -155,20 +159,19 @@ export function RoomHistory({ playerId, onBack }: Props) {
     [images],
   )
 
-  // The persisted map is already keyed by `${playerId}|${characterName}`
-  // (the same shape `FeedList` expects), so it is used as-is. Legacy
-  // (v3) records were migrated forward with an empty `characterName`,
-  // so they land under `${playerId}|` — falling back to that key keeps
-  // old sessions' portraits visible until a new per-character record
-  // overrides them.
+  // The persisted map is already keyed by `${playerId}|${characterId}`
+  // (the same shape `FeedList` expects), so it is used as-is. Older
+  // feed entries that predate the `characterId` field land on a
+  // `legacyCharacterIdFromName`-synthesised key inside
+  // `speakerImageKey`; if that does not match a row, fall back to the
+  // bare `${playerId}|` row that v3 sessions migrated forward as.
   const characterImagesFromPortraits = useMemo(() => {
     const map: Record<string, string | undefined> = { ...portraits }
     for (const item of feed) {
       const speaker =
         item.kind === 'chat' ? item.message : item.kind === 'roll' ? item.roll : null
       if (!speaker) continue
-      const cn = speaker.characterName ?? ''
-      const key = `${speaker.playerId}|${cn}`
+      const key = speakerImageKey(speaker)
       if (map[key]) continue
       const legacy = portraits[`${speaker.playerId}|`]
       if (legacy) map[key] = legacy
@@ -191,7 +194,7 @@ export function RoomHistory({ playerId, onBack }: Props) {
           displayName={detail.name}
           characterName={detail.characterName}
           background={detail.background}
-          image={characterImagesFromPortraits[`${detail.playerId}|${detail.characterName}`]}
+          image={characterImagesFromPortraits[speakerImageKey(detail)]}
           isSelf={detail.playerId === playerId}
         />
       </div>

@@ -48,6 +48,10 @@ export interface RollResult {
   playerName: string
   /** Whether the roller was the GM — a snapshot, shown as a mark in the feed. */
   isGM: boolean
+  /** Active character id when the roll was made ('' if none). Stable across
+   *  renames, so room history can key (and look up) per-character records
+   *  under (sessionId, playerId, characterId). */
+  characterId: string
   /** Active character name when the roll was made ('' if none). A snapshot,
    *  so tapping the name later shows the character used at that time. */
   characterName: string
