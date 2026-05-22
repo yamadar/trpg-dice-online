@@ -171,6 +171,7 @@ export const ko: Dict = {
   'feed.emptyShareHint': '친구와 함께 놀고 싶다면 「룸」에서 룸을 만들거나 참여하세요.',
   'feed.emptyOpenRoom': '룸 열기',
   'feed.loadOlder': '이전 기록 불러오기',
+  'feed.jumpToLatest': '최신으로 이동',
   'feed.clear': '화면 비우기',
   'feed.compact': '컴팩트 보기',
   'feed.clearConfirm': '주사위와 채팅 기록의 표시를 모두 지웁니다. 되돌릴 수 없습니다. 계속할까요?',

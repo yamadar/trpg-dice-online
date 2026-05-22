@@ -171,6 +171,7 @@ export const th: Dict = {
   'feed.emptyShareHint': 'อยากเล่นกับเพื่อน? เปิด "ห้อง" เพื่อสร้างหรือเข้าร่วมห้อง',
   'feed.emptyOpenRoom': 'เปิดห้อง',
   'feed.loadOlder': 'โหลดเก่ากว่า',
+  'feed.jumpToLatest': 'ไปที่ล่าสุด',
   'feed.clear': 'ล้างมุมมอง',
   'feed.compact': 'แบบกระชับ',
   'feed.clearConfirm': 'จะลบการทอยและแชททั้งหมดในมุมมองของคุณ ไม่สามารถย้อนกลับได้ ดำเนินการต่อ?',

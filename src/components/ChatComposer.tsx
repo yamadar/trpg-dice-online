@@ -5,7 +5,7 @@ import type { ChatFile } from '../net/protocol'
 import { MAX_ATTACHMENT_BYTES, formatBytes, isImageType, readAttachment } from '../chat/attachment'
 import { resolveMentions } from '../chat/mentions'
 import { useMentionAutocomplete } from '../hooks/useMentionAutocomplete'
-import { AttachIcon, CloseIcon } from './icons'
+import { AttachIcon, CloseIcon, SendIcon } from './icons'
 
 interface Props {
   session: Session
@@ -154,8 +154,15 @@ export function ChatComposer({ session, onNotice }: Props) {
             Send does not blur it and force-commit an in-progress IME
             composition — that blur previously raced with the click and left
             the message in the box (and a second click re-sent it). */}
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={send}>
-          {t('chat.send')}
+        <button
+          type="button"
+          className="send-btn icon-btn"
+          aria-label={t('chat.send')}
+          title={t('chat.send')}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={send}
+        >
+          <SendIcon />
         </button>
       </div>
     </div>

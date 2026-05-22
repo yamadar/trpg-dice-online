@@ -171,6 +171,7 @@ export const ptBR: Dict = {
   'feed.emptyShareHint': 'Quer jogar com amigos? Abra «Sala» para criar uma sala ou entrar em uma.',
   'feed.emptyOpenRoom': 'Abrir Sala',
   'feed.loadOlder': 'Carregar mais antigos',
+  'feed.jumpToLatest': 'Ir para o mais recente',
   'feed.clear': 'Limpar visualização',
   'feed.compact': 'Visualização compacta',
   'feed.clearConfirm': 'Isto remove todas as rolagens e mensagens da sua visualização e não pode ser desfeito. Continuar?',

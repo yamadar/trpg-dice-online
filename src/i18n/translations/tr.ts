@@ -171,6 +171,7 @@ export const tr: Dict = {
   'feed.emptyShareHint': 'Arkadaşlarla oynamak ister misin? «Oda»yı açıp oda oluştur ya da katıl.',
   'feed.emptyOpenRoom': 'Odayı aç',
   'feed.loadOlder': 'Daha eskileri yükle',
+  'feed.jumpToLatest': 'En sona git',
   'feed.clear': 'Görünümü temizle',
   'feed.compact': 'Sıkı görünüm',
   'feed.clearConfirm': 'Tüm zar atışlarını ve sohbeti görünümünden temizler ve geri alınamaz. Devam edilsin mi?',

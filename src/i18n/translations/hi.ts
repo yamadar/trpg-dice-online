@@ -171,6 +171,7 @@ export const hi: Dict = {
   'feed.emptyShareHint': 'दोस्तों के साथ खेलना है? «कक्ष» खोलकर कक्ष बनाएँ या उसमें शामिल हों।',
   'feed.emptyOpenRoom': 'कक्ष खोलें',
   'feed.loadOlder': 'पुराने लोड करें',
+  'feed.jumpToLatest': 'नवीनतम पर जाएँ',
   'feed.clear': 'दृश्य साफ़ करें',
   'feed.compact': 'संक्षिप्त दृश्य',
   'feed.clearConfirm': 'यह आपके दृश्य से सभी रोल और चैट हटा देगा और वापस नहीं किया जा सकता। जारी रखें?',

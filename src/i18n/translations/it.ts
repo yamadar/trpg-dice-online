@@ -171,6 +171,7 @@ export const it: Dict = {
   'feed.emptyShareHint': 'Vuoi giocare con gli amici? Apri «Stanza» per crearne una o unirti.',
   'feed.emptyOpenRoom': 'Apri Stanza',
   'feed.loadOlder': 'Carica più vecchi',
+  'feed.jumpToLatest': 'Vai al più recente',
   'feed.clear': 'Pulisci vista',
   'feed.compact': 'Vista compatta',
   'feed.clearConfirm': 'Questo cancella tutti i tiri e i messaggi dalla tua vista e non è reversibile. Continuare?',
