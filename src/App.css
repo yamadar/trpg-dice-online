@@ -2069,11 +2069,19 @@ label.setting-row {
   display: flex;
   flex-direction: column;
 }
+/* Pinned header for the settings drawer — title on the left, close on
+   the right, same shape as `.sheet-header` so the structure reads as
+   one consistent panel pattern across the app. */
+.settings-header {
+  position: relative;
+  padding: 14px 56px 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  flex-shrink: 0;
+}
 .settings-title {
   font-size: 1.05rem;
-  /* Keep the title clear of the floating × close button. */
-  padding-right: 30px;
-  margin-bottom: 12px;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2498,6 +2506,15 @@ button.char-avatar-large:disabled {
   border-radius: 14px;
   padding: 28px 24px 20px;
   text-align: center;
+  /* Fixed total height so the dots row and Next button sit at the
+     same position on every step regardless of body-text length. The
+     body grows / scrolls inside the leftover space. `svh` units track
+     dynamic browser chrome on mobile so the card never overshoots a
+     short viewport. */
+  display: flex;
+  flex-direction: column;
+  height: 460px;
+  max-height: calc(100svh - 40px);
 }
 .tutorial-skip {
   position: absolute;
@@ -2516,7 +2533,12 @@ button.char-avatar-large:disabled {
   color: var(--text-dim);
   font-size: 0.92rem;
   line-height: 1.6;
-  min-height: 4.8em;
+  /* Take the column's flexible space so the dots / nav row below
+     always lands at the same Y. Scroll if the localised text runs
+     long enough to overflow the leftover area. */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 /* Inline `SettingsIcon` rendered where the body had the `⚙` marker,
    so the inline reference matches the Lucide gear the header uses.

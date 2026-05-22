@@ -114,7 +114,7 @@ export const id: Dict = {
   'character.crop.zoom': 'Zoom',
   'character.delete': 'Hapus karakter ini',
   'character.deleteConfirm': 'Hapus karakter «{name}»? Tidak dapat dibatalkan.',
-  'character.export': 'Ekspor',
+  'character.export': 'Ekspor ke file',
   'character.exportMemo': 'Sertakan memo saat ekspor',
   'character.import': 'Impor dari file',
   'character.importError': 'Tidak bisa mengimpor karakter. Periksa file.',

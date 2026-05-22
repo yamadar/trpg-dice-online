@@ -114,7 +114,7 @@ export const pl: Dict = {
   'character.crop.zoom': 'Powiększenie',
   'character.delete': 'Usuń tę postać',
   'character.deleteConfirm': 'Usunąć postać „{name}”? Nie można cofnąć.',
-  'character.export': 'Eksportuj',
+  'character.export': 'Eksportuj do pliku',
   'character.exportMemo': 'Dołącz notatkę do eksportu',
   'character.import': 'Importuj z pliku',
   'character.importError': 'Nie udało się zaimportować postaci. Sprawdź plik.',

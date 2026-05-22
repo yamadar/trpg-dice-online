@@ -114,7 +114,7 @@ export const zhTW: Dict = {
   'character.crop.zoom': '縮放',
   'character.delete': '刪除此角色',
   'character.deleteConfirm': '將刪除角色「{name}」,且無法復原,是否繼續?',
-  'character.export': '匯出',
+  'character.export': '匯出到檔案',
   'character.exportMemo': '匯出時包含備忘錄',
   'character.import': '從檔案匯入',
   'character.importError': '無法匯入角色,請確認檔案。',

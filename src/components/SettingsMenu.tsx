@@ -78,27 +78,26 @@ export function SettingsMenu({
         <>
           <div className="settings-backdrop" onClick={() => setOpen(false)} />
           <div className="settings-panel" role="dialog" aria-label={t('settings.title')}>
-            {/* Pinned outside the scroll region so it stays put — same
-                placement as the other modals' close button. */}
-            <button
-              type="button"
-              className="sheet-close icon-btn"
-              aria-label={t('settings.close')}
-              onClick={() => setOpen(false)}
-            >
-              <CloseIcon />
-            </button>
-            <div className="settings-body">
-              {/* The title carries a Settings cog at its leading edge so
-                  the panel reads as a labelled section at a glance — the
-                  same icon as the header button that opened it, so the
-                  affordance and the panel feel like one continuous
-                  surface. */}
+            {/* Pinned header — title (with the same cog icon as the
+                trigger button, so the affordance and the open panel
+                feel like one continuous surface) on the left, close
+                button on the right. Stays put while the body scrolls,
+                same pattern as the other panels' Sheet header. */}
+            <div className="settings-header">
               <h2 className="settings-title">
                 <SettingsIcon size={22} />
                 <span>{t('settings.title')}</span>
               </h2>
-
+              <button
+                type="button"
+                className="sheet-close icon-btn"
+                aria-label={t('settings.close')}
+                onClick={() => setOpen(false)}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+            <div className="settings-body">
               <label className="setting-row">
                 <span className="setting-label">
                   <PlayerIcon />

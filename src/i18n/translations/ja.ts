@@ -114,7 +114,7 @@ export const ja: Dict = {
   'character.crop.zoom': 'ズーム',
   'character.delete': 'このキャラクターを削除',
   'character.deleteConfirm': 'キャラクター「{name}」を削除します。元に戻せません。よろしいですか？',
-  'character.export': '書き出し',
+  'character.export': 'ファイルに書き出し',
   'character.exportMemo': 'メモも書き出しに含める',
   'character.import': 'ファイルから読み込み',
   'character.importError': 'キャラクターを読み込めませんでした。ファイルを確認してください。',

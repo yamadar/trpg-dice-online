@@ -114,7 +114,7 @@ export const zhCN: Dict = {
   'character.crop.zoom': '缩放',
   'character.delete': '删除此角色',
   'character.deleteConfirm': '将删除角色「{name}」，无法撤销，是否继续？',
-  'character.export': '导出',
+  'character.export': '导出到文件',
   'character.exportMemo': '导出时包含备注',
   'character.import': '从文件导入',
   'character.importError': '无法导入角色，请检查文件。',

@@ -114,7 +114,7 @@ export const ar: Dict = {
   'character.crop.zoom': 'التكبير',
   'character.delete': 'حذف هذه الشخصية',
   'character.deleteConfirm': 'حذف الشخصية «{name}»؟ لا يمكن التراجع.',
-  'character.export': 'تصدير',
+  'character.export': 'تصدير إلى ملف',
   'character.exportMemo': 'تضمين المذكرة عند التصدير',
   'character.import': 'استيراد من ملف',
   'character.importError': 'تعذّر استيراد الشخصية. تحقق من الملف.',

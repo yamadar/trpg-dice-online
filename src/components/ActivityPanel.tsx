@@ -31,6 +31,7 @@ import {
   BrandIcon,
   ChatIcon,
   DiceIcon,
+  PlayerIcon,
   TrashIcon,
 } from './icons'
 
@@ -354,7 +355,11 @@ export function ActivityPanel({
       {detail && (() => {
         const record = sessionCharacters[speakerImageKey(detail)]
         return (
-          <Sheet onClose={() => setDetail(null)}>
+          <Sheet
+            title={t('feed.playerDetail')}
+            titleIcon={<PlayerIcon size={20} />}
+            onClose={() => setDetail(null)}
+          >
             <PlayerDetailCard
               player={session.players.find((p) => p.id === detail.playerId) ?? null}
               playerId={detail.playerId}

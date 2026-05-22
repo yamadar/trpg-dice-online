@@ -114,7 +114,7 @@ export const th: Dict = {
   'character.crop.zoom': 'ซูม',
   'character.delete': 'ลบตัวละครนี้',
   'character.deleteConfirm': 'ลบตัวละคร "{name}"? ไม่สามารถย้อนกลับได้',
-  'character.export': 'ส่งออก',
+  'character.export': 'ส่งออกเป็นไฟล์',
   'character.exportMemo': 'รวมบันทึกในการส่งออก',
   'character.import': 'นำเข้าจากไฟล์',
   'character.importError': 'นำเข้าตัวละครไม่สำเร็จ กรุณาตรวจสอบไฟล์',

@@ -691,6 +691,25 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.79 — Unify every panel around a "pinned header, scrolling body"
+  pattern. The settings drawer used to render its "Settings" heading
+  inside the scroll region with the close × floating on top, which
+  caused the title to scroll away when the body was long. Promote a
+  `.settings-header` shaped exactly like `.sheet-header` (title + ×
+  in one pinned row) so `.settings-body` is the only scrolling
+  surface. The `PlayerDetailCard` opened by tapping a feed speaker
+  name was already wrapped in a `Sheet` but never received a `title`,
+  so its shared header was empty; pass `feed.playerDetail` and
+  `PlayerIcon` so it reads with the same header layout as the dock
+  panels. The tutorial card stretched and shrank to fit each step's
+  body text, which made the Next button hop between steps — make
+  `.tutorial-card` a flex column with `height: 460px;
+  max-height: calc(100svh - 40px)` and give the body `flex: 1;
+  overflow-y: auto;` so Next / Done / Back / Skip land at the same
+  Y on every step. Finally, rename the character panel's "Export"
+  label to "Export to file" so it mirrors the existing "Import
+  from file" wording; `character.export` is updated across all 19
+  language dictionaries.
 - v1.78 — Make the "typing…" indicator HSP-friendly by giving the
   player two independent opt-out toggles in the settings menu. "Show
   others typing" (`showTyping`, default on) is the receive-side

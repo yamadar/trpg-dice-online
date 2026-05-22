@@ -114,7 +114,7 @@ export const vi: Dict = {
   'character.crop.zoom': 'Phóng to',
   'character.delete': 'Xóa nhân vật này',
   'character.deleteConfirm': 'Xóa nhân vật «{name}»? Không thể hoàn tác.',
-  'character.export': 'Xuất',
+  'character.export': 'Xuất ra tệp',
   'character.exportMemo': 'Bao gồm ghi chú khi xuất',
   'character.import': 'Nhập từ tệp',
   'character.importError': 'Không nhập được nhân vật. Vui lòng kiểm tra tệp.',

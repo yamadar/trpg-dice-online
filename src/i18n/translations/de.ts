@@ -114,7 +114,7 @@ export const de: Dict = {
   'character.crop.zoom': 'Zoom',
   'character.delete': 'Diesen Charakter löschen',
   'character.deleteConfirm': 'Charakter „{name}“ löschen? Das kann nicht rückgängig gemacht werden.',
-  'character.export': 'Exportieren',
+  'character.export': 'In Datei exportieren',
   'character.exportMemo': 'Notiz mit exportieren',
   'character.import': 'Aus Datei importieren',
   'character.importError': 'Charakter konnte nicht importiert werden. Bitte prüfe die Datei.',

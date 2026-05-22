@@ -114,7 +114,7 @@ export const tr: Dict = {
   'character.crop.zoom': 'Yakınlaştırma',
   'character.delete': 'Bu karakteri sil',
   'character.deleteConfirm': '«{name}» karakteri silinsin mi? Geri alınamaz.',
-  'character.export': 'Dışa aktar',
+  'character.export': 'Dosyaya dışa aktar',
   'character.exportMemo': 'Notu da dışa aktar',
   'character.import': 'Dosyadan içe aktar',
   'character.importError': 'Karakter içe aktarılamadı. Dosyayı kontrol et.',
