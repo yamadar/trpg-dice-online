@@ -946,13 +946,23 @@ button.player-row {
 .dice-formula-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
+  gap: 0;
+  /* The three controls form one logical "dice formula" but each field
+     (count / type / modifier) is conceptually separate. A thin
+     vertical rule between fields, plus a little horizontal padding,
+     makes the boundary read at a glance without breaking up the row
+     into three independent cards. */
   align-items: stretch;
 }
 .dice-formula-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  padding: 0 10px;
+  min-width: 0;
+}
+.dice-formula-field + .dice-formula-field {
+  border-left: 1px solid var(--border);
 }
 .dice-formula-label {
   font-size: 0.78rem;
