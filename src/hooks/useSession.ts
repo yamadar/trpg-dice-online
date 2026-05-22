@@ -31,6 +31,7 @@ import {
   loadRecentLog,
   markSessionClosed,
   newSessionId,
+  normalizeSpeakerEntry,
   saveSessionCharacter,
   saveSessionCharacters,
   type LogTarget,
@@ -109,15 +110,16 @@ export interface Session {
   /** Character portrait images keyed by player id (synced apart from the roster). */
   playerImages: Record<string, string>
   /**
-   * Character portrait images keyed by `${playerId}|${characterName}` — the
-   * last image observed in this session for that (player, character) pair.
-   * Lets the feed keep showing the right avatar on past messages after a
-   * player has switched to a different character. Typed with explicit
-   * `| undefined` so consumers handle the missing-key case (an unobserved
-   * character collapses to the colored dot rather than reusing someone
-   * else's portrait).
+   * Per-(player, character) records observed in the current session,
+   * keyed by `${playerId}|${characterId}` — the canonical source for
+   * rendering speaker info in the feed (display name, character name,
+   * background, GM mark, portrait). The map survives a speaker leaving
+   * the room so past entries keep rendering correctly. Typed with
+   * explicit `| undefined` so consumers handle the missing-key case
+   * (an unobserved character collapses to a colored dot rather than
+   * reusing someone else's record).
    */
-  characterImages: Record<string, string | undefined>
+  sessionCharacters: Record<string, SessionCharacterDraft | undefined>
   history: RollResult[]
   chat: ChatMessage[]
   markers: SystemMarker[]
@@ -177,25 +179,43 @@ export function useSession(): Session {
   /** Character portrait images keyed by player id — synced apart from the
    *  roster, so the frequent `players` broadcast stays small. */
   const [playerImages, setPlayerImagesState] = useState<Record<string, string>>({})
-  /** Per-character portrait map (`${playerId}|${characterName}` → image) —
-   *  updated whenever a (player, character, image) observation lands, so a
-   *  feed item for a character the player has since switched away from
-   *  still shows that character's last-known portrait. Updated below via
-   *  render-phase setState (matching the codebase's pattern for "derive
-   *  state from props"), so the entry survives across renders without
-   *  needing the `useEffect` + `setState` that the React 19 lint rule
-   *  bans. */
-  const [characterImages, setCharacterImages] = useState<Record<string, string | undefined>>({})
-  /** Tracks the inputs that produced the current `characterImages`, so the
-   *  render-phase update fires exactly when any of them changed. */
-  const [characterImagesInputs, setCharacterImagesInputs] = useState<{
+  /** Per-(player, character) records keyed by `${playerId}|${characterId}`
+   *  — updated whenever an observation lands. Carries the speaker fields
+   *  (playerName / characterName / background / isGM) along with the
+   *  portrait image, so the feed renders past entries without dipping
+   *  back into the live roster. Updated below via render-phase setState
+   *  (matching the codebase's pattern for "derive state from props"),
+   *  so entries survive across renders without needing the
+   *  `useEffect` + `setState` that the React 19 lint rule bans. */
+  const [sessionCharacters, setSessionCharacters] = useState<
+    Record<string, SessionCharacterDraft | undefined>
+  >({})
+  /** Tracks the inputs that produced the current `sessionCharacters`
+   *  map, so the render-phase update fires exactly when any of them
+   *  changed. */
+  const [sessionCharactersInputs, setSessionCharactersInputs] = useState<{
     pid: string
+    cid: string
     cn: string
+    bg: string
+    nm: string
+    rl: Role
     pi: Record<string, string>
     ps: Player[]
     h: RollResult[]
     c: ChatMessage[]
-  }>({ pid: '', cn: '', pi: {}, ps: [], h: [], c: [] })
+  }>({
+    pid: '',
+    cid: '',
+    cn: '',
+    bg: '',
+    nm: '',
+    rl: 'offline',
+    pi: {},
+    ps: [],
+    h: [],
+    c: [],
+  })
   const [history, setHistory] = useState<RollResult[]>([])
   const [chat, setChat] = useState<ChatMessage[]>([])
   const [markers, setMarkers] = useState<SystemMarker[]>([])
@@ -279,7 +299,7 @@ export function useSession(): Session {
   })
 
   // Snapshot every observed (player, character) record into
-  // `characterImages` during render whenever its inputs have changed.
+  // `sessionCharacters` during render whenever its inputs have changed.
   // Past entries are kept while still referenced by the live feed window
   // (history / chat are themselves capped), and unreferenced ones are
   // pruned so the map cannot grow unbounded across long sessions or
@@ -288,62 +308,57 @@ export function useSession(): Session {
   // reset in `CharacterPanel` — so the React 19 lint rule that bans
   // `setState` inside `useEffect` is honoured.
   if (
-    characterImagesInputs.pid !== playerId ||
-    characterImagesInputs.cn !== characterName ||
-    characterImagesInputs.pi !== playerImages ||
-    characterImagesInputs.ps !== playersState ||
-    characterImagesInputs.h !== history ||
-    characterImagesInputs.c !== chat
+    sessionCharactersInputs.pid !== playerId ||
+    sessionCharactersInputs.cid !== characterId ||
+    sessionCharactersInputs.cn !== characterName ||
+    sessionCharactersInputs.bg !== background ||
+    sessionCharactersInputs.nm !== name ||
+    sessionCharactersInputs.rl !== role ||
+    sessionCharactersInputs.pi !== playerImages ||
+    sessionCharactersInputs.ps !== playersState ||
+    sessionCharactersInputs.h !== history ||
+    sessionCharactersInputs.c !== chat
   ) {
-    setCharacterImagesInputs({
+    setSessionCharactersInputs({
       pid: playerId,
+      cid: characterId,
       cn: characterName,
+      bg: background,
+      nm: name,
+      rl: role,
       pi: playerImages,
       ps: playersState,
       h: history,
       c: chat,
     })
-    let map = characterImages
+    let map = sessionCharacters
     let changed = false
     // Batched writes carry their own `sessionId` snapshot so a fast
     // leave/offline cannot strand them.
     const portraitDeltas: PortraitSave[] = []
     const stageSid = sessionId
-    // Resolve the characterId from a speaker. The live roster carries
-    // the real `Character.id`; entries replayed from the durable log
-    // may predate the field, so fall back to `legacyCharacterIdFromName`
-    // — the same synthesised id the v4→v5 migration used. That way an
-    // old persisted row and a fresh observation of the same character
-    // land on the same `${playerId}|${characterId}` key.
-    const resolveCid = (cid: string | undefined, cn: string | undefined): string => {
-      if (cid !== undefined && cid !== '') return cid
-      return legacyCharacterIdFromName(cn ?? '')
-    }
     const put = (record: SessionCharacterDraft) => {
       const id = record.playerId
       if (!id) return
       const key = characterImagesKey(id, record.characterId)
-      // Track the latest image observation under the per-character key.
-      if (!record.image) {
-        // An empty image is itself an observation; clear any stale entry
-        // so a removed portrait does not linger as a wrong avatar.
-        if (key in map) {
-          if (!changed) {
-            map = { ...map }
-            changed = true
-          }
-          delete map[key]
-        }
-      } else if (map[key] !== record.image) {
+      const existing = map[key]
+      const isNewObservation =
+        !existing ||
+        existing.playerName !== record.playerName ||
+        existing.characterName !== record.characterName ||
+        existing.background !== record.background ||
+        existing.isGM !== record.isGM ||
+        existing.image !== record.image
+      if (isNewObservation) {
         if (!changed) {
           map = { ...map }
           changed = true
         }
-        map[key] = record.image
+        map[key] = record
       }
-      // Stage the full record (not just the image) for the flush
-      // effect — speaker fields land in IndexedDB alongside the image so
-      // room history can render past entries without the live session.
+      // Stage the full record for the flush effect — speaker fields land
+      // in IndexedDB alongside the image so room history can render past
+      // entries without the live session.
       if (stageSid) {
         portraitDeltas.push({ sessionId: stageSid, ...record })
       }
@@ -375,15 +390,23 @@ export function useSession(): Session {
     // Prune keys that no live observation or feed entry references. Each
     // entry only survives if its (playerId, characterId) pair appears
     // in current identity, the current roster, or a roll / chat still
-    // inside the in-memory feed window.
+    // inside the in-memory feed window. Legacy entries (with no
+    // `characterId` field) are matched via the v4→v5 synthesised
+    // `@n:<encoded characterName>` id so old roomLog data keeps a
+    // pruning anchor.
     const needed = new Set<string>()
     const noteKey = (id: string, cid: string) => {
       if (id) needed.add(characterImagesKey(id, cid))
     }
+    const legacySpeakerCid = (entry: unknown): string => {
+      const e = entry as { characterId?: string; characterName?: string }
+      if (e.characterId !== undefined && e.characterId !== '') return e.characterId
+      return legacyCharacterIdFromName(e.characterName ?? '')
+    }
     noteKey(playerId, characterId)
     for (const p of playersState) noteKey(p.id, p.characterId ?? '')
-    for (const r of history) noteKey(r.playerId, resolveCid(r.characterId, r.characterName))
-    for (const m of chat) noteKey(m.playerId, resolveCid(m.characterId, m.characterName))
+    for (const r of history) noteKey(r.playerId, legacySpeakerCid(r))
+    for (const m of chat) noteKey(m.playerId, legacySpeakerCid(m))
     for (const key of Object.keys(map)) {
       if (needed.has(key)) continue
       if (!changed) {
@@ -392,7 +415,7 @@ export function useSession(): Session {
       }
       delete map[key]
     }
-    if (changed) setCharacterImages(map)
+    if (changed) setSessionCharacters(map)
     // Append the staged deltas to the persistent queue. Functional
     // `setState` guarantees consecutive derivations layer onto each
     // other instead of clobbering — the flush effect's offset ref
@@ -695,9 +718,14 @@ export function useSession(): Session {
             }
             if (ownImageRef.current) images[playerId] = ownImageRef.current
             setPlayerImages(images)
-            // Persist the per-(player, character) snapshot — speaker
-            // fields go in alongside the image so room history can
-            // render past entries without the live session.
+            // Persist the per-(player, character) snapshot — the
+            // speaker fields the feed needs land in IndexedDB alongside
+            // the image so room history can render past entries
+            // without the live session. (The render-phase derivation
+            // also covers this for the in-memory map; the explicit
+            // write here makes sure a freshly joined room's welcome
+            // commits to disk even if the player navigates away
+            // before the next render-phase tick.)
             const drafts: SessionCharacterDraft[] = []
             for (const p of msg.snapshot.players) {
               drafts.push({
@@ -710,8 +738,6 @@ export function useSession(): Session {
                 image: images[p.id] ?? '',
               })
             }
-            // Cover the local player too in case the snapshot's roster
-            // entry has not yet been refreshed with the current portrait.
             if (!msg.snapshot.players.some((p) => p.id === playerId)) {
               drafts.push({
                 playerId,
@@ -873,8 +899,15 @@ export function useSession(): Session {
   const restoreFeedFromLog = useCallback(async (sid: string) => {
     const entries = await loadRecentLog(sid, 500)
     if (entries.length === 0) return
-    const rolls = entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult)
-    const chats = entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage)
+    // Older roomLog entries (pre-v1.74) carry `characterName` instead
+    // of `characterId`; normalize them so the feed can render every
+    // entry through the `(playerId, characterId)` lookup uniformly.
+    const rolls = entries
+      .filter((e) => e.kind === 'roll')
+      .map((e) => normalizeSpeakerEntry(e.data as RollResult))
+    const chats = entries
+      .filter((e) => e.kind === 'chat')
+      .map((e) => normalizeSpeakerEntry(e.data as ChatMessage))
     const marks = entries
       .filter((e) => e.kind === 'marker')
       .map((e) => e.data as SystemMarker)
@@ -1268,11 +1301,7 @@ export function useSession(): Session {
       const message: ChatMessage = {
         id: newChatId(),
         playerId,
-        playerName: composeName(nameRef.current, characterNameRef.current) || '???',
-        isGM: roleRef.current === 'host',
         characterId: characterIdRef.current,
-        characterName: characterNameRef.current,
-        background: backgroundRef.current,
         text: trimmed,
         timestamp: Date.now(),
         lang: langRef.current,
@@ -1592,7 +1621,7 @@ export function useSession(): Session {
     leaveRoom,
     players,
     playerImages,
-    characterImages,
+    sessionCharacters,
     history,
     chat,
     markers,

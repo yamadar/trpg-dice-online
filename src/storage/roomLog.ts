@@ -19,10 +19,14 @@
  */
 
 const DB_NAME = 'trpg-dice'
-const DB_VERSION = 5
+const DB_VERSION = 6
 const STORE = 'roomLog'
 const META = 'sessions'
-const PORTRAITS = 'sessionPortraits'
+/** v6 renamed the portrait store to match its expanded role
+ *  (per-(player, character) speaker snapshot). The old name is kept on
+ *  hand for the one-shot v5→v6 migration. */
+const CHARACTERS = 'sessionCharacters'
+const LEGACY_PORTRAITS = 'sessionPortraits'
 
 /** Which feed list an entry belongs to. */
 export type LogKind = 'roll' | 'chat' | 'marker'
@@ -106,7 +110,7 @@ export interface SessionCharacterRecord {
   updatedAt: number
 }
 
-/** Compose the composite key used by `sessionPortraits`. Kept in one
+/** Compose the composite key used by `sessionCharacters`. Kept in one
  *  place so the encoding (and the separator choice) is consistent
  *  between writes, reads and the migration. Exported so unit tests
  *  can pin the schema invariants without bringing IndexedDB into the
@@ -127,6 +131,26 @@ export function portraitPk(
  *  acting directly" key). */
 export function legacyCharacterIdFromName(characterName: string): string {
   return characterName ? `@n:${encodeURIComponent(characterName)}` : ''
+}
+
+/** Coerce a possibly-legacy feed entry (a ChatMessage / RollResult
+ *  read out of `roomLog`) into one that carries a definite
+ *  `characterId`. Older entries — written before v1.74 dropped the
+ *  inline speaker snapshot — used `characterName` to identify the
+ *  active character; this maps that back onto the same
+ *  `@n:<encoded name>` synthesised id the v4→v5 migration used for
+ *  `sessionCharacters` rows, so the live `${playerId}|${characterId}`
+ *  lookup hits the matching record. An entry that already has the
+ *  field (including an explicit empty string for "no character") is
+ *  returned untouched. */
+export function normalizeSpeakerEntry<T extends { characterId?: string }>(
+  entry: T,
+): T & { characterId: string } {
+  if (entry.characterId !== undefined) {
+    return entry as T & { characterId: string }
+  }
+  const characterName = (entry as { characterName?: string }).characterName ?? ''
+  return { ...entry, characterId: legacyCharacterIdFromName(characterName) }
 }
 
 /** True for a v3-shaped portrait pk (`${sessionId}:${playerId}`). v4+
@@ -228,12 +252,18 @@ function openDb(): Promise<IDBDatabase | null> {
       if (event.oldVersion >= 1 && event.oldVersion < 2) {
         migrateV1(logStore, metaStore)
       }
-      // v3 added per-session portrait snapshots, so a past session can
-      // surface the last-known character image of each player.
-      if (!db.objectStoreNames.contains(PORTRAITS)) {
-        const ps = db.createObjectStore(PORTRAITS, { keyPath: 'pk' })
-        ps.createIndex('bySession', 'sessionId')
+      // Ensure the v6 per-(player, character) store exists. In a v3-v5
+      // → v6 upgrade we'll copy rows in from the legacy store further
+      // down; in a fresh install (or a v1/v2 upgrade) this is the
+      // only place the store comes from.
+      if (!db.objectStoreNames.contains(CHARACTERS)) {
+        const cs = db.createObjectStore(CHARACTERS, { keyPath: 'pk' })
+        cs.createIndex('bySession', 'sessionId')
       }
+      // Legacy `sessionPortraits` migrations run only when the legacy
+      // store exists — i.e. coming up from v3, v4 or v5. v1/v2 → v6
+      // upgrades skip the chain because there is nothing to read from.
+      const legacyPortraitsExists = db.objectStoreNames.contains(LEGACY_PORTRAITS)
       // v4 re-keys portrait records to be per-character (not per-player),
       // so a session that saw the same player act as multiple characters
       // can show each character's own avatar in past-room history.
@@ -241,8 +271,8 @@ function openDb(): Promise<IDBDatabase | null> {
       // when none was stored) into the v4 pk format; the v5 pass below
       // then promotes that characterName into a synthesised
       // `@n:<encoded name>` characterId.
-      if (event.oldVersion >= 3 && event.oldVersion < 4) {
-        const portraitsStore = tx!.objectStore(PORTRAITS)
+      if (legacyPortraitsExists && event.oldVersion >= 3 && event.oldVersion < 4) {
+        const portraitsStore = tx!.objectStore(LEGACY_PORTRAITS)
         const cursor = portraitsStore.openCursor()
         cursor.onsuccess = () => {
           const cur = cursor.result
@@ -290,8 +320,8 @@ function openDb(): Promise<IDBDatabase | null> {
       // `@n:<encoded characterName>` characterId so per-character rows
       // stay distinct, and fill the new fields with conservative
       // defaults (empty / false) so the load side has consistent types.
-      if (event.oldVersion >= 4 && event.oldVersion < 5) {
-        const portraitsStore = tx!.objectStore(PORTRAITS)
+      if (legacyPortraitsExists && event.oldVersion >= 4 && event.oldVersion < 5) {
+        const portraitsStore = tx!.objectStore(LEGACY_PORTRAITS)
         const cursor = portraitsStore.openCursor()
         cursor.onsuccess = () => {
           const cur = cursor.result
@@ -328,6 +358,25 @@ function openDb(): Promise<IDBDatabase | null> {
           }
           portraitsStore.put(migrated)
           cur.continue()
+        }
+      }
+      // v6 renames the store to `sessionCharacters` to match the type
+      // (`SessionCharacterRecord`) it now holds. Copy every row from
+      // the legacy store into the new one, then drop the legacy store
+      // — same upgrade transaction, so the rename is atomic.
+      if (legacyPortraitsExists && event.oldVersion >= 0 && event.oldVersion < 6) {
+        const oldStore = tx!.objectStore(LEGACY_PORTRAITS)
+        const newStore = tx!.objectStore(CHARACTERS)
+        const cursor = oldStore.openCursor()
+        cursor.onsuccess = () => {
+          const cur = cursor.result
+          if (cur) {
+            newStore.put(cur.value)
+            cur.continue()
+          } else {
+            // All rows copied; drop the legacy store now that it's drained.
+            db.deleteObjectStore(LEGACY_PORTRAITS)
+          }
         }
       }
     }
@@ -646,7 +695,7 @@ export async function deleteSession(sessionId: string | null): Promise<void> {
   if (!db) return
   await new Promise<void>((resolve) => {
     try {
-      const tx = db.transaction([STORE, META, PORTRAITS], 'readwrite')
+      const tx = db.transaction([STORE, META, CHARACTERS], 'readwrite')
       const cursor = tx
         .objectStore(STORE)
         .index('bySessionAt')
@@ -660,7 +709,7 @@ export async function deleteSession(sessionId: string | null): Promise<void> {
       }
       tx.objectStore(META).delete(sessionId)
       const portraitCursor = tx
-        .objectStore(PORTRAITS)
+        .objectStore(CHARACTERS)
         .index('bySession')
         .openCursor(IDBKeyRange.only(sessionId))
       portraitCursor.onsuccess = () => {
@@ -684,10 +733,10 @@ export async function deleteAllSessions(): Promise<void> {
   if (!db) return
   await new Promise<void>((resolve) => {
     try {
-      const tx = db.transaction([STORE, META, PORTRAITS], 'readwrite')
+      const tx = db.transaction([STORE, META, CHARACTERS], 'readwrite')
       tx.objectStore(STORE).clear()
       tx.objectStore(META).clear()
-      tx.objectStore(PORTRAITS).clear()
+      tx.objectStore(CHARACTERS).clear()
       tx.oncomplete = () => resolve()
       tx.onerror = () => resolve()
     } catch {
@@ -723,8 +772,8 @@ export async function saveSessionCharacter(
   if (!db) return
   await new Promise<void>((resolve) => {
     try {
-      const tx = db.transaction(PORTRAITS, 'readwrite')
-      const store = tx.objectStore(PORTRAITS)
+      const tx = db.transaction(CHARACTERS, 'readwrite')
+      const store = tx.objectStore(CHARACTERS)
       const pk = portraitPk(sessionId, draft.playerId, draft.characterId)
       const rec: SessionCharacterRecord = {
         pk,
@@ -761,8 +810,8 @@ export async function saveSessionCharacters(
   if (!db) return false
   return new Promise<boolean>((resolve) => {
     try {
-      const tx = db.transaction(PORTRAITS, 'readwrite')
-      const store = tx.objectStore(PORTRAITS)
+      const tx = db.transaction(CHARACTERS, 'readwrite')
+      const store = tx.objectStore(CHARACTERS)
       const now = Date.now()
       for (const d of drafts) {
         const pk = portraitPk(sessionId, d.playerId, d.characterId)
@@ -804,9 +853,9 @@ export async function loadSessionCharacters(
   if (!db) return []
   return new Promise((resolve) => {
     try {
-      const tx = db.transaction(PORTRAITS, 'readonly')
+      const tx = db.transaction(CHARACTERS, 'readonly')
       const req = tx
-        .objectStore(PORTRAITS)
+        .objectStore(CHARACTERS)
         .index('bySession')
         .getAll(IDBKeyRange.only(sessionId))
       req.onsuccess = () => {

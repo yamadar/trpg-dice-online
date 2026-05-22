@@ -21,11 +21,7 @@ function sampleRoll(hidden: boolean): RollResult {
     modifier: 4,
     value: 21,
     playerId: 'gm',
-    playerName: 'GM',
-    isGM: true,
     characterId: '',
-    characterName: '',
-    background: '',
     hidden,
     timestamp: 1000,
   }
@@ -76,7 +72,7 @@ describe('redactRoll', () => {
     expect(redacted.value).toBe(0)
     expect(redacted.modifier).toBe(0)
     // Non-secret metadata is preserved so the entry still renders.
-    expect(redacted.playerName).toBe('GM')
+    expect(redacted.playerId).toBe('gm')
     expect(redacted.kind).toBe('judgment')
   })
 

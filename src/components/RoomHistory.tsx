@@ -6,11 +6,15 @@ import { formatFeedDate } from '../feed/datetime'
 import type { ChatFile, ChatMessage } from '../net/protocol'
 import type { RollResult } from '../dice/types'
 import {
+  characterImagesKey,
   deleteAllSessions,
   deleteSession,
   listSessions,
   loadFullLog,
-  loadSessionCharacterPortraits,
+  loadSessionCharacters,
+  normalizeSpeakerEntry,
+  type SessionCharacterDraft,
+  type SessionCharacterRecord,
   type SessionSummary,
 } from '../storage/roomLog'
 import { useConfirm } from '../hooks/useConfirm'
@@ -50,8 +54,8 @@ export function RoomHistory({ playerId, onBack }: Props) {
   // result that lands after the selection moved on is dropped at render
   // time rather than overwriting the newer view.
   const [log, setLog] = useState<{ sessionId: string; data: LoadedLog } | null>(null)
-  const [portraitState, setPortraitState] = useState<
-    { sessionId: string; map: Record<string, string> } | null
+  const [charactersState, setCharactersState] = useState<
+    { sessionId: string; records: SessionCharacterRecord[] } | null
   >(null)
   const [filter, setFilter] = useState<FeedFilter>('all')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -80,43 +84,58 @@ export function RoomHistory({ playerId, onBack }: Props) {
   }, [])
 
   // Load the selected session's full log and its per-(player, character)
-  // portrait map in parallel. Both are tagged with the session id so a
-  // stale result is dropped by `loadedLog` / `portraits` below. The
-  // portrait map is keyed by `${playerId}|${characterId}` — same shape
-  // as the live `Session.characterImages` — so it can be handed straight
-  // to `FeedList` without re-keying. Older feed entries that predate
-  // the `characterId` field fall back to `legacyCharacterIdFromName`
-  // inside `speakerImageKey`, hitting the rows the v4→v5 migration
-  // synthesised under `@n:<encoded characterName>`.
+  // records in parallel. Both are tagged with the session id so a stale
+  // result is dropped by `loadedLog` / `sessionCharacters` below. Older
+  // feed entries that predate the `characterId` field fall back to
+  // `legacyCharacterIdFromName` inside `speakerImageKey`, hitting the
+  // rows the v4→v5 migration synthesised under `@n:<encoded characterName>`.
   useEffect(() => {
     if (!selected) return
     const sid = selected.sessionId
-    void Promise.all([loadFullLog(sid), loadSessionCharacterPortraits(sid)]).then(
-      ([entries, portraits]) => {
+    void Promise.all([loadFullLog(sid), loadSessionCharacters(sid)]).then(
+      ([entries, records]) => {
         setLog({
           sessionId: sid,
           data: {
-            history: entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult),
-            chat: entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage),
+            history: entries
+              .filter((e) => e.kind === 'roll')
+              .map((e) => normalizeSpeakerEntry(e.data as RollResult)),
+            chat: entries
+              .filter((e) => e.kind === 'chat')
+              .map((e) => normalizeSpeakerEntry(e.data as ChatMessage)),
             markers: entries
               .filter((e) => e.kind === 'marker')
               .map((e) => e.data as SystemMarker),
           },
         })
-        setPortraitState({ sessionId: sid, map: portraits })
+        setCharactersState({ sessionId: sid, records })
       },
     )
   }, [selected])
 
-  // Only the log / portraits that match the current selection.
+  // Only the log / records that match the current selection.
   const loadedLog = selected && log?.sessionId === selected.sessionId ? log.data : null
-  // Wrap in `useMemo` so the empty-object fallback doesn't get a fresh
-  // identity every render, which would invalidate downstream `useMemo`s
-  // that take it as a dep.
-  const portraits = useMemo(
-    () =>
-      selected && portraitState?.sessionId === selected.sessionId ? portraitState.map : {},
-    [selected, portraitState],
+  // Build the per-(player, character) map keyed by `${playerId}|${characterId}`
+  // — the shape `FeedList` expects. Cached so the empty-object fallback
+  // doesn't get a fresh identity every render.
+  const sessionCharacters = useMemo<Record<string, SessionCharacterDraft | undefined>>(
+    () => {
+      if (!selected || charactersState?.sessionId !== selected.sessionId) return {}
+      const map: Record<string, SessionCharacterDraft | undefined> = {}
+      for (const r of charactersState.records) {
+        map[characterImagesKey(r.playerId, r.characterId)] = {
+          playerId: r.playerId,
+          characterId: r.characterId,
+          playerName: r.playerName,
+          characterName: r.characterName,
+          background: r.background,
+          isGM: r.isGM,
+          image: r.image,
+        }
+      }
+      return map
+    },
+    [selected, charactersState],
   )
 
   const confirm = useConfirm()
@@ -159,28 +178,9 @@ export function RoomHistory({ playerId, onBack }: Props) {
     [images],
   )
 
-  // The persisted map is already keyed by `${playerId}|${characterId}`
-  // (the same shape `FeedList` expects), so it is used as-is. Older
-  // feed entries that predate the `characterId` field land on a
-  // `legacyCharacterIdFromName`-synthesised key inside
-  // `speakerImageKey`; if that does not match a row, fall back to the
-  // bare `${playerId}|` row that v3 sessions migrated forward as.
-  const characterImagesFromPortraits = useMemo(() => {
-    const map: Record<string, string | undefined> = { ...portraits }
-    for (const item of feed) {
-      const speaker =
-        item.kind === 'chat' ? item.message : item.kind === 'roll' ? item.roll : null
-      if (!speaker) continue
-      const key = speakerImageKey(speaker)
-      if (map[key]) continue
-      const legacy = portraits[`${speaker.playerId}|`]
-      if (legacy) map[key] = legacy
-    }
-    return map
-  }, [feed, portraits])
-
   // --- detail view: a player's character snapshot from this session ------
   if (selected && detail) {
+    const record = sessionCharacters[speakerImageKey(detail)]
     return (
       <div className="room-history">
         <div className="history-head">
@@ -191,10 +191,10 @@ export function RoomHistory({ playerId, onBack }: Props) {
         <PlayerDetailCard
           player={null}
           playerId={detail.playerId}
-          displayName={detail.name}
-          characterName={detail.characterName}
-          background={detail.background}
-          image={characterImagesFromPortraits[speakerImageKey(detail)]}
+          displayName={record?.playerName ?? ''}
+          characterName={record?.characterName ?? ''}
+          background={record?.background ?? ''}
+          image={record?.image || undefined}
           isSelf={detail.playerId === playerId}
         />
       </div>
@@ -236,7 +236,7 @@ export function RoomHistory({ playerId, onBack }: Props) {
             hasOlder={false}
             onLoadOlder={() => {}}
             pending={[]}
-            characterImages={characterImagesFromPortraits}
+            sessionCharacters={sessionCharacters}
             onOpenDetail={setDetail}
             onOpenImage={openImage}
           />

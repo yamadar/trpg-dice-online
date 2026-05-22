@@ -4,6 +4,7 @@ import {
   isLegacyPortraitPk,
   legacyCharacterIdFromName,
   newSessionId,
+  normalizeSpeakerEntry,
   pickReusableSessionId,
   portraitPk,
   type SessionRecord,
@@ -96,6 +97,52 @@ describe('portraitPk', () => {
     // The v4→v5 migration uses this shape so per-character rows from
     // older sessions stay distinct after the schema bump.
     expect(portraitPk('s1', 'p1', '@n:Knight')).toBe('s1|p1|@n:Knight')
+  })
+})
+
+describe('normalizeSpeakerEntry', () => {
+  it('returns the entry untouched when it already has a characterId', () => {
+    const entry = { id: 'r1', playerId: 'p1', characterId: 'chr-knight' }
+    const normalized = normalizeSpeakerEntry(entry)
+    expect(normalized.characterId).toBe('chr-knight')
+    expect(normalized).toEqual(entry)
+  })
+
+  it('treats an explicit empty characterId as "no character" — no fallback', () => {
+    // A new-style entry with characterId='' means "player acting
+    // directly". It must not be re-keyed by characterName, even when
+    // one happens to be present (e.g. from a buggy writer).
+    const entry = {
+      id: 'r2',
+      playerId: 'p1',
+      characterId: '',
+      characterName: 'Shouldnt matter',
+    }
+    expect(normalizeSpeakerEntry(entry).characterId).toBe('')
+  })
+
+  it('synthesises an `@n:<encoded name>` characterId for a legacy entry', () => {
+    // A pre-v1.74 entry has no `characterId` field at all but does
+    // carry the character name in the snapshot. Normalisation re-keys
+    // it under the same synthesised id the v4→v5 migration writes
+    // into `sessionCharacters`.
+    const entry = { id: 'r3', playerId: 'p1', characterName: 'Knight' } as {
+      id: string
+      playerId: string
+      characterId?: string
+      characterName?: string
+    }
+    expect(normalizeSpeakerEntry(entry).characterId).toBe('@n:Knight')
+  })
+
+  it('maps a legacy entry with an empty characterName onto `characterId=""`', () => {
+    const entry = { id: 'r4', playerId: 'p1', characterName: '' } as {
+      id: string
+      playerId: string
+      characterId?: string
+      characterName?: string
+    }
+    expect(normalizeSpeakerEntry(entry).characterId).toBe('')
   })
 })
 

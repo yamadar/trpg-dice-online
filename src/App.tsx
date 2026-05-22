@@ -122,20 +122,15 @@ function App() {
     noticeTimerRef.current = setTimeout(() => setNotice(null), 2500)
   }, [])
 
-  const rollerName = session.displayName || t('common.you')
-
-  // Identity snapshot attached to a roll, so tapping the name later shows
-  // the character used at that time rather than the current one.
+  // RollResult only carries (playerId, characterId) for the speaker; the
+  // display name / background / GM mark are pulled from the per-(player,
+  // character) record in `sessionCharacters` at render time.
   const roller = useMemo(
     () => ({
       id: session.playerId,
-      name: rollerName,
-      isGM: session.isGM,
       characterId: activeCharacterId,
-      characterName: activeName ?? '',
-      background: activeBackground ?? '',
     }),
-    [session.playerId, session.isGM, rollerName, activeCharacterId, activeName, activeBackground],
+    [session.playerId, activeCharacterId],
   )
 
   const handleRoll = useCallback(

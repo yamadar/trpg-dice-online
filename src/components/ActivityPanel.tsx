@@ -13,7 +13,12 @@ import {
 import { isImageType } from '../chat/attachment'
 import type { ChatFile, ChatMessage } from '../net/protocol'
 import type { RollResult } from '../dice/types'
-import { loadFullLog } from '../storage/roomLog'
+import {
+  loadFullLog,
+  normalizeSpeakerEntry,
+  type SessionCharacterDraft,
+} from '../storage/roomLog'
+import { composeName } from '../players/identity'
 import { useConfirm } from '../hooks/useConfirm'
 import { Sheet } from './Sheet'
 import { PlayerDetailCard } from './PlayerDetailCard'
@@ -116,29 +121,55 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
     return list
   }, [feed])
 
-  // The avatar lookup map (key: `${playerId}|${characterId}`). The
-  // session-wide map tracks observed (player, character) → image for the
-  // room. On top, the local user's `characters[]` is the canonical source
-  // for their own portraits, so we drop every self-prefixed entry from
-  // the session map first and re-add only the characters that still have
-  // an image. This way a portrait removed from a non-active character
-  // (which never broadcasts) does not linger as a stale avatar. An
-  // unnamed character with an image still gets layered (under the
-  // `${selfId}|${c.id}` key) so a brand-new character with an uploaded
-  // portrait can already show its avatar before being named.
-  const characterImages = useMemo(() => {
-    const map: Record<string, string | undefined> = {}
+  // The session character map (`${playerId}|${characterId}` → record).
+  // The session-wide map tracks observed (player, character) records for
+  // the room. On top, the local user's `characters[]` is the canonical
+  // source for their own characters' name/background/image, so we drop
+  // every self-prefixed entry from the session map first and re-add an
+  // overriding record per stored character. This way a portrait removed
+  // from a non-active character (which never broadcasts) does not
+  // linger as a stale avatar.
+  const sessionCharacters = useMemo(() => {
+    const map: Record<string, SessionCharacterDraft | undefined> = {}
     const selfPrefix = `${session.playerId}|`
-    for (const [key, value] of Object.entries(session.characterImages)) {
+    for (const [key, value] of Object.entries(session.sessionCharacters)) {
       if (!key.startsWith(selfPrefix)) map[key] = value
     }
     for (const c of characters) {
-      if (c.image) {
-        map[`${session.playerId}|${c.id}`] = c.image
+      const key = `${session.playerId}|${c.id}`
+      const previous = session.sessionCharacters[key]
+      map[key] = {
+        playerId: session.playerId,
+        characterId: c.id,
+        playerName: composeName(session.name, c.name),
+        characterName: c.name,
+        background: c.background,
+        // The GM mark is a runtime fact about the player, not the
+        // character. Trust the session's read of "am I currently the
+        // GM" so a record exists even before the live `players` roster
+        // catches up.
+        isGM: previous?.isGM ?? session.isGM,
+        image: c.image ?? '',
+      }
+    }
+    // If the local player has no active character selected at all (no
+    // `characters[]` entry to layer on), still expose a `${selfId}|`
+    // record so the feed can render entries the user sent as
+    // themselves.
+    const selfBareKey = `${session.playerId}|`
+    if (!(selfBareKey in map) || map[selfBareKey] === undefined) {
+      map[selfBareKey] = {
+        playerId: session.playerId,
+        characterId: '',
+        playerName: composeName(session.name, ''),
+        characterName: '',
+        background: '',
+        isGM: session.isGM,
+        image: '',
       }
     }
     return map
-  }, [session.characterImages, session.playerId, characters])
+  }, [session.sessionCharacters, session.playerId, session.name, session.isGM, characters])
 
   // Items older than the most recent room exit belong to a room left behind.
   const lastExitAt = useMemo(() => {
@@ -170,8 +201,12 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
     if (!sid) return
     const entries = await loadFullLog(sid)
     setOlder({
-      history: entries.filter((e) => e.kind === 'roll').map((e) => e.data as RollResult),
-      chat: entries.filter((e) => e.kind === 'chat').map((e) => e.data as ChatMessage),
+      history: entries
+        .filter((e) => e.kind === 'roll')
+        .map((e) => normalizeSpeakerEntry(e.data as RollResult)),
+      chat: entries
+        .filter((e) => e.kind === 'chat')
+        .map((e) => normalizeSpeakerEntry(e.data as ChatMessage)),
       markers: entries.filter((e) => e.kind === 'marker').map((e) => e.data as SystemMarker),
     })
     setReachedOldest(true)
@@ -282,7 +317,7 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
         hasOlder={hasOlder}
         onLoadOlder={loadOlder}
         pending={pending}
-        characterImages={characterImages}
+        sessionCharacters={sessionCharacters}
         onOpenDetail={setDetail}
         onOpenImage={openLightbox}
         emptyState={emptyState}
@@ -294,19 +329,22 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
 
       {filter !== 'rolls' && <ChatComposer session={session} onNotice={onNotice} />}
 
-      {detail && (
-        <Sheet onClose={() => setDetail(null)}>
-          <PlayerDetailCard
-            player={session.players.find((p) => p.id === detail.playerId) ?? null}
-            playerId={detail.playerId}
-            displayName={detail.name}
-            characterName={detail.characterName}
-            background={detail.background}
-            image={characterImages[speakerImageKey(detail)]}
-            isSelf={detail.playerId === session.playerId}
-          />
-        </Sheet>
-      )}
+      {detail && (() => {
+        const record = sessionCharacters[speakerImageKey(detail)]
+        return (
+          <Sheet onClose={() => setDetail(null)}>
+            <PlayerDetailCard
+              player={session.players.find((p) => p.id === detail.playerId) ?? null}
+              playerId={detail.playerId}
+              displayName={record?.playerName ?? ''}
+              characterName={record?.characterName ?? ''}
+              background={record?.background ?? ''}
+              image={record?.image || undefined}
+              isSelf={detail.playerId === session.playerId}
+            />
+          </Sheet>
+        )
+      })()}
 
       {lightboxIndex !== null && images[lightboxIndex] && (
         <Lightbox
