@@ -11,7 +11,6 @@ import { composeName } from '../players/identity'
 import type { Session } from '../hooks/useSession'
 import { useConfirm } from '../hooks/useConfirm'
 import { RoomHistory } from './RoomHistory'
-import { RoomIcon } from './icons'
 
 interface Props {
   session: Session
@@ -276,12 +275,8 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
 
   return (
     <section className="panel">
-      <h2>
-        <span className="panel-icon" aria-hidden="true">
-          <RoomIcon size={20} />
-        </span>
-        {t('room.section')}
-      </h2>
+      {/* The panel title + icon lives in the parent `Sheet` header so the
+          heading stays pinned above the scrollable body. */}
 
       {!online && view === 'home' && (
         <div className="room-setup">
