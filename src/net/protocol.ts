@@ -38,20 +38,12 @@ export interface ChatFile {
 export interface ChatMessage {
   id: string
   playerId: string
-  /** Composed display name ("Character（Player）" or just the player). */
-  playerName: string
-  /** Whether the sender was the GM — a snapshot, shown as a mark in the feed. */
-  isGM: boolean
-  /** Active character id when the message was sent ('' if none). Stable
-   *  across renames, so room history can key (and look up) per-character
-   *  records under (sessionId, playerId, characterId). */
+  /** Active character id when the message was sent ('' when the player
+   *  was acting directly, no character). Stable across renames; the
+   *  speaker's display name / background / GM mark are pulled from the
+   *  per-(player, character) record in `sessionCharacters` rather than
+   *  carried inline. */
   characterId: string
-  /** Active character name when the message was sent ('' if none). A
-   *  snapshot, so tapping the name later shows that character, not the
-   *  sender's current one. */
-  characterName: string
-  /** Active character's public background at that time ('' if none). */
-  background: string
   text: string
   timestamp: number
   /** Language the message was written in (for future translation). */

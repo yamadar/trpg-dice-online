@@ -8,10 +8,20 @@ import type { TFn } from '../i18n/context'
  *              when unnamed — the pattern name is simply dropped rather
  *              than substituted with a placeholder)
  *  - hidden (seen by non-GM): "{name} made a hidden roll"
+ *
+ * `speakerName` is the composed display name to show in the hidden-roll
+ * sentence — passed in by the caller because RollResult no longer
+ * carries the speaker snapshot (the names live on the per-(player,
+ * character) record in `sessionCharacters`).
  */
-export function formatRollText(t: TFn, result: RollResult, canSeeValue: boolean): string {
+export function formatRollText(
+  t: TFn,
+  result: RollResult,
+  canSeeValue: boolean,
+  speakerName: string = '',
+): string {
   if (result.hidden && !canSeeValue) {
-    return t('result.hiddenRoll', { name: result.playerName || '???' })
+    return t('result.hiddenRoll', { name: speakerName || '???' })
   }
   const name = result.patternName.trim()
   if (result.kind === 'damage') {

@@ -9,19 +9,18 @@ import type { RollResult } from '../dice/types'
 import { playerColor } from '../players/colors'
 import { feedName } from '../players/identity'
 import { formatDiceSummary, formatRollText } from '../dice/format'
+import type { SessionCharacterDraft } from '../storage/roomLog'
 import { ChatAttachment } from './ChatAttachment'
 import { DiceFaceIcon } from './DiceFaceIcon'
 
-/** Identity snapshot opened in the player-detail card when a name is tapped. */
+/** The pair tapped in the feed when a name is clicked. The player-detail
+ *  card joins it back to the per-(player, character) record in
+ *  `sessionCharacters` to render the name / background / portrait. */
 export interface FeedDetailTarget {
   playerId: string
-  /** Active character id at the time of the entry. Empty for older
-   *  rolls / chats that predate the field; the card then falls back to
-   *  the character name for the portrait lookup. */
+  /** Active character id at the time of the entry. Empty when the
+   *  speaker was acting as the player directly. */
   characterId: string
-  name: string
-  characterName: string
-  background: string
 }
 
 /** A new entry within this many px of the bottom still auto-scrolls. */
@@ -86,25 +85,25 @@ const FeedAvatar = memo(function FeedAvatar({
 
 const FeedChatItem = memo(function FeedChatItem({
   message: m,
+  speaker,
   archived,
   pending,
   compact,
   playerId,
-  characterImages,
   onOpenDetail,
   onOpenImage,
 }: {
   message: ChatMessage
+  /** Per-(player, character) record resolved by the parent. Undefined
+   *  when the session has not observed this (player, character) pair
+   *  yet (a brand-new entry, or a record pruned out). */
+  speaker: SessionCharacterDraft | undefined
   archived: boolean
   /** A message still queued for an offline GM — shown but not yet sent. */
   pending?: boolean
   /** The compact feed shows just the character name, no player-color dot. */
   compact: boolean
   playerId: string
-  /** Map of `${playerId}|${characterId}` → latest image observed for
-   *  that character. Lets a feed item keep the right avatar after the
-   *  speaking player has switched away from that character. */
-  characterImages: Record<string, string | undefined>
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
 }) {
@@ -119,18 +118,21 @@ const FeedChatItem = memo(function FeedChatItem({
   const { translated, translating } = useTranslatedText(m.text, m.lang)
   const [showOriginal, setShowOriginal] = useState(false)
   const showTranslation = autoTranslate && translated !== null && !showOriginal
+  // Fall back to the localized anon label when no per-character record
+  // has been observed yet (a brand-new entry, a pruned row, or a
+  // legacy entry that normalize couldn't pin to a row) so the
+  // speaker-name button never renders blank.
+  const displayName = speaker?.playerName || t('player.anon')
+  const characterName = speaker?.characterName ?? ''
+  const speakerIsGM = speaker?.isGM ?? false
+  const image = speaker?.image || undefined
   return (
     <li
       className={`feed-chat${own ? ' own' : ''}${mentionsMe ? ' mentioned' : ''}${
         archived ? ' archived' : ''
       }${pending ? ' pending' : ''}`}
     >
-      {!compact && (
-        <FeedAvatar
-          image={characterImages[speakerImageKey(m)]}
-          color={color}
-        />
-      )}
+      {!compact && <FeedAvatar image={image} color={color} />}
       <div className="feed-bubble">
         <div className="feed-line">
           <button
@@ -141,15 +143,12 @@ const FeedChatItem = memo(function FeedChatItem({
               onOpenDetail({
                 playerId: m.playerId,
                 characterId: m.characterId ?? '',
-                name: m.playerName,
-                characterName: m.characterName ?? '',
-                background: m.background ?? '',
               })
             }
           >
-            {feedName(m.playerName, m.characterName ?? '', compact)}
+            {feedName(displayName, characterName, compact)}
           </button>
-          {m.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
+          {speakerIsGM && <span className="badge gm">{t('room.gmBadge')}</span>}
           {pending ? (
             <span className="pending-tag">{t('chat.pending')}</span>
           ) : (
@@ -179,20 +178,20 @@ const FeedChatItem = memo(function FeedChatItem({
 
 const FeedRollItem = memo(function FeedRollItem({
   roll: r,
+  speaker,
   archived,
   isGM,
   compact,
   playerId,
-  characterImages,
   onOpenDetail,
 }: {
   roll: RollResult
+  speaker: SessionCharacterDraft | undefined
   archived: boolean
   isGM: boolean
   /** The compact feed shows just the character name, no player-color dot. */
   compact: boolean
   playerId: string
-  characterImages: Record<string, string | undefined>
   onOpenDetail: (target: FeedDetailTarget) => void
 }) {
   const { t } = useI18n()
@@ -200,17 +199,15 @@ const FeedRollItem = memo(function FeedRollItem({
   const isHidden = r.hidden && !canSee
   const own = r.playerId === playerId
   const color = playerColor(r.playerId)
-  const fullName = r.playerName || t('player.anon')
+  const displayName = speaker?.playerName || t('player.anon')
+  const characterName = speaker?.characterName ?? ''
+  const speakerIsGM = speaker?.isGM ?? false
+  const image = speaker?.image || undefined
   return (
     <li
       className={`feed-roll roll ${isHidden ? 'hidden' : r.kind}${own ? ' own' : ''}${archived ? ' archived' : ''}`}
     >
-      {!compact && (
-        <FeedAvatar
-          image={characterImages[speakerImageKey(r)]}
-          color={color}
-        />
-      )}
+      {!compact && <FeedAvatar image={image} color={color} />}
       <div className="feed-bubble">
         <div className="feed-line">
           <button
@@ -221,18 +218,15 @@ const FeedRollItem = memo(function FeedRollItem({
               onOpenDetail({
                 playerId: r.playerId,
                 characterId: r.characterId ?? '',
-                name: fullName,
-                characterName: r.characterName ?? '',
-                background: r.background ?? '',
               })
             }
           >
-            {feedName(fullName, r.characterName ?? '', compact)}
+            {feedName(displayName, characterName, compact)}
           </button>
-          {r.isGM && <span className="badge gm">{t('room.gmBadge')}</span>}
+          {speakerIsGM && <span className="badge gm">{t('room.gmBadge')}</span>}
           <time>{formatClock(new Date(r.timestamp))}</time>
         </div>
-        <p className="roll-text">{formatRollText(t, r, canSee)}</p>
+        <p className="roll-text">{formatRollText(t, r, canSee, displayName)}</p>
         {!isHidden && (
           <p className="roll-detail">
             {formatDiceSummary(r.diceCount, r.diceType, r.modifier)}
@@ -267,10 +261,11 @@ interface Props {
   onLoadOlder: () => void
   /** Chat queued for an offline GM, shown as pending below the feed. */
   pending: ChatMessage[]
-  /** Character portraits keyed by `${playerId}|${characterId}` — used
-   *  for the per-message avatar so a feed entry keeps the right portrait
-   *  after the speaker has switched to a different character. */
-  characterImages: Record<string, string | undefined>
+  /** Per-(player, character) records keyed by `${playerId}|${characterId}`.
+   *  The feed renders speaker name / character name / background / GM
+   *  mark / portrait from the record matching the entry's `characterId`
+   *  (with `legacyCharacterIdFromName` fallback for older entries). */
+  sessionCharacters: Record<string, SessionCharacterDraft | undefined>
   onOpenDetail: (target: FeedDetailTarget) => void
   onOpenImage: (file: ChatFile) => void
   /** Overrides the default "nothing here yet" hint when the feed is empty. */
@@ -287,7 +282,7 @@ export function FeedList({
   hasOlder,
   onLoadOlder,
   pending,
-  characterImages,
+  sessionCharacters,
   onOpenDetail,
   onOpenImage,
   emptyState,
@@ -336,10 +331,10 @@ export function FeedList({
           node = (
             <FeedChatItem
               message={item.message}
+              speaker={sessionCharacters[speakerImageKey(item.message)]}
               archived={archived}
               compact={compact}
               playerId={playerId}
-              characterImages={characterImages}
               onOpenDetail={onOpenDetail}
               onOpenImage={onOpenImage}
             />
@@ -348,11 +343,11 @@ export function FeedList({
           node = (
             <FeedRollItem
               roll={item.roll}
+              speaker={sessionCharacters[speakerImageKey(item.roll)]}
               archived={archived}
               isGM={isGM}
               compact={compact}
               playerId={playerId}
-              characterImages={characterImages}
               onOpenDetail={onOpenDetail}
             />
           )
@@ -372,11 +367,11 @@ export function FeedList({
         <FeedChatItem
           key={`pending-${m.id}`}
           message={m}
+          speaker={sessionCharacters[speakerImageKey(m)]}
           archived={false}
           pending
           compact={compact}
           playerId={playerId}
-          characterImages={characterImages}
           onOpenDetail={onOpenDetail}
           onOpenImage={onOpenImage}
         />

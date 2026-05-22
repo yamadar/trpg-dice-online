@@ -49,7 +49,7 @@ describe('rollDice', () => {
 })
 
 describe('rollPattern', () => {
-  const player = { id: 'p1', name: 'Alice' }
+  const player = { id: 'p1', characterId: 'chr-alice' }
 
   it('value equals sum of faces plus modifier', () => {
     for (let i = 0; i < 500; i++) {
@@ -90,25 +90,24 @@ describe('rollPattern', () => {
     expect(r.diceCount).toBe(10)
   })
 
-  it('carries player, kind, hidden and GM flags', () => {
+  it('carries playerId, characterId, kind and hidden flag', () => {
     const r = rollPattern(
       { name: 'secret', kind: 'judgment', diceType: 'D20', diceCount: 1, modifier: 0 },
-      { id: 'gm', name: 'GM', isGM: true },
+      { id: 'gm', characterId: 'chr-mage' },
       true,
     )
     expect(r.playerId).toBe('gm')
-    expect(r.playerName).toBe('GM')
+    expect(r.characterId).toBe('chr-mage')
     expect(r.kind).toBe('judgment')
     expect(r.hidden).toBe(true)
-    expect(r.isGM).toBe(true)
   })
 
-  it('defaults isGM to false when not given', () => {
+  it('defaults characterId to "" when not given (player acting directly)', () => {
     const r = rollPattern(
       { name: 'x', kind: 'damage', diceType: 'D6', diceCount: 1, modifier: 0 },
-      { id: 'p', name: 'P' },
+      { id: 'p' },
     )
-    expect(r.isGM).toBe(false)
+    expect(r.characterId).toBe('')
   })
 
   it('produces unique ids', () => {

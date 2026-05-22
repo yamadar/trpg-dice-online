@@ -18,11 +18,7 @@ function roll(over: Partial<RollResult>): RollResult {
     modifier: 1,
     value: 12,
     playerId: 'p',
-    playerName: 'Mage',
-    isGM: false,
     characterId: '',
-    characterName: '',
-    background: '',
     hidden: false,
     timestamp: 0,
     ...over,
@@ -55,9 +51,12 @@ describe('formatRollText', () => {
   })
 
   it('hides the value of a hidden roll from players who cannot see it', () => {
-    const r = roll({ hidden: true, playerName: 'GM' })
-    expect(formatRollText(en, r, false)).toBe('GM made a hidden roll')
-    expect(formatRollText(ja, r, false)).toBe('GM が隠しロールを行いました')
+    // The speaker name is no longer carried on the RollResult itself —
+    // the feed pulls it from `sessionCharacters` and hands it in as
+    // the fourth argument.
+    const r = roll({ hidden: true })
+    expect(formatRollText(en, r, false, 'GM')).toBe('GM made a hidden roll')
+    expect(formatRollText(ja, r, false, 'GM')).toBe('GM が隠しロールを行いました')
   })
 
   it('shows the value of a hidden roll to the GM', () => {

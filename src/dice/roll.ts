@@ -37,11 +37,7 @@ export function rollPattern(
   pattern: Pick<Pattern, 'name' | 'kind' | 'diceType' | 'diceCount' | 'modifier'>,
   player: {
     id: string
-    name: string
-    isGM?: boolean
     characterId?: string
-    characterName?: string
-    background?: string
   },
   hidden = false,
 ): RollResult {
@@ -59,11 +55,7 @@ export function rollPattern(
     modifier: pattern.modifier,
     value: sum + pattern.modifier,
     playerId: player.id,
-    playerName: player.name,
-    isGM: player.isGM ?? false,
     characterId: player.characterId ?? '',
-    characterName: player.characterName ?? '',
-    background: player.background ?? '',
     hidden,
     timestamp: Date.now(),
   }

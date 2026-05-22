@@ -100,10 +100,12 @@ An SPA where players roll TRPG dice and share results with other players in real
   everything needed to restore the room.
 - An exported ZIP archive can be loaded back to restore the room — it
   reopens with the importer as its host.
-- Tapping a name in the feed shows the character name, player name and
-  background as they were when that entry was created (works on desktop
-  and mobile); it is a snapshot, so switching characters later does not
-  change what an old entry shows.
+- Tapping a name in the feed shows the character's current name,
+  player name and background (works on desktop and mobile). A
+  character is identified by its `characterId`, so every past entry
+  for that character reflects its current name / background /
+  portrait — the per-character record in `sessionCharacters` is the
+  display authority.
 
 ### 3.7 Online sharing
 - Create / join a room and share roll history, chat, and the player list.
@@ -309,12 +311,14 @@ PatternKind = 'damage' | 'judgment'
 Lang        = 'ja' | 'en'
 
 Pattern    = { id, name, kind, diceType, diceCount, modifier }
+// RollResult / ChatMessage carry just `(playerId, characterId)` for
+// the speaker. Display name / character name / background / GM mark
+// come from the matching `sessionCharacters` record at render time
+// (v1.74 retired the inline snapshot fields).
 RollResult = { id, patternName, kind, diceType, diceCount,
-               faces: number[], modifier, value, playerId,
-               playerName, characterId, characterName, background,
-               isGM, hidden, timestamp }
-ChatMessage = { id, playerId, playerName, characterId, characterName,
-                background, isGM, text, timestamp, lang, ... }
+               faces: number[], modifier, value, playerId, characterId,
+               hidden, timestamp }
+ChatMessage = { id, playerId, characterId, text, timestamp, lang, ... }
 // Player carries the active character's public info; memo is never synced.
 Player      = { id, name, isGM, characterId, characterName, background, lang }
 Character   = { id, name, background, memo, patterns: Pattern[], lang,
@@ -687,6 +691,27 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.74 — Drop the per-message speaker snapshot, route every render
+  through the per-(player, character) record store. `ChatMessage` and
+  `RollResult` lose `playerName` / `characterName` / `background` /
+  `isGM`; each entry now identifies its speaker by `(playerId,
+  characterId)` only. The feed pulls the displayed name / character
+  name / background / GM mark / portrait from `sessionCharacters`'
+  most recent observation for that pair. This formally **retires v1.20**
+  — "an entry keeps its at-the-time character name even after the
+  speaker switches characters" no longer holds; same character id =
+  same current label for every past entry. IndexedDB is bumped to v6
+  and the physical store name moves from `sessionPortraits` to
+  `sessionCharacters` (rows are copied row-by-row during the upgrade
+  transaction; the legacy store is intentionally left in place
+  because dropping it from inside a cursor callback is unreliable
+  across browsers — a future `DB_VERSION` bump can drop it
+  synchronously in the upgrade body). `deleteSession` and
+  `deleteAllSessions` clear the legacy store too while it exists, so
+  a history wipe leaves no orphan rows behind. Type names, store
+  name and concept name now line up, and the speaker-info pipeline is
+  unified with the image pipeline: one per-character store, no inline
+  snapshots.
 - v1.73 — Per-character session records and v5 room-export. The
   `Player` / `Identity` / `ChatMessage` / `RollResult` types pick up a
   new `characterId` field alongside the existing `characterName`

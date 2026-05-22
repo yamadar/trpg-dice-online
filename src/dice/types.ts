@@ -45,18 +45,11 @@ export interface RollResult {
   /** Final value: sum of faces + modifier. */
   value: number
   playerId: string
-  playerName: string
-  /** Whether the roller was the GM — a snapshot, shown as a mark in the feed. */
-  isGM: boolean
-  /** Active character id when the roll was made ('' if none). Stable across
-   *  renames, so room history can key (and look up) per-character records
-   *  under (sessionId, playerId, characterId). */
+  /** Active character id when the roll was made ('' when the roller was
+   *  acting directly, no character). The speaker's display name /
+   *  background / GM mark are pulled from the per-(player, character)
+   *  record in `sessionCharacters` rather than carried inline. */
   characterId: string
-  /** Active character name when the roll was made ('' if none). A snapshot,
-   *  so tapping the name later shows the character used at that time. */
-  characterName: string
-  /** Active character's public background at that time ('' if none). */
-  background: string
   /** When true the value is hidden from non-GM players. */
   hidden: boolean
   timestamp: number

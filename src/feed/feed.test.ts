@@ -14,11 +14,7 @@ function roll(id: string, at: number): RollResult {
     modifier: 0,
     value: 3,
     playerId: 'p1',
-    playerName: 'A',
-    isGM: false,
     characterId: '',
-    characterName: '',
-    background: '',
     hidden: false,
     timestamp: at,
   }
@@ -28,11 +24,7 @@ function chat(id: string, at: number): ChatMessage {
   return {
     id,
     playerId: 'p1',
-    playerName: 'A',
-    isGM: false,
     characterId: '',
-    characterName: '',
-    background: '',
     text: 'hi',
     timestamp: at,
     lang: 'ja',
