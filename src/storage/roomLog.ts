@@ -71,17 +71,17 @@ export interface SessionSummary extends SessionRecord {
  * per-character so a session that saw the same player act as multiple
  * characters keeps each row distinct.
  *
- * `characterId` is the stable `Character.id` (e.g. `ch-...`) for v5+
- * data. For records migrated from v4 (which keyed by `characterName`),
- * the migration synthesises a `@n:<encoded characterName>` characterId
- * so old per-character rows survive the schema bump without colliding
- * with each other. `characterId=''` represents "player acting directly"
- * (no character).
+ * `characterId` is the stable `Character.id` (a `chr-...` slug minted
+ * by `newCharacterId`) for v5+ data. For records migrated from v4
+ * (which keyed by `characterName`), the migration synthesises a
+ * `@n:<encoded characterName>` characterId so old per-character rows
+ * survive the schema bump without colliding with each other.
+ * `characterId=''` represents "player acting directly" (no character).
  */
 export interface SessionCharacterRecord {
   /** `${sessionId}|${playerId}|${characterId}` — composite, so an
    *  upsert overwrites. The `|` separator is safe because characterId
-   *  is always either a generated `ch-...` slug, the synthesised
+   *  is always either a generated `chr-...` slug, the synthesised
    *  `@n:<encoded name>` (encoded), or empty. */
   pk: string
   sessionId: string
@@ -122,8 +122,9 @@ export function portraitPk(
 /** Synthesise a fallback characterId from a character name. Used by
  *  the v4→v5 migration to keep per-character rows distinct when no
  *  real `Character.id` is available. The `@n:` prefix is reserved so
- *  it cannot collide with a real `ch-...` slug. Returns `''` for an
- *  empty name (the "player acting directly" key). */
+ *  it cannot collide with a real `chr-...` slug minted by
+ *  `newCharacterId`. Returns `''` for an empty name (the "player
+ *  acting directly" key). */
 export function legacyCharacterIdFromName(characterName: string): string {
   return characterName ? `@n:${encodeURIComponent(characterName)}` : ''
 }
@@ -706,8 +707,9 @@ export type SessionCharacterDraft = Omit<
  * Upsert one (player, character) record for the given session. An empty
  * `image` clears just the portrait but leaves the speaker snapshot — a
  * character may have no portrait but still need its name/background to
- * surface in room history. To delete the row entirely (e.g. a player
- * left the room), pass `removeIfEmpty: true`.
+ * surface in room history. The whole row is removed only by
+ * `deleteSession` (per-session cleanup), not by writing an "empty"
+ * draft, so a transient blank observation never wipes the row.
  *
  * Resolves once the IndexedDB transaction commits (or gives up), so
  * callers that await it know the write landed.

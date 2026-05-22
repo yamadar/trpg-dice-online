@@ -146,9 +146,9 @@ function parseImageDataUrl(
 }
 
 /** Sanitise the characterId for use as a filesystem path component.
- *  The id is either a generated `ch-...` slug, a synthesised
- *  `@n:<encoded name>`, or empty — `encodeURIComponent` turns any of
- *  them into a path-safe form. */
+ *  The id is either a generated `chr-...` slug (see `newCharacterId`),
+ *  a synthesised `@n:<encoded name>`, or empty — `encodeURIComponent`
+ *  turns any of them into a path-safe form. */
 function safeCharacterIdPath(characterId: string): string {
   return encodeURIComponent(characterId)
 }
