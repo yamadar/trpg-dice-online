@@ -1448,6 +1448,14 @@ label.setting-row {
   object-fit: cover;
   display: block;
 }
+/* GM avatars wear a `--gm`-coloured ring. `box-shadow` (with no blur)
+   draws the ring on top of the circle without affecting layout — the
+   36px avatar slot stays exactly 36px. Paired with the existing GM
+   badge next to the speaker name, the role reads twice over and the
+   GM is easy to spot even when scanning a busy feed. */
+.feed-avatar-gm {
+  box-shadow: 0 0 0 2px var(--gm);
+}
 .feed-bubble {
   min-width: 0;
   max-width: calc(100% - 44px);
