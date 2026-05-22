@@ -776,6 +776,57 @@ button.player-row {
   margin-bottom: 8px;
 }
 
+/* --- character portrait crop dialog ---
+   Reuses the sheet layer/backdrop/sheet classes so the dialog adopts
+   the same on-screen treatment (centred on desktop, bottom sheet on
+   mobile) as every other modal. The crop stage itself needs an
+   explicitly sized, positioned container because `react-easy-crop`
+   absolutely positions its internals to fill the parent. */
+.crop-layer {
+  /* Lifted above the regular sheet layer so the dialog sits on top of
+     the character panel sheet (z-index 30) that opened it. */
+  z-index: 40;
+}
+.crop-stage {
+  position: relative;
+  width: 100%;
+  /* Square stage so the 1:1 crop area can sit fully inside. The
+     min-height keeps it tappable on phones where the sheet body is
+     short. */
+  aspect-ratio: 1 / 1;
+  max-height: 60svh;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.crop-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.crop-hint {
+  margin: 0;
+  text-align: center;
+}
+.crop-zoom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.crop-zoom span {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.crop-zoom input[type='range'] {
+  flex: 1;
+}
+.crop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 /* --- past-room history browser --- */
 .room-history {
   display: flex;
