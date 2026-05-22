@@ -115,7 +115,12 @@ export const ja: Dict = {
   'character.actingAs': '{name} として操作中',
 
   'dice.section': 'ダイスを振る',
+  'dice.rollName': 'ロール名',
+  'dice.namePlaceholder': 'ロールに名前を付ける（任意）',
+  'dice.formula': 'ダイス式',
   'dice.count': '個数',
+  'dice.countDec': '個数を減らす',
+  'dice.countInc': '個数を増やす',
   'dice.type': '種類',
   'dice.modifier': '補正',
   'dice.modifierDec': '補正を下げる',

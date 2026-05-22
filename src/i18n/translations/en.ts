@@ -115,7 +115,12 @@ export const en: Dict = {
   'character.actingAs': 'Acting as {name}',
 
   'dice.section': 'Roll dice',
+  'dice.rollName': 'Roll name',
+  'dice.namePlaceholder': 'Name this roll (optional)',
+  'dice.formula': 'Dice formula',
   'dice.count': 'Count',
+  'dice.countDec': 'Decrease count',
+  'dice.countInc': 'Increase count',
   'dice.type': 'Type',
   'dice.modifier': 'Modifier',
   'dice.modifierDec': 'Decrease modifier',

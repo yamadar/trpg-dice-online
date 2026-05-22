@@ -922,15 +922,105 @@ button.player-row {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+
+/* DiceRoller layout — the panel is structured as:
+   1. roll-name field (used as both the in-feed headline and the saved
+      pattern's name)
+   2. dice formula row (count stepper · type select · modifier stepper)
+   3. kind row (damage / judgment chips)
+   4. preview card (kind label + formula, tinted with the kind colour)
+   5. hidden-roll checkbox (GM only)
+   6. primary "Roll" button
+   7. divider + secondary "Save pattern" button
+   The order encodes the user flow: name → expression → preview → roll;
+   saving is a quieter side action below. */
+.dice-roller {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dice-name-field input {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+.dice-formula-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+.dice-formula-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dice-formula-label {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+.dice-type-select {
+  width: 100%;
+  text-align: center;
+  text-align-last: center;
+  font-weight: 600;
+}
 .dice-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
   font-family: var(--mono);
   font-size: 1.05rem;
-  color: var(--accent);
-  text-align: center;
   background: var(--panel-2);
   border-radius: 8px;
-  padding: 8px;
-  margin: 10px 0;
+  padding: 10px 12px;
+  margin: 0;
+  /* The accent colour gets swapped per kind below; this default keeps
+     the card from appearing flat before either modifier matches. */
+  border-left: 4px solid var(--border);
+}
+.dice-summary-kind {
+  font-family: var(--font-sans, inherit);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.dice-summary-formula {
+  color: var(--accent);
+}
+.dice-summary--damage {
+  border-left-color: var(--damage);
+}
+.dice-summary--damage .dice-summary-kind {
+  color: var(--damage);
+}
+.dice-summary--judgment {
+  border-left-color: var(--judgment);
+}
+.dice-summary--judgment .dice-summary-kind {
+  color: var(--judgment);
+}
+.dice-roll-button {
+  width: 100%;
+}
+/* The save action is a quiet side affordance: thin divider above,
+   a text-button style instead of a filled one, so it does not compete
+   with the main "Roll" button right above. */
+.dice-save-row {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+}
+.dice-save-button {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.dice-save-button:hover {
+  color: var(--text);
+  border-color: var(--text-dim);
 }
 .checkbox {
   display: flex;
