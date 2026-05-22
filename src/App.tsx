@@ -54,14 +54,19 @@ function App() {
   const [compact, setCompact] = useState(loadCompactFeed)
 
   const { updateIdentity, setCharacterImage, resumeRoom } = session
+  const activeCharacterId = characters.activeId ?? ''
   const activeName = characters.activeCharacter?.name
   const activeBackground = characters.activeCharacter?.background
   const activeImage = characters.activeCharacter?.image
 
   // Keep the synced identity in step with the active character...
   useEffect(() => {
-    updateIdentity({ characterName: activeName ?? '', background: activeBackground ?? '' })
-  }, [updateIdentity, activeName, activeBackground])
+    updateIdentity({
+      characterId: activeCharacterId,
+      characterName: activeName ?? '',
+      background: activeBackground ?? '',
+    })
+  }, [updateIdentity, activeCharacterId, activeName, activeBackground])
 
   // ...and sync the active character's portrait to the room.
   useEffect(() => {
@@ -126,10 +131,11 @@ function App() {
       id: session.playerId,
       name: rollerName,
       isGM: session.isGM,
+      characterId: activeCharacterId,
       characterName: activeName ?? '',
       background: activeBackground ?? '',
     }),
-    [session.playerId, session.isGM, rollerName, activeName, activeBackground],
+    [session.playerId, session.isGM, rollerName, activeCharacterId, activeName, activeBackground],
   )
 
   const handleRoll = useCallback(

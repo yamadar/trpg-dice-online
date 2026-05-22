@@ -39,6 +39,7 @@ export function rollPattern(
     id: string
     name: string
     isGM?: boolean
+    characterId?: string
     characterName?: string
     background?: string
   },
@@ -60,6 +61,7 @@ export function rollPattern(
     playerId: player.id,
     playerName: player.name,
     isGM: player.isGM ?? false,
+    characterId: player.characterId ?? '',
     characterName: player.characterName ?? '',
     background: player.background ?? '',
     hidden,

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import {
   characterImagesKey,
   isLegacyPortraitPk,
+  legacyCharacterIdFromName,
   newSessionId,
   pickReusableSessionId,
   portraitPk,
@@ -83,26 +84,33 @@ describe('pickReusableSessionId', () => {
 })
 
 describe('portraitPk', () => {
-  it('joins sessionId, playerId and characterName with the | separator', () => {
-    expect(portraitPk('s1', 'p1', 'Knight')).toBe('s1|p1|Knight')
+  it('joins sessionId, playerId and characterId with the | separator', () => {
+    expect(portraitPk('s1', 'p1', 'ch-knight')).toBe('s1|p1|ch-knight')
   })
 
-  it('URL-encodes the character name so a stray separator does not collide', () => {
-    // A character name containing the separator must not be able to
-    // mimic another (player, character) pair's pk.
-    const a = portraitPk('s1', 'p1', 'A|B')
-    const b = portraitPk('s1', 'p1', 'A')
-    expect(a).not.toBe(b)
-    expect(a).toBe('s1|p1|A%7CB')
-  })
-
-  it('supports an empty character name (a player who has not chosen one yet)', () => {
+  it('supports an empty characterId (a player acting directly)', () => {
     expect(portraitPk('s1', 'p1', '')).toBe('s1|p1|')
   })
 
-  it('encodes other reserved characters in the name', () => {
-    expect(portraitPk('s1', 'p1', 'A B')).toBe('s1|p1|A%20B')
-    expect(portraitPk('s1', 'p1', 'A/B')).toBe('s1|p1|A%2FB')
+  it('accepts a synthesised legacy `@n:<encoded name>` characterId', () => {
+    // The v4→v5 migration uses this shape so per-character rows from
+    // older sessions stay distinct after the schema bump.
+    expect(portraitPk('s1', 'p1', '@n:Knight')).toBe('s1|p1|@n:Knight')
+  })
+})
+
+describe('legacyCharacterIdFromName', () => {
+  it('builds an `@n:<encoded name>` characterId for a non-empty name', () => {
+    expect(legacyCharacterIdFromName('Knight')).toBe('@n:Knight')
+  })
+
+  it('URL-encodes the name so a stray separator cannot mimic another row', () => {
+    expect(legacyCharacterIdFromName('A|B')).toBe('@n:A%7CB')
+    expect(legacyCharacterIdFromName('A B')).toBe('@n:A%20B')
+  })
+
+  it('returns the empty string for an empty name (no fallback id needed)', () => {
+    expect(legacyCharacterIdFromName('')).toBe('')
   })
 })
 
@@ -111,19 +119,19 @@ describe('isLegacyPortraitPk', () => {
     expect(isLegacyPortraitPk('s1:p1')).toBe(true)
   })
 
-  it('returns false for the v4 pipe-separated shape', () => {
+  it('returns false for the v4 / v5 pipe-separated shape', () => {
     expect(isLegacyPortraitPk('s1|p1|')).toBe(false)
-    expect(isLegacyPortraitPk('s1|p1|Knight')).toBe(false)
-    expect(isLegacyPortraitPk('s1|p1|A%7CB')).toBe(false)
+    expect(isLegacyPortraitPk('s1|p1|ch-knight')).toBe(false)
+    expect(isLegacyPortraitPk('s1|p1|@n:Knight')).toBe(false)
   })
 })
 
 describe('characterImagesKey', () => {
-  it('joins playerId and characterName with the | separator', () => {
-    expect(characterImagesKey('p1', 'Knight')).toBe('p1|Knight')
+  it('joins playerId and characterId with the | separator', () => {
+    expect(characterImagesKey('p1', 'ch-knight')).toBe('p1|ch-knight')
   })
 
-  it('keeps the legacy-friendly empty character name as `${playerId}|`', () => {
+  it('keeps the bare-player key as `${playerId}|` when characterId is empty', () => {
     expect(characterImagesKey('p1', '')).toBe('p1|')
   })
 })

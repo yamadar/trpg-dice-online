@@ -299,10 +299,12 @@ Lang        = 'ja' | 'en'
 Pattern    = { id, name, kind, diceType, diceCount, modifier }
 RollResult = { id, patternName, kind, diceType, diceCount,
                faces: number[], modifier, value, playerId,
-               playerName, hidden, timestamp }
-ChatMessage = { id, playerId, playerName, text, timestamp, lang }
+               playerName, characterId, characterName, background,
+               isGM, hidden, timestamp }
+ChatMessage = { id, playerId, playerName, characterId, characterName,
+                background, isGM, text, timestamp, lang, ... }
 // Player はアクティブキャラクターの公開情報のみ持つ。メモは同期されない。
-Player      = { id, name, isGM, characterName, background, lang }
+Player      = { id, name, isGM, characterId, characterName, background, lang }
 Character   = { id, name, background, memo, patterns: Pattern[], lang,
                 image?, exportMemo? }
 
@@ -313,7 +315,14 @@ Character   = { id, name, background, memo, patterns: Pattern[], lang,
 SessionId   = string  // 例: "s-mfp7n7z9-9wk2x4"
 SessionRecord = { sessionId, code, name, role: 'host'|'client'|'unknown',
                   firstAt, lastAt, closed? }
-PortraitRecord = { sessionId, playerId, image, updatedAt }
+// 過去ルーム履歴のためのキャラクター別レコード（IndexedDB v5）。
+// 画像と発信者情報（playerName / characterName / background / isGM）を
+// (sessionId, playerId, characterId) 単位で保持。characterId は
+// `Character.id` か、旧データから移行された `@n:<encoded characterName>`、
+// もしくは「PL本人」を表す '' のいずれか。
+SessionCharacterRecord = { sessionId, playerId, characterId,
+                           playerName, characterName, background,
+                           isGM, image, updatedAt }
 
 // 端末ローカルのフィード注釈（同期されない）。ルームイベントを記録する。
 MarkerType  = 'created'|'joined'|'youLeft'|'youClosed'
@@ -641,6 +650,27 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   表す情報伝達アイコンのため。サードパーティ素材の帰属は
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md) に集約する。
+- v1.73 — キャラクター別のセッションレコード化と、ルーム履歴
+  エクスポートの v5 化。`Player` / `Identity` / `ChatMessage` /
+  `RollResult` に既存の `characterName` スナップショットに加えて
+  `characterId` フィールドを追加し、キャラ名が変わってもセッション
+  単位の per-(player, character) レコードを安定キーで引けるように
+  した。永続化ストアは画像のみのレコードから、`playerName /
+  characterName / background / isGM / image` をまとめて保持する
+  per-(player, character) スナップショットに拡張する（IndexedDB は
+  v5 にバンプ）。v4→v5 のマイグレーションで既存レコードを
+  `@n:<encoded characterName>` という合成 characterId で再キー化し、
+  フィード側の解決ヘルパ `speakerImageKey` も characterId 不在の
+  旧エントリではこの合成キーへフォールバックするので、過去ルームの
+  per-character ポートレートが温存される。ルーム履歴エクスポートは
+  マニフェスト v5 に上げ、per-(player, character) レコードを
+  entries / translations と並べて格納する。各レコードのポートレートは
+  `attachments/portraits/<player>-<character>.<ext>` に切り出し
+  （チャット添付と同じ方式）、base64 を JSON に埋めずに済むように
+  した。ルーム履歴ビューは永続ログと per-(player, character) レコード
+  を同時に読み込み、過去フィードの名前・背景・GM マーク・
+  ポートレートをそのレコードから描画する。v4 以前の書庫も従来
+  どおりインポートできる（characters は空として扱う）。
 - v1.72 — UI Chrome の永続化・テーマ設定周りで unit test がなかった
   純粋ヘルパー群にテストを追加した。新規 `.test.ts`:
   カラーテーマ ID 列・ガード (`src/theme/themes.test.ts`)、文字サイズ

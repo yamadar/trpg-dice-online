@@ -6,6 +6,11 @@ export interface Player {
   /** Player (person) name. */
   name: string
   isGM: boolean
+  /** Active character id, or '' when acting as the player directly. Stable
+   *  across renames, so the durable per-character record in
+   *  `sessionCharacters` stays correctly keyed even after a character is
+   *  renamed mid-session. */
+  characterId: string
   /** Active character name, or '' when acting as the player directly. */
   characterName: string
   /** Active character's public background, or '' when none. */
@@ -37,6 +42,10 @@ export interface ChatMessage {
   playerName: string
   /** Whether the sender was the GM — a snapshot, shown as a mark in the feed. */
   isGM: boolean
+  /** Active character id when the message was sent ('' if none). Stable
+   *  across renames, so room history can key (and look up) per-character
+   *  records under (sessionId, playerId, characterId). */
+  characterId: string
   /** Active character name when the message was sent ('' if none). A
    *  snapshot, so tapping the name later shows that character, not the
    *  sender's current one. */
@@ -79,6 +88,8 @@ export interface TypingSignal {
 /** A player's mutable identity: player name, active character, language. */
 export interface Identity {
   name: string
+  /** Active character id, or '' when acting as the player directly. */
+  characterId: string
   characterName: string
   background: string
   lang: Lang

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { getCachedTranslation, seedTranslation } from '../i18n/translator'
 import { loadLastRoomCode } from '../storage/room'
-import { loadFullLog } from '../storage/roomLog'
+import { loadFullLog, loadSessionCharacters } from '../storage/roomLog'
 import { buildRoomExport, roomExportFilename, type TranslationRecord } from '../storage/roomExport'
 import { parseRoomImport } from '../storage/roomImport'
 import { normalizeRoomCode, type ChatMessage, type Player } from '../net/protocol'
@@ -140,7 +140,10 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
   // downloadable ZIP archive.
   const handleExport = async () => {
     if (!roomCode || !session.sessionId) return
-    const entries = await loadFullLog(session.sessionId)
+    const [entries, characters] = await Promise.all([
+      loadFullLog(session.sessionId),
+      loadSessionCharacters(session.sessionId),
+    ])
     // Carry whatever chat translations are already cached so a re-import
     // shows them without re-translating.
     const translations: TranslationRecord[] = []
@@ -161,6 +164,7 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
       players,
       entries,
       translations,
+      characters,
     )
     const blob = new Blob([zip], { type: 'application/zip' })
     const url = URL.createObjectURL(blob)

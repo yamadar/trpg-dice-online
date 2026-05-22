@@ -3,7 +3,13 @@ import type { IconProps } from './icons'
 import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
 import type { Character } from '../characters/types'
-import { buildFeed, isRoomExitMarker, type FeedFilter, type SystemMarker } from '../feed/feed'
+import {
+  buildFeed,
+  isRoomExitMarker,
+  speakerImageKey,
+  type FeedFilter,
+  type SystemMarker,
+} from '../feed/feed'
 import { isImageType } from '../chat/attachment'
 import type { ChatFile, ChatMessage } from '../net/protocol'
 import type { RollResult } from '../dice/types'
@@ -110,7 +116,7 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
     return list
   }, [feed])
 
-  // The avatar lookup map (key: `${playerId}|${characterName}`). The
+  // The avatar lookup map (key: `${playerId}|${characterId}`). The
   // session-wide map tracks observed (player, character) → image for the
   // room. On top, the local user's `characters[]` is the canonical source
   // for their own portraits, so we drop every self-prefixed entry from
@@ -118,8 +124,8 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
   // an image. This way a portrait removed from a non-active character
   // (which never broadcasts) does not linger as a stale avatar. An
   // unnamed character with an image still gets layered (under the
-  // `${selfId}|` empty-suffix key) so a brand-new character with an
-  // uploaded portrait can already show its avatar before being named.
+  // `${selfId}|${c.id}` key) so a brand-new character with an uploaded
+  // portrait can already show its avatar before being named.
   const characterImages = useMemo(() => {
     const map: Record<string, string | undefined> = {}
     const selfPrefix = `${session.playerId}|`
@@ -128,7 +134,7 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
     }
     for (const c of characters) {
       if (c.image) {
-        map[`${session.playerId}|${c.name ?? ''}`] = c.image
+        map[`${session.playerId}|${c.id}`] = c.image
       }
     }
     return map
@@ -296,7 +302,7 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
             displayName={detail.name}
             characterName={detail.characterName}
             background={detail.background}
-            image={characterImages[`${detail.playerId}|${detail.characterName}`]}
+            image={characterImages[speakerImageKey(detail)]}
             isSelf={detail.playerId === session.playerId}
           />
         </Sheet>

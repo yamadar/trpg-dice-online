@@ -19,7 +19,7 @@
  */
 
 const DB_NAME = 'trpg-dice'
-const DB_VERSION = 4
+const DB_VERSION = 5
 const STORE = 'roomLog'
 const META = 'sessions'
 const PORTRAITS = 'sessionPortraits'
@@ -65,23 +65,42 @@ export interface SessionSummary extends SessionRecord {
 }
 
 /**
- * Per-session snapshot of one (player, character) portrait. Keyed
- * per-character (not per-player) so a session that saw the same player
- * act as multiple characters can show each character's own avatar in
- * the past-rooms view. `characterName` may be empty — an unnamed
- * character or a v3 record migrated forward both land at `${playerId}|`.
+ * Per-session snapshot of one (player, character) record. Carries the
+ * speaker fields needed to render past feed entries — playerName,
+ * characterName, background, isGM — alongside the portrait image. Keyed
+ * per-character so a session that saw the same player act as multiple
+ * characters keeps each row distinct.
+ *
+ * `characterId` is the stable `Character.id` (a `chr-...` slug minted
+ * by `newCharacterId`) for v5+ data. For records migrated from v4
+ * (which keyed by `characterName`), the migration synthesises a
+ * `@n:<encoded characterName>` characterId so old per-character rows
+ * survive the schema bump without colliding with each other.
+ * `characterId=''` represents "player acting directly" (no character).
  */
-interface PortraitRecord {
-  /** `${sessionId}|${playerId}|${encodeURIComponent(characterName)}` —
-   *  composite, so an upsert overwrites. The encode keeps a stray `|`
-   *  inside a character name from colliding across (player, character)
-   *  rows. */
+export interface SessionCharacterRecord {
+  /** `${sessionId}|${playerId}|${characterId}` — composite, so an
+   *  upsert overwrites. The `|` separator is safe because characterId
+   *  is always either a generated `chr-...` slug, the synthesised
+   *  `@n:<encoded name>` (encoded), or empty. */
   pk: string
   sessionId: string
   playerId: string
-  /** The character's name at the time of the observation. Empty for an
+  /** Stable character id (`Character.id`), the synthesised
+   *  `@n:<encoded characterName>` for v4-migrated rows, or `''` for the
+   *  player acting directly. */
+  characterId: string
+  /** Composed display name ("Character（Player）" or just the player),
+   *  as last observed. Empty when no observation has carried it. */
+  playerName: string
+  /** Character name at the most recent observation. Empty for an
    *  unnamed character or for legacy (v3) records migrated forward. */
   characterName: string
+  /** Public background snippet at the most recent observation. */
+  background: string
+  /** Whether the (player, character) acted as the GM at the most
+   *  recent observation. */
+  isGM: boolean
   /** `image/*` data URL; empty (absent) when the player has no portrait. */
   image: string
   updatedAt: number
@@ -89,29 +108,40 @@ interface PortraitRecord {
 
 /** Compose the composite key used by `sessionPortraits`. Kept in one
  *  place so the encoding (and the separator choice) is consistent
- *  between writes, reads and the migration. Exported (alongside the
- *  legacy detector below) so unit tests can pin the schema invariants
- *  without bringing IndexedDB into the test environment. */
+ *  between writes, reads and the migration. Exported so unit tests
+ *  can pin the schema invariants without bringing IndexedDB into the
+ *  test environment. */
 export function portraitPk(
   sessionId: string,
   playerId: string,
-  characterName: string,
+  characterId: string,
 ): string {
-  return `${sessionId}|${playerId}|${encodeURIComponent(characterName)}`
+  return `${sessionId}|${playerId}|${characterId}`
 }
 
-/** True for a v3-shaped portrait pk (`${sessionId}:${playerId}`).
- *  v4 keys always contain the `|` separator, so a missing one tells
- *  the migration that the record needs re-keying. */
+/** Synthesise a fallback characterId from a character name. Used by
+ *  the v4→v5 migration to keep per-character rows distinct when no
+ *  real `Character.id` is available. The `@n:` prefix is reserved so
+ *  it cannot collide with a real `chr-...` slug minted by
+ *  `newCharacterId`. Returns `''` for an empty name (the "player
+ *  acting directly" key). */
+export function legacyCharacterIdFromName(characterName: string): string {
+  return characterName ? `@n:${encodeURIComponent(characterName)}` : ''
+}
+
+/** True for a v3-shaped portrait pk (`${sessionId}:${playerId}`). v4+
+ *  keys always contain the `|` separator, so a missing one tells the
+ *  migration that the record needs re-keying. Kept on the v5 schema
+ *  because the original migration may still encounter v3 records. */
 export function isLegacyPortraitPk(pk: string): boolean {
   return !pk.includes('|')
 }
 
 /** The map shape used in memory by the session and the room history:
- *  `${playerId}|${characterName}` → image data URL. Exported so call
+ *  `${playerId}|${characterId}` → image data URL. Exported so call
  *  sites that build the map (and tests) can share one definition. */
-export function characterImagesKey(playerId: string, characterName: string): string {
-  return `${playerId}|${characterName}`
+export function characterImagesKey(playerId: string, characterId: string): string {
+  return `${playerId}|${characterId}`
 }
 
 /** Identifies the session a freshly logged entry belongs to. */
@@ -208,26 +238,25 @@ function openDb(): Promise<IDBDatabase | null> {
       // so a session that saw the same player act as multiple characters
       // can show each character's own avatar in past-room history.
       // Existing v3 records are re-keyed (with an empty `characterName`
-      // when none was stored) into the new pk format; the load side
-      // then exposes them under `${playerId}|` and the history view
-      // falls back to that key when no per-character record is found,
-      // so old portraits still surface in past rooms.
+      // when none was stored) into the v4 pk format; the v5 pass below
+      // then promotes that characterName into a synthesised
+      // `@n:<encoded name>` characterId.
       if (event.oldVersion >= 3 && event.oldVersion < 4) {
         const portraitsStore = tx!.objectStore(PORTRAITS)
         const cursor = portraitsStore.openCursor()
         cursor.onsuccess = () => {
           const cur = cursor.result
           if (!cur) return
-          const rec = cur.value as Partial<PortraitRecord> & {
+          const rec = cur.value as {
             pk: string
             sessionId: string
             playerId: string
+            characterName?: string
             image: string
             updatedAt: number
           }
           // The v3 pk format was `${sessionId}:${playerId}` — no `|`.
-          // The new format has `|` as the separator. A record that
-          // already matches the new format is left alone.
+          // A record already in v4 shape is left for the v5 pass.
           if (!isLegacyPortraitPk(rec.pk)) {
             cur.continue()
             return
@@ -237,16 +266,67 @@ function openDb(): Promise<IDBDatabase | null> {
           // silently collapse two characters' portraits to one entry.
           const characterName =
             typeof rec.characterName === 'string' ? rec.characterName : ''
-          const newPk = portraitPk(rec.sessionId, rec.playerId, characterName)
+          // Use the v4 pk shape (`${sid}|${pid}|${encodeURIComponent(name)}`)
+          // intentionally — the v5 pass that runs immediately after
+          // will move it to the characterId-keyed shape.
+          const v4Pk = `${rec.sessionId}|${rec.playerId}|${encodeURIComponent(characterName)}`
           cur.delete()
           portraitsStore.put({
-            pk: newPk,
+            pk: v4Pk,
             sessionId: rec.sessionId,
             playerId: rec.playerId,
             characterName,
             image: rec.image,
             updatedAt: rec.updatedAt,
           })
+          cur.continue()
+        }
+      }
+      // v5 promotes portrait rows to full per-character snapshots, keyed
+      // by a stable `characterId` rather than the mutable name, and
+      // adds the speaker fields (playerName / background / isGM) so
+      // room history can render past feed entries without the live
+      // session. Migrate every existing record: synthesise a
+      // `@n:<encoded characterName>` characterId so per-character rows
+      // stay distinct, and fill the new fields with conservative
+      // defaults (empty / false) so the load side has consistent types.
+      if (event.oldVersion >= 4 && event.oldVersion < 5) {
+        const portraitsStore = tx!.objectStore(PORTRAITS)
+        const cursor = portraitsStore.openCursor()
+        cursor.onsuccess = () => {
+          const cur = cursor.result
+          if (!cur) return
+          const rec = cur.value as {
+            pk: string
+            sessionId: string
+            playerId: string
+            characterId?: string
+            characterName?: string
+            image: string
+            updatedAt: number
+          }
+          // Records already on the v5 shape are left alone.
+          if (typeof rec.characterId === 'string') {
+            cur.continue()
+            return
+          }
+          const characterName = rec.characterName ?? ''
+          const characterId = legacyCharacterIdFromName(characterName)
+          const newPk = portraitPk(rec.sessionId, rec.playerId, characterId)
+          cur.delete()
+          const migrated: SessionCharacterRecord = {
+            pk: newPk,
+            sessionId: rec.sessionId,
+            playerId: rec.playerId,
+            characterId,
+            playerName: '',
+            characterName,
+            background: '',
+            isGM: false,
+            image: rec.image,
+            updatedAt: rec.updatedAt,
+          }
+          portraitsStore.put(migrated)
           cur.continue()
         }
       }
@@ -616,17 +696,27 @@ export async function deleteAllSessions(): Promise<void> {
   })
 }
 
+/** A draft (player, character) observation: every field except the
+ *  pk / sessionId / updatedAt that the store layer fills in. */
+export type SessionCharacterDraft = Omit<
+  SessionCharacterRecord,
+  'pk' | 'sessionId' | 'updatedAt'
+>
+
 /**
- * Upsert one (player, character) portrait for the given session. An empty
- * `image` deletes the record so a portrait removal does not leave a stale
- * snapshot behind. Resolves once the IndexedDB transaction commits (or
- * gives up), so callers that await it know the write landed.
+ * Upsert one (player, character) record for the given session. An empty
+ * `image` clears just the portrait but leaves the speaker snapshot — a
+ * character may have no portrait but still need its name/background to
+ * surface in room history. The whole row is removed only by
+ * `deleteSession` (per-session cleanup), not by writing an "empty"
+ * draft, so a transient blank observation never wipes the row.
+ *
+ * Resolves once the IndexedDB transaction commits (or gives up), so
+ * callers that await it know the write landed.
  */
-export async function saveCharacterPortrait(
+export async function saveSessionCharacter(
   sessionId: string | null,
-  playerId: string,
-  characterName: string,
-  image: string,
+  draft: SessionCharacterDraft,
 ): Promise<void> {
   if (!sessionId) return
   const db = await openDb()
@@ -635,20 +725,20 @@ export async function saveCharacterPortrait(
     try {
       const tx = db.transaction(PORTRAITS, 'readwrite')
       const store = tx.objectStore(PORTRAITS)
-      const pk = portraitPk(sessionId, playerId, characterName)
-      if (image) {
-        const rec: PortraitRecord = {
-          pk,
-          sessionId,
-          playerId,
-          characterName,
-          image,
-          updatedAt: Date.now(),
-        }
-        store.put(rec)
-      } else {
-        store.delete(pk)
+      const pk = portraitPk(sessionId, draft.playerId, draft.characterId)
+      const rec: SessionCharacterRecord = {
+        pk,
+        sessionId,
+        playerId: draft.playerId,
+        characterId: draft.characterId,
+        playerName: draft.playerName,
+        characterName: draft.characterName,
+        background: draft.background,
+        isGM: draft.isGM,
+        image: draft.image,
+        updatedAt: Date.now(),
       }
+      store.put(rec)
       tx.oncomplete = () => resolve()
       tx.onerror = () => resolve()
     } catch {
@@ -657,26 +747,16 @@ export async function saveCharacterPortrait(
   })
 }
 
-/**
- * Bulk variant: persist every entry in a per-character portrait map in
- * one transaction. The map is keyed by `${playerId}|${characterName}`,
- * matching the in-memory `Session.characterImages` shape, so the welcome
- * snapshot can persist the whole roster at once.
- *
- * Returns `true` when the IndexedDB transaction committed cleanly and
- * `false` when the store was unavailable, the transaction was aborted,
- * or the call could not even be issued. Callers (e.g. the session's
- * portrait queue flush) use this to decide whether to advance their
- * "already flushed" offset — a false return leaves the deltas in
- * place so the next effect run can retry.
- */
-export async function saveCharacterPortraits(
+/** Bulk variant of `saveSessionCharacter`: write multiple drafts in one
+ *  transaction. Returns `true` when the transaction committed cleanly
+ *  and `false` otherwise (so the caller can retry / leave deltas
+ *  un-flushed). */
+export async function saveSessionCharacters(
   sessionId: string | null,
-  images: Record<string, string>,
+  drafts: ReadonlyArray<SessionCharacterDraft>,
 ): Promise<boolean> {
   if (!sessionId) return false
-  const entries = Object.entries(images)
-  if (entries.length === 0) return true
+  if (drafts.length === 0) return true
   const db = await openDb()
   if (!db) return false
   return new Promise<boolean>((resolve) => {
@@ -684,17 +764,21 @@ export async function saveCharacterPortraits(
       const tx = db.transaction(PORTRAITS, 'readwrite')
       const store = tx.objectStore(PORTRAITS)
       const now = Date.now()
-      for (const [key, image] of entries) {
-        const sep = key.indexOf('|')
-        if (sep < 0) continue
-        const playerId = key.slice(0, sep)
-        const characterName = key.slice(sep + 1)
-        const pk = portraitPk(sessionId, playerId, characterName)
-        if (image) {
-          store.put({ pk, sessionId, playerId, characterName, image, updatedAt: now })
-        } else {
-          store.delete(pk)
+      for (const d of drafts) {
+        const pk = portraitPk(sessionId, d.playerId, d.characterId)
+        const rec: SessionCharacterRecord = {
+          pk,
+          sessionId,
+          playerId: d.playerId,
+          characterId: d.characterId,
+          playerName: d.playerName,
+          characterName: d.characterName,
+          background: d.background,
+          isGM: d.isGM,
+          image: d.image,
+          updatedAt: now,
         }
+        store.put(rec)
       }
       tx.oncomplete = () => resolve(true)
       tx.onerror = () => resolve(false)
@@ -706,17 +790,18 @@ export async function saveCharacterPortraits(
 }
 
 /**
- * Load every stored portrait for the given session, keyed by
- * `${playerId}|${characterName}` — the same shape the live session uses
- * for `characterImages`, so the room-history feed can drop straight in
- * without re-keying.
+ * Load every stored (player, character) record for the given session.
+ * Used by the room-history view to render past feed entries with the
+ * speaker info that was current at the end of the session. Records
+ * with no image are still returned — they may still carry the name and
+ * background a past entry needs to render.
  */
-export async function loadSessionCharacterPortraits(
+export async function loadSessionCharacters(
   sessionId: string,
-): Promise<Record<string, string>> {
-  if (!sessionId) return {}
+): Promise<SessionCharacterRecord[]> {
+  if (!sessionId) return []
   const db = await openDb()
-  if (!db) return {}
+  if (!db) return []
   return new Promise((resolve) => {
     try {
       const tx = db.transaction(PORTRAITS, 'readonly')
@@ -725,20 +810,44 @@ export async function loadSessionCharacterPortraits(
         .index('bySession')
         .getAll(IDBKeyRange.only(sessionId))
       req.onsuccess = () => {
-        const out: Record<string, string> = {}
-        for (const r of (req.result as PortraitRecord[]) ?? []) {
-          if (!r.image) continue
-          // `characterName` is `undefined` on records that somehow slipped
-          // past the v3→v4 migration; the empty string keys them under
-          // `${playerId}|` and lets the room-history fallback pick them up.
-          const cn = r.characterName ?? ''
-          out[characterImagesKey(r.playerId, cn)] = r.image
+        const out: SessionCharacterRecord[] = []
+        for (const raw of (req.result as Partial<SessionCharacterRecord>[]) ?? []) {
+          // Normalise legacy / partially-populated rows so the caller can
+          // treat every field as present.
+          out.push({
+            pk: raw.pk ?? '',
+            sessionId: raw.sessionId ?? sessionId,
+            playerId: raw.playerId ?? '',
+            characterId: raw.characterId ?? '',
+            playerName: raw.playerName ?? '',
+            characterName: raw.characterName ?? '',
+            background: raw.background ?? '',
+            isGM: raw.isGM ?? false,
+            image: raw.image ?? '',
+            updatedAt: raw.updatedAt ?? 0,
+          })
         }
         resolve(out)
       }
-      req.onerror = () => resolve({})
+      req.onerror = () => resolve([])
     } catch {
-      resolve({})
+      resolve([])
     }
   })
+}
+
+/** Convenience: load the per-character portrait map for one session,
+ *  keyed by `${playerId}|${characterId}` — the live `characterImages`
+ *  shape. Empty images are skipped so a portrait-less row does not
+ *  shadow a still-visible one. */
+export async function loadSessionCharacterPortraits(
+  sessionId: string,
+): Promise<Record<string, string>> {
+  const records = await loadSessionCharacters(sessionId)
+  const out: Record<string, string> = {}
+  for (const r of records) {
+    if (!r.image) continue
+    out[characterImagesKey(r.playerId, r.characterId)] = r.image
+  }
+  return out
 }

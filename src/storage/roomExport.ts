@@ -2,23 +2,27 @@
  * Package a room's full durable history into a downloadable ZIP archive.
  *
  * The archive holds a `room.json` manifest — room identity, the player
- * roster and every roll / chat / marker (each with the player and
- * character snapshot it was created with) — plus an `attachments/`
- * folder with the binary content of every chat attachment. Storing
- * attachments as real files keeps base64 out of the JSON and lets the
+ * roster, every roll / chat / marker (each with the player and
+ * character snapshot it was created with), and the per-(player,
+ * character) records (name / background / isGM / portrait) needed to
+ * render past entries — plus an `attachments/` folder with the binary
+ * content of every chat attachment and character portrait. Storing
+ * binaries as real files keeps base64 out of the JSON and lets the
  * archive compress them. The manifest is versioned and typed so a
  * future importer can restore the whole room from the one file.
  */
 
 import { strToU8, zipSync } from 'fflate'
-import type { LogEntry } from './roomLog'
+import type { LogEntry, SessionCharacterRecord } from './roomLog'
 import type { ChatMessage, Player } from '../net/protocol'
 import type { Lang } from '../i18n/translations'
 
 /** Marks our room-export archives. */
 const FILE_TYPE = 'trpg-dice-room-log'
-/** v4: cached chat translations no longer carry a backend tag. */
-const FILE_VERSION = 4
+/** v5: per-(player, character) records (name / background / isGM /
+ *  portrait) ride along so room history can render past entries
+ *  without the live session. */
+const FILE_VERSION = 5
 
 /** Room identity stored in the manifest. */
 interface ExportRoom {
@@ -47,6 +51,25 @@ interface ExportFile {
   type: string
   size: number
   path: string
+}
+
+/**
+ * One per-(player, character) record as it appears in the manifest. The
+ * portrait, when present, is stored as a file at `imagePath` and re-inlined
+ * to a data URL on import — same trick as chat attachments.
+ */
+export interface ExportCharacter {
+  playerId: string
+  characterId: string
+  playerName: string
+  characterName: string
+  background: string
+  isGM: boolean
+  /** Path in the archive of the portrait image; absent when there is no
+   *  portrait or the data URL could not be decoded. */
+  imagePath?: string
+  imageType?: string
+  updatedAt: number
 }
 
 /** Decode a `data:<type>;base64,<data>` URL to its raw bytes. */
@@ -93,31 +116,108 @@ function extractAttachments(entries: LogEntry[]): {
   return { entries: rewritten, files }
 }
 
+/** A filesystem-safe extension for a portrait, from its image data URL
+ *  type fragment (`image/png` → `png`). */
+function imageExt(type: string): string {
+  const slash = type.lastIndexOf('/')
+  const ext = slash >= 0 ? type.slice(slash + 1).toLowerCase() : ''
+  // Strip a `+xml` etc. suffix and fall back to a generic byte ext if
+  // the type is missing or unknown.
+  return ext.replace(/\+.*$/, '') || 'bin'
+}
+
+/** Parse a `data:<type>;base64,<data>` URL into (type, bytes). Returns
+ *  null for any other shape — the caller drops the portrait rather
+ *  than embed an unrecognised URL. */
+function parseImageDataUrl(
+  dataUrl: string,
+): { type: string; bytes: Uint8Array } | null {
+  if (!dataUrl.startsWith('data:')) return null
+  const semi = dataUrl.indexOf(';')
+  const comma = dataUrl.indexOf(',', semi)
+  if (semi < 0 || comma < 0) return null
+  const type = dataUrl.slice(5, semi)
+  if (!type.startsWith('image/')) return null
+  // The implementation accepts `;base64,` only — any other encoding
+  // (rare for `image/*`) is dropped rather than guessed.
+  const enc = dataUrl.slice(semi + 1, comma)
+  if (enc !== 'base64') return null
+  return { type, bytes: dataUrlToBytes(dataUrl) }
+}
+
+/** Sanitise the characterId for use as a filesystem path component.
+ *  The id is either a generated `chr-...` slug (see `newCharacterId`),
+ *  a synthesised `@n:<encoded name>`, or empty — `encodeURIComponent`
+ *  turns any of them into a path-safe form. */
+function safeCharacterIdPath(characterId: string): string {
+  return encodeURIComponent(characterId)
+}
+
+/**
+ * Split each character's portrait out of the records: each becomes a
+ * file in the archive, and its record is rewritten to reference that
+ * path. The input is cloned where changed, never mutated.
+ */
+function extractCharacters(records: ReadonlyArray<SessionCharacterRecord>): {
+  characters: ExportCharacter[]
+  files: Record<string, Uint8Array>
+} {
+  const files: Record<string, Uint8Array> = {}
+  const characters: ExportCharacter[] = []
+  for (const r of records) {
+    const exported: ExportCharacter = {
+      playerId: r.playerId,
+      characterId: r.characterId,
+      playerName: r.playerName,
+      characterName: r.characterName,
+      background: r.background,
+      isGM: r.isGM,
+      updatedAt: r.updatedAt,
+    }
+    if (r.image) {
+      const parsed = parseImageDataUrl(r.image)
+      if (parsed) {
+        const path = `attachments/portraits/${safeCharacterIdPath(r.playerId)}-${safeCharacterIdPath(r.characterId)}.${imageExt(parsed.type)}`
+        files[path] = parsed.bytes
+        exported.imagePath = path
+        exported.imageType = parsed.type
+      }
+    }
+    characters.push(exported)
+  }
+  return { characters, files }
+}
+
 /**
  * Build the ZIP archive bytes for a room export. `entries` is the
- * durable log oldest-first; `exportedAt` is injectable so the manifest
- * is deterministic in tests.
+ * durable log oldest-first; `characters` is the per-(player,
+ * character) record set (with portraits); `exportedAt` is injectable
+ * so the manifest is deterministic in tests.
  */
 export function buildRoomExport(
   room: ExportRoom,
   players: Player[],
   entries: LogEntry[],
   translations: TranslationRecord[],
+  characters: ReadonlyArray<SessionCharacterRecord> = [],
   exportedAt: number = Date.now(),
 ): Uint8Array<ArrayBuffer> {
-  const split = extractAttachments(entries)
+  const splitEntries = extractAttachments(entries)
+  const splitCharacters = extractCharacters(characters)
   const manifest = {
     type: FILE_TYPE,
     version: FILE_VERSION,
     exportedAt,
     room,
     players,
-    entries: split.entries,
+    entries: splitEntries.entries,
     translations,
+    characters: splitCharacters.characters,
   }
   const zip = zipSync({
     'room.json': strToU8(JSON.stringify(manifest, null, 2)),
-    ...split.files,
+    ...splitEntries.files,
+    ...splitCharacters.files,
   })
   // fflate types its output buffer loosely; it is always a plain
   // ArrayBuffer, which a Blob download needs.

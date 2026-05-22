@@ -311,10 +311,12 @@ Lang        = 'ja' | 'en'
 Pattern    = { id, name, kind, diceType, diceCount, modifier }
 RollResult = { id, patternName, kind, diceType, diceCount,
                faces: number[], modifier, value, playerId,
-               playerName, hidden, timestamp }
-ChatMessage = { id, playerId, playerName, text, timestamp, lang }
+               playerName, characterId, characterName, background,
+               isGM, hidden, timestamp }
+ChatMessage = { id, playerId, playerName, characterId, characterName,
+                background, isGM, text, timestamp, lang, ... }
 // Player carries the active character's public info; memo is never synced.
-Player      = { id, name, isGM, characterName, background, lang }
+Player      = { id, name, isGM, characterId, characterName, background, lang }
 Character   = { id, name, background, memo, patterns: Pattern[], lang,
                 image?, exportMemo? }
 
@@ -326,7 +328,14 @@ Character   = { id, name, background, memo, patterns: Pattern[], lang,
 SessionId   = string  // e.g. "s-mfp7n7z9-9wk2x4"
 SessionRecord = { sessionId, code, name, role: 'host'|'client'|'unknown',
                   firstAt, lastAt, closed? }
-PortraitRecord = { sessionId, playerId, image, updatedAt }
+// Per-(player, character) records for past-room history (IndexedDB v5).
+// Carry the portrait and the speaker fields the past-rooms feed needs
+// to render entries without the live session. `characterId` is either
+// the live `Character.id`, the migrated `@n:<encoded characterName>`,
+// or `''` (the player acting directly).
+SessionCharacterRecord = { sessionId, playerId, characterId,
+                           playerName, characterName, background,
+                           isGM, image, updatedAt }
 
 // Local-only feed annotations (not synced); they record room events.
 MarkerType  = 'created'|'joined'|'youLeft'|'youClosed'
@@ -678,6 +687,29 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.73 — Per-character session records and v5 room-export. The
+  `Player` / `Identity` / `ChatMessage` / `RollResult` types pick up a
+  new `characterId` field alongside the existing `characterName`
+  snapshot, so a character's row in the per-session store is keyed by
+  the stable `Character.id` rather than the mutable name. The durable
+  per-character store grows from a portrait-only row to a full
+  per-(player, character) snapshot — `playerName / characterName /
+  background / isGM / image`, the speaker fields the past-rooms feed
+  needs to render entries without the live session. A v4→v5 IndexedDB
+  migration re-keys existing rows with a synthesised
+  `@n:<encoded characterName>` characterId so per-character portraits
+  from earlier sessions stay distinct after the schema bump, and the
+  feed-side resolver (`speakerImageKey`) falls back to the same
+  synthesis when an older log entry predates the field. Room exports
+  are bumped to manifest v5: the per-character records ride along with
+  entries / translations, and each record's portrait is split out as
+  a real file under `attachments/portraits/<player>-<character>.<ext>`
+  (mirroring the chat-attachment treatment) so base64 stays out of the
+  JSON. The room-history view loads the per-character records
+  alongside the durable log and renders the past feed's names,
+  backgrounds, GM marks and portraits from them. A v4-or-older
+  archive still imports cleanly — its `characters` slot is treated as
+  empty.
 - v1.72 — Backfill unit-test coverage for the pure helpers that drive
   the chrome's persistence and visual configuration. New `.test.ts`
   files for the colour-theme registry / id guard
