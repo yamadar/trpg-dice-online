@@ -1,11 +1,13 @@
 import { useI18n } from '../i18n/useI18n'
-import { DICE_TYPES, PATTERN_KINDS, type Pattern } from '../dice/types'
+import { DICE_TYPES, PATTERN_KINDS, type DiceType, type Pattern } from '../dice/types'
 import { formatDiceSummary } from '../dice/format'
 
 export type Draft = Omit<Pattern, 'id'>
 
-/** Allowed dice counts: 1–10, picked from buttons rather than typed. */
-const COUNTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
+/** Allowed dice counts: 1–10. Picked with a stepper so the row keeps
+ *  individual / type / modifier together in one compact line. */
+const COUNT_MIN = 1
+const COUNT_MAX = 10
 const MODIFIER_MIN = -30
 const MODIFIER_MAX = 30
 
@@ -17,62 +19,93 @@ interface Props {
   onSave: () => void
 }
 
-function clampModifier(value: number): number {
-  return Math.max(MODIFIER_MIN, Math.min(MODIFIER_MAX, value))
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
 }
 
 export function DiceRoller({ draft, onChange, isGM, onRoll, onSave }: Props) {
   const { t } = useI18n()
   const set = (patch: Partial<Draft>) => onChange({ ...draft, ...patch })
 
+  // Composed roll headline shown in the preview card. The body of a
+  // damage entry reads "{pattern} {value} damage" in the feed; here we
+  // surface the same shape ahead of rolling — "{kind} {NdM±k}" — so the
+  // user can sanity-check both the type (in the kind's accent colour)
+  // and the maths before tapping the roll button.
+  const formula = formatDiceSummary(draft.diceCount, draft.diceType, draft.modifier)
+
   return (
-    <section className="panel">
+    <section className="panel dice-roller">
       {/* The panel title + icon lives in the parent `Sheet` header so the
           heading stays pinned above the scrollable body. */}
 
-      <div className="field">
-        <span>{t('dice.count')}</span>
-        <div className="chip-row chip-grid-5" role="group" aria-label={t('dice.count')}>
-          {COUNTS.map((n) => (
-            <button
-              key={n}
-              type="button"
-              className={n === draft.diceCount ? 'chip active' : 'chip'}
-              aria-pressed={n === draft.diceCount}
-              onClick={() => set({ diceCount: n })}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* The roll title doubles as the saved-pattern name when the user
+          presses "Save pattern" — it is the headline shown in the feed
+          either way, so it sits at the very top like a normal title
+          field rather than buried near the save button. */}
+      <label className="field dice-name-field">
+        <span className="visually-hidden">{t('dice.rollName')}</span>
+        <input
+          type="text"
+          value={draft.name}
+          maxLength={40}
+          placeholder={t('dice.namePlaceholder')}
+          onChange={(e) => set({ name: e.target.value })}
+        />
+      </label>
 
-      <div className="field">
-        <span>{t('dice.type')}</span>
-        <div className="chip-row" role="group" aria-label={t('dice.type')}>
-          {DICE_TYPES.map((d) => (
+      {/* The actual dice expression — count, type, modifier — fits on
+          one row. Steppers for the numeric pieces (count / modifier),
+          a select for the die type so the seven options stay reachable
+          without claiming a full chip row each. */}
+      <div className="dice-formula-row" role="group" aria-label={t('dice.formula')}>
+        <div className="dice-formula-field">
+          <span className="dice-formula-label">{t('dice.count')}</span>
+          <div className="stepper">
             <button
-              key={d}
               type="button"
-              className={d === draft.diceType ? 'chip active' : 'chip'}
-              aria-pressed={d === draft.diceType}
-              onClick={() => set({ diceType: d })}
+              aria-label={t('dice.countDec')}
+              disabled={draft.diceCount <= COUNT_MIN}
+              onClick={() => set({ diceCount: clamp(draft.diceCount - 1, COUNT_MIN, COUNT_MAX) })}
             >
-              {d}
+              −
             </button>
-          ))}
+            <span className="stepper-value">{draft.diceCount}</span>
+            <button
+              type="button"
+              aria-label={t('dice.countInc')}
+              disabled={draft.diceCount >= COUNT_MAX}
+              onClick={() => set({ diceCount: clamp(draft.diceCount + 1, COUNT_MIN, COUNT_MAX) })}
+            >
+              +
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="dice-grid">
-        <div className="field">
-          <span>{t('dice.modifier')}</span>
+        <div className="dice-formula-field">
+          <span className="dice-formula-label">{t('dice.type')}</span>
+          <select
+            className="dice-type-select"
+            value={draft.diceType}
+            onChange={(e) => set({ diceType: e.target.value as DiceType })}
+            aria-label={t('dice.type')}
+          >
+            {DICE_TYPES.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="dice-formula-field">
+          <span className="dice-formula-label">{t('dice.modifier')}</span>
           <div className="stepper">
             <button
               type="button"
               aria-label={t('dice.modifierDec')}
               disabled={draft.modifier <= MODIFIER_MIN}
-              onClick={() => set({ modifier: clampModifier(draft.modifier - 1) })}
+              onClick={() => set({ modifier: clamp(draft.modifier - 1, MODIFIER_MIN, MODIFIER_MAX) })}
             >
               −
             </button>
@@ -83,43 +116,42 @@ export function DiceRoller({ draft, onChange, isGM, onRoll, onSave }: Props) {
               type="button"
               aria-label={t('dice.modifierInc')}
               disabled={draft.modifier >= MODIFIER_MAX}
-              onClick={() => set({ modifier: clampModifier(draft.modifier + 1) })}
+              onClick={() => set({ modifier: clamp(draft.modifier + 1, MODIFIER_MIN, MODIFIER_MAX) })}
             >
               +
             </button>
           </div>
         </div>
+      </div>
 
-        <div className="field">
-          <span>{t('dice.kind')}</span>
-          <div className="chip-row chip-grid-2" role="group" aria-label={t('dice.kind')}>
-            {PATTERN_KINDS.map((k) => (
-              <button
-                key={k}
-                type="button"
-                className={k === draft.kind ? 'chip active' : 'chip'}
-                aria-pressed={k === draft.kind}
-                onClick={() => set({ kind: k })}
-              >
-                {t(`kind.${k}`)}
-              </button>
-            ))}
-          </div>
+      {/* "What kind of roll is this?" is conceptually separate from the
+          dice expression, so it gets its own row rather than being
+          tacked onto the formula. The pair stays as a chip group
+          (only two options) for the bigger tap area. */}
+      <div className="field">
+        <span>{t('dice.kind')}</span>
+        <div className="chip-row chip-grid-2" role="group" aria-label={t('dice.kind')}>
+          {PATTERN_KINDS.map((k) => (
+            <button
+              key={k}
+              type="button"
+              className={k === draft.kind ? 'chip active' : 'chip'}
+              aria-pressed={k === draft.kind}
+              onClick={() => set({ kind: k })}
+            >
+              {t(`kind.${k}`)}
+            </button>
+          ))}
         </div>
       </div>
 
-      <p className="dice-summary">{formatDiceSummary(draft.diceCount, draft.diceType, draft.modifier)}</p>
-
-      <label className="field">
-        <span>{t('pattern.name')}</span>
-        <input
-          type="text"
-          value={draft.name}
-          maxLength={40}
-          placeholder={t('pattern.namePlaceholder')}
-          onChange={(e) => set({ name: e.target.value })}
-        />
-      </label>
+      {/* Preview card — same headline shape as the feed will render,
+          tinted with the kind's accent colour (--damage / --judgment)
+          so the type reads at a glance. */}
+      <p className={`dice-summary dice-summary--${draft.kind}`}>
+        <span className="dice-summary-kind">{t(`kind.${draft.kind}`)}</span>
+        <span className="dice-summary-formula">{formula}</span>
+      </p>
 
       {/* The hidden-roll flag lives on the pattern, but is only shown to
           (and editable by) the GM. */}
@@ -134,11 +166,20 @@ export function DiceRoller({ draft, onChange, isGM, onRoll, onSave }: Props) {
         </label>
       )}
 
-      <div className="dice-actions">
-        <button type="button" className="primary big" onClick={() => onRoll(isGM && draft.hidden)}>
-          {t('roll.button')}
-        </button>
-        <button type="button" onClick={onSave}>
+      <button
+        type="button"
+        className="primary big dice-roll-button"
+        onClick={() => onRoll(isGM && draft.hidden)}
+      >
+        {t('roll.button')}
+      </button>
+
+      {/* The save action is secondary to rolling: a thin divider plus
+          a quieter button reads as "and by the way, you can also
+          keep this combo as a named pattern" without competing with
+          the roll button visually. */}
+      <div className="dice-save-row">
+        <button type="button" className="dice-save-button" onClick={onSave}>
           {t('pattern.save')}
         </button>
       </div>

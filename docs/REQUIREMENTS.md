@@ -691,6 +691,36 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.75 — Redesign the "Roll dice" sheet's information hierarchy. The
+  previous layout placed the count chips (a 5×2 grid of 1–10), die-type
+  chips (seven D4–D100 buttons), modifier stepper, kind chips (damage /
+  judgment), formula preview, pattern-name field, "Roll" button and
+  "Save pattern" button at the same visual weight, making priorities
+  and relationships hard to read. The new layout reorganises the
+  modal as follows:
+  - **Roll name** moves to the very top of the modal. The name is the
+    roll's headline in the feed (whether or not it gets saved as a
+    pattern) and the saved pattern's name when the user does press
+    save; it is no longer a "save-only" field tucked near the save
+    button.
+  - **Count, type and modifier collapse onto a single row**. Count
+    becomes a 1–10 stepper (the v1.28 10-chip grid is retired); type
+    becomes a `<select>` (the 7-chip row is retired); modifier stays
+    a stepper. Together they form one "dice formula" row.
+  - **Kind** stays in its own row (damage / judgment chip pair) —
+    "what sort of roll is this?" is conceptually separate from the
+    expression and gets its own line.
+  - **Preview** changes shape to `"{kind} {x}D{y}±{z}"` so the kind
+    is reflected in the headline, and gets tinted with the kind's
+    accent colour (`--damage` / `--judgment` — the same hue used for
+    the feed bubble's top border). A glance at the card tells the
+    user how the entry will render in the feed.
+  - **Roll button** becomes a fullwidth primary; below it a thin
+    divider and a quieter outlined "Save pattern" button establish a
+    clear primary / secondary action hierarchy.
+  - i18n grows by `dice.rollName` / `dice.namePlaceholder` /
+    `dice.formula` / `dice.countDec` / `dice.countInc` across all 19
+    locales.
 - v1.74 — Drop the per-message speaker snapshot, route every render
   through the per-(player, character) record store. `ChatMessage` and
   `RollResult` lose `playerName` / `characterName` / `background` /
