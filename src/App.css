@@ -348,14 +348,37 @@
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
+  /* Clip the body so scrolling content never bleeds above the fixed
+     header (or below the rounded bottom edge on desktop). The body
+     owns the actual scroll. */
+  overflow: hidden;
+}
+/* Fixed header that carries the panel icon + title and the close
+   button. Does not scroll — the body below it does — so the heading
+   and the close affordance stay visible no matter how long the
+   content is. */
+.sheet-header {
+  position: relative;
+  /* Reserve enough right padding to clear the close button absolutely
+     positioned at top:8/right:8 (34px square). */
+  padding: 14px 56px 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  flex-shrink: 0;
+}
+.sheet-title {
+  /* Same look as the previous in-panel `h2`, just rendered one level up
+     so it sits in the sheet's fixed header instead of inside the
+     scrollable body. */
+  display: flex;
+  align-items: center;
+  font-size: 1.05rem;
+  margin: 0;
 }
 .sheet-close {
   position: absolute;
   top: 8px;
   right: 8px;
-  /* Above the panel's sticky header (z-index: 1) so the close button
-     stays clickable even when the title row is pinned to the top. */
-  z-index: 2;
   width: 34px;
   height: 34px;
   border-radius: 8px;
@@ -404,28 +427,15 @@
 .sheet-body {
   overflow-y: auto;
   padding: 0;
+  /* Take the remaining height so the scroll behaviour is on this
+     region rather than the outer `.sheet`. */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .sheet-body .panel {
   border: none;
   border-radius: 0;
-  padding: 0 16px 16px;
-}
-/* Pin the panel title row to the top of the sheet body so the heading
-   (and the sheet's close icon above it) stays in view while the rest
-   scrolls — the same fixed-header pattern as the past-rooms list. The
-   right padding clears the sheet-close button at top:8/right:8 (34px).
-   Scoped to a direct `.panel` child so a panel nested deeper (eg. the
-   read-only player-card embedded inside the past-rooms view) does not
-   add a second sticky row that would slide over the outer title. */
-.sheet-body > .panel > h2,
-.sheet-body > .panel > .panel-head {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: var(--panel);
-  margin: 0 -16px 12px;
-  padding: 14px 56px 12px 16px;
-  border-bottom: 1px solid var(--border);
+  padding: 16px;
 }
 @media (min-width: 721px) {
   .sheet {

@@ -2,7 +2,7 @@ import { useI18n } from '../i18n/useI18n'
 import type { Pattern } from '../dice/types'
 import { formatDiceSummary } from '../dice/format'
 import { useConfirm } from '../hooks/useConfirm'
-import { CloseIcon, PatternsIcon } from './icons'
+import { CloseIcon } from './icons'
 
 interface Props {
   /** Whether a character is active (patterns belong to a character). */
@@ -43,12 +43,8 @@ export function PatternList({
 
   return (
     <section className="panel">
-      <h2>
-        <span className="panel-icon" aria-hidden="true">
-          <PatternsIcon size={20} />
-        </span>
-        {t('pattern.section')}
-      </h2>
+      {/* The panel title + icon lives in the parent `Sheet` header so the
+          heading stays pinned above the scrollable body. */}
       {!hasCharacter && <p className="hint">{t('pattern.needCharacter')}</p>}
       {hasCharacter && patterns.length === 0 && (
         <p className="hint">

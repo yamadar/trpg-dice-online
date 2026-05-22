@@ -8,7 +8,13 @@ import type { Pattern } from './dice/types'
 import { isTutorialSeen, markTutorialSeen } from './storage/tutorial'
 import { loadCompactFeed, saveCompactFeed } from './storage/display'
 import { useConfirm } from './hooks/useConfirm'
-import { CloseIcon } from './components/icons'
+import {
+  CharacterIcon,
+  CloseIcon,
+  DiceIcon,
+  PatternsIcon,
+  RoomIcon,
+} from './components/icons'
 import { StatusBar } from './components/StatusBar'
 import { NameGate } from './components/NameGate'
 import { Tutorial } from './components/Tutorial'
@@ -274,7 +280,29 @@ function App() {
       <Dock active={openSheet} onOpen={toggleSheet} />
 
       {openSheet && (
-        <Sheet onClose={() => setOpenSheet(null)}>
+        <Sheet
+          title={t(
+            openSheet === 'room'
+              ? 'room.section'
+              : openSheet === 'character'
+                ? 'character.section'
+                : openSheet === 'dice'
+                  ? 'dice.section'
+                  : 'pattern.section',
+          )}
+          titleIcon={
+            openSheet === 'room' ? (
+              <RoomIcon size={20} />
+            ) : openSheet === 'character' ? (
+              <CharacterIcon size={20} />
+            ) : openSheet === 'dice' ? (
+              <DiceIcon size={20} />
+            ) : (
+              <PatternsIcon size={20} />
+            )
+          }
+          onClose={() => setOpenSheet(null)}
+        >
           {openSheet === 'room' && (
             <RoomPanel session={session} initialJoinCode={initialJoinCode} onNotice={flash} />
           )}

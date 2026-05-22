@@ -167,12 +167,8 @@ export function CharacterPanel({ characters, onNotice }: Props) {
 
   return (
     <section className="panel">
-      <h2>
-        <span className="panel-icon" aria-hidden="true">
-          <CharacterIcon size={20} />
-        </span>
-        {t('character.section')}
-      </h2>
+      {/* The panel title + icon lives in the parent `Sheet` header so the
+          heading stays pinned above the scrollable body. */}
 
       {/* === Zone 1: switcher === */}
       <label className="field">
