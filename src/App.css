@@ -1007,7 +1007,13 @@ button.player-row {
   gap: 12px;
 }
 .dice-name-field input {
-  font-weight: 600;
+  /* Drop the bold weight the redesign (PR #105) had set: the field
+     already reads as a title from its position and background, so
+     layering bold on top of the slightly larger size made the whole
+     sheet feel heavy. The placeholder needs to feel light and
+     inviting, not declarative — so the input uses the default text
+     weight while the larger size still gives the field its visual
+     rank at the top of the sheet. */
   font-size: 1.05rem;
 }
 .dice-formula-row {
