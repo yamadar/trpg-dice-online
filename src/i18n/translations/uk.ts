@@ -26,6 +26,9 @@ export const uk: Dict = {
   'settings.close': 'Закрити',
   'settings.groupLanguage': 'Мова та переклад',
   'settings.groupAppearance': 'Вигляд',
+  'settings.groupTyping': 'Індикатор набору',
+  'settings.showTyping': 'Показувати, що інші друкують',
+  'settings.broadcastTyping': 'Повідомляти, що я друкую',
   'settings.about': 'Про застосунок',
 
   'dock.room': 'Кімната',

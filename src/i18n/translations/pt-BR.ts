@@ -26,6 +26,9 @@ export const ptBR: Dict = {
   'settings.close': 'Fechar',
   'settings.groupLanguage': 'Idioma e tradução',
   'settings.groupAppearance': 'Aparência',
+  'settings.groupTyping': 'Indicador de digitação',
+  'settings.showTyping': 'Mostrar quando outros digitam',
+  'settings.broadcastTyping': 'Avisar quando eu digito',
   'settings.about': 'Sobre',
 
   'dock.room': 'Sala',

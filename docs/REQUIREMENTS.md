@@ -691,6 +691,23 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.78 — Make the "typing…" indicator HSP-friendly by giving the
+  player two independent opt-out toggles in the settings menu. "Show
+  others typing" (`showTyping`, default on) is the receive-side
+  toggle — when off, the rendered `typing-line` collapses to an empty
+  string while the signal still arrives on the wire; we drop it locally
+  rather than refusing it, so the toggle stays a private preference
+  rather than a renegotiation with the room. "Broadcast my own typing"
+  (`broadcastTyping`, default on) is the send-side toggle — when off,
+  `ChatComposer.onType` skips the `session.sendTyping()` call entirely,
+  so no signal ever leaves this client. The two are split because the
+  asymmetric cases are real ("I find seeing them stressful, but I
+  don't mind broadcasting mine"; "I want to see, but I don't want to
+  signal back"). Persisted as `trpg-dice.showTyping` and
+  `trpg-dice.broadcastTyping` (`'1'` / `'0'`) in `localStorage`. Three
+  new i18n keys added across all 19 languages:
+  `settings.groupTyping`, `settings.showTyping`,
+  `settings.broadcastTyping`.
 - v1.77 — Add a crop UI for character portraits at upload time so the
   user can pick the square area that becomes their avatar. Pulls in
   `react-easy-crop` as a dependency and opens a new

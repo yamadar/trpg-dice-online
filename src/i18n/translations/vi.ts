@@ -26,6 +26,9 @@ export const vi: Dict = {
   'settings.close': 'Đóng',
   'settings.groupLanguage': 'Ngôn ngữ & dịch',
   'settings.groupAppearance': 'Giao diện',
+  'settings.groupTyping': 'Chỉ báo đang gõ',
+  'settings.showTyping': 'Hiện khi người khác đang gõ',
+  'settings.broadcastTyping': 'Thông báo khi tôi đang gõ',
   'settings.about': 'Giới thiệu',
 
   'dock.room': 'Phòng',

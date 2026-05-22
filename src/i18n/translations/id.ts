@@ -26,6 +26,9 @@ export const id: Dict = {
   'settings.close': 'Tutup',
   'settings.groupLanguage': 'Bahasa & terjemahan',
   'settings.groupAppearance': 'Tampilan',
+  'settings.groupTyping': 'Indikator mengetik',
+  'settings.showTyping': 'Tampilkan saat orang lain mengetik',
+  'settings.broadcastTyping': 'Beritahu saat saya mengetik',
   'settings.about': 'Tentang',
 
   'dock.room': 'Ruang',

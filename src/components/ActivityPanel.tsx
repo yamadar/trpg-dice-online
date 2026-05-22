@@ -64,6 +64,10 @@ interface Props {
   characters: Character[]
   /** Denser feed layout; the toggle for it lives in the settings menu. */
   compact: boolean
+  /** Whether to show the "others typing…" line. HSP-friendly opt-out. */
+  showTyping: boolean
+  /** Whether the local player's keystrokes broadcast a typing signal. */
+  broadcastTyping: boolean
   /** Surfaces attachment errors as a toast. */
   onNotice: (message: string, kind?: 'success' | 'error') => void
   /** Opens the Room sheet; surfaced from the empty-feed CTA when offline. */
@@ -76,7 +80,15 @@ interface Props {
  * image lightbox. Older history (beyond the live window) is paged in from
  * the durable log on demand.
  */
-export function ActivityPanel({ session, characters, compact, onNotice, onOpenRoom }: Props) {
+export function ActivityPanel({
+  session,
+  characters,
+  compact,
+  showTyping,
+  broadcastTyping,
+  onNotice,
+  onOpenRoom,
+}: Props) {
   const { t } = useI18n()
   const [filter, setFilter] = useState<FeedFilter>('all')
   // The feed entry whose name was tapped, opening the player-detail card.
@@ -222,9 +234,13 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
     setReachedOldest(false)
   }
 
+  // When the local user has opted out of seeing others type, drop the line
+  // entirely. The signal still arrives over the wire — discarding it here
+  // (rather than in the session) keeps the toggle a private preference,
+  // not a renegotiation with the room.
   const typing = session.typingNames
   const typingLine =
-    typing.length === 0
+    !showTyping || typing.length === 0
       ? ''
       : t(typing.length === 1 ? 'typing.one' : 'typing.many', { names: typing.join(', ') })
 
@@ -327,7 +343,13 @@ export function ActivityPanel({ session, characters, compact, onNotice, onOpenRo
         {typingLine}
       </p>
 
-      {filter !== 'rolls' && <ChatComposer session={session} onNotice={onNotice} />}
+      {filter !== 'rolls' && (
+        <ChatComposer
+          session={session}
+          broadcastTyping={broadcastTyping}
+          onNotice={onNotice}
+        />
+      )}
 
       {detail && (() => {
         const record = sessionCharacters[speakerImageKey(detail)]

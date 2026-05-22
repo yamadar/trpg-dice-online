@@ -26,6 +26,9 @@ export const zhCN: Dict = {
   'settings.close': '关闭',
   'settings.groupLanguage': '语言与翻译',
   'settings.groupAppearance': '外观',
+  'settings.groupTyping': '输入中提示',
+  'settings.showTyping': '显示他人正在输入',
+  'settings.broadcastTyping': '让他人看到我正在输入',
   'settings.about': '关于',
 
   'dock.room': '房间',

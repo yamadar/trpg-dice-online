@@ -26,6 +26,9 @@ export const th: Dict = {
   'settings.close': 'ปิด',
   'settings.groupLanguage': 'ภาษาและการแปล',
   'settings.groupAppearance': 'ลักษณะ',
+  'settings.groupTyping': 'ตัวบ่งชี้การพิมพ์',
+  'settings.showTyping': 'แสดงเมื่อคนอื่นกำลังพิมพ์',
+  'settings.broadcastTyping': 'แจ้งเมื่อฉันกำลังพิมพ์',
   'settings.about': 'เกี่ยวกับ',
 
   'dock.room': 'ห้อง',

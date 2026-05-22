@@ -26,6 +26,9 @@ export const en: Dict = {
   'settings.close': 'Close',
   'settings.groupLanguage': 'Language & translation',
   'settings.groupAppearance': 'Appearance',
+  'settings.groupTyping': 'Typing indicator',
+  'settings.showTyping': 'Show others typing',
+  'settings.broadcastTyping': 'Broadcast my own typing',
   'settings.about': 'About',
 
   'dock.room': 'Room',

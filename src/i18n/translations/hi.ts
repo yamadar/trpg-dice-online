@@ -26,6 +26,9 @@ export const hi: Dict = {
   'settings.close': 'बंद करें',
   'settings.groupLanguage': 'भाषा और अनुवाद',
   'settings.groupAppearance': 'दिखावट',
+  'settings.groupTyping': 'टाइपिंग संकेतक',
+  'settings.showTyping': 'दूसरों का टाइप करना दिखाएं',
+  'settings.broadcastTyping': 'अपनी टाइपिंग दूसरों को दिखाएं',
   'settings.about': 'के बारे में',
 
   'dock.room': 'कक्ष',

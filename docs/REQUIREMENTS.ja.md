@@ -652,6 +652,21 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   表す情報伝達アイコンのため。サードパーティ素材の帰属は
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md) に集約する。
+- v1.78 — 「入力中…」表示を HSP（高感受性）の人にも圧を感じさせない
+  作りにするため、設定メニューに 2 つの独立したトグルを追加する。
+  「他の人の入力中を見る」(`showTyping`) は受信側のオプトアウトで、
+  既定は ON。OFF にすると `typing-line` を空文字に置き換え、相手の
+  シグナル自体は届くがこのクライアント内で破棄する（相手側には
+  何も伝わらず、設定がローカル設定であることを保つ）。「自分の入力中を
+  他者に通知」(`broadcastTyping`) は送信側のオプトアウトで、OFF に
+  すると `ChatComposer` の `onType` で `session.sendTyping()` を
+  呼ばなくなり、こちらのキーストロークから一切のタイピングシグナル
+  が出ない。2 つを別トグルにしているのは「見たくないが、自分の入力は
+  知らせて差し支えない」「見たいが、自分の入力は知られたくない」の
+  非対称な希望を別々に表現できるようにするため。設定は
+  `localStorage` の `trpg-dice.showTyping` / `trpg-dice.broadcastTyping`
+  に '1'/'0' で保存。i18n に `settings.groupTyping` /
+  `settings.showTyping` / `settings.broadcastTyping` を 19 言語追加。
 - v1.77 — キャラクター画像のアップロード時に、アイコン用の正方形
   切り取り位置を指定する UI を追加。`react-easy-crop` を依存に追加し、
   画像を選んだ直後に `CharacterImageCropDialog` を表示する。crop 領域は

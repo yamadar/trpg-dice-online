@@ -6,7 +6,14 @@ import { useCharacters } from './characters/useCharacters'
 import { rollPattern } from './dice/roll'
 import type { Pattern } from './dice/types'
 import { isTutorialSeen, markTutorialSeen } from './storage/tutorial'
-import { loadCompactFeed, saveCompactFeed } from './storage/display'
+import {
+  loadBroadcastTyping,
+  loadCompactFeed,
+  loadShowTyping,
+  saveBroadcastTyping,
+  saveCompactFeed,
+  saveShowTyping,
+} from './storage/display'
 import { useConfirm } from './hooks/useConfirm'
 import {
   CharacterIcon,
@@ -58,6 +65,11 @@ function App() {
   // Denser feed layout — a display preference, so its toggle sits in the
   // settings menu while the feed itself consumes the value.
   const [compact, setCompact] = useState(loadCompactFeed)
+  // HSP-friendly typing-indicator preferences (see + be seen, split so a
+  // sensitive user can opt out of either side independently — the
+  // settings menu owns the toggles, the feed / chat composer consume them.
+  const [showTyping, setShowTyping] = useState(loadShowTyping)
+  const [broadcastTyping, setBroadcastTyping] = useState(loadBroadcastTyping)
 
   const { updateIdentity, setCharacterImage, resumeRoom } = session
   const activeCharacterId = characters.activeId ?? ''
@@ -221,6 +233,18 @@ function App() {
     saveCompactFeed(next)
   }
 
+  // Persist the typing-indicator preferences as they are toggled.
+  const toggleShowTyping = () => {
+    const next = !showTyping
+    setShowTyping(next)
+    saveShowTyping(next)
+  }
+  const toggleBroadcastTyping = () => {
+    const next = !broadcastTyping
+    setBroadcastTyping(next)
+    saveBroadcastTyping(next)
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -238,6 +262,10 @@ function App() {
           onChangeName={(next) => updateIdentity({ name: next })}
           compact={compact}
           onToggleCompact={toggleCompact}
+          showTyping={showTyping}
+          onToggleShowTyping={toggleShowTyping}
+          broadcastTyping={broadcastTyping}
+          onToggleBroadcastTyping={toggleBroadcastTyping}
           onOpenHelp={() => setShowTutorial(true)}
           onNotice={flash}
         />
@@ -272,6 +300,8 @@ function App() {
           session={session}
           characters={characters.characters}
           compact={compact}
+          showTyping={showTyping}
+          broadcastTyping={broadcastTyping}
           onNotice={flash}
           onOpenRoom={() => setOpenSheet('room')}
         />

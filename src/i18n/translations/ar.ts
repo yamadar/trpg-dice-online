@@ -26,6 +26,9 @@ export const ar: Dict = {
   'settings.close': 'إغلاق',
   'settings.groupLanguage': 'اللغة والترجمة',
   'settings.groupAppearance': 'المظهر',
+  'settings.groupTyping': 'مؤشر الكتابة',
+  'settings.showTyping': 'إظهار كتابة الآخرين',
+  'settings.broadcastTyping': 'بث كتابتي للآخرين',
   'settings.about': 'حول',
 
   'dock.room': 'الغرفة',

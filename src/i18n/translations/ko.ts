@@ -26,6 +26,9 @@ export const ko: Dict = {
   'settings.close': '닫기',
   'settings.groupLanguage': '언어 및 번역',
   'settings.groupAppearance': '모양',
+  'settings.groupTyping': '입력 중 표시',
+  'settings.showTyping': '다른 사람의 입력 중 표시',
+  'settings.broadcastTyping': '내 입력 중을 다른 사람에게 알림',
   'settings.about': '앱 정보',
 
   'dock.room': '룸',

@@ -26,6 +26,9 @@ export const de: Dict = {
   'settings.close': 'Schließen',
   'settings.groupLanguage': 'Sprache & Übersetzung',
   'settings.groupAppearance': 'Darstellung',
+  'settings.groupTyping': 'Tipp-Anzeige',
+  'settings.showTyping': 'Tipp-Anzeige anderer einblenden',
+  'settings.broadcastTyping': 'Eigenes Tippen anderen anzeigen',
   'settings.about': 'Über',
 
   'dock.room': 'Raum',
