@@ -437,6 +437,18 @@
   border-radius: 0;
   padding: 16px;
 }
+@media (max-width: 720px) {
+  /* Lift the sheet's inner content a few px clear of the OS' bottom
+     gesture bar (Android's "swipe up to Gemini" pill, the iOS home
+     indicator, etc.) — without those a long sheet's last row sits
+     directly under the system UI and is hard to tap. The padding is
+     on `.sheet` (not the body) so the sheet's own background extends
+     down to the screen edge while the scrollable area stops a few
+     pixels above it. */
+  .sheet {
+    padding-bottom: 4px;
+  }
+}
 @media (min-width: 721px) {
   .sheet {
     left: 50%;
@@ -792,8 +804,11 @@ button.player-row {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 60vh;
-  overflow-y: auto;
+  /* The list used to scroll inside its own `max-height: 60vh` box,
+     which doubled up with `.sheet-body`'s overflow when the list
+     rendered inside a sheet. Defer scrolling to whichever container
+     above naturally owns it (the sheet body or the page) so the user
+     only ever sees one scrollbar. */
 }
 .history-item {
   background: var(--panel-2);
