@@ -665,9 +665,13 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   characterId が決め、表示属性はストアの最新値が決める）。IndexedDB
   は v6 にバンプし、物理ストア名を `sessionPortraits` →
   `sessionCharacters` にリネーム（v5→v6 マイグレーションで全レコード
-  をコピー後、旧ストアを削除）。型・ストア名・概念名のズレが解消し、
-  発信者情報の経路は画像と同じ「per-character ストアのみ」に統一
-  された。
+  を新ストアへコピー。旧ストアは意図的に残置する：cursor の async
+  callback で `deleteObjectStore` を呼ぶのはブラウザ依存で不安定なため、
+  後続の `DB_VERSION` バンプで `onupgradeneeded` 同期内に削除する予定）。
+  `deleteSession` / `deleteAllSessions` は旧ストアが残っている間も
+  同時に clear するので、履歴全削除でも孤児レコードは残らない。
+  型・ストア名・概念名のズレが解消し、発信者情報の経路は画像と同じ
+  「per-character ストアのみ」に統一された。
 - v1.73 — キャラクター別のセッションレコード化と、ルーム履歴
   エクスポートの v5 化。`Player` / `Identity` / `ChatMessage` /
   `RollResult` に既存の `characterName` スナップショットに加えて

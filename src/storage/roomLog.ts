@@ -702,7 +702,13 @@ export async function deleteSession(sessionId: string | null): Promise<void> {
   if (!db) return
   await new Promise<void>((resolve) => {
     try {
-      const tx = db.transaction([STORE, META, CHARACTERS], 'readwrite')
+      // Include the legacy portraits store in the transaction when it
+      // still exists, so a delete also reaches whatever speaker
+      // snapshots the v5→v6 copy left behind for this session.
+      const stores: string[] = [STORE, META, CHARACTERS]
+      const legacyExists = db.objectStoreNames.contains(LEGACY_PORTRAITS)
+      if (legacyExists) stores.push(LEGACY_PORTRAITS)
+      const tx = db.transaction(stores, 'readwrite')
       const cursor = tx
         .objectStore(STORE)
         .index('bySessionAt')
@@ -726,6 +732,19 @@ export async function deleteSession(sessionId: string | null): Promise<void> {
           cur.continue()
         }
       }
+      if (legacyExists) {
+        const legacyCursor = tx
+          .objectStore(LEGACY_PORTRAITS)
+          .index('bySession')
+          .openCursor(IDBKeyRange.only(sessionId))
+        legacyCursor.onsuccess = () => {
+          const cur = legacyCursor.result
+          if (cur) {
+            cur.delete()
+            cur.continue()
+          }
+        }
+      }
       tx.oncomplete = () => resolve()
       tx.onerror = () => resolve()
     } catch {
@@ -740,10 +759,17 @@ export async function deleteAllSessions(): Promise<void> {
   if (!db) return
   await new Promise<void>((resolve) => {
     try {
-      const tx = db.transaction([STORE, META, CHARACTERS], 'readwrite')
+      // Same as `deleteSession`: include the legacy portraits store
+      // if it's still around, so a full wipe leaves no orphaned
+      // speaker snapshots behind on disk.
+      const stores: string[] = [STORE, META, CHARACTERS]
+      const legacyExists = db.objectStoreNames.contains(LEGACY_PORTRAITS)
+      if (legacyExists) stores.push(LEGACY_PORTRAITS)
+      const tx = db.transaction(stores, 'readwrite')
       tx.objectStore(STORE).clear()
       tx.objectStore(META).clear()
       tx.objectStore(CHARACTERS).clear()
+      if (legacyExists) tx.objectStore(LEGACY_PORTRAITS).clear()
       tx.oncomplete = () => resolve()
       tx.onerror = () => resolve()
     } catch {

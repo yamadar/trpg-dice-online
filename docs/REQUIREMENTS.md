@@ -703,7 +703,12 @@ Commit after each step.
   same current label for every past entry. IndexedDB is bumped to v6
   and the physical store name moves from `sessionPortraits` to
   `sessionCharacters` (rows are copied row-by-row during the upgrade
-  transaction, then the legacy store is dropped). Type names, store
+  transaction; the legacy store is intentionally left in place
+  because dropping it from inside a cursor callback is unreliable
+  across browsers — a future `DB_VERSION` bump can drop it
+  synchronously in the upgrade body). `deleteSession` and
+  `deleteAllSessions` clear the legacy store too while it exists, so
+  a history wipe leaves no orphan rows behind. Type names, store
   name and concept name now line up, and the speaker-info pipeline is
   unified with the image pipeline: one per-character store, no inline
   snapshots.

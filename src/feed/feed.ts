@@ -51,13 +51,23 @@ export type FeedItem =
 /** Resolve the `${playerId}|${characterId}` key for a feed speaker, with
  *  the `legacyCharacterIdFromName` fallback for entries that predate the
  *  `characterId` field. Exported so both the live and read-only feeds
- *  look up the same per-character row in `sessionCharacters`. */
+ *  look up the same per-character row in `sessionCharacters`.
+ *
+ *  The fallback only kicks in when `characterId` is *missing*
+ *  (`undefined`); an explicit empty string means "the player was
+ *  acting directly, no character" and must stay empty — otherwise a
+ *  message that carries both `characterId: ''` and a stray legacy
+ *  `characterName` (an older client, a buggy writer) would resolve
+ *  to the wrong `@n:<name>` row in `sessionCharacters`. */
 export function speakerImageKey(speaker: {
   playerId: string
   characterId?: string
   characterName?: string
 }): string {
-  const cid = speaker.characterId || legacyCharacterIdFromName(speaker.characterName ?? '')
+  const cid =
+    speaker.characterId !== undefined
+      ? speaker.characterId
+      : legacyCharacterIdFromName(speaker.characterName ?? '')
   return characterImagesKey(speaker.playerId, cid)
 }
 
