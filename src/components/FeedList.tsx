@@ -63,20 +63,27 @@ const FeedSystemItem = memo(function FeedSystemItem({
 const FeedAvatar = memo(function FeedAvatar({
   image,
   color,
+  isGM,
 }: {
   image: string | undefined
   color: string
+  /** GM-flagged speakers get a `--gm`-coloured ring around the avatar
+   *  so the role reads at a glance even when the badge text scrolls
+   *  off screen (compact view) or competes for attention with the
+   *  bubble's own kind-coloured top border. */
+  isGM: boolean
 }) {
+  const className = `feed-avatar${isGM ? ' feed-avatar-gm' : ''}`
   if (image) {
     return (
-      <span className="feed-avatar" aria-hidden="true">
+      <span className={className} aria-hidden="true">
         <img src={image} alt="" />
       </span>
     )
   }
   return (
     <span
-      className="feed-avatar feed-avatar-dot"
+      className={`${className} feed-avatar-dot`}
       style={{ background: color }}
       aria-hidden="true"
     />
@@ -132,7 +139,7 @@ const FeedChatItem = memo(function FeedChatItem({
         archived ? ' archived' : ''
       }${pending ? ' pending' : ''}`}
     >
-      {!compact && <FeedAvatar image={image} color={color} />}
+      {!compact && <FeedAvatar image={image} color={color} isGM={speakerIsGM} />}
       <div className="feed-bubble">
         <div className="feed-line">
           <button
@@ -207,7 +214,7 @@ const FeedRollItem = memo(function FeedRollItem({
     <li
       className={`feed-roll roll ${isHidden ? 'hidden' : r.kind}${own ? ' own' : ''}${archived ? ' archived' : ''}`}
     >
-      {!compact && <FeedAvatar image={image} color={color} />}
+      {!compact && <FeedAvatar image={image} color={color} isGM={speakerIsGM} />}
       <div className="feed-bubble">
         <div className="feed-line">
           <button
