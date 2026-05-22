@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { buildFeed, type FeedFilter, type SystemMarker } from '../feed/feed'
 import { isImageType } from '../chat/attachment'
@@ -22,8 +22,16 @@ import { speakerImageKey } from '../feed/feed'
 import { FeedList, type FeedDetailTarget } from './FeedList'
 import { Lightbox } from './Lightbox'
 import { PlayerDetailCard } from './PlayerDetailCard'
+import { AllIcon, AttachIcon, ChatIcon, DiceIcon, type IconProps } from './icons'
 
-const FILTERS: FeedFilter[] = ['all', 'rolls', 'chat', 'files']
+// Icon-only filter chips — same glyphs the live ActivityPanel uses so the
+// past-session feed reads with one consistent vocabulary.
+const FILTERS: { id: FeedFilter; Icon: ComponentType<IconProps> }[] = [
+  { id: 'all', Icon: AllIcon },
+  { id: 'rolls', Icon: DiceIcon },
+  { id: 'chat', Icon: ChatIcon },
+  { id: 'files', Icon: AttachIcon },
+]
 
 interface Props {
   /** The local player id — passed through to the read-only feed. */
@@ -204,7 +212,7 @@ export function RoomHistory({ playerId, onBack }: Props) {
   // --- session view: one past session's read-only feed -------------------
   if (selected) {
     return (
-      <div className="room-history">
+      <div className="room-history room-history--session">
         <div className="history-head">
           <button type="button" className="link" onClick={closeSession}>
             ← {t('history.backToList')}
@@ -212,17 +220,22 @@ export function RoomHistory({ playerId, onBack }: Props) {
           <h3 className="history-head-title">{selected.name.trim() || t('history.unnamed')}</h3>
         </div>
         <div className="feed-filter" role="group" aria-label={t('feed.section')}>
-          {FILTERS.map((f) => (
-            <button
-              key={f}
-              type="button"
-              className={f === filter ? 'filter-btn active' : 'filter-btn'}
-              aria-pressed={f === filter}
-              onClick={() => setFilter(f)}
-            >
-              {t(`feed.${f}`)}
-            </button>
-          ))}
+          {FILTERS.map(({ id, Icon }) => {
+            const label = t(`feed.${id}`)
+            return (
+              <button
+                key={id}
+                type="button"
+                className={id === filter ? 'filter-btn active' : 'filter-btn'}
+                aria-pressed={id === filter}
+                aria-label={label}
+                title={label}
+                onClick={() => setFilter(id)}
+              >
+                <Icon />
+              </button>
+            )
+          })}
         </div>
         {loadedLog === null ? (
           <p className="hint history-loading">…</p>

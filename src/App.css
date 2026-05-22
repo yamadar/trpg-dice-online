@@ -849,6 +849,43 @@ button.player-row {
   flex-direction: column;
   gap: 10px;
 }
+/* Session view: make the chain from `.sheet` down to `.feed` a column flex
+   stack so the feed fills the body and only its own scrollbar is shown.
+   Without this, `.feed`'s `max-height: 60vh` plus the head + filter could
+   overflow the sheet body on mobile (where `vh` > `svh`), giving the user
+   two stacked scrollbars. The sheet has to switch from `max-height` to a
+   definite `height` because a `flex: 1` body inside a `max-height`-only
+   container collapses to 0. Mirrors the `.app-main .feed` pattern the
+   live activity panel uses. */
+.sheet:has(.room-history--session) {
+  height: 88svh;
+}
+.sheet-body:has(.room-history--session) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sheet-body:has(.room-history--session) > .panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.room-history--session {
+  flex: 1;
+  min-height: 0;
+}
+.room-history--session > .feed-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.room-history--session .feed {
+  flex: 1;
+  max-height: none;
+  min-height: 0;
+}
 .history-head {
   display: flex;
   align-items: baseline;
