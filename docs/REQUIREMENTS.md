@@ -691,6 +691,21 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.77 — Add a crop UI for character portraits at upload time so the
+  user can pick the square area that becomes their avatar. Pulls in
+  `react-easy-crop` as a dependency and opens a new
+  `CharacterImageCropDialog` right after a file is picked. The crop
+  area is locked to a 1:1 aspect ratio and the overlay is rendered as
+  a circle (`cropShape='round'`), matching the round avatars used in
+  the feed and the roster. Drag to reposition, slider to zoom — on
+  confirm the cropped rectangle is drawn to a canvas and fed through
+  the existing `prepareCharacterImage` (long-edge cap + JPEG
+  re-encode). The saved bytes are square; display-time CSS
+  (`border-radius: 50%`) keeps the avatar circular as before.
+  Portraits coming in through the JSON-import path skip the crop —
+  they ship with their own author-chosen frame. i18n grows by
+  `common.apply` + `character.crop.{title,hint,zoom}` across all 19
+  locales.
 - v1.76 — Expand the "Roll dice" preview to a beginner-friendly
   spelled-out form. The feed's detail line (`.roll-detail`) keeps the
   compact `formatDiceSummary` shape (`1D6+2`, TRPG shorthand). The

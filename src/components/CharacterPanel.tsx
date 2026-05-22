@@ -7,6 +7,7 @@ import { prepareCharacterImage } from '../characters/image'
 import { useConfirm } from '../hooks/useConfirm'
 import { CharacterIcon, EditIcon } from './icons'
 import { Lightbox } from './Lightbox'
+import { CharacterImageCropDialog } from './CharacterImageCropDialog'
 
 interface Props {
   characters: UseCharacters
@@ -38,6 +39,13 @@ export function CharacterPanel({ characters, onNotice }: Props) {
   } = characters
 
   const [importError, setImportError] = useState(false)
+  // Crop dialog state: when a freshly picked file is loaded as a data URL
+  // the dialog opens with the source image, lets the user position /
+  // zoom the square crop (rendered as a circle to match the avatar
+  // shape), and on confirm the cropped data URL is fed through the
+  // existing `prepareCharacterImage` resize / re-encode pipeline.
+  const [cropSource, setCropSource] = useState<string | null>(null)
+  const [cropTargetId, setCropTargetId] = useState<string | null>(null)
   // Portrait state: a spinner-style busy flag while an image is processed,
   // an error flag, and whether the full-size viewer is open.
   const [imageBusy, setImageBusy] = useState(false)
@@ -148,16 +156,38 @@ export function CharacterPanel({ characters, onNotice }: Props) {
     const file = e.target.files?.[0]
     e.target.value = '' // allow re-picking the same file
     if (!file || !activeCharacter) return
-    const characterId = activeCharacter.id
     setImageError(false)
+    // Read the picked file into a data URL so the crop dialog has a
+    // source to render. The dialog's confirm callback feeds the
+    // cropped data URL into the existing portrait pipeline; cancel
+    // just clears the source and nothing is saved.
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCropTargetId(activeCharacter.id)
+      setCropSource(String(reader.result))
+    }
+    reader.onerror = () => setImageError(true)
+    reader.readAsDataURL(file)
+  }
+
+  const handleCropConfirm = (croppedDataUrl: string) => {
+    const characterId = cropTargetId
+    setCropSource(null)
+    setCropTargetId(null)
+    if (!characterId) return
     setImageBusy(true)
-    prepareCharacterImage(file)
+    prepareCharacterImage(croppedDataUrl)
       .then((image) => {
         if (image) updateCharacter(characterId, { image })
         else setImageError(true)
       })
       .catch(() => setImageError(true))
       .finally(() => setImageBusy(false))
+  }
+
+  const handleCropCancel = () => {
+    setCropSource(null)
+    setCropTargetId(null)
   }
 
   const handleRemoveImage = () => {
@@ -398,6 +428,14 @@ export function CharacterPanel({ characters, onNotice }: Props) {
           index={0}
           onIndexChange={() => {}}
           onClose={() => setLightboxOpen(false)}
+        />
+      )}
+
+      {cropSource && (
+        <CharacterImageCropDialog
+          src={cropSource}
+          onCancel={handleCropCancel}
+          onConfirm={handleCropConfirm}
         />
       )}
     </section>

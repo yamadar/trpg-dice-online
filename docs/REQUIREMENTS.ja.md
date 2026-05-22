@@ -652,6 +652,17 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   表す情報伝達アイコンのため。サードパーティ素材の帰属は
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md) に集約する。
+- v1.77 — キャラクター画像のアップロード時に、アイコン用の正方形
+  切り取り位置を指定する UI を追加。`react-easy-crop` を依存に追加し、
+  画像を選んだ直後に `CharacterImageCropDialog` を表示する。crop 領域は
+  1:1 アスペクト固定、オーバーレイは円形 (`cropShape='round'`) で、
+  フィードや参加者一覧のアバターが円形に描画されるのと一致したプレビュー
+  になる。ドラッグで位置、スライダーでズームを調整。確定するとその矩形
+  だけを Canvas に描画 → 既存の `prepareCharacterImage` の縮小・JPEG
+  再エンコードを経て保存される。保存される画像自体は正方形で、表示時に
+  CSS の `border-radius: 50%` で円形にする運用は従来通り。JSON
+  インポート経由の画像はクロップを通さず従来どおり。i18n に
+  `common.apply` / `character.crop.{title,hint,zoom}` を 19 言語追加。
 - v1.76 — 「ダイスを振る」プレビューの表記を、初心者にも読みやすい
   展開形に変える。フィードの詳細行（`.roll-detail`）は従来通り
   `formatDiceSummary` の `1D6+2` 形式（TRPG 慣例）のまま。
