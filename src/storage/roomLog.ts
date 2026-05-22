@@ -320,7 +320,10 @@ function openDb(): Promise<IDBDatabase | null> {
       // `@n:<encoded characterName>` characterId so per-character rows
       // stay distinct, and fill the new fields with conservative
       // defaults (empty / false) so the load side has consistent types.
-      if (legacyPortraitsExists && event.oldVersion >= 4 && event.oldVersion < 5) {
+      // Condition is `< 5` (not `>= 4 && < 5`) so a direct v3→v6 jump
+      // still runs the pass — rows already in v5 shape self-skip on
+      // the `typeof rec.characterId === 'string'` check below.
+      if (legacyPortraitsExists && event.oldVersion < 5) {
         const portraitsStore = tx!.objectStore(LEGACY_PORTRAITS)
         const cursor = portraitsStore.openCursor()
         cursor.onsuccess = () => {
@@ -362,21 +365,25 @@ function openDb(): Promise<IDBDatabase | null> {
       }
       // v6 renames the store to `sessionCharacters` to match the type
       // (`SessionCharacterRecord`) it now holds. Copy every row from
-      // the legacy store into the new one, then drop the legacy store
-      // — same upgrade transaction, so the rename is atomic.
-      if (legacyPortraitsExists && event.oldVersion >= 0 && event.oldVersion < 6) {
+      // the legacy store into the new one in the same upgrade
+      // transaction. The legacy store is intentionally left behind:
+      // calling `deleteObjectStore` from inside a cursor callback is a
+      // spec-edge that is unreliable across browsers (and can abort
+      // the whole upgrade, bricking IndexedDB for the user). A later
+      // DB_VERSION bump can drop it synchronously in the
+      // `onupgradeneeded` handler body once this migration has
+      // settled. The cost in the meantime is one orphaned object
+      // store on the user's disk — small, and writes after v6 only
+      // touch the new store.
+      if (legacyPortraitsExists && event.oldVersion < 6) {
         const oldStore = tx!.objectStore(LEGACY_PORTRAITS)
         const newStore = tx!.objectStore(CHARACTERS)
         const cursor = oldStore.openCursor()
         cursor.onsuccess = () => {
           const cur = cursor.result
-          if (cur) {
-            newStore.put(cur.value)
-            cur.continue()
-          } else {
-            // All rows copied; drop the legacy store now that it's drained.
-            db.deleteObjectStore(LEGACY_PORTRAITS)
-          }
+          if (!cur) return
+          newStore.put(cur.value)
+          cur.continue()
         }
       }
     }

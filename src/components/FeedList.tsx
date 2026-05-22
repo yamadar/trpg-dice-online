@@ -118,7 +118,11 @@ const FeedChatItem = memo(function FeedChatItem({
   const { translated, translating } = useTranslatedText(m.text, m.lang)
   const [showOriginal, setShowOriginal] = useState(false)
   const showTranslation = autoTranslate && translated !== null && !showOriginal
-  const displayName = speaker?.playerName || ''
+  // Fall back to the localized anon label when no per-character record
+  // has been observed yet (a brand-new entry, a pruned row, or a
+  // legacy entry that normalize couldn't pin to a row) so the
+  // speaker-name button never renders blank.
+  const displayName = speaker?.playerName || t('player.anon')
   const characterName = speaker?.characterName ?? ''
   const speakerIsGM = speaker?.isGM ?? false
   const image = speaker?.image || undefined
