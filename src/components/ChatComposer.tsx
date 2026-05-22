@@ -9,6 +9,9 @@ import { AttachIcon, CloseIcon, SendIcon } from './icons'
 
 interface Props {
   session: Session
+  /** Whether keystrokes broadcast a typing signal to other players.
+   *  Default is on; an HSP-sensitive user can opt out in settings. */
+  broadcastTyping: boolean
   /** Surfaces attachment errors as a toast. */
   onNotice: (message: string, kind?: 'success' | 'error') => void
 }
@@ -17,7 +20,7 @@ interface Props {
  * The chat compose area: a staged-attachment chip, the @mention
  * autocomplete, the text input with a file-attach button, and Send.
  */
-export function ChatComposer({ session, onNotice }: Props) {
+export function ChatComposer({ session, broadcastTyping, onNotice }: Props) {
   const { t } = useI18n()
   const [text, setText] = useState('')
   // A file picked but not yet sent.
@@ -45,7 +48,9 @@ export function ChatComposer({ session, onNotice }: Props) {
 
   const onType = (value: string, cursor: number) => {
     setText(value)
-    session.sendTyping()
+    // Skip the typing broadcast entirely when the local user has opted
+    // out — no signal leaves this client, so the other end sees nothing.
+    if (broadcastTyping) session.sendTyping()
     mentions.refresh(value, cursor)
   }
 

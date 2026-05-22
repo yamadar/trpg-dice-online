@@ -26,6 +26,9 @@ export const ru: Dict = {
   'settings.close': 'Закрыть',
   'settings.groupLanguage': 'Язык и перевод',
   'settings.groupAppearance': 'Внешний вид',
+  'settings.groupTyping': 'Индикатор набора',
+  'settings.showTyping': 'Показывать, что другие печатают',
+  'settings.broadcastTyping': 'Сообщать, что я печатаю',
   'settings.about': 'О программе',
 
   'dock.room': 'Комната',

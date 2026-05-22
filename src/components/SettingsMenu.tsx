@@ -6,6 +6,7 @@ import { ThemeToggle } from './ThemeToggle'
 import { FontSizeToggle } from './FontSizeToggle'
 import {
   BrandIcon,
+  ChatIcon,
   CloseIcon,
   CompactIcon,
   FontSizeIcon,
@@ -23,6 +24,12 @@ interface Props {
   /** Feed-density preference — a display setting, so its toggle lives here. */
   compact: boolean
   onToggleCompact: () => void
+  /** "Show others' typing…" — HSP-friendly opt-out, see-side. */
+  showTyping: boolean
+  onToggleShowTyping: () => void
+  /** "Broadcast my own typing" — HSP-friendly opt-out, send-side. */
+  broadcastTyping: boolean
+  onToggleBroadcastTyping: () => void
   onOpenHelp: () => void
   /** Surfaces a toast, e.g. after the player name has been changed. */
   onNotice: (message: string) => void
@@ -38,6 +45,10 @@ export function SettingsMenu({
   onChangeName,
   compact,
   onToggleCompact,
+  showTyping,
+  onToggleShowTyping,
+  broadcastTyping,
+  onToggleBroadcastTyping,
   onOpenHelp,
   onNotice,
 }: Props) {
@@ -163,6 +174,41 @@ export function SettingsMenu({
                   </span>
                   <ThemeToggle />
                 </div>
+              </div>
+
+              {/* Split toggles for the "typing…" indicator. The two
+                  sides — see / be seen — are independent so an
+                  HSP-sensitive user can opt out of either without
+                  giving up the other. */}
+              <div className="settings-group">
+                <h3 className="settings-group-title">
+                  <ChatIcon size={16} />
+                  <span>{t('settings.groupTyping')}</span>
+                </h3>
+                <label className="setting-row">
+                  <span className="setting-label">
+                    <ChatIcon size={16} />
+                    <span>{t('settings.showTyping')}</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    className="toggle"
+                    checked={showTyping}
+                    onChange={onToggleShowTyping}
+                  />
+                </label>
+                <label className="setting-row">
+                  <span className="setting-label">
+                    <ChatIcon size={16} />
+                    <span>{t('settings.broadcastTyping')}</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    className="toggle"
+                    checked={broadcastTyping}
+                    onChange={onToggleBroadcastTyping}
+                  />
+                </label>
               </div>
 
               <div className="settings-about">

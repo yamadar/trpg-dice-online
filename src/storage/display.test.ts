@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  loadBroadcastTyping,
   loadCompactFeed,
   loadFontScale,
+  loadShowTyping,
+  saveBroadcastTyping,
   saveCompactFeed,
   saveFontScale,
+  saveShowTyping,
 } from './display'
 import { DEFAULT_FONT_SCALE } from '../theme/fontScale'
 
@@ -65,5 +69,36 @@ describe('font-scale preference', () => {
   it('falls back to the default for a corrupted / unknown stored value', () => {
     storage.setItem('trpg-dice.fontScale', 'huge')
     expect(loadFontScale()).toBe(DEFAULT_FONT_SCALE)
+  })
+})
+
+describe('typing-display preferences', () => {
+  it('shows others typing by default — existing behaviour preserved when the key is absent', () => {
+    expect(loadShowTyping()).toBe(true)
+  })
+
+  it("round-trips an explicit off / on for showTyping", () => {
+    saveShowTyping(false)
+    expect(loadShowTyping()).toBe(false)
+    saveShowTyping(true)
+    expect(loadShowTyping()).toBe(true)
+  })
+
+  it('broadcasts own typing by default', () => {
+    expect(loadBroadcastTyping()).toBe(true)
+  })
+
+  it("round-trips an explicit off / on for broadcastTyping", () => {
+    saveBroadcastTyping(false)
+    expect(loadBroadcastTyping()).toBe(false)
+    saveBroadcastTyping(true)
+    expect(loadBroadcastTyping()).toBe(true)
+  })
+
+  it("treats only the literal '0' as off so a corrupted value falls back to on", () => {
+    storage.setItem('trpg-dice.showTyping', 'true')
+    expect(loadShowTyping()).toBe(true)
+    storage.setItem('trpg-dice.broadcastTyping', 'yes')
+    expect(loadBroadcastTyping()).toBe(true)
   })
 })

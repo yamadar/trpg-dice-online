@@ -26,6 +26,9 @@ export const tr: Dict = {
   'settings.close': 'Kapat',
   'settings.groupLanguage': 'Dil ve çeviri',
   'settings.groupAppearance': 'Görünüm',
+  'settings.groupTyping': 'Yazma göstergesi',
+  'settings.showTyping': 'Diğerlerinin yazdığını göster',
+  'settings.broadcastTyping': 'Yazdığımı bildir',
   'settings.about': 'Hakkında',
 
   'dock.room': 'Oda',

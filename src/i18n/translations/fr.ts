@@ -26,6 +26,9 @@ export const fr: Dict = {
   'settings.close': 'Fermer',
   'settings.groupLanguage': 'Langue et traduction',
   'settings.groupAppearance': 'Apparence',
+  'settings.groupTyping': 'Indicateur de saisie',
+  'settings.showTyping': "Voir quand d'autres écrivent",
+  'settings.broadcastTyping': "Signaler quand j'écris",
   'settings.about': 'À propos',
 
   'dock.room': 'Salle',

@@ -26,6 +26,9 @@ export const zhTW: Dict = {
   'settings.close': '關閉',
   'settings.groupLanguage': '語言與翻譯',
   'settings.groupAppearance': '外觀',
+  'settings.groupTyping': '輸入中提示',
+  'settings.showTyping': '顯示他人正在輸入',
+  'settings.broadcastTyping': '讓他人看到我正在輸入',
   'settings.about': '關於',
 
   'dock.room': '房間',

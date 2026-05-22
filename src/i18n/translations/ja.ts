@@ -26,6 +26,9 @@ export const ja: Dict = {
   'settings.close': '閉じる',
   'settings.groupLanguage': '言語と翻訳',
   'settings.groupAppearance': '外観',
+  'settings.groupTyping': '入力中の表示',
+  'settings.showTyping': '他の人の入力中を見る',
+  'settings.broadcastTyping': '自分の入力中を他者に通知',
   'settings.about': 'このアプリについて',
 
   'dock.room': 'ルーム',
