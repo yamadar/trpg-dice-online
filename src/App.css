@@ -945,7 +945,10 @@ button.player-row {
 }
 .dice-formula-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  /* `minmax(0, 1fr)` lets the three columns stay strictly equal width
+     even when one stepper's value grows by a digit ("0" → "+10") —
+     plain `1fr` lets the content's min-width push neighbours around. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 0;
   /* The three controls form one logical "dice formula" but each field
      (count / type / modifier) is conceptually separate. A thin
@@ -958,16 +961,34 @@ button.player-row {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 0 10px;
+  padding: 0 6px;
   min-width: 0;
+}
+/* Inside the formula row the steppers share their column with a select
+   on a narrow mobile width, so the buttons are a touch smaller and the
+   value reserves enough width for a three-character signed number
+   ("+10" / "-10"). Outside the formula row the regular `.stepper`
+   styling still applies. */
+.dice-formula-row .stepper {
+  gap: 4px;
+}
+.dice-formula-row .stepper button {
+  width: 36px;
+  height: 36px;
+}
+.dice-formula-row .stepper-value {
+  min-width: 2.5ch;
 }
 .dice-formula-field + .dice-formula-field {
   border-left: 1px solid var(--border);
 }
 .dice-formula-label {
-  font-size: 0.78rem;
+  /* Match `.field span` (0.8rem, var(--text-dim), default left align)
+     so the "kind" row below — which uses the default `.field` label —
+     lines up with these labels visually. */
+  font-size: 0.8rem;
   color: var(--text-dim);
-  text-align: center;
+  text-align: left;
 }
 .dice-type-select {
   width: 100%;
@@ -2242,15 +2263,30 @@ button.char-avatar-large:disabled {
   gap: 8px;
 }
 .stepper button {
+  /* `inline-flex` + center alignment keeps the `−` / `+` glyph
+     centred inside the square button. Without it, the default
+     button content alignment can drift toward the lower-right
+     once a `padding` somewhere up the cascade kicks in. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 40px;
   height: 40px;
+  padding: 0;
   font-size: 1.2rem;
+  line-height: 1;
   border-radius: 8px;
   background: var(--panel-2);
   flex-shrink: 0;
 }
 .stepper-value {
   flex: 1;
+  /* Without min-width: 0, flex children honour their content's
+     min-width — so a three-char "+10" / "-10" pushes the stepper
+     wider than the column, jogging the + button rightward as the
+     value gains digits. Letting the value shrink keeps the parent's
+     grid track in charge of the stepper's width. */
+  min-width: 0;
   text-align: center;
   font-family: var(--mono);
   font-size: 1.1rem;
