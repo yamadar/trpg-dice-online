@@ -60,13 +60,26 @@ const FeedSystemItem = memo(function FeedSystemItem({
  * hidden text inside that AT would never reach. Memoized so a stable
  * image / color does not invalidate the parent item.
  */
+/** First user-perceived character of a name — Unicode-aware so a
+ *  surrogate-pair emoji or a combining-mark glyph stays intact. Used
+ *  as the fallback avatar label when no portrait has been set. */
+function avatarInitial(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) return ''
+  return [...trimmed][0] ?? ''
+}
+
 const FeedAvatar = memo(function FeedAvatar({
   image,
   color,
+  initial,
   isGM,
 }: {
   image: string | undefined
   color: string
+  /** Single-character fallback drawn over the colour dot when no
+   *  portrait has been set. Empty string falls back to a blank dot. */
+  initial: string
   /** GM-flagged speakers get a `--gm`-coloured ring around the avatar
    *  so the role reads at a glance even when the badge text scrolls
    *  off screen (compact view) or competes for attention with the
@@ -86,7 +99,9 @@ const FeedAvatar = memo(function FeedAvatar({
       className={`${className} feed-avatar-dot`}
       style={{ background: color }}
       aria-hidden="true"
-    />
+    >
+      {initial}
+    </span>
   )
 })
 
@@ -133,13 +148,20 @@ const FeedChatItem = memo(function FeedChatItem({
   const characterName = speaker?.characterName ?? ''
   const speakerIsGM = speaker?.isGM ?? false
   const image = speaker?.image || undefined
+  // Fallback initial — prefer character name (the in-character voice
+  // shown in the feed); fall back to player name when the speaker is
+  // acting as themselves; fall back to the localised anon label when
+  // both are blank so the dot still has something legible.
+  const initial = avatarInitial(characterName || displayName)
   return (
     <li
       className={`feed-chat${own ? ' own' : ''}${mentionsMe ? ' mentioned' : ''}${
         archived ? ' archived' : ''
       }${pending ? ' pending' : ''}`}
     >
-      {!compact && <FeedAvatar image={image} color={color} isGM={speakerIsGM} />}
+      {!compact && (
+        <FeedAvatar image={image} color={color} initial={initial} isGM={speakerIsGM} />
+      )}
       <div className="feed-bubble">
         <div className="feed-line">
           <button
@@ -210,11 +232,14 @@ const FeedRollItem = memo(function FeedRollItem({
   const characterName = speaker?.characterName ?? ''
   const speakerIsGM = speaker?.isGM ?? false
   const image = speaker?.image || undefined
+  const initial = avatarInitial(characterName || displayName)
   return (
     <li
       className={`feed-roll roll ${isHidden ? 'hidden' : r.kind}${own ? ' own' : ''}${archived ? ' archived' : ''}`}
     >
-      {!compact && <FeedAvatar image={image} color={color} isGM={speakerIsGM} />}
+      {!compact && (
+        <FeedAvatar image={image} color={color} initial={initial} isGM={speakerIsGM} />
+      )}
       <div className="feed-bubble">
         <div className="feed-line">
           <button
