@@ -1,4 +1,4 @@
-import { useState, type ComponentType } from 'react'
+import { Fragment, useState, type ComponentType, type ReactNode } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import {
   CharacterIcon,
@@ -17,6 +17,38 @@ import {
 // the metaphor reads at a glance. Sized in one place so every step keeps
 // the same visual weight.
 const TUTORIAL_ICON_SIZE = 44
+
+// Sentinel character the localized "Settings & help" body uses to mark
+// where the inline gear icon should land. Kept as the same `⚙` glyph
+// the translators already wrote — that way the i18n dictionaries stay
+// untouched and the render step just swaps the marker for a real
+// `SettingsIcon` so it matches the header's Lucide gear.
+const SETTINGS_GEAR_MARKER = '⚙'
+const INLINE_GEAR_SIZE = 14
+
+/** Render the tutorial body, swapping every `⚙` glyph for the live
+ *  `SettingsIcon` so the inline reference reads as the real Lucide
+ *  gear the header uses (rather than the emoji-ish glyph fonts render
+ *  inconsistently across platforms). For bodies without the marker
+ *  the original string is returned untouched. */
+function renderTutorialBody(body: string): ReactNode {
+  if (!body.includes(SETTINGS_GEAR_MARKER)) return body
+  const parts = body.split(SETTINGS_GEAR_MARKER)
+  return parts.map((part, i) => (
+    <Fragment key={i}>
+      {part}
+      {i < parts.length - 1 && (
+        // The icon component owns its own `aria-hidden`; the wrapping
+        // span just carries the layout class — IconProps does not
+        // accept `className`, so the alignment hook lives one level
+        // up where CSS can grab it.
+        <span className="inline-gear">
+          <SettingsIcon size={INLINE_GEAR_SIZE} />
+        </span>
+      )}
+    </Fragment>
+  ))
+}
 
 /** The walkthrough steps, also reused as the in-app help. Each step
  *  picks the same canonical icon used in the matching dock / chrome
@@ -64,7 +96,7 @@ export function Tutorial({ onClose }: Props) {
           <CurrentIcon size={TUTORIAL_ICON_SIZE} />
         </div>
         <h2>{t(current.titleKey)}</h2>
-        <p className="tutorial-body">{t(current.bodyKey)}</p>
+        <p className="tutorial-body">{renderTutorialBody(t(current.bodyKey))}</p>
 
         <div className="tutorial-dots" aria-hidden="true">
           {STEPS.map((s, i) => (
