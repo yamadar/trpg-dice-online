@@ -984,6 +984,20 @@ export function useSession(): Session {
           ? null
           : await findReusableSession(code, 'client')
         const sid = resumeSessionId ?? reused ?? newSessionId()
+        // Joining a *new* session — not a tab-resume of the same
+        // room, not a re-entry into the still-open session for the
+        // same code — means the previous in-memory feed belongs to
+        // whichever room the player was in before. Clear it so the
+        // joined room starts with its own welcome snapshot only.
+        // `createRoom` deliberately does *not* clear, so a GM can
+        // experiment locally before opening a room and carry that
+        // scratch session into the hosted room.
+        if (!resumeSessionId && !reused) {
+          setHistory([])
+          setChat([])
+          setMarkers([])
+          setOutbox([])
+        }
         setRole('client')
         setRoomCode(code)
         // Eagerly set the refs so the marker below is logged under this room.

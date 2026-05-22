@@ -1456,6 +1456,18 @@ label.setting-row {
 .feed-avatar-gm {
   box-shadow: 0 0 0 2px var(--gm);
 }
+/* When no portrait has been set, the avatar shows the speaker's first
+   character on top of the player-coloured dot. Centred via the parent
+   `.feed-avatar`'s inline-flex centring; white text with a subtle
+   shadow keeps the letter legible across the full range of player
+   hues. */
+.feed-avatar-dot {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+  line-height: 1;
+}
 .feed-bubble {
   min-width: 0;
   max-width: calc(100% - 44px);
