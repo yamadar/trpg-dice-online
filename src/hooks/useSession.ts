@@ -400,8 +400,15 @@ export function useSession(): Session {
     }
     const legacySpeakerCid = (entry: unknown): string => {
       const e = entry as { characterId?: string; characterName?: string }
-      if (e.characterId !== undefined && e.characterId !== '') return e.characterId
-      return legacyCharacterIdFromName(e.characterName ?? '')
+      // Match the semantics of `speakerImageKey` / `normalizeSpeakerEntry`:
+      // an explicit empty `characterId` means "the player was acting
+      // directly" and must stay empty, not fall back to a synthesised
+      // `@n:<name>`. Falling back on `''` would anchor pruning on a
+      // different key from the one rendering uses, leaving the wrong
+      // record alive while pruning the right one.
+      return e.characterId !== undefined
+        ? e.characterId
+        : legacyCharacterIdFromName(e.characterName ?? '')
     }
     noteKey(playerId, characterId)
     for (const p of playersState) noteKey(p.id, p.characterId ?? '')
