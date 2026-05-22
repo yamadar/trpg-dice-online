@@ -45,3 +45,24 @@ export function formatDiceSummary(
   if (modifier < 0) return `${base} - ${Math.abs(modifier)}`
   return base
 }
+
+/**
+ * "1 × D6 + 10" style expansion used in the DiceRoller preview card.
+ * Spelled out (count × type ± modifier) so a first-time TRPG user can
+ * read "what gets multiplied by what" without having to know the
+ * shorthand `NdM±k`. The "×" is the U+00D7 multiplication sign and
+ * the minus is U+2212 (typographic minus) so it lines up optically
+ * with the `+`. The feed's own detail row keeps the compact
+ * `formatDiceSummary` form — it is a glance-summary for people who
+ * are already mid-game.
+ */
+export function formatDicePreview(
+  diceCount: number,
+  diceType: string,
+  modifier: number,
+): string {
+  const base = `${diceCount} × ${diceType}`
+  if (modifier > 0) return `${base} + ${modifier}`
+  if (modifier < 0) return `${base} − ${Math.abs(modifier)}`
+  return base
+}
