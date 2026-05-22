@@ -2221,15 +2221,18 @@ button.char-avatar-large:disabled {
   line-height: 1.6;
   min-height: 4.8em;
 }
-/* Inline `SettingsIcon` rendered where the body had the `⚙` marker, so
-   the inline reference matches the Lucide gear the header uses. The
-   negative `vertical-align` nudge centers the icon on the cap line of
-   the surrounding text — gears tend to read low otherwise because the
-   Lucide glyph sits centred in its 24×24 box. */
+/* Inline `SettingsIcon` rendered where the body had the `⚙` marker,
+   so the inline reference matches the Lucide gear the header uses.
+   `inline-flex` + `align-items: center` puts the SVG on the wrapper's
+   own centre, and `vertical-align: middle` then places that wrapper
+   on the surrounding line's vertical centre — so the icon reads as
+   "centred on the line" regardless of font metrics. */
 .tutorial-body .inline-gear {
-  display: inline-block;
-  vertical-align: -0.2em;
-  margin: 0 0.1em;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 0.15em;
+  padding-bottom: 3px;
 }
 .tutorial-dots {
   display: flex;
