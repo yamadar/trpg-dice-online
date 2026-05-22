@@ -691,6 +691,17 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.76 — Expand the "Roll dice" preview to a beginner-friendly
+  spelled-out form. The feed's detail line (`.roll-detail`) keeps the
+  compact `formatDiceSummary` shape (`1D6+2`, TRPG shorthand). The
+  pre-roll preview inside the modal now uses a new
+  `formatDicePreview` that reads "count × type ± modifier" — e.g.
+  `3 × D6 + 2`, `1 × D20 − 3`. The multiplication is `×` (U+00D7);
+  the modifier minus is `−` (U+2212) so it lines up optically with
+  the `+`. The teaching goal is that a first-time TRPG player can
+  read "what is multiplied by what" before tapping Roll, without
+  losing the compact shorthand TRPG veterans expect to see in the
+  feed history.
 - v1.75 — Redesign the "Roll dice" sheet's information hierarchy. The
   previous layout placed the count chips (a 5×2 grid of 1–10), die-type
   chips (seven D4–D100 buttons), modifier stepper, kind chips (damage /

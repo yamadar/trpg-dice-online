@@ -1,6 +1,6 @@
 import { useI18n } from '../i18n/useI18n'
 import { DICE_TYPES, PATTERN_KINDS, type DiceType, type Pattern } from '../dice/types'
-import { formatDiceSummary } from '../dice/format'
+import { formatDicePreview } from '../dice/format'
 
 export type Draft = Omit<Pattern, 'id'>
 
@@ -27,12 +27,13 @@ export function DiceRoller({ draft, onChange, isGM, onRoll, onSave }: Props) {
   const { t } = useI18n()
   const set = (patch: Partial<Draft>) => onChange({ ...draft, ...patch })
 
-  // Composed roll headline shown in the preview card. The body of a
-  // damage entry reads "{pattern} {value} damage" in the feed; here we
-  // surface the same shape ahead of rolling — "{kind} {NdM±k}" — so the
-  // user can sanity-check both the type (in the kind's accent colour)
-  // and the maths before tapping the roll button.
-  const formula = formatDiceSummary(draft.diceCount, draft.diceType, draft.modifier)
+  // Composed roll headline shown in the preview card. The feed's own
+  // detail row keeps the compact `NdM±k` form (familiar to TRPG
+  // veterans); the pre-roll preview here uses the expanded
+  // "count × type ± modifier" form so a first-time user can read
+  // "what is multiplied by what". The kind is rendered in its accent
+  // colour right next to it.
+  const formula = formatDicePreview(draft.diceCount, draft.diceType, draft.modifier)
 
   return (
     <section className="panel dice-roller">

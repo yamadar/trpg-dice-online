@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatRollText, formatDiceSummary } from './format'
+import { formatRollText, formatDicePreview, formatDiceSummary } from './format'
 import { translate } from '../i18n/translations'
 import type { TFn } from '../i18n/context'
 import type { RollResult } from './types'
@@ -74,5 +74,23 @@ describe('formatDiceSummary', () => {
   })
   it('omits a zero modifier', () => {
     expect(formatDiceSummary(2, 'D8', 0)).toBe('2D8')
+  })
+})
+
+describe('formatDicePreview', () => {
+  it('spells out count × type for new TRPG players', () => {
+    expect(formatDicePreview(3, 'D6', 0)).toBe('3 × D6')
+  })
+  it('keeps the explicit "1 ×" even with one die — the multiplication is the teaching point', () => {
+    expect(formatDicePreview(1, 'D20', 0)).toBe('1 × D20')
+  })
+  it('adds a positive modifier with " + "', () => {
+    expect(formatDicePreview(2, 'D6', 4)).toBe('2 × D6 + 4')
+  })
+  it('uses a typographic minus (U+2212) for a negative modifier so it lines up with the +', () => {
+    expect(formatDicePreview(1, 'D20', -3)).toBe('1 × D20 − 3')
+  })
+  it('omits a zero modifier', () => {
+    expect(formatDicePreview(2, 'D8', 0)).toBe('2 × D8')
   })
 })
