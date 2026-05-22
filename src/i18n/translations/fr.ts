@@ -114,7 +114,7 @@ export const fr: Dict = {
   'character.crop.zoom': 'Zoom',
   'character.delete': 'Supprimer ce personnage',
   'character.deleteConfirm': 'Supprimer le personnage « {name} » ? Action irréversible.',
-  'character.export': 'Exporter',
+  'character.export': 'Exporter vers un fichier',
   'character.exportMemo': 'Inclure la note dans l’export',
   'character.import': 'Importer depuis un fichier',
   'character.importError': 'Impossible d’importer le personnage. Vérifiez le fichier.',

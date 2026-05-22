@@ -114,7 +114,7 @@ export const ptBR: Dict = {
   'character.crop.zoom': 'Zoom',
   'character.delete': 'Excluir este personagem',
   'character.deleteConfirm': 'Excluir o personagem «{name}»? Isso não pode ser desfeito.',
-  'character.export': 'Exportar',
+  'character.export': 'Exportar para arquivo',
   'character.exportMemo': 'Incluir a nota na exportação',
   'character.import': 'Importar de arquivo',
   'character.importError': 'Não foi possível importar o personagem. Verifique o arquivo.',

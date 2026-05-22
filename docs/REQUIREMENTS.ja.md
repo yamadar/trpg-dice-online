@@ -652,6 +652,20 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   表す情報伝達アイコンのため。サードパーティ素材の帰属は
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md) に集約する。
+- v1.79 — 各パネルを「ヘッダ固定＋本文スクロール」で統一する。設定パネルは
+  本文中に見出しとフロート × が重なって配置され、長い本文をスクロールすると
+  タイトルが流れていたため、`.settings-header` を `.sheet-header` と同じ
+  ピン留めヘッダ（タイトル + × の 1 行）に揃え、`.settings-body` だけが
+  スクロールするようにする。フィードの発信者名タップで開く
+  `PlayerDetailCard` は Sheet に title を渡していなかったため、
+  `feed.playerDetail` と `PlayerIcon` を渡して他の Dock パネルと同じ
+  ヘッダレイアウトにする。チュートリアルカードは本文の長さで高さが伸縮し
+  「次へ」ボタンの Y 位置がステップ毎に変わっていたため、`.tutorial-card`
+  を縦 flex（`height: 460px; max-height: calc(100svh - 40px)`）にし、
+  本文を `flex: 1; overflow-y: auto` で残りの空間に押し込めて、Next /
+  Done / Back / Skip の位置が常に揃うようにする。最後にキャラクター
+  パネルの「書き出し」ラベルを「ファイルから読み込み」と平仄を取って
+  「ファイルに書き出し」に改名（`character.export` を 19 言語で更新）。
 - v1.78 — 「入力中…」表示を HSP（高感受性）の人にも圧を感じさせない
   作りにするため、設定メニューに 2 つの独立したトグルを追加する。
   「他の人の入力中を見る」(`showTyping`) は受信側のオプトアウトで、

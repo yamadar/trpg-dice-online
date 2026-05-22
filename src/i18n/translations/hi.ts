@@ -114,7 +114,7 @@ export const hi: Dict = {
   'character.crop.zoom': 'ज़ूम',
   'character.delete': 'इस पात्र को हटाएँ',
   'character.deleteConfirm': 'पात्र «{name}» हटाएँ? यह वापस नहीं किया जा सकता।',
-  'character.export': 'निर्यात',
+  'character.export': 'फ़ाइल में एक्सपोर्ट करें',
   'character.exportMemo': 'निर्यात में मेमो शामिल करें',
   'character.import': 'फ़ाइल से इम्पोर्ट करें',
   'character.importError': 'पात्र आयात नहीं हो सका। फ़ाइल जाँचें।',

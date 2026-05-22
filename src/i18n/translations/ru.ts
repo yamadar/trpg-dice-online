@@ -114,7 +114,7 @@ export const ru: Dict = {
   'character.crop.zoom': 'Масштаб',
   'character.delete': 'Удалить этого персонажа',
   'character.deleteConfirm': 'Удалить персонажа «{name}»? Действие нельзя отменить.',
-  'character.export': 'Экспорт',
+  'character.export': 'Экспорт в файл',
   'character.exportMemo': 'Включить заметку в экспорт',
   'character.import': 'Импорт из файла',
   'character.importError': 'Не удалось импортировать персонажа. Проверьте файл.',

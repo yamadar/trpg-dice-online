@@ -114,7 +114,7 @@ export const ko: Dict = {
   'character.crop.zoom': '확대',
   'character.delete': '이 캐릭터 삭제',
   'character.deleteConfirm': '캐릭터 「{name}」을(를) 삭제합니다. 되돌릴 수 없습니다. 계속할까요?',
-  'character.export': '내보내기',
+  'character.export': '파일로 내보내기',
   'character.exportMemo': '메모도 내보내기에 포함',
   'character.import': '파일에서 가져오기',
   'character.importError': '캐릭터를 불러올 수 없습니다. 파일을 확인하세요.',
