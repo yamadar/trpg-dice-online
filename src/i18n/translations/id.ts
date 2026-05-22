@@ -171,6 +171,7 @@ export const id: Dict = {
   'feed.emptyShareHint': 'Ingin bermain bersama teman? Buka «Ruang» untuk membuat atau bergabung ke ruang.',
   'feed.emptyOpenRoom': 'Buka Ruang',
   'feed.loadOlder': 'Muat yang lebih lama',
+  'feed.jumpToLatest': 'Ke yang terbaru',
   'feed.clear': 'Bersihkan tampilan',
   'feed.compact': 'Tampilan ringkas',
   'feed.clearConfirm': 'Akan menghapus semua lemparan dan obrolan dari tampilanmu dan tidak bisa dibatalkan. Lanjutkan?',

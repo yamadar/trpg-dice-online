@@ -171,6 +171,7 @@ export const es: Dict = {
   'feed.emptyShareHint': '¿Quieres jugar con amigos? Abre «Sala» para crear o unirte a una sala.',
   'feed.emptyOpenRoom': 'Abrir Sala',
   'feed.loadOlder': 'Cargar más antiguos',
+  'feed.jumpToLatest': 'Ir a lo más reciente',
   'feed.clear': 'Limpiar vista',
   'feed.compact': 'Vista compacta',
   'feed.clearConfirm': 'Esto borra todas las tiradas y el chat de tu vista y no se puede deshacer. ¿Continuar?',

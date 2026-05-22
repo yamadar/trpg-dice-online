@@ -171,6 +171,7 @@ export const en: Dict = {
   'feed.emptyShareHint': 'Want to play with friends? Open Room to create or join a room.',
   'feed.emptyOpenRoom': 'Open Room',
   'feed.loadOlder': 'Load older',
+  'feed.jumpToLatest': 'Jump to latest',
   'feed.clear': 'Clear view',
   'feed.compact': 'Compact feed',
   'feed.clearConfirm': 'This clears all rolls and chat from your view and cannot be undone. Continue?',

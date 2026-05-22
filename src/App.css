@@ -1314,16 +1314,50 @@ label.setting-row {
   color: #fff;
 }
 
+/* Positions the `.feed-jump-latest` floating button at the bottom of
+   the scrollable feed without changing the feed's own scroll mechanics.
+   `position: relative` is all the button needs to anchor itself. */
+.feed-wrap {
+  position: relative;
+}
 .feed {
   list-style: none;
   margin: 0;
-  padding: 0;
+  /* The horizontal padding gives the GM avatar's `box-shadow` ring
+     (2px) room to render — `overflow-y: auto` otherwise also clips
+     the ring on the left edge. */
+  padding: 0 4px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   max-height: 60vh;
   min-height: 180px;
   overflow-y: auto;
+}
+/* Floating "jump to latest" button. Shown only when the player has
+   scrolled away from the bottom of the feed. Sits in the
+   bottom-right inside `.feed-wrap`, just above the chat composer, so
+   one tap returns the view to the newest entry. */
+.feed-jump-latest {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-h);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  z-index: 1;
+}
+.feed-jump-latest:hover {
+  background: var(--panel);
 }
 .feed-empty {
   padding: 12px 0;
@@ -1779,6 +1813,21 @@ label.setting-row {
 }
 .attach-btn:disabled {
   opacity: 0.5;
+}
+/* Icon-only send button. Matches the attach button's square footprint
+   so the input row reads as `[attach][text input][send]` — three slots
+   of equal visual weight. `primary` colours promote the send button as
+   the row's main action without claiming a wide text label. */
+.send-btn {
+  flex-shrink: 0;
+  width: 40px;
+  padding-inline: 0;
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+  color: #fff;
+}
+.send-btn:hover {
+  filter: brightness(1.08);
 }
 
 /* --- staged (not-yet-sent) attachment chip --- */

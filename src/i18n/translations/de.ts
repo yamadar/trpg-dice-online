@@ -171,6 +171,7 @@ export const de: Dict = {
   'feed.emptyShareHint': 'Mit Freunden spielen? Öffne „Raum“, um einen Raum zu erstellen oder beizutreten.',
   'feed.emptyOpenRoom': 'Raum öffnen',
   'feed.loadOlder': 'Ältere laden',
+  'feed.jumpToLatest': 'Zum Neuesten springen',
   'feed.clear': 'Ansicht leeren',
   'feed.compact': 'Kompaktansicht',
   'feed.clearConfirm': 'Alle Würfe und Chat-Einträge aus deiner Ansicht entfernen? Das kann nicht rückgängig gemacht werden.',

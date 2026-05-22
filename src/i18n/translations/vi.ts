@@ -171,6 +171,7 @@ export const vi: Dict = {
   'feed.emptyShareHint': 'Muốn chơi cùng bạn bè? Mở «Phòng» để tạo hoặc tham gia phòng.',
   'feed.emptyOpenRoom': 'Mở Phòng',
   'feed.loadOlder': 'Tải cũ hơn',
+  'feed.jumpToLatest': 'Đến mới nhất',
   'feed.clear': 'Xóa khung nhìn',
   'feed.compact': 'Thu gọn',
   'feed.clearConfirm': 'Việc này xóa mọi lần tung và trò chuyện khỏi khung nhìn và không thể hoàn tác. Tiếp tục?',

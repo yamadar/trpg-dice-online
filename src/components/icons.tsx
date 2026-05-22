@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import {
   ALargeSmall,
+  ChevronDown,
   Drama,
   Hand,
   HelpCircle,
@@ -13,6 +14,7 @@ import {
   Palette,
   Pencil,
   Rows3,
+  Send,
   Settings,
   Star,
   Trash2,
@@ -90,6 +92,33 @@ export function TrashIcon({ size = 16 }: IconProps) {
 export function SettingsIcon({ size = 18 }: IconProps) {
   return (
     <Settings
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Paper-plane glyph for the chat-compose send button. */
+export function SendIcon({ size = 18 }: IconProps) {
+  return (
+    <Send
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Downward chevron — used as the "jump to latest" affordance shown
+ *  when the feed has been scrolled away from the bottom. */
+export function ChevronDownIcon({ size = 20 }: IconProps) {
+  return (
+    <ChevronDown
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}

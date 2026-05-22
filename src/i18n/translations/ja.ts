@@ -171,6 +171,7 @@ export const ja: Dict = {
   'feed.emptyShareHint': '仲間と共有したいときは「ルーム」からルームを作成・参加できます。',
   'feed.emptyOpenRoom': 'ルームを開く',
   'feed.loadOlder': 'これより前を読み込む',
+  'feed.jumpToLatest': '最新へ移動',
   'feed.clear': '表示をクリア',
   'feed.compact': 'コンパクト表示',
   'feed.clearConfirm': 'ダイスとチャットの履歴の表示をすべてクリアします。元に戻せません。よろしいですか？',

@@ -171,6 +171,7 @@ export const zhTW: Dict = {
   'feed.emptyShareHint': '想和朋友一起玩？開啟「房間」即可建立或加入房間。',
   'feed.emptyOpenRoom': '開啟房間',
   'feed.loadOlder': '載入更早',
+  'feed.jumpToLatest': '跳到最新',
   'feed.clear': '清空畫面',
   'feed.compact': '緊湊模式',
   'feed.clearConfirm': '將清空你所看到的所有擲骰與聊天,且無法復原。是否繼續?',

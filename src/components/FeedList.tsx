@@ -11,6 +11,7 @@ import { feedName } from '../players/identity'
 import { formatDiceSummary, formatRollText } from '../dice/format'
 import type { SessionCharacterDraft } from '../storage/roomLog'
 import { ChatAttachment } from './ChatAttachment'
+import { ChevronDownIcon } from './icons'
 import { DiceFaceIcon } from './DiceFaceIcon'
 
 /** The pair tapped in the feed when a name is clicked. The player-detail
@@ -323,6 +324,11 @@ export function FeedList({
   const listRef = useRef<HTMLUListElement>(null)
   // Whether the player is at the bottom — only then does a new entry scroll.
   const stuckToBottom = useRef(true)
+  // Mirrored as state so the "jump to latest" button can render only
+  // when the player has scrolled away from the bottom. The ref above is
+  // still the one consulted on every new entry (avoids the extra
+  // render cycle a setState would add to every scroll tick).
+  const [atBottom, setAtBottom] = useState(true)
 
   useEffect(() => {
     const el = listRef.current
@@ -331,12 +337,20 @@ export function FeedList({
 
   const onScroll = () => {
     const el = listRef.current
-    if (el) {
-      stuckToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_THRESHOLD
-    }
+    if (!el) return
+    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_THRESHOLD
+    stuckToBottom.current = isAtBottom
+    setAtBottom(isAtBottom)
+  }
+
+  const jumpToLatest = () => {
+    const el = listRef.current
+    if (!el) return
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   }
 
   return (
+    <div className="feed-wrap">
     <ul className="feed" ref={listRef} onScroll={onScroll}>
       {feed.length === 0 &&
         (emptyState != null ? (
@@ -409,5 +423,17 @@ export function FeedList({
         />
       ))}
     </ul>
+    {!atBottom && (
+      <button
+        type="button"
+        className="feed-jump-latest"
+        aria-label={t('feed.jumpToLatest')}
+        title={t('feed.jumpToLatest')}
+        onClick={jumpToLatest}
+      >
+        <ChevronDownIcon />
+      </button>
+    )}
+    </div>
   )
 }

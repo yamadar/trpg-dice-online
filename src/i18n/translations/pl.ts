@@ -171,6 +171,7 @@ export const pl: Dict = {
   'feed.emptyShareHint': 'Chcesz grać ze znajomymi? Otwórz „Pokój”, aby utworzyć pokój lub do niego dołączyć.',
   'feed.emptyOpenRoom': 'Otwórz Pokój',
   'feed.loadOlder': 'Wczytaj starsze',
+  'feed.jumpToLatest': 'Przejdź do najnowszych',
   'feed.clear': 'Wyczyść widok',
   'feed.compact': 'Widok zwarty',
   'feed.clearConfirm': 'To wyczyści wszystkie rzuty i czat z twojego widoku — nie można cofnąć. Kontynuować?',

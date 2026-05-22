@@ -171,6 +171,7 @@ export const ar: Dict = {
   'feed.emptyShareHint': 'تريد اللعب مع الأصدقاء؟ افتح «الغرفة» لإنشاء غرفة أو الانضمام إليها.',
   'feed.emptyOpenRoom': 'فتح الغرفة',
   'feed.loadOlder': 'تحميل الأقدم',
+  'feed.jumpToLatest': 'الانتقال إلى الأحدث',
   'feed.clear': 'مسح العرض',
   'feed.compact': 'عرض مدمج',
   'feed.clearConfirm': 'سيؤدي هذا إلى مسح جميع الرميات والدردشات من عرضك ولا يمكن التراجع. المتابعة؟',

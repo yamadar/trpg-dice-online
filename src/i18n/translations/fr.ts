@@ -171,6 +171,7 @@ export const fr: Dict = {
   'feed.emptyShareHint': 'Envie de jouer entre amis ? Ouvre « Salle » pour créer ou rejoindre une salle.',
   'feed.emptyOpenRoom': 'Ouvrir la salle',
   'feed.loadOlder': 'Charger plus anciens',
+  'feed.jumpToLatest': 'Aller au plus récent',
   'feed.clear': 'Effacer la vue',
   'feed.compact': 'Affichage compact',
   'feed.clearConfirm': 'Cela efface tous les jets et messages de votre vue, sans retour possible. Continuer ?',
