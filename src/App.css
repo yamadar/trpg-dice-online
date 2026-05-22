@@ -173,6 +173,22 @@
   border: none;
   border-radius: 0;
 }
+/* `.feed-wrap` is the column-flex slot that owns the remaining space
+   between the panel head and the chat composer. Before v1.78 the
+   `.feed` element sat directly in `.activity` and consumed this slot
+   itself, but PR #110 wrapped it in `.feed-wrap` for the "jump to
+   latest" button's positioning context. Without these rules the
+   wrapper would collapse to its content's natural height, letting the
+   feed grow past the viewport and pushing the chat composer below the
+   dock. The wrapper has to take the flex slot AND act as a column
+   flex container so `.feed` inside it can keep its own `flex: 1` and
+   scroll internally. */
+.app-main .feed-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 .app-main .feed {
   flex: 1;
   max-height: none;
