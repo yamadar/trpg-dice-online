@@ -10,19 +10,22 @@ import { playerColor } from '../players/colors'
 import { composeName } from '../players/identity'
 import type { Session } from '../hooks/useSession'
 import { useConfirm } from '../hooks/useConfirm'
-import { RoomHistory } from './RoomHistory'
 
 interface Props {
   session: Session
   /** Room code from the URL (?room=CODE), used to prefill the join field. */
   initialJoinCode: string
   onNotice: (message: string) => void
+  /** Hand off to the top-level history browser. The room Sheet closes so
+   *  the multi-level history navigation (sessions → feed → speaker
+   *  detail) is unobstructed by the Sheet's own close affordances. */
+  onOpenHistory: () => void
 }
 
 /** Which lobby screen is shown while not in a room. */
-type LobbyView = 'home' | 'create' | 'join' | 'history'
+type LobbyView = 'home' | 'create' | 'join'
 
-export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
+export function RoomPanel({ session, initialJoinCode, onNotice, onOpenHistory }: Props) {
   const { t, lang } = useI18n()
   // Creating and joining are now distinct screens; a URL code jumps
   // straight to the join screen with the field prefilled.
@@ -295,7 +298,7 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
             type="button"
             className="link"
             disabled={busy}
-            onClick={() => setView('history')}
+            onClick={onOpenHistory}
           >
             {t('room.history')}
           </button>
@@ -406,10 +409,6 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
             </p>
           )}
         </div>
-      )}
-
-      {!online && view === 'history' && (
-        <RoomHistory playerId={playerId} onBack={() => setView('home')} />
       )}
 
       {online && (

@@ -29,6 +29,7 @@ import { SettingsMenu } from './components/SettingsMenu'
 import { Dock, type SheetId } from './components/Dock'
 import { Sheet } from './components/Sheet'
 import { RoomPanel } from './components/RoomPanel'
+import { RoomHistory } from './components/RoomHistory'
 import { CharacterPanel } from './components/CharacterPanel'
 import { DiceRoller, type Draft } from './components/DiceRoller'
 import { PatternList } from './components/PatternList'
@@ -61,6 +62,11 @@ function App() {
   const [notice, setNotice] = useState<Notice | null>(null)
   const [initialJoinCode] = useState(roomCodeFromUrl)
   const [openSheet, setOpenSheet] = useState<SheetId | null>(null)
+  // Past-session browser. Rendered as a top-level page replacing the
+  // ActivityPanel rather than nested inside the room Sheet, so the
+  // multi-level navigation (sessions → feed → speaker detail) is not
+  // competing with the Sheet's own close affordances.
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [showTutorial, setShowTutorial] = useState(() => !isTutorialSeen())
   // Denser feed layout — a display preference, so its toggle sits in the
   // settings menu while the feed itself consumes the value.
@@ -226,6 +232,13 @@ function App() {
 
   const toggleSheet = (id: SheetId) => setOpenSheet((cur) => (cur === id ? null : id))
 
+  // Opening the history closes the room Sheet so the full-screen browser
+  // is unobstructed; the history's own back button returns to the feed.
+  const openHistory = useCallback(() => {
+    setOpenSheet(null)
+    setHistoryOpen(true)
+  }, [])
+
   // Persist the feed-density preference as it is toggled.
   const toggleCompact = () => {
     const next = !compact
@@ -296,15 +309,19 @@ function App() {
       )}
 
       <main className="app-main">
-        <ActivityPanel
-          session={session}
-          characters={characters.characters}
-          compact={compact}
-          showTyping={showTyping}
-          broadcastTyping={broadcastTyping}
-          onNotice={flash}
-          onOpenRoom={() => setOpenSheet('room')}
-        />
+        {historyOpen ? (
+          <RoomHistory playerId={session.playerId} onBack={() => setHistoryOpen(false)} />
+        ) : (
+          <ActivityPanel
+            session={session}
+            characters={characters.characters}
+            compact={compact}
+            showTyping={showTyping}
+            broadcastTyping={broadcastTyping}
+            onNotice={flash}
+            onOpenRoom={() => setOpenSheet('room')}
+          />
+        )}
       </main>
 
       <Dock active={openSheet} onOpen={toggleSheet} />
@@ -334,7 +351,12 @@ function App() {
           onClose={() => setOpenSheet(null)}
         >
           {openSheet === 'room' && (
-            <RoomPanel session={session} initialJoinCode={initialJoinCode} onNotice={flash} />
+            <RoomPanel
+              session={session}
+              initialJoinCode={initialJoinCode}
+              onNotice={flash}
+              onOpenHistory={openHistory}
+            />
           )}
           {openSheet === 'character' && (
             <CharacterPanel characters={characters} onNotice={flash} />
