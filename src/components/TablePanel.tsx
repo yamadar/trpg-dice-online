@@ -245,7 +245,7 @@ export function TablePanel({ session, onClose }: Props) {
         </h2>
         <button
           type="button"
-          className="sheet-close"
+          className="sheet-close icon-btn"
           onClick={onClose}
           aria-label={t('tabletop.close')}
         >
