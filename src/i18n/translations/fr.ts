@@ -49,6 +49,13 @@ export const fr: Dict = {
   'tabletop.grid.strokeColor': 'Color',
   'tabletop.grid.strokeOpacity': 'Opacity',
   'tabletop.grid.snap': 'Snap to grid',
+  'tabletop.map.title': 'Background map',
+  'tabletop.map.choose': 'Choose image…',
+  'tabletop.map.replace': 'Replace image…',
+  'tabletop.map.clear': 'Clear map',
+  'tabletop.map.set': 'Map updated',
+  'tabletop.map.tooLarge': 'Image is too large (max 8 MB).',
+  'tabletop.map.unreadable': 'Could not read that image.',
 
 
   'status.offline': 'Hors ligne',
