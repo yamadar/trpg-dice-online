@@ -107,6 +107,7 @@ GitHub Pages. Base path produksi `/trpg-dice-online/`; gunakan variabel
 ## Dokumentasi
 
 - Persyaratan dan rencana: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Catatan perubahan: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Riset API terjemahan: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Lisensi

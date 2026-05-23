@@ -111,6 +111,7 @@ con la variabile d'ambiente `BASE_PATH` per altri hosting.
 ## Documentazione
 
 - Requisiti e piano: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Registro modifiche: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Ricerca sulle API di traduzione: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Licenza

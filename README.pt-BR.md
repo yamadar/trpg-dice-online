@@ -108,6 +108,7 @@ sobrescreva com a variável `BASE_PATH` em outras hospedagens.
 ## Documentação
 
 - Requisitos e plano: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Histórico de mudanças: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Pesquisa sobre APIs de tradução: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Licença

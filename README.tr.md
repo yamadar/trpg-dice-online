@@ -107,6 +107,7 @@ yerde barındıracaksan `BASE_PATH` ortam değişkeniyle değiştir.
 ## Belgeler
 
 - Gereksinimler ve plan: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Değişiklik günlüğü: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Çeviri API araştırması: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Lisans

@@ -103,6 +103,7 @@ Pages. مسار الأساس في الإنتاج هو `/trpg-dice-online/`؛ ي�
 ## الوثائق
 
 - المتطلبات والخطة: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- سجل التغييرات: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - بحث API الترجمة: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## الترخيص

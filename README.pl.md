@@ -110,6 +110,7 @@ zmienną środowiskową `BASE_PATH` przy hostingu gdzie indziej.
 ## Dokumentacja
 
 - Wymagania i plan: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Lista zmian: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Badania nad API tłumaczeń: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Licencja

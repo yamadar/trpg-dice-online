@@ -62,6 +62,7 @@ npm run build    # 正式建置至 dist/
 ## 文件
 
 - 需求與實作計畫：[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- 變更紀錄：[`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - 翻譯 API 調查：[`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## 授權

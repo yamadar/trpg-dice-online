@@ -93,6 +93,7 @@ Pages。生产基础路径为 `/trpg-dice-online/`；如要在别处托管，请
 ## 文档
 
 - 需求与实现计划：[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- 更新日志：[`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - 翻译 API 研究：[`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## 许可证

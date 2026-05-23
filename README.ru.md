@@ -109,6 +109,7 @@ GitHub Pages. Базовый путь в проде — `/trpg-dice-online/`; п
 ## Документация
 
 - Требования и план: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Журнал изменений: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Исследование API перевода: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Лицензия

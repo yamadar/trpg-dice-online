@@ -108,6 +108,7 @@ variable de entorno `BASE_PATH` al hospedar en otro sitio.
 ## Documentación
 
 - Requisitos y plan de implementación: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Registro de cambios: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Investigación de APIs de traducción: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Licencia
