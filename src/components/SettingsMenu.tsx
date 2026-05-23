@@ -215,6 +215,11 @@ export function SettingsMenu({
                   <InfoIcon size={16} />
                   <span>{t('settings.about')}</span>
                 </h3>
+                <p className="about-title brand-heading">
+                  <BrandIcon className="brand-mark" />
+                  <span>{t('app.title')}</span>
+                </p>
+                <p className="about-line">{t('app.tagline')}</p>
                 <button
                   type="button"
                   className="settings-help-btn"
@@ -226,11 +231,6 @@ export function SettingsMenu({
                   <HelpIcon />
                   <span>{t('settings.help')}</span>
                 </button>
-                <p className="about-title brand-heading">
-                  <BrandIcon className="brand-mark" />
-                  <span>{t('app.title')}</span>
-                </p>
-                <p className="about-line">{t('app.tagline')}</p>
                 <p className="about-line">
                   MIT License ·{' '}
                   <a
