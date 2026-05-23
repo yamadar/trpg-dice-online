@@ -854,17 +854,24 @@ button.player-row {
 }
 /* The history browser is a top-level page that takes over `.app-main`,
    so it has to fill the row-flex parent (`.app-main`) and stack its own
-   children as a column so the session-feed inside can scroll internally
-   rather than overflowing the viewport. The list view scrolls as a
-   whole (no inner scroll container), the session view defers to the
-   feed's own internal scroll, so `overflow-y: auto` here is a no-op
-   for the session view and only matters when a long session list is
-   shown. Mirrors the `.app-main .activity` pattern the live feed uses. */
+   children as a column. Two view shapes share this rule:
+   - List view (`.room-history` alone): the outer scrolls so a long
+     session list pages naturally.
+   - Session view (`.room-history--session`): the feed inside scrolls
+     internally, so the outer is clipped — without `overflow: hidden`
+     here the outer also became a scroll container whenever the feed's
+     bottom landed even one pixel past the available height, giving a
+     stray "extra" scroll outside the feed. */
 .app-main > .room-history {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
   padding: 16px;
+}
+.app-main > .room-history:not(.room-history--session) {
+  overflow-y: auto;
+}
+.app-main > .room-history--session {
+  overflow: hidden;
 }
 .room-history--session {
   flex: 1;

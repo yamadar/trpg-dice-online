@@ -22,7 +22,8 @@ import { speakerImageKey } from '../feed/feed'
 import { FeedList, type FeedDetailTarget } from './FeedList'
 import { Lightbox } from './Lightbox'
 import { PlayerDetailCard } from './PlayerDetailCard'
-import { AllIcon, AttachIcon, ChatIcon, DiceIcon, type IconProps } from './icons'
+import { Sheet } from './Sheet'
+import { AllIcon, AttachIcon, ChatIcon, DiceIcon, PlayerIcon, type IconProps } from './icons'
 
 // Icon-only filter chips — same glyphs the live ActivityPanel uses so the
 // past-session feed reads with one consistent vocabulary.
@@ -186,31 +187,13 @@ export function RoomHistory({ playerId, onBack }: Props) {
     [images],
   )
 
-  // --- detail view: a player's character snapshot from this session ------
-  if (selected && detail) {
-    const record = sessionCharacters[speakerImageKey(detail)]
-    return (
-      <div className="room-history">
-        <div className="history-head">
-          <button type="button" className="link" onClick={() => setDetail(null)}>
-            ← {t('room.back')}
-          </button>
-        </div>
-        <PlayerDetailCard
-          player={null}
-          playerId={detail.playerId}
-          displayName={record?.playerName ?? ''}
-          characterName={record?.characterName ?? ''}
-          background={record?.background ?? ''}
-          image={record?.image || undefined}
-          isSelf={detail.playerId === playerId}
-        />
-      </div>
-    )
-  }
-
   // --- session view: one past session's read-only feed -------------------
+  // Tapping a name opens the player-detail card as a modal Sheet on top
+  // of the feed, mirroring the live ActivityPanel — so the back stack
+  // stays "list → session → detail (overlay)" instead of swapping the
+  // session view out for the detail page.
   if (selected) {
+    const detailRecord = detail ? sessionCharacters[speakerImageKey(detail)] : null
     return (
       <div className="room-history room-history--session">
         <div className="history-head">
@@ -253,6 +236,23 @@ export function RoomHistory({ playerId, onBack }: Props) {
             onOpenDetail={setDetail}
             onOpenImage={openImage}
           />
+        )}
+        {detail && (
+          <Sheet
+            title={t('feed.playerDetail')}
+            titleIcon={<PlayerIcon size={20} />}
+            onClose={() => setDetail(null)}
+          >
+            <PlayerDetailCard
+              player={null}
+              playerId={detail.playerId}
+              displayName={detailRecord?.playerName ?? ''}
+              characterName={detailRecord?.characterName ?? ''}
+              background={detailRecord?.background ?? ''}
+              image={detailRecord?.image || undefined}
+              isSelf={detail.playerId === playerId}
+            />
+          </Sheet>
         )}
         {lightboxIndex !== null && images[lightboxIndex] && (
           <Lightbox
