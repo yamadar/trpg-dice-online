@@ -199,6 +199,7 @@ export const ar: Dict = {
   'marker.codeChanged': 'تغيّر رمز الغرفة إلى {code}',
 
   'room.section': 'الغرفة',
+  'room.pastSection': 'غرفة سابقة',
   'room.offline': 'غير متصل (أنت فقط)',
   'room.name': 'اسم الغرفة',
   'room.namePlaceholder': 'مثال: مغامرة الجمعة',
@@ -220,6 +221,8 @@ export const ar: Dict = {
   'room.copied': 'تم النسخ',
   'room.exportHistory': 'تصدير السجل',
   'room.importHistory': 'استيراد السجل',
+  'room.importHistoryHeading': 'أو الاستعادة من ملف',
+  'room.importHistoryHint': 'استعد غرفة تم تصديرها سابقًا من ملف ZIP الخاص بها. ستستضيفها بصفتك GM.',
   'room.history': 'الغرف السابقة',
   'room.importError': 'تعذرت قراءة ملف السجل',
   'room.leave': 'مغادرة الغرفة',

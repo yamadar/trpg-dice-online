@@ -199,6 +199,7 @@ export const zhTW: Dict = {
   'marker.codeChanged': '房間代碼已變更為 {code}',
 
   'room.section': '房間',
+  'room.pastSection': '過去的房間',
   'room.offline': '離線（僅你自己）',
   'room.name': '房間名稱',
   'room.namePlaceholder': '例如:週五冒險',
@@ -220,6 +221,8 @@ export const zhTW: Dict = {
   'room.copied': '已複製',
   'room.exportHistory': '匯出歷史',
   'room.importHistory': '匯入歷史',
+  'room.importHistoryHeading': '或從檔案還原',
+  'room.importHistoryHint': '從之前匯出的 ZIP 檔案還原房間。你將作為 GM 主持。',
   'room.history': '過往房間',
   'room.importError': '無法讀取該歷史檔案',
   'room.leave': '離開房間',

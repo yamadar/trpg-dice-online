@@ -199,6 +199,7 @@ export const tr: Dict = {
   'marker.codeChanged': 'Oda kodu {code} olarak değişti',
 
   'room.section': 'Oda',
+  'room.pastSection': 'Geçmiş oda',
   'room.offline': 'Çevrimdışı (yalnız sen)',
   'room.name': 'Oda adı',
   'room.namePlaceholder': 'örn. Cuma macerası',
@@ -220,6 +221,8 @@ export const tr: Dict = {
   'room.copied': 'Kopyalandı',
   'room.exportHistory': 'Geçmişi dışa aktar',
   'room.importHistory': 'Geçmişi içe aktar',
+  'room.importHistoryHeading': 'Veya bir dosyadan geri yükle',
+  'room.importHistoryHint': 'Daha önce dışa aktarılmış bir odayı ZIP dosyasından geri yükleyin. Onu GM olarak siz barındıracaksınız.',
   'room.history': 'Önceki odalar',
   'room.importError': 'Geçmiş dosyası okunamadı',
   'room.leave': 'Odadan ayrıl',

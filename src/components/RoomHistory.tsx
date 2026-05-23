@@ -37,6 +37,11 @@ const FILTERS: { id: FeedFilter; Icon: ComponentType<IconProps> }[] = [
 interface Props {
   /** The local player id — passed through to the read-only feed. */
   playerId: string
+  /** The session currently being viewed. `null` is the list view.
+   *  Controlled by the parent so the room Sheet can mirror it as a
+   *  "past room" menu and call `onSelect(null)` to return to the list. */
+  selected: SessionSummary | null
+  onSelect: (s: SessionSummary | null) => void
   /** Return to the lobby home screen. */
   onBack: () => void
 }
@@ -55,10 +60,9 @@ interface LoadedLog {
  * the last-known portrait). Sessions can be deleted individually or all
  * at once.
  */
-export function RoomHistory({ playerId, onBack }: Props) {
+export function RoomHistory({ playerId, selected, onSelect, onBack }: Props) {
   const { t, lang } = useI18n()
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null)
-  const [selected, setSelected] = useState<SessionSummary | null>(null)
   // The loaded log and portrait map are tagged with their session id, so a
   // result that lands after the selection moved on is dropped at render
   // time rather than overwriting the newer view.
@@ -79,18 +83,32 @@ export function RoomHistory({ playerId, onBack }: Props) {
     refresh()
   }, [refresh])
 
-  const openSession = useCallback((s: SessionSummary) => {
-    setSelected(s)
+  // Reset per-session UI state whenever the selection changes — a
+  // freshly opened session always starts from the unfiltered top of
+  // its feed, and closing one drops any leftover detail / lightbox
+  // overlay. Done in render via the "store info from previous render"
+  // pattern (React docs §"You Might Not Need an Effect") so the state
+  // update is folded into the same render rather than triggering a
+  // separate cascading-effect render.
+  const selectedId = selected?.sessionId
+  const [prevSelectedId, setPrevSelectedId] = useState<string | undefined>(selectedId)
+  if (prevSelectedId !== selectedId) {
+    setPrevSelectedId(selectedId)
     setFilter('all')
     setLightboxIndex(null)
     setDetail(null)
-  }, [])
+  }
+
+  const openSession = useCallback(
+    (s: SessionSummary) => {
+      onSelect(s)
+    },
+    [onSelect],
+  )
 
   const closeSession = useCallback(() => {
-    setSelected(null)
-    setLightboxIndex(null)
-    setDetail(null)
-  }, [])
+    onSelect(null)
+  }, [onSelect])
 
   // Load the selected session's full log and its per-(player, character)
   // records in parallel. Both are tagged with the session id so a stale

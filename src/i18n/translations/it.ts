@@ -199,6 +199,7 @@ export const it: Dict = {
   'marker.codeChanged': 'Codice stanza modificato in {code}',
 
   'room.section': 'Stanza',
+  'room.pastSection': 'Stanza precedente',
   'room.offline': 'Offline (solo tu)',
   'room.name': 'Nome stanza',
   'room.namePlaceholder': 'es. Avventura del venerdì',
@@ -220,6 +221,8 @@ export const it: Dict = {
   'room.copied': 'Copiato',
   'room.exportHistory': 'Esporta cronologia',
   'room.importHistory': 'Importa cronologia',
+  'room.importHistoryHeading': 'Oppure ripristina da un file',
+  'room.importHistoryHint': 'Ripristina una stanza precedentemente esportata dal suo file ZIP. La ospiterai come GM.',
   'room.history': 'Stanze passate',
   'room.importError': 'Impossibile leggere quel file di cronologia',
   'room.leave': 'Esci dalla stanza',
