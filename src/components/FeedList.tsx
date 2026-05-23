@@ -147,7 +147,12 @@ const FeedChatItem = memo(function FeedChatItem({
   // speaker-name button never renders blank.
   const displayName = speaker?.playerName || t('player.anon')
   const characterName = speaker?.characterName ?? ''
-  const speakerIsGM = speaker?.isGM ?? false
+  // Prefer the per-entry GM mark (captured at send time) so a sender
+  // who is currently GM but was a client when they sent this message
+  // is not retroactively badged as GM. Older entries persisted before
+  // the `isGM` field existed fall back to the speaker record's `isGM`
+  // — the previous behaviour — so the past view still reads correctly.
+  const speakerIsGM = m.isGM ?? speaker?.isGM ?? false
   const image = speaker?.image || undefined
   // Fallback initial — prefer character name (the in-character voice
   // shown in the feed); fall back to player name when the speaker is
@@ -231,7 +236,9 @@ const FeedRollItem = memo(function FeedRollItem({
   const color = playerColor(r.playerId)
   const displayName = speaker?.playerName || t('player.anon')
   const characterName = speaker?.characterName ?? ''
-  const speakerIsGM = speaker?.isGM ?? false
+  // Prefer the per-entry GM mark (captured at roll time) over the
+  // record's — see the matching comment in `FeedChatItem`.
+  const speakerIsGM = r.isGM ?? speaker?.isGM ?? false
   const image = speaker?.image || undefined
   const initial = avatarInitial(characterName || displayName)
   return (
