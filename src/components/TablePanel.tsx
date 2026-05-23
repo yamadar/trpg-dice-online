@@ -1,10 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Layer, Line, Stage } from 'react-konva'
+import {
+  Circle,
+  Group,
+  Image as KonvaImage,
+  Layer,
+  Line,
+  Stage,
+} from 'react-konva'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
+import useImage from 'use-image'
 import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
-import type { Grid } from '../tabletop/types'
+import { playerColor } from '../players/colors'
+import { characterImagesKey } from '../storage/roomLog'
+import { canMoveToken } from '../tabletop/tokens'
+import type { Grid, Token } from '../tabletop/types'
 import { CloseIcon, TabletopIcon } from './icons'
 import { TableToolbar } from './TableToolbar'
 
@@ -43,11 +54,19 @@ const WHEEL_ZOOM_FACTOR = 1.1
  */
 export function TablePanel({ session, onClose }: Props) {
   const { t } = useI18n()
-  const { tabletop, updateGrid } = session
+  const { tabletop, updateGrid, moveTokenLive, moveTokenCommit } = session
   // Grid editing is GM-only when in a room, but always available when
   // offline so a player can experiment with the table on their own —
   // the saved state is harmless when there is no session id.
   const canEdit = session.role !== 'client'
+  // Mirrors the wire-level permission: a non-host can drag their own
+  // PC tokens; a host (or offline sandbox) can drag anything. Wrapped
+  // here so the `draggable` prop on each `TokenView` reads it
+  // synchronously.
+  const tokenActor = useMemo(
+    () => ({ playerId: session.playerId, isHost: canEdit }),
+    [session.playerId, canEdit],
+  )
 
   const containerRef = useRef<HTMLDivElement | null>(null)
   const stageRef = useRef<Konva.Stage | null>(null)
@@ -282,11 +301,136 @@ export function TablePanel({ session, onClose }: Props) {
                 scale={stageScale}
               />
             </Layer>
+            <Layer>
+              {tabletop.tokens.map((token) => (
+                <TokenView
+                  key={token.id}
+                  token={token}
+                  grid={tabletop.grid}
+                  scale={stageScale}
+                  draggable={canMoveToken(token, tokenActor)}
+                  portrait={portraitForToken(token, session)}
+                  onDragMove={moveTokenLive}
+                  onDragEnd={moveTokenCommit}
+                />
+              ))}
+            </Layer>
           </Stage>
         )}
       </div>
       {canEdit && <TableToolbar grid={tabletop.grid} onChange={updateGrid} />}
     </div>
+  )
+}
+
+/** Resolve the portrait to render on a token, or `undefined`. */
+function portraitForToken(token: Token, session: Session): string | undefined {
+  if (token.kind === 'pc') {
+    const key = characterImagesKey(token.ownerPlayerId, token.characterId)
+    return session.sessionCharacters[key]?.image || undefined
+  }
+  // GM tokens carry their own image inline (set by the GM upload UI in PR 6).
+  return token.image || undefined
+}
+
+interface TokenViewProps {
+  token: Token
+  grid: Grid
+  scale: number
+  draggable: boolean
+  portrait: string | undefined
+  onDragMove: (tokenId: string, x: number, y: number) => void
+  onDragEnd: (tokenId: string, x: number, y: number) => void
+}
+
+/**
+ * One token on the table. PC tokens render the character portrait
+ * inside a circular clip with a colored ring; tokens without a
+ * portrait fall back to a flat disc tinted by the player's color. The
+ * group itself is the draggable node, so the position the drag
+ * callbacks report is the token's centre.
+ */
+function TokenView({
+  token,
+  grid,
+  scale,
+  draggable,
+  portrait,
+  onDragMove,
+  onDragEnd,
+}: TokenViewProps) {
+  const radius = Math.max(8, grid.cellSize / 2 - 2)
+  const handleDragMove = useCallback(
+    (e: KonvaEventObject<Event>) => {
+      onDragMove(token.id, e.target.x(), e.target.y())
+    },
+    [onDragMove, token.id],
+  )
+  const handleDragEnd = useCallback(
+    (e: KonvaEventObject<Event>) => {
+      // Konva keeps its own x/y on the node during a drag. Read the
+      // final position here, but let the parent snap (so the rule for
+      // "where does the drop land" stays in one place).
+      onDragEnd(token.id, e.target.x(), e.target.y())
+    },
+    [onDragEnd, token.id],
+  )
+  const fallback = token.kind === 'pc' ? playerColor(token.ownerPlayerId) : '#888'
+  // Strokes / dashes are given in world coords; scale them down so they
+  // render about one device pixel regardless of zoom.
+  const strokeWidth = 2 / scale
+  return (
+    <Group
+      x={token.x}
+      y={token.y}
+      draggable={draggable}
+      onDragMove={handleDragMove}
+      onDragEnd={handleDragEnd}
+    >
+      {portrait ? (
+        <ClippedPortrait src={portrait} radius={radius} fallback={fallback} />
+      ) : (
+        <Circle radius={radius} fill={fallback} />
+      )}
+      <Circle radius={radius} stroke={fallback} strokeWidth={strokeWidth} />
+    </Group>
+  )
+}
+
+interface ClippedPortraitProps {
+  src: string
+  radius: number
+  fallback: string
+}
+
+/**
+ * Render a data URL portrait inside a circular clip. Falls back to a
+ * coloured disc while the image is loading or unavailable.
+ *
+ * `use-image` is the canonical Konva image loader (and what their
+ * docs recommend) — it bridges the async load to React state without
+ * tripping React 19's "no setState inside useEffect" lint rule that
+ * a hand-rolled equivalent would otherwise need to suppress.
+ */
+function ClippedPortrait({ src, radius, fallback }: ClippedPortraitProps) {
+  const [image] = useImage(src)
+  if (!image) return <Circle radius={radius} fill={fallback} />
+  return (
+    <Group
+      clipFunc={(ctx) => {
+        ctx.beginPath()
+        ctx.arc(0, 0, radius, 0, Math.PI * 2, false)
+        ctx.closePath()
+      }}
+    >
+      <KonvaImage
+        image={image}
+        x={-radius}
+        y={-radius}
+        width={radius * 2}
+        height={radius * 2}
+      />
+    </Group>
   )
 }
 

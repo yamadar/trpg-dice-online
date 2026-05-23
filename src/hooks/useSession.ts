@@ -51,6 +51,14 @@ import {
   type TabletopState,
 } from '../tabletop/types'
 import { loadTabletop, saveTabletop } from '../storage/tabletop'
+import { snapToGrid } from '../tabletop/grid'
+import {
+  applyTokenMove as applyTokenMoveHelper,
+  applyTokenRemove,
+  applyTokenUpsert,
+  canMoveToken,
+  planPcTokenAdds,
+} from '../tabletop/tokens'
 
 export type Role = 'offline' | 'host' | 'client'
 export type ErrorKind = 'connect' | 'hostLost' | 'codeTaken' | null
@@ -146,6 +154,18 @@ export interface Session {
   tabletop: TabletopState
   /** GM-only: update the grid configuration. Persists, broadcasts to clients. */
   updateGrid: (grid: Grid) => void
+  /**
+   * Move a token during a drag. Updates the local state immediately
+   * (optimistic) and broadcasts at ~20 Hz to keep the wire calm. The
+   * host validates ownership before applying.
+   */
+  moveTokenLive: (tokenId: string, x: number, y: number) => void
+  /**
+   * Commit a token move at drag end. Snaps to the grid (when enabled),
+   * persists, and broadcasts the final position bypassing the live
+   * throttle so the last frame is never dropped.
+   */
+  moveTokenCommit: (tokenId: string, x: number, y: number) => void
 }
 
 /** Keep at most `max` items, dropping the oldest. */
@@ -552,6 +572,77 @@ export function useSession(): Session {
   )
 
   /**
+   * Throttle target for the in-drag `tokenMove` broadcast. ~50ms
+   * between sends keeps the data channel calm while still feeling
+   * fluid (Konva paints at 60 fps but the wire only needs ~20 Hz).
+   */
+  const lastTokenBroadcastRef = useRef(0)
+  /** Local helper: send a tokenMove on the appropriate channel. */
+  const sendTokenMove = useCallback(
+    (tokenId: string, x: number, y: number) => {
+      const role = roleRef.current
+      const room = roomRef.current
+      if (!room) return
+      if (role === 'host') {
+        room.broadcast({ t: 'tokenMove', tokenId, x, y })
+      } else if (role === 'client') {
+        room.sendToHost({ t: 'tokenMove', tokenId, x, y })
+      }
+    },
+    [],
+  )
+
+  /**
+   * Optimistic mid-drag move. Updates the local state synchronously
+   * (so the dragged token follows the cursor smoothly) and broadcasts
+   * at ~20 Hz. IDB persistence is skipped on purpose — the commit
+   * variant is the only place where the whole tabletop state gets
+   * serialised, so a long drag does not hit disk on every frame.
+   */
+  const moveTokenLive = useCallback(
+    (tokenId: string, x: number, y: number) => {
+      const tokens = applyTokenMoveHelper(
+        tabletopRef.current.tokens,
+        tokenId,
+        x,
+        y,
+      )
+      if (tokens === tabletopRef.current.tokens) return
+      const next: TabletopState = { ...tabletopRef.current, tokens }
+      tabletopRef.current = next
+      setTabletop(next)
+      const now = Date.now()
+      if (now - lastTokenBroadcastRef.current < 50) return
+      lastTokenBroadcastRef.current = now
+      sendTokenMove(tokenId, x, y)
+    },
+    [sendTokenMove],
+  )
+
+  /**
+   * Drag-end commit: snap to the grid (when enabled), persist, and
+   * always broadcast (bypassing the throttle so the final position is
+   * never the one dropped). The snapped coordinate is what every
+   * client converges on.
+   */
+  const moveTokenCommit = useCallback(
+    (tokenId: string, x: number, y: number) => {
+      const snapped = snapToGrid(x, y, tabletopRef.current.grid)
+      const tokens = applyTokenMoveHelper(
+        tabletopRef.current.tokens,
+        tokenId,
+        snapped.x,
+        snapped.y,
+      )
+      if (tokens === tabletopRef.current.tokens) return
+      applyTabletop({ ...tabletopRef.current, tokens })
+      lastTokenBroadcastRef.current = Date.now()
+      sendTokenMove(tokenId, snapped.x, snapped.y)
+    },
+    [applyTabletop, sendTokenMove],
+  )
+
+  /**
    * Load any saved tabletop state for this session id and adopt it.
    * Called from the host's create / resume paths so re-opening a room
    * brings the grid (and, later, tokens and map) back exactly as it
@@ -614,6 +705,36 @@ export function useSession(): Session {
     roomRef.current?.broadcast({ t: 'players', players: list })
   }, [buildRoster])
 
+  /**
+   * Host-only: make sure every player with an active character has a
+   * PC token. Pure planning happens in `planPcTokenAdds` (testable);
+   * this wrapper applies the deltas locally and broadcasts each new
+   * token via `tokenUpsert` so the late-joining client also sees it.
+   * No-op for clients — the host owns the canonical list.
+   *
+   * Called from the `hello` / `identity` handlers and from
+   * `updateIdentity` (when the host's own character changes) so the
+   * roster and the token list stay in sync at every transition point.
+   */
+  const ensurePcTokens = useCallback(() => {
+    if (roleRef.current === 'client') return
+    const roster = buildRoster()
+    const plans = planPcTokenAdds(
+      roster,
+      tabletopRef.current.tokens,
+      tabletopRef.current.grid,
+    )
+    if (plans.length === 0) return
+    const next: TabletopState = {
+      ...tabletopRef.current,
+      tokens: [...tabletopRef.current.tokens, ...plans],
+    }
+    applyTabletop(next)
+    for (const token of plans) {
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token })
+    }
+  }, [applyTabletop, buildRoster])
+
   // --- Host: handle a message from a client -------------------------------
   const handleClientMessage = useCallback(
     (peerId: string, msg: ClientMessage) => {
@@ -661,6 +782,10 @@ export function useSession(): Session {
             playerName: shown,
             timestamp: Date.now(),
           })
+          // A player joining with a character gets a PC token auto-added
+          // — the new client receives it via the broadcast tokenUpsert
+          // (their welcome above carries the pre-insert state).
+          ensurePcTokens()
           break
         }
         case 'identity': {
@@ -679,6 +804,10 @@ export function useSession(): Session {
               lang,
             })
             broadcastPlayers()
+            // A character switch may need a fresh PC token (current
+            // tokens for previous characters stay until the GM removes
+            // them in PR 6 — `planPcTokenAdds` only adds, never re-keys).
+            ensurePcTokens()
           }
           break
         }
@@ -719,9 +848,51 @@ export function useSession(): Session {
         case 'ping':
           // Liveness already recorded above; nothing else to do.
           break
+        case 'tokenMove': {
+          // Host-authoritative validation: the move is dropped silently
+          // unless the sender owns the token. `canMoveToken` is shared
+          // with the UI so the visible drag affordance and the wire
+          // check agree on the rule.
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const token = tabletopRef.current.tokens.find(
+            (t) => t.id === msg.tokenId,
+          )
+          if (!token) break
+          if (!canMoveToken(token, { playerId: sender.id, isHost: false })) break
+          const tokens = applyTokenMoveHelper(
+            tabletopRef.current.tokens,
+            msg.tokenId,
+            msg.x,
+            msg.y,
+          )
+          if (tokens === tabletopRef.current.tokens) break
+          applyTabletop({ ...tabletopRef.current, tokens })
+          // Echo to every client (including sender) so all viewers
+          // converge on the same authoritative position. The sender's
+          // optimistic state is overwritten by the same coordinates,
+          // so the round-trip is invisible to them.
+          roomRef.current?.broadcast({
+            t: 'tokenMove',
+            tokenId: msg.tokenId,
+            x: msg.x,
+            y: msg.y,
+          })
+          break
+        }
       }
     },
-    [addMarker, appendChat, appendHistory, broadcastPlayers, buildRoster, noteTyping, putPlayerImage],
+    [
+      addMarker,
+      applyTabletop,
+      appendChat,
+      appendHistory,
+      broadcastPlayers,
+      buildRoster,
+      ensurePcTokens,
+      noteTyping,
+      putPlayerImage,
+    ],
   )
 
   /** Set the reconnecting flag — a ref for sync reads, state for rendering. */
@@ -913,16 +1084,41 @@ export function useSession(): Session {
         case 'gridChange':
           applyTabletop({ ...tabletopRef.current, grid: msg.grid })
           break
-        case 'tokenMove':
-        case 'tokenUpsert':
-        case 'tokenRemove':
+        case 'tokenMove': {
+          const tokens = applyTokenMoveHelper(
+            tabletopRef.current.tokens,
+            msg.tokenId,
+            msg.x,
+            msg.y,
+          )
+          if (tokens !== tabletopRef.current.tokens) {
+            applyTabletop({ ...tabletopRef.current, tokens })
+          }
+          break
+        }
+        case 'tokenUpsert': {
+          const tokens = applyTokenUpsert(
+            tabletopRef.current.tokens,
+            msg.token,
+          )
+          applyTabletop({ ...tabletopRef.current, tokens })
+          break
+        }
+        case 'tokenRemove': {
+          const tokens = applyTokenRemove(
+            tabletopRef.current.tokens,
+            msg.tokenId,
+          )
+          if (tokens !== tabletopRef.current.tokens) {
+            applyTabletop({ ...tabletopRef.current, tokens })
+          }
+          break
+        }
         case 'mapMeta':
         case 'mapChunk':
         case 'mapCleared':
-          // PR 3 wires up the grid only; token / map handlers land in
-          // PR 4 (tokens) and PR 5 (map). The cases sit here so the
-          // protocol surface stays explicit and a future linter can
-          // catch additions without silent drops.
+          // PR 5 wires up the background-map handlers — left blank so
+          // the protocol surface stays explicit on the receiver side.
           break
       }
     },
@@ -1055,6 +1251,10 @@ export function useSession(): Session {
         // the previous in-memory grid carries over (matching how
         // history / chat survive across rooms).
         await restoreTabletopFromStorage(sid)
+        // The host may have brought a character in from the offline
+        // sandbox — make sure their own PC token exists before any
+        // client joins (so the welcome snapshot already carries it).
+        ensurePcTokens()
       } catch (err) {
         // A requested code already taken by another room is distinct from
         // a generic connection failure.
@@ -1062,7 +1262,7 @@ export function useSession(): Session {
         goOffline()
       }
     },
-    [addMarker, ensureRoom, goOffline, restoreFeedFromLog, restoreTabletopFromStorage, selfPlayer],
+    [addMarker, ensurePcTokens, ensureRoom, goOffline, restoreFeedFromLog, restoreTabletopFromStorage, selfPlayer],
   )
 
   const joinRoom = useCallback(
@@ -1514,6 +1714,9 @@ export function useSession(): Session {
         setNameState(patch.name)
         savePlayerName(patch.name)
       }
+      const characterChanged =
+        patch.characterId !== undefined &&
+        patch.characterId !== characterIdRef.current
       if (patch.characterId !== undefined) {
         characterIdRef.current = patch.characterId
         setCharacterIdState(patch.characterId)
@@ -1531,8 +1734,12 @@ export function useSession(): Session {
         setLangState(patch.lang)
       }
       resyncIdentity()
+      // If the host (or the offline sandbox player) just picked up a
+      // character, mint the matching PC token so the next time the
+      // table is opened it is already there.
+      if (characterChanged) ensurePcTokens()
     },
-    [resyncIdentity],
+    [ensurePcTokens, resyncIdentity],
   )
 
   /**
@@ -1765,5 +1972,7 @@ export function useSession(): Session {
     clearFeed,
     tabletop,
     updateGrid,
+    moveTokenLive,
+    moveTokenCommit,
   }
 }
