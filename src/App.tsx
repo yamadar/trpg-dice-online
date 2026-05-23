@@ -151,15 +151,18 @@ function App() {
     noticeTimerRef.current = setTimeout(() => setNotice(null), 2500)
   }, [])
 
-  // RollResult only carries (playerId, characterId) for the speaker; the
-  // display name / background / GM mark are pulled from the per-(player,
-  // character) record in `sessionCharacters` at render time.
+  // The roll's speaker fields: (playerId, characterId) identify the
+  // record the feed looks up the display name / background / portrait
+  // from, and `isGM` captures the GM mark at the moment of the roll so
+  // the feed renders the speaker's role as it was, independent of any
+  // later role change.
   const roller = useMemo(
     () => ({
       id: session.playerId,
       characterId: activeCharacterId,
+      isGM: session.isGM,
     }),
-    [session.playerId, activeCharacterId],
+    [session.playerId, activeCharacterId, session.isGM],
   )
 
   const handleRoll = useCallback(

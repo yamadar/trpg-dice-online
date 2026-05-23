@@ -628,14 +628,20 @@ export function useSession(): Session {
         }
         case 'roll': {
           // Only the GM may hide rolls; client rolls are always visible.
-          const result: RollResult = { ...msg.result, hidden: false }
+          // The GM mark is host-authoritative: only the host is GM in a
+          // room, so a client-claimed `isGM: true` on their own roll is
+          // overruled here before the entry lands in the host log or
+          // gets re-broadcast.
+          const result: RollResult = { ...msg.result, hidden: false, isGM: false }
           appendHistory(result)
           roomRef.current?.broadcast({ t: 'roll', result })
           break
         }
         case 'chat': {
-          appendChat(msg.message)
-          roomRef.current?.broadcast({ t: 'chat', message: msg.message })
+          // Same host-authoritative GM-mark rule as the `roll` case.
+          const message: ChatMessage = { ...msg.message, isGM: false }
+          appendChat(message)
+          roomRef.current?.broadcast({ t: 'chat', message })
           break
         }
         case 'typing': {
@@ -1319,10 +1325,12 @@ export function useSession(): Session {
       const trimmed = text.trim()
       // A message needs either text or an attachment to be worth sending.
       if (!trimmed && !file) return
+      const currentRole = roleRef.current
       const message: ChatMessage = {
         id: newChatId(),
         playerId,
         characterId: characterIdRef.current,
+        isGM: currentRole === 'host',
         text: trimmed,
         timestamp: Date.now(),
         lang: langRef.current,
@@ -1330,7 +1338,6 @@ export function useSession(): Session {
         mentionsAll,
         ...(file ? { file } : {}),
       }
-      const currentRole = roleRef.current
       if (currentRole === 'host') {
         appendChat(message)
         roomRef.current?.broadcast({ t: 'chat', message })
