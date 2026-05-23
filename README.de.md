@@ -1,122 +1,153 @@
-# Dice & Chat
+<p align="center">
+  <img src="public/brand-icon.svg" width="120" alt="Dice & Chat" />
+</p>
 
-**Languages:** [English](README.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [한국어](README.ko.md) · [Italiano](README.it.md) · [Русский](README.ru.md) · [ไทย](README.th.md) · [Türkçe](README.tr.md) · [Bahasa Indonesia](README.id.md) · [Polski](README.pl.md) · [Tiếng Việt](README.vi.md) · [हिन्दी](README.hi.md) · [العربية](README.ar.md) · [Українська](README.uk.md)
+<h1 align="center">Dice &amp; Chat</h1>
 
-Ein Online-Würfler für Tabletop-RPG-Runden. Würfle, speichere
-wiederverwendbare Muster und teile Ergebnisse, Verlauf und Chat in
-Echtzeit mit deiner Gruppe — alles von einer statischen Seite ohne
-Backend.
+<p align="center"><strong>Der Würfeltisch für die Hosentasche — für eure TRPG-Runde.</strong></p>
 
-**🎲 Live-Demo:** https://yamadar.github.io/trpg-dice-online/
+<p align="center">
+  Öffnet die Seite, teilt einen kurzen Raumcode und die ganze Runde würfelt zusammen —<br/>
+  ohne Account, ohne Installation, ohne Spielserver. Nur der Link und die Würfel.
+</p>
 
-## Funktionen
+<p align="center">
+  <a href="https://yamadar.github.io/trpg-dice-online/"><strong>Live-Demo öffnen →</strong></a>
+</p>
 
-- **Würfel (A)** — wähle Anzahl und Typ vor jedem Wurf
-  (`D4, D6, D8, D10, D12, D20, D100`). `D100` würfelt zwei d10 als
-  Stellen; `00` wird als 100 gelesen.
-- **Modifikator (B)** — addiere einen vorzeichenbehafteten `+/-` Wert.
-- **Art (C)** — `Schaden` oder `Probe`. Schaden zeigt
-  `{Muster} {Wert} Schaden`; Probe zeigt
-  `Ergebnis der Probe „{Muster}“: {Wert}`.
-- **Charaktere** — verwalte mehrere Charaktere (Name, öffentlicher
-  Hintergrund, private Notiz, optionales Porträt, Mustern-Liste sowie
-  die pro Charakter gespeicherte Option „Notiz beim Export einschließen“)
-  und exportiere/importiere sie als JSON.
-- **Muster** — bündle A + B + C unter einem Namen pro Charakter und
-  würfle gespeicherte Muster mit einem Klick.
-- **Verlauf & Chat-Feed** — Würfe und Chat teilen sich einen
-  chronologischen Feed mit Filter Alle / Würfe / Chat / Dateien.
-- **Verlauf vergangener Räume** — jede vergangene Sitzung wird
-  gespeichert; lies den Read-only-Feed aus der Lobby und lösche einzelne
-  oder alle. Ein Tipp auf einen Namen zeigt die Charakter-Momentaufnahme
-  und das zuletzt bekannte Porträt.
-- **Online-Räume** — getrennte Erstellen-/Beitreten-Bildschirme mit
-  einem Raumcode (mindestens 4 Zeichen; automatisch generierte sind 6).
-  Verlauf, Chat und Spielerliste werden P2P geteilt; nach einem Reload
-  hostet der SL automatisch neu bzw. tritt der Spieler automatisch wieder
-  bei.
-- **SL-Bedienelemente** — die SL bündelt Raumumbenennung und Code-Wechsel
-  hinter einem Aufklapp-Bereich, und der Verlassen-Knopf heißt „Raum
-  schließen“.
-- **SL-verdeckte Würfe** — die SL kann den Wert verbergen; andere sehen
-  nur, dass ein verdeckter Wurf stattfand.
-- **Spielerfarben & Tippen-Anzeige** — jeder Teilnehmer bekommt eine
-  stabile Farbe, und ein dezenter Indikator zeigt, wer gerade tippt.
-- **Raumereignisse** — Beitritte/Austritte erscheinen im Feed, und das
-  Schließen des Raums durch die SL wird allen sauber gemeldet.
-- **Mehrsprachig & Auto-Übersetzung** — die Oberfläche unterstützt
-  19 Sprachen. Die optionale Chat-Auto-Übersetzung zeigt Nachrichten
-  anderer Spieler in deiner Oberflächensprache; sie bevorzugt die
-  geräteinterne Chrome-Translator-API und fällt auf die schlüssellose
-  [MyMemory](https://mymemory.translated.net/)-REST-API zurück. Tippe in
-  einer übersetzten Nachricht auf „Original“, um den ursprünglich
-  gesendeten Text zu sehen.
+<p align="center">
+  <em><strong>Sprachen:</strong></em>
+  <a href="README.md">English</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.es.md">Español</a> ·
+  <a href="README.pt-BR.md">Português (Brasil)</a> ·
+  <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="README.zh-TW.md">繁體中文</a> ·
+  <a href="README.de.md">Deutsch</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.ko.md">한국어</a> ·
+  <a href="README.it.md">Italiano</a> ·
+  <a href="README.ru.md">Русский</a> ·
+  <a href="README.th.md">ไทย</a> ·
+  <a href="README.tr.md">Türkçe</a> ·
+  <a href="README.id.md">Bahasa Indonesia</a> ·
+  <a href="README.pl.md">Polski</a> ·
+  <a href="README.vi.md">Tiếng Việt</a> ·
+  <a href="README.hi.md">हिन्दी</a> ·
+  <a href="README.ar.md">العربية</a> ·
+  <a href="README.uk.md">Українська</a>
+</p>
 
-## So funktioniert das Teilen online
+<p align="center">
+  <img src="public/images/lobby-mobile.png" width="280" alt="Leere Lobby auf einem Smartphone mit dem Dice & Chat-Logo" />
+  &nbsp;
+  <img src="public/images/feed-mobile.png" width="280" alt="Live-Feed mit Würfen und Chat" />
+</p>
 
-Die App nutzt **WebRTC-P2P-Verbindungen via [PeerJS](https://peerjs.com/)**.
-Der Raum-Ersteller (SL) ist der Host; alle anderen verbinden sich direkt
-mit der SL, die den gemeinsamen Zustand weiterleitet. Es laufen keine
-Daten über einen eigenen Server. Da P2P, ist der Raum nur offen, solange
-die SL die Seite offen hält.
+## Warum ihr es für die nächste Runde wählen solltet
+
+- **Code teilen, würfeln.** Der SL legt einen Raum an und nennt den 4–6-stelligen Code; alle anderen tippen ihn ein. Keine Accounts, keine E-Mail-Bestätigung, keine Anmeldung.
+- **Eure Würfe bleiben unter euch.** Reines Peer-to-Peer über WebRTC — Würfe und Chat laufen direkt von Gerät zu Gerät, nicht über irgendeinen unserer Server.
+- **Passt aufs Handy am Tisch.** Mobile-First-Layout, installierbar als PWA auf iOS und Android, startet im Vollbild.
+- **Spricht 19 Sprachen und übersetzt Chat für euch.** Die deutsche Klerikerin kann mit dem japanischen Schurken plaudern, ohne dass jemand aus der Immersion fällt.
+- **Gebaut zum Wiederöffnen.** Charaktere, Vorlagen, Themes, Schriftgrößen und vergangene Runden bleiben lokal — die App fühlt sich an wie *eure* Würfelbox, nicht wie ein Kiosk.
+
+## Eine Runde in 30 Sekunden starten
+
+1. **SL:** Demo öffnen, **Raum → Erstellen** tippen, Code laut vorlesen.
+2. **Spieler:innen:** Demo öffnen, **Raum → Beitreten** tippen, Code eintippen.
+3. **Alle:** würfeln, chatten, den ersten natürlichen 20er gemeinsam feiern.
+
+Der SL ist der Host: solange sein Tab offen bleibt, lebt der Raum. Tab schließen beendet die Session — vergangene Räume bleiben lokal gespeichert, sodass das Log später noch einmal gelesen werden kann.
+
+## Was in der Würfelbox steckt
+
+### Würfel, die man auf einen Blick liest
+
+`d4 · d6 · d8 · d10 · d12 · d20 · d100`, mit Anzahl, vorzeichenbehaftetem Modifikator und der Art **Schaden / Probe**, die das Ergebnis so formuliert, wie der Tisch es aussprechen würde — *„Ergebnis der Wahrnehmungsprobe: 18"*, *„Großschwert: 11 Schaden"*. Jede gewürfelte Zahl erscheint als kleine Silhouette, die zur Würfelform passt — direkt ablesbar.
+
+### Vorlagen — Lieblingsaktionen auf einen Tap
+
+Speichere `2D6 + 3 — Schaden` unter einem Namen wie *„Großschwert"* und löse es nächste Runde mit einem Tap erneut aus. Vorlagen gehören zu Charakteren — zwei PCs auf demselben Gerät behalten ihre eigenen Sets.
+
+### Charaktere mit Porträt, Notizen und eigenen Vorlagen
+
+Mehrere PCs pro Spieler:in. Jeder hat Name, geteilten Hintergrund, privaten Memo (nur du), optionales Porträt, eine eigene Vorlagenliste und eine pro-Charakter-Einstellung *„Memo in den Export aufnehmen"*. Export als JSON als Backup; Import auf einem anderen Gerät, um den PC zur nächsten Runde mitzunehmen. Wer als PC handelt, wird als `Charakter (Spieler)` angezeigt.
+
+### Ein Feed für Würfe *und* Chat
+
+Würfe und Chat teilen sich eine Zeitleiste, mit Filter **Alle / Würfe / Chat / Dateien**. `@`-Mention-Autocomplete pingt die richtige Person; `@all` erreicht alle. Ein Bild im Chat wird automatisch herunterskaliert, bevor es verschickt wird.
+
+### Vergangene Räume zum Nachlesen
+
+Jede vergangene Session wird lokal als beständiges Log gespeichert. Aus der Lobby können alte Räume im Lesemodus geöffnet werden; ein Tap auf einen Namen im alten Log zeigt das damalige Charakter-Snapshot und das letzte bekannte Porträt. Ein ganzer Raum (Chat, Würfe, Bilder) lässt sich als einzelnes ZIP exportieren.
+
+### Werkzeuge für den SL
+
+Der SL kann **verdeckt würfeln** — andere sehen nur *„ein verdeckter Wurf ist erfolgt"*, nicht die Zahl. Der SL-Bereich bündelt zudem Umbenennen des Raums und Code-Neugenerieren unter einer Disclosure, und der Verlassen-Button heißt **Raum schließen**, damit klar ist: das beendet die Session für alle.
+
+### UI in 19 Sprachen &amp; Chat-Übersetzung
+
+UI in 19 Sprachen. Die optionale automatische Chat-Übersetzung nutzt die On-Device Chrome Translator API, wenn verfügbar, und greift sonst auf die schlüssellose [MyMemory](https://mymemory.translated.net/) REST API zurück. Ein Tap auf **Original** zeigt die unübersetzte Nachricht.
+
+### Kleine Annehmlichkeiten
+
+Stabile Farbe pro Spieler:in, dezenter Tipp-Indikator, Beitritts- / Verlassens-Events im Feed, Theme-Wechsel, anpassbare Schriftgröße und freundliches Verhalten, wenn der SL den Raum schließt.
+
+## Aufs Handy installieren (PWA)
+
+Die Seite ist eine Progressive Web App — sie kann auf iOS und Android zum Homescreen hinzugefügt und im Vollbild gestartet werden, ohne Browser-UI, mit nahezu sofortigem Wiederstart.
+
+- **Android (Chrome):** Demo öffnen, Browser-Menü antippen, **App installieren** (oder *Zum Startbildschirm hinzufügen*) wählen.
+- **iOS (Safari):** Demo öffnen, auf Teilen tippen, **Zum Home-Bildschirm** wählen.
+
+Ein Service Worker hält die App-Shell vorgehalten, damit sie sofort startet. Räume bleiben aber Peer-to-Peer über WebRTC und brauchen eine aktive Netzwerkverbindung.
+
+**Bildschirmorientierung:** das Manifest sperrt oder überschreibt die Ausrichtung nicht — die installierte PWA folgt der Geräteeinstellung für Auto-Rotation / Rotationssperre (z. B. auf Android bleibt die App in ihrer aktuellen Ausrichtung, wenn Auto-Rotation deaktiviert ist).
+
+## Wie das Online-Teilen funktioniert
+
+Räume nutzen **WebRTC peer-to-peer** über [PeerJS](https://peerjs.com/). Die SL-Person ist der Host; alle anderen verbinden sich direkt mit dem SL, der den geteilten Zustand weiterreicht. Keine Spieldaten laufen über Server dieses Projekts. Da es P2P ist, bleibt der Raum nur offen, solange der SL den Tab offen hält.
 
 ## Tech-Stack
 
 - [Vite](https://vite.dev/) + [React 19](https://react.dev/) + TypeScript
-- [PeerJS](https://peerjs.com/) (WebRTC P2P)
-- [Vitest](https://vitest.dev/) (Unit-Tests)
-- GitHub Pages + GitHub Actions (Hosting)
+- [PeerJS](https://peerjs.com/) für WebRTC-P2P-Räume
+- [Vitest](https://vitest.dev/) für Unit-Tests
+- GitHub Pages + GitHub Actions als Hosting
 
 ## Entwicklung
 
 ```bash
 npm install      # Abhängigkeiten installieren
 npm run dev      # Dev-Server starten
-npm test         # Tests ausführen
-npm run lint     # Linting
+npm test         # Unit-Tests ausführen
+npm run lint     # Linter
 npm run build    # Produktions-Build nach dist/
 ```
 
-## Konfiguration (TURN-Relay)
+## Konfiguration (TURN-Relay, optional)
 
-WebRTC benötigt einen TURN-Relay, um Spieler zu verbinden, deren Netz UDP
-blockiert oder symmetrisches NAT verwendet (häufig in öffentlichem WLAN).
-Standardmäßig nutzt die App die kostenlosen öffentlichen TURN-Server des
-Open Relay Project — für gelegentliche Nutzung ausreichend, aber „best
-effort“. Für einen zuverlässigen Relay kopiere `.env.example` nach `.env`
-und setze:
+WebRTC braucht ein TURN-Relay, um Spieler:innen zu verbinden, deren Netzwerk UDP blockiert oder symmetrisches NAT verwendet (häufig in Café- oder Public-WLANs). Standardmäßig nutzt die App die kostenlosen öffentlichen TURN-Server des Open Relay Project — für gelegentlichen Gebrauch okay, aber Best-Effort.
 
-- `VITE_TURN_URLS` — kommagetrennte TURN-URLs. Nimm einen
-  `turns:`-Eintrag über TCP/443 auf, damit es auch in Netzen mit
-  blockiertem UDP funktioniert.
+Für einen verlässlichen Relay `.env.example` zu `.env` kopieren und setzen:
+
+- `VITE_TURN_URLS` — kommagetrennte TURN-URLs. Inkl. einer `turns:`-Adresse auf TCP/443, damit es auch funktioniert, wenn UDP blockiert ist.
 - `VITE_TURN_USERNAME` — TURN-Benutzername.
-- `VITE_TURN_CREDENTIAL` — TURN-Zugangsdaten (Passwort).
+- `VITE_TURN_CREDENTIAL` — TURN-Zugangsdaten / Passwort.
 
-**Sicherheitshinweis:** Vite bettet alle `VITE_*`-Variablen in den
-Produktions-Bundle ein, sodass die hier gesetzten TURN-Zugangsdaten für
-jeden sichtbar sind, der die Seite lädt. Verwende kurzlebige bzw.
-ephemere TURN-Zugangsdaten (z. B. das Pattern der zeitlich begrenzten
-Credentials per TURN-REST-API) und konfiguriere anbieterseitige
-Beschränkungen – erlaubte Origins, IP-Filter oder monatliche Kontingente
-–, um das Missbrauchsrisiko zu reduzieren. Langlebige
-Produktions-Zugangsdaten nicht wiederverwenden.
+> **Sicherheitshinweis:** Vite inlinet alle `VITE_*`-Variablen in das Produktions-Bundle — TURN-Zugangsdaten, die hier hinterlegt werden, sind für alle sichtbar, die die Seite laden. Verwende kurzlebige / temporäre TURN-Credentials (z. B. das Pattern für zeitlich begrenzte Credentials der TURN-REST-API) und konfiguriere serverseitige Limits — erlaubte Origins, IP-Filter oder Monatskontingente. Keine langlebigen Produktions-Credentials hier wiederverwenden.
 
-Für den GitHub-Pages-Deploy füge sie als Repository-Secrets hinzu und gib
-sie im Build-Schritt von `.github/workflows/deploy.yml` weiter. Kostenlose
-Optionen sind der Free-Tarif von [Metered](https://www.metered.ca/) oder
-das Selbsthosten von [coturn](https://github.com/coturn/coturn).
+Für das GitHub-Pages-Deployment als Repository-Secrets anlegen und im Build-Schritt von `.github/workflows/deploy.yml` durchreichen. Kostenfreie Optionen: das kostenlose Kontingent von [Metered](https://www.metered.ca/) oder Self-Hosting via [coturn](https://github.com/coturn/coturn).
 
 ## Deployment
 
-Ein Push auf `main` löst den GitHub-Actions-Workflow aus
-(`.github/workflows/deploy.yml`): Lint, Tests, Build, Veröffentlichung
-auf GitHub Pages. Der Base-Path in Produktion ist `/trpg-dice-online/`;
-mit der Umgebungsvariable `BASE_PATH` änderst du ihn für anderes Hosting.
+Ein Push auf `main` löst den GitHub-Actions-Workflow (`.github/workflows/deploy.yml`) aus, der lintet, testet, baut und auf GitHub Pages veröffentlicht. Der Produktions-Base-Path ist `/trpg-dice-online/`; mit der Umgebungsvariable `BASE_PATH` überschreibbar.
 
 ## Dokumentation
 
-- Anforderungen & Plan: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
-- Übersetzungs-API-Recherche: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
+- Anforderungen und Implementierungsplan: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Recherche zu Echtzeit-Übersetzungs-APIs: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Lizenz
 
