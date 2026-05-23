@@ -215,6 +215,17 @@ export function SettingsMenu({
                   <InfoIcon size={16} />
                   <span>{t('settings.about')}</span>
                 </h3>
+                <button
+                  type="button"
+                  className="settings-help-btn"
+                  onClick={() => {
+                    setOpen(false)
+                    onOpenHelp()
+                  }}
+                >
+                  <HelpIcon />
+                  <span>{t('settings.help')}</span>
+                </button>
                 <p className="about-title brand-heading">
                   <BrandIcon className="brand-mark" />
                   <span>{t('app.title')}</span>
@@ -230,17 +241,6 @@ export function SettingsMenu({
                     GitHub
                   </a>
                 </p>
-                <button
-                  type="button"
-                  className="settings-help-btn"
-                  onClick={() => {
-                    setOpen(false)
-                    onOpenHelp()
-                  }}
-                >
-                  <HelpIcon />
-                  <span>{t('settings.help')}</span>
-                </button>
               </div>
             </div>
           </div>
