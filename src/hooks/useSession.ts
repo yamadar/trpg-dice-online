@@ -51,6 +51,7 @@ import {
   type Grid,
   type MapBackground,
   type TabletopState,
+  type Token,
 } from '../tabletop/types'
 import { loadTabletop, saveTabletop } from '../storage/tabletop'
 import { snapToGrid } from '../tabletop/grid'
@@ -191,6 +192,22 @@ export interface Session {
   addGmToken: (file: File, label?: string) => Promise<'ok' | 'unreadable'>
   /** GM-only: remove any token by id (PC or GM). Broadcasts `tokenRemove`. */
   removeToken: (tokenId: string) => void
+  /**
+   * GM-only: place a PC token for one of the participants. Auto-add
+   * runs only when a player has a character; this is the manual path
+   * for the no-character case and for adding more tokens to the same
+   * participant.
+   */
+  addPlayerToken: (target: { id: string; characterId: string }) => void
+  /**
+   * GM-only: edit a GM token's label / image. PC tokens are not
+   * editable through this API — their label and portrait flow from
+   * the character record.
+   */
+  updateGmToken: (
+    tokenId: string,
+    updates: { label?: string; image?: string },
+  ) => void
 }
 
 /** Keep at most `max` items, dropping the oldest. */
@@ -590,8 +607,42 @@ export function useSession(): Session {
       // silently dropped, leaving the local view out of sync with the
       // authoritative state. Reject it here instead.
       if (roleRef.current === 'client') return
-      applyTabletop({ ...tabletopRef.current, grid })
+      const oldTokens = tabletopRef.current.tokens
+      // Re-snap every token whenever the new grid is snap-on. This
+      // covers three transitions in one rule:
+      //   - snap stays ON, cellSize or origin changed: tokens land on
+      //     the new cell centres.
+      //   - snap toggles OFF → ON: existing free-placed tokens lock to
+      //     the grid.
+      //   - snap stays OFF (or grid kind is 'none'): `snapToGrid`
+      //     short-circuits to the input value, so this is a no-op.
+      let newTokens: Token[] = oldTokens as Token[]
+      if (grid.snap && grid.kind !== 'none') {
+        let changed = false
+        const next = oldTokens.map((token) => {
+          const snapped = snapToGrid(token.x, token.y, grid)
+          if (snapped.x === token.x && snapped.y === token.y) return token
+          changed = true
+          return { ...token, x: snapped.x, y: snapped.y }
+        })
+        if (changed) newTokens = next
+      }
+      applyTabletop({ ...tabletopRef.current, grid, tokens: newTokens })
       roomRef.current?.broadcast({ t: 'gridChange', grid })
+      // Echo individual token moves so clients converge on the same
+      // snapped positions without needing a full table-state push.
+      if (newTokens !== oldTokens) {
+        for (let i = 0; i < newTokens.length; i++) {
+          if (newTokens[i] !== oldTokens[i]) {
+            roomRef.current?.broadcast({
+              t: 'tokenMove',
+              tokenId: newTokens[i].id,
+              x: newTokens[i].x,
+              y: newTokens[i].y,
+            })
+          }
+        }
+      }
     },
     [applyTabletop],
   )
@@ -797,6 +848,64 @@ export function useSession(): Session {
       if (tokens === tabletopRef.current.tokens) return
       applyTabletop({ ...tabletopRef.current, tokens })
       roomRef.current?.broadcast({ t: 'tokenRemove', tokenId })
+    },
+    [applyTabletop],
+  )
+
+  /**
+   * GM-only: manually create a PC token for a participant. Used to
+   * place a token for a player who joined without a character (the
+   * auto-add path is keyed on `characterId`, so a `''` characterId
+   * carries no auto-token), or to add an extra token by switching
+   * characters and adding again. A no-op when a token already exists
+   * for the `(playerId, characterId)` pair.
+   */
+  const addPlayerToken = useCallback(
+    (target: { id: string; characterId: string }) => {
+      if (roleRef.current === 'client') return
+      const plans = planPcTokenAdds(
+        [{ id: target.id, characterId: target.characterId }],
+        tabletopRef.current.tokens,
+        tabletopRef.current.grid,
+      )
+      if (plans.length === 0) return
+      applyTabletop({
+        ...tabletopRef.current,
+        tokens: [...tabletopRef.current.tokens, ...plans],
+      })
+      for (const token of plans) {
+        roomRef.current?.broadcast({ t: 'tokenUpsert', token })
+      }
+    },
+    [applyTabletop],
+  )
+
+  /**
+   * GM-only: update a GM token's label or image (the editable bits).
+   * PC tokens are not editable here — their label / portrait come from
+   * the character record and are kept in sync with `sessionCharacters`.
+   * A non-GM token id is a silent no-op.
+   */
+  const updateGmToken = useCallback(
+    (tokenId: string, updates: { label?: string; image?: string }) => {
+      if (roleRef.current === 'client') return
+      const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
+      if (!existing || existing.kind !== 'gm') return
+      const nextLabel =
+        updates.label === undefined ? existing.label : updates.label.trim()
+      const next: Token = {
+        ...existing,
+        ...(updates.image !== undefined ? { image: updates.image } : {}),
+        ...(nextLabel ? { label: nextLabel } : {}),
+      }
+      // When label is explicitly cleared, drop it from the token shape
+      // (the renderer keys off "label is present" rather than truthy).
+      if (updates.label !== undefined && !nextLabel && 'label' in next) {
+        delete (next as { label?: string }).label
+      }
+      const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
+      applyTabletop({ ...tabletopRef.current, tokens })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token: next })
     },
     [applyTabletop],
   )
@@ -2184,5 +2293,7 @@ export function useSession(): Session {
     clearMapBackground,
     addGmToken,
     removeToken,
+    addPlayerToken,
+    updateGmToken,
   }
 }
