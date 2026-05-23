@@ -4,6 +4,22 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.81 — Add the tabletop feature. The GM uploads a single background
+  map, places a square grid on it, and puts PC tokens (auto-generated
+  from the session's characters, reusing the portrait as the token
+  image) and GM-only tokens (for NPCs / monsters / props, GM-only to
+  add / move / remove). Sync reuses the existing host-authoritative
+  / last-write-wins model; positions during a drag are throttled to
+  ~20 Hz and finalised on drag end. A background image is downscaled
+  to a long-edge cap of 3000 px; anything over the P2P 3 MB ceiling
+  is sent in chunks and reassembled on each client. The tabletop
+  state is persisted to IndexedDB per `sessionId` and ships in the
+  room export ZIP as `table.json` and `attachments/maps/*` (manifest
+  bumped to v6). On mobile the tabletop opens in a full-screen mode
+  (not a Dock sheet) and the feed is shown as a height-adjustable
+  swipe-up bottom sheet so chat / rolls remain visible; desktop uses
+  the same full-screen mode. Rendering uses react-konva, added as a
+  dependency. i18n grows by `tabletop.*` across all 19 locales.
 - v1.80 — Make the P2P star-topology constraint "if the GM goes offline,
   everyone else is disconnected too" visible before users commit to a
   room. Until now this dependency was only surfaced in the GM's

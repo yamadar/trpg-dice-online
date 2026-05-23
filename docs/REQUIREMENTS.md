@@ -24,6 +24,9 @@ An SPA where players roll TRPG dice and share results with other players in real
 | Roll | A single roll act and its result |
 | Room | A shared session of players |
 | GM | Game master who created the room; also the P2P host |
+| Tabletop | The room's map view — a shared space made of a background image, a grid and tokens |
+| Token | A piece on the tabletop. PC tokens (tied to a character) and GM-only tokens (for NPCs / monsters / props) |
+| Grid | The mesh laid over the tabletop. Currently square |
 
 ## 3. Functional Requirements
 
@@ -307,6 +310,52 @@ An SPA where players roll TRPG dice and share results with other players in real
   required, and the matching log, metadata and portraits are all removed
   together.
 
+### 3.15 Tabletop
+
+- A room can open a tabletop. The GM uploads a single background map
+  image, places a square grid on top, and tokens — PC tokens and
+  GM-only tokens — are placed and moved on it. Players drag tokens
+  (PC tokens by the owner and the GM; GM-only tokens by the GM).
+- One scene = one background map. The host downscales the upload to
+  a long-edge cap of 3000 px and saves it as PNG / JPEG. When the
+  result exceeds the P2P 3 MB ceiling, it is split into chunks and
+  reassembled on each client. "No background" (grid only) is supported.
+- The grid is "none" or "square". The GM configures the cell size,
+  origin offset (required to align with a grid drawn into the map
+  image), stroke color and stroke opacity. Token-drag snapping is
+  toggleable.
+- Tokens come in two kinds.
+  - **PC tokens** are generated from the session's characters
+    (`sessionCharacters`) and reuse the character portrait as the
+    token image. They are moved by the owning player and by the GM,
+    auto-added when a character enters the session, and removed only
+    by the GM.
+  - **GM-only tokens** are not tied to a PC (for NPCs, monsters,
+    props). Only the GM adds, moves or removes them. Images go
+    through the same pipeline as character portraits (long-edge
+    2560 px / ~2 MB).
+- Token positions are stored in pixels and snapped to the grid at
+  render time (free placement when snapping is off).
+- Sync follows the existing host-authoritative / last-write-wins model.
+  Position updates during a drag are throttled to ~20 Hz and the
+  final position is sent on drag end. Receiving clients render
+  optimistically and the host's confirmation is the source of truth.
+- Late joiners and reload resumers receive the tabletop state
+  (background, grid, tokens) via the host's welcome snapshot.
+- The tabletop state is persisted to IndexedDB per `sessionId` and
+  restored across reload. Room export ZIPs grow to include
+  `table.json` and `attachments/maps/*` (manifest bumped to v6).
+- On mobile the tabletop is shown as a **full-screen mode** rather
+  than a Dock sheet. The Dock's tabletop icon opens it and a
+  dedicated close button leaves it. To keep chat and rolls visible
+  during play, the feed is shown as a height-adjustable swipe-up
+  bottom sheet with a grip handle. Desktop uses the same full-screen
+  mode.
+- Interactions: pan (two-finger touch, mouse right-drag or
+  Space + drag), zoom (pinch / mouse wheel, 25% – 400%), token drag
+  (single-tap + drag). Pinch and drag are never combined in the same
+  gesture (Konva-recommended pattern).
+
 ## 4. Non-functional
 
 - Single-page application.
@@ -328,6 +377,7 @@ An SPA where players roll TRPG dice and share results with other players in real
 | UI | React 19 + TypeScript | Type-safe SPA |
 | Realtime | PeerJS (WebRTC P2P) | No backend; compatible with GitHub Pages |
 | Persistence | localStorage + IndexedDB | localStorage for name/language/characters, IndexedDB for the per-session log, metadata and portraits |
+| Canvas | react-konva | 2D rendering for the tabletop; Stage scale / position drives pan / zoom |
 | Icons | lucide-react + a single Game Icons d6 SVG | One unified visual vocabulary |
 | Image crop | react-easy-crop | 1:1 portrait crop with circular preview |
 | ZIP archives | fflate | Room export / import packaged as a `.zip` |
@@ -401,6 +451,23 @@ MarkerType  = 'created'|'joined'|'youLeft'|'youClosed'
             | 'reconnecting'|'reconnected'|'reconnectFailed'|'codeChanged'
 SystemMarker = { id, timestamp, type: MarkerType, roomCode?, playerName? }
 FeedItem    = roll | chat | system marker, merged and sorted by time
+
+// Tabletop shared state, host-authoritative and seeded via the welcome
+// snapshot. The background image is chunked over P2P when over 3 MB.
+TabletopState = {
+  map?: { id, name, width, height, dataUrl },
+  grid: { kind: 'none'|'square', cellSize, originX, originY,
+          strokeColor, strokeOpacity, snap },
+  tokens: Token[]
+}
+Token = {
+  id, kind: 'pc'|'gm',
+  x, y,                  // pixel position; snapped to the grid at render time
+  ownerPlayerId?: string // pc: the character's owner; gm: undefined
+  characterId?: string   // pc only
+  image?: string         // gm only (pc reuses the character portrait)
+  label?: string         // gm: optional display label
+}
 ```
 
 Player colors are derived by hashing `playerId`, so all clients agree with no sync.
@@ -439,6 +506,14 @@ Commit after each step.
 - [x] Character name / background shared in the room; memo stays private
 - [x] Pick the dice count (1-10), die type and modifier via stepper / select
 - [x] Published on GitHub Pages and works in the browser
+- [ ] The GM can upload a background map and it is synced to every participant
+- [ ] The square grid's cell size, offset, color and opacity can be configured
+- [ ] PC tokens are generated from the session's characters and can be moved by the owner and the GM
+- [ ] GM-only tokens can be added, moved and removed by the GM
+- [ ] Pan and zoom work on both touch and mouse
+- [ ] On mobile, the tabletop is shown full-screen with a swipe-up bottom sheet for the feed
+- [ ] The tabletop state is restored across reload
+- [ ] The exported ZIP carries the tabletop state and importing restores it
 
 ## 9. Revisions
 
