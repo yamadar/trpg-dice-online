@@ -199,6 +199,7 @@ export const ko: Dict = {
   'marker.codeChanged': '룸 코드가 {code}로 변경되었습니다',
 
   'room.section': '룸',
+  'room.pastSection': '지난 방',
   'room.offline': '오프라인 (당신만)',
   'room.name': '룸 이름',
   'room.namePlaceholder': '예: 금요일의 모험',
@@ -220,6 +221,8 @@ export const ko: Dict = {
   'room.copied': '복사되었습니다',
   'room.exportHistory': '기록 내보내기',
   'room.importHistory': '기록 가져오기',
+  'room.importHistoryHeading': '또는 파일에서 복원',
+  'room.importHistoryHint': '이전에 내보낸 방을 ZIP 파일에서 복원합니다. 당신이 GM으로 호스팅합니다.',
   'room.history': '지난 룸',
   'room.importError': '기록 파일을 읽을 수 없습니다',
   'room.leave': '룸 나가기',

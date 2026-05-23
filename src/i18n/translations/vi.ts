@@ -199,6 +199,7 @@ export const vi: Dict = {
   'marker.codeChanged': 'Mã phòng đổi sang {code}',
 
   'room.section': 'Phòng',
+  'room.pastSection': 'Phòng trước đây',
   'room.offline': 'Ngoại tuyến (chỉ bạn)',
   'room.name': 'Tên phòng',
   'room.namePlaceholder': 'ví dụ: Cuộc phiêu lưu thứ Sáu',
@@ -220,6 +221,8 @@ export const vi: Dict = {
   'room.copied': 'Đã sao chép',
   'room.exportHistory': 'Xuất lịch sử',
   'room.importHistory': 'Nhập lịch sử',
+  'room.importHistoryHeading': 'Hoặc khôi phục từ tệp',
+  'room.importHistoryHint': 'Khôi phục một phòng đã xuất từ tệp ZIP của nó. Bạn sẽ làm chủ với vai trò GM.',
   'room.history': 'Phòng trước đây',
   'room.importError': 'Không đọc được tệp lịch sử này',
   'room.leave': 'Rời phòng',

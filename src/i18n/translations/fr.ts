@@ -199,6 +199,7 @@ export const fr: Dict = {
   'marker.codeChanged': 'Code de la salle changé en {code}',
 
   'room.section': 'Salle',
+  'room.pastSection': 'Salle passée',
   'room.offline': 'Hors ligne (vous seul)',
   'room.name': 'Nom de la salle',
   'room.namePlaceholder': 'p. ex. Aventure du vendredi',
@@ -220,6 +221,9 @@ export const fr: Dict = {
   'room.copied': 'Copié',
   'room.exportHistory': 'Exporter l’historique',
   'room.importHistory': 'Importer un historique',
+  'room.importHistoryHeading': 'Ou restaurer depuis un fichier',
+  'room.importHistoryHint':
+    "Restaure une salle précédemment exportée depuis son fichier ZIP. Tu l'hébergeras en tant que MJ.",
   'room.history': 'Salles passées',
   'room.importError': 'Impossible de lire ce fichier d’historique',
   'room.leave': 'Quitter la salle',

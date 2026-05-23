@@ -34,6 +34,7 @@ import { CharacterPanel } from './components/CharacterPanel'
 import { DiceRoller, type Draft } from './components/DiceRoller'
 import { PatternList } from './components/PatternList'
 import { ActivityPanel } from './components/ActivityPanel'
+import type { SessionSummary } from './storage/roomLog'
 
 const DEFAULT_DRAFT: Draft = {
   name: '',
@@ -65,8 +66,12 @@ function App() {
   // Past-session browser. Rendered as a top-level page replacing the
   // ActivityPanel rather than nested inside the room Sheet, so the
   // multi-level navigation (sessions → feed → speaker detail) is not
-  // competing with the Sheet's own close affordances.
+  // competing with the Sheet's own close affordances. `historySession`
+  // is the session whose feed is currently being viewed (controlled
+  // here so the room Sheet can mirror it as a "past room" menu); null
+  // while the user is browsing the session list.
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [historySession, setHistorySession] = useState<SessionSummary | null>(null)
   const [showTutorial, setShowTutorial] = useState(() => !isTutorialSeen())
   // Denser feed layout — a display preference, so its toggle sits in the
   // settings menu while the feed itself consumes the value.
@@ -237,6 +242,12 @@ function App() {
   const openHistory = useCallback(() => {
     setOpenSheet(null)
     setHistoryOpen(true)
+    setHistorySession(null)
+  }, [])
+
+  const closeHistory = useCallback(() => {
+    setHistoryOpen(false)
+    setHistorySession(null)
   }, [])
 
   // Persist the feed-density preference as it is toggled.
@@ -310,7 +321,12 @@ function App() {
 
       <main className="app-main">
         {historyOpen ? (
-          <RoomHistory playerId={session.playerId} onBack={() => setHistoryOpen(false)} />
+          <RoomHistory
+            playerId={session.playerId}
+            selected={historySession}
+            onSelect={setHistorySession}
+            onBack={closeHistory}
+          />
         ) : (
           <ActivityPanel
             session={session}
@@ -330,7 +346,9 @@ function App() {
         <Sheet
           title={t(
             openSheet === 'room'
-              ? 'room.section'
+              ? historySession
+                ? 'room.pastSection'
+                : 'room.section'
               : openSheet === 'character'
                 ? 'character.section'
                 : openSheet === 'dice'
@@ -356,6 +374,13 @@ function App() {
               initialJoinCode={initialJoinCode}
               onNotice={flash}
               onOpenHistory={openHistory}
+              historyOpen={historyOpen}
+              historySession={historySession}
+              onCloseHistory={closeHistory}
+              onCloseHistorySession={() => {
+                setHistorySession(null)
+                setOpenSheet(null)
+              }}
             />
           )}
           {openSheet === 'character' && (

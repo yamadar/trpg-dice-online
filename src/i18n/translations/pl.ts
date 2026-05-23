@@ -199,6 +199,7 @@ export const pl: Dict = {
   'marker.codeChanged': 'Kod pokoju zmieniony na {code}',
 
   'room.section': 'Pokój',
+  'room.pastSection': 'Poprzedni pokój',
   'room.offline': 'Offline (tylko ty)',
   'room.name': 'Nazwa pokoju',
   'room.namePlaceholder': 'np. Piątkowa przygoda',
@@ -220,6 +221,8 @@ export const pl: Dict = {
   'room.copied': 'Skopiowano',
   'room.exportHistory': 'Eksportuj historię',
   'room.importHistory': 'Importuj historię',
+  'room.importHistoryHeading': 'Lub przywróć z pliku',
+  'room.importHistoryHint': 'Przywróć wcześniej wyeksportowany pokój z pliku ZIP. Będziesz go hostować jako GM.',
   'room.history': 'Poprzednie pokoje',
   'room.importError': 'Nie udało się odczytać pliku historii',
   'room.leave': 'Opuść pokój',

@@ -199,6 +199,7 @@ export const hi: Dict = {
   'marker.codeChanged': 'कक्ष का कोड बदलकर {code} हो गया',
 
   'room.section': 'कक्ष',
+  'room.pastSection': 'पुराना कमरा',
   'room.offline': 'ऑफ़लाइन (केवल आप)',
   'room.name': 'कक्ष का नाम',
   'room.namePlaceholder': 'उदा. शुक्रवार का अभियान',
@@ -220,6 +221,8 @@ export const hi: Dict = {
   'room.copied': 'कॉपी हो गया',
   'room.exportHistory': 'इतिहास निर्यात करें',
   'room.importHistory': 'इतिहास आयात करें',
+  'room.importHistoryHeading': 'या किसी फ़ाइल से पुनर्स्थापित करें',
+  'room.importHistoryHint': 'किसी पहले से निर्यात किए गए कमरे को उसके ZIP फ़ाइल से पुनर्स्थापित करें। आप GM के रूप में होस्ट करेंगे।',
   'room.history': 'पिछले कक्ष',
   'room.importError': 'इतिहास फ़ाइल नहीं पढ़ी जा सकी',
   'room.leave': 'कक्ष छोड़ें',

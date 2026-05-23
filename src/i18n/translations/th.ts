@@ -199,6 +199,7 @@ export const th: Dict = {
   'marker.codeChanged': 'รหัสห้องเปลี่ยนเป็น {code}',
 
   'room.section': 'ห้อง',
+  'room.pastSection': 'ห้องในอดีต',
   'room.offline': 'ออฟไลน์ (มีเพียงคุณ)',
   'room.name': 'ชื่อห้อง',
   'room.namePlaceholder': 'เช่น การผจญภัยวันศุกร์',
@@ -220,6 +221,8 @@ export const th: Dict = {
   'room.copied': 'คัดลอกแล้ว',
   'room.exportHistory': 'ส่งออกประวัติ',
   'room.importHistory': 'นำเข้าประวัติ',
+  'room.importHistoryHeading': 'หรือกู้คืนจากไฟล์',
+  'room.importHistoryHint': 'กู้คืนห้องที่เคยส่งออกจากไฟล์ ZIP ของห้อง คุณจะเป็นผู้โฮสต์ในฐานะ GM',
   'room.history': 'ห้องที่ผ่านมา',
   'room.importError': 'อ่านไฟล์ประวัติไม่สำเร็จ',
   'room.leave': 'ออกจากห้อง',

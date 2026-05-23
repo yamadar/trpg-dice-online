@@ -629,6 +629,23 @@
 .room-setup-buttons button {
   flex: 1;
 }
+/* The "or restore from a file" path sits below the main Create form as
+   a clearly separate alternative — a top border + extra top spacing
+   keeps it visually decoupled from the Create form's inputs so a
+   reader does not mistake it for a continuation of the form. */
+.room-import-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.room-import-heading {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-h);
+}
 .room-code-edit {
   display: flex;
   gap: 6px;

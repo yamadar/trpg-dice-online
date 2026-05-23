@@ -199,6 +199,7 @@ export const ja: Dict = {
   'marker.codeChanged': 'ルームコードが {code} に変更されました',
 
   'room.section': 'ルーム',
+  'room.pastSection': '過去のルーム',
   'room.offline': 'オフライン（あなただけ）',
   'room.name': 'ルーム名',
   'room.namePlaceholder': '例: 金曜の冒険',
@@ -220,6 +221,8 @@ export const ja: Dict = {
   'room.copied': 'コピーしました',
   'room.exportHistory': '履歴をエクスポート',
   'room.importHistory': '履歴をインポート',
+  'room.importHistoryHeading': 'またはファイルから復元',
+  'room.importHistoryHint': '過去にエクスポートしたルームのZIPファイルから復元します。あなたがGMとしてホストします。',
   'room.history': '過去のルーム',
   'room.importError': '履歴ファイルを読み込めませんでした',
   'room.leave': 'ルームを退出',

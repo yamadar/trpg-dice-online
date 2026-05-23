@@ -199,6 +199,7 @@ export const ru: Dict = {
   'marker.codeChanged': 'Код комнаты изменён на {code}',
 
   'room.section': 'Комната',
+  'room.pastSection': 'Прошлая комната',
   'room.offline': 'Не в сети (только вы)',
   'room.name': 'Название комнаты',
   'room.namePlaceholder': 'напр. Пятничное приключение',
@@ -220,6 +221,8 @@ export const ru: Dict = {
   'room.copied': 'Скопировано',
   'room.exportHistory': 'Экспорт истории',
   'room.importHistory': 'Импорт истории',
+  'room.importHistoryHeading': 'Или восстановить из файла',
+  'room.importHistoryHint': 'Восстановите ранее экспортированную комнату из её ZIP-файла. Вы будете её хостить в роли GM.',
   'room.history': 'Прошлые комнаты',
   'room.importError': 'Не удалось прочитать этот файл истории',
   'room.leave': 'Покинуть комнату',
