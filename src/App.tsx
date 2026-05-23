@@ -26,7 +26,7 @@ import { StatusBar } from './components/StatusBar'
 import { NameGate } from './components/NameGate'
 import { Tutorial } from './components/Tutorial'
 import { SettingsMenu } from './components/SettingsMenu'
-import { Dock, type SheetId } from './components/Dock'
+import { Dock, type DockId, type SheetId } from './components/Dock'
 import { Sheet } from './components/Sheet'
 import { RoomPanel } from './components/RoomPanel'
 import { RoomHistory } from './components/RoomHistory'
@@ -34,6 +34,7 @@ import { CharacterPanel } from './components/CharacterPanel'
 import { DiceRoller, type Draft } from './components/DiceRoller'
 import { PatternList } from './components/PatternList'
 import { ActivityPanel } from './components/ActivityPanel'
+import { TablePanel } from './components/TablePanel'
 import type { SessionSummary } from './storage/roomLog'
 
 const DEFAULT_DRAFT: Draft = {
@@ -72,6 +73,11 @@ function App() {
   // while the user is browsing the session list.
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historySession, setHistorySession] = useState<SessionSummary | null>(null)
+  // Tabletop is a full-screen mode, not a Sheet — it takes over the
+  // viewport (hiding the Dock and chat feed) so the map and tokens get
+  // the entire screen. The Dock's tabletop button toggles this state
+  // through `handleDock` below.
+  const [tabletopOpen, setTabletopOpen] = useState(false)
   const [showTutorial, setShowTutorial] = useState(() => !isTutorialSeen())
   // Denser feed layout — a display preference, so its toggle sits in the
   // settings menu while the feed itself consumes the value.
@@ -240,6 +246,22 @@ function App() {
 
   const toggleSheet = (id: SheetId) => setOpenSheet((cur) => (cur === id ? null : id))
 
+  // The Dock now hosts both Sheet-opening buttons and the full-screen
+  // Tabletop. Route the tabletop click through a separate state; the
+  // other ids pass through to `toggleSheet`. The two modes are kept
+  // mutually exclusive — opening one closes the other — so the user
+  // never has a Sheet rendered underneath a full-screen Tabletop (or
+  // vice versa) where they cannot reach it.
+  const handleDock = (id: DockId) => {
+    if (id === 'tabletop') {
+      setOpenSheet(null)
+      setTabletopOpen((cur) => !cur)
+      return
+    }
+    setTabletopOpen(false)
+    toggleSheet(id)
+  }
+
   // Opening the history closes the room Sheet so the full-screen browser
   // is unobstructed; the history's own back button returns to the feed.
   const openHistory = useCallback(() => {
@@ -343,7 +365,10 @@ function App() {
         )}
       </main>
 
-      <Dock active={openSheet} onOpen={toggleSheet} />
+      <Dock
+        active={tabletopOpen ? 'tabletop' : openSheet}
+        onOpen={handleDock}
+      />
 
       {openSheet && (
         <Sheet
@@ -411,6 +436,10 @@ function App() {
             />
           )}
         </Sheet>
+      )}
+
+      {tabletopOpen && (
+        <TablePanel session={session} onClose={() => setTabletopOpen(false)} />
       )}
 
       {notice && (
