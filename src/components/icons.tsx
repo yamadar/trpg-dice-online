@@ -3,6 +3,7 @@ import {
   ALargeSmall,
   ChevronDown,
   Drama,
+  Grid2x2,
   Hand,
   HelpCircle,
   History,
@@ -176,6 +177,20 @@ export function ChatIcon({ size = 18 }: IconProps) {
 export function RoomIcon({ size = 22 }: IconProps) {
   return (
     <Users
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** A 2x2 grid for the tabletop / map concept. Dock "Tabletop" and
+ *  the tabletop panel heading. */
+export function TabletopIcon({ size = 22 }: IconProps) {
+  return (
+    <Grid2x2
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}

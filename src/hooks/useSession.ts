@@ -45,6 +45,12 @@ import {
 } from '../storage/activeRoom'
 import type { RoomImport } from '../storage/roomImport'
 import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
+import {
+  EMPTY_TABLETOP_STATE,
+  type Grid,
+  type TabletopState,
+} from '../tabletop/types'
+import { loadTabletop, saveTabletop } from '../storage/tabletop'
 
 export type Role = 'offline' | 'host' | 'client'
 export type ErrorKind = 'connect' | 'hostLost' | 'codeTaken' | null
@@ -136,6 +142,10 @@ export interface Session {
   sendTyping: () => void
   /** Clear the local feed view (rolls, chat and markers). */
   clearFeed: () => void
+  /** Current tabletop state (background metadata, grid, tokens). */
+  tabletop: TabletopState
+  /** GM-only: update the grid configuration. Persists, broadcasts to clients. */
+  updateGrid: (grid: Grid) => void
 }
 
 /** Keep at most `max` items, dropping the oldest. */
@@ -225,6 +235,13 @@ export function useSession(): Session {
   const [outbox, setOutbox] = useState<ChatMessage[]>([])
   // Mirrors reconnectingRef for rendering — the GM-offline banner reads it.
   const [reconnecting, setReconnecting] = useState(false)
+  /**
+   * Shared tabletop state (background metadata, grid, tokens). Host
+   * authoritative; clients receive grid / token / map updates via the
+   * relevant `HostMessage` cases below. Restored from IndexedDB on
+   * re-host / resume; seeded from the welcome snapshot on join.
+   */
+  const [tabletop, setTabletop] = useState<TabletopState>(EMPTY_TABLETOP_STATE)
 
   /** Type of a single buffered (player, character) record save. The
    *  `sessionId` is captured at stage-time (not read from the live ref
@@ -289,6 +306,9 @@ export function useSession(): Session {
    * catch up through the mirror effect.
    */
   const hasActivityRef = useRef(false)
+  /** Mirrors `tabletop` state for synchronous reads inside PeerJS
+   *  callbacks (welcome-snapshot composition, broadcast on grid change). */
+  const tabletopRef = useRef<TabletopState>(EMPTY_TABLETOP_STATE)
   useEffect(() => {
     roleRef.current = role
     historyRef.current = history
@@ -296,6 +316,7 @@ export function useSession(): Session {
     roomCodeRef.current = roomCode
     roomNameRef.current = roomName
     outboxRef.current = outbox
+    tabletopRef.current = tabletop
   })
 
   // Snapshot every observed (player, character) record into
@@ -499,6 +520,51 @@ export function useSession(): Session {
     setTyping((prev) => ({ ...prev, [signal.playerId]: { name: signal.playerName, at: Date.now() } }))
   }, [])
 
+  /**
+   * Replace the whole tabletop state and persist it (fire-and-forget).
+   * The IndexedDB write goes to `sessionIdRef.current` so a stale
+   * resolve cannot land on the next session — `saveTabletop` is itself
+   * a no-op when the session id is null.
+   */
+  const applyTabletop = useCallback((next: TabletopState) => {
+    tabletopRef.current = next
+    setTabletop(next)
+    void saveTabletop(sessionIdRef.current, next)
+  }, [])
+
+  /**
+   * GM-only: change the grid configuration. Updates the local state,
+   * persists it and broadcasts a `gridChange` to clients so every
+   * participant sees the same grid. A non-host caller can no-op safely
+   * — `broadcast` requires an open `roomRef`.
+   */
+  const updateGrid = useCallback(
+    (grid: Grid) => {
+      // Defence in depth: a non-host call would broadcast to the host
+      // (the client's only connection) where the message would be
+      // silently dropped, leaving the local view out of sync with the
+      // authoritative state. Reject it here instead.
+      if (roleRef.current === 'client') return
+      applyTabletop({ ...tabletopRef.current, grid })
+      roomRef.current?.broadcast({ t: 'gridChange', grid })
+    },
+    [applyTabletop],
+  )
+
+  /**
+   * Load any saved tabletop state for this session id and adopt it.
+   * Called from the host's create / resume paths so re-opening a room
+   * brings the grid (and, later, tokens and map) back exactly as it
+   * was. A no-op when nothing is stored.
+   */
+  const restoreTabletopFromStorage = useCallback(async (sid: string) => {
+    const stored = await loadTabletop(sid)
+    if (stored) {
+      tabletopRef.current = stored
+      setTabletop(stored)
+    }
+  }, [])
+
   /** Replace the whole portrait map — ref and state move together. */
   const setPlayerImages = useCallback((next: Record<string, string>) => {
     playerImagesRef.current = next
@@ -583,6 +649,7 @@ export function useSession(): Session {
             chat: chatRef.current,
             roomName: roomNameRef.current,
             images: snapshotImages,
+            tabletop: tabletopRef.current,
           }
           roomRef.current?.sendTo(peerId, { t: 'welcome', snapshot })
           broadcastPlayers()
@@ -777,6 +844,10 @@ export function useSession(): Session {
           const target = logTarget()
           for (const roll of msg.snapshot.history) void appendLogEntry(target, 'roll', roll)
           for (const message of msg.snapshot.chat) void appendLogEntry(target, 'chat', message)
+          // Adopt the host's tabletop state. Pre-tabletop hosts omit the
+          // field; in that case keep whatever (default / locally-restored)
+          // state we already have rather than wiping it.
+          if (msg.snapshot.tabletop) applyTabletop(msg.snapshot.tabletop)
           break
         }
         case 'roomName':
@@ -839,10 +910,25 @@ export function useSession(): Session {
           finalizeSession(true)
           goOffline()
           break
+        case 'gridChange':
+          applyTabletop({ ...tabletopRef.current, grid: msg.grid })
+          break
+        case 'tokenMove':
+        case 'tokenUpsert':
+        case 'tokenRemove':
+        case 'mapMeta':
+        case 'mapChunk':
+        case 'mapCleared':
+          // PR 3 wires up the grid only; token / map handlers land in
+          // PR 4 (tokens) and PR 5 (map). The cases sit here so the
+          // protocol surface stays explicit and a future linter can
+          // catch additions without silent drops.
+          break
       }
     },
     [
       addMarker,
+      applyTabletop,
       appendChat,
       appendHistory,
       finalizeSession,
@@ -964,6 +1050,11 @@ export function useSession(): Session {
         setPlayers([selfPlayer(true)])
         addMarker('created', { roomCode: code })
         if (reused) await restoreFeedFromLog(reused)
+        // Always try to restore the tabletop — `loadTabletop` returns
+        // null for an unseen session, so a fresh `sid` is a no-op and
+        // the previous in-memory grid carries over (matching how
+        // history / chat survive across rooms).
+        await restoreTabletopFromStorage(sid)
       } catch (err) {
         // A requested code already taken by another room is distinct from
         // a generic connection failure.
@@ -971,7 +1062,7 @@ export function useSession(): Session {
         goOffline()
       }
     },
-    [addMarker, ensureRoom, goOffline, restoreFeedFromLog, selfPlayer],
+    [addMarker, ensureRoom, goOffline, restoreFeedFromLog, restoreTabletopFromStorage, selfPlayer],
   )
 
   const joinRoom = useCallback(
@@ -1003,6 +1094,11 @@ export function useSession(): Session {
           setChat([])
           setMarkers([])
           setOutbox([])
+          // Reset the tabletop too — joining a *new* room means the host
+          // sends an authoritative snapshot, so any in-memory grid from a
+          // previous room should not flash before the welcome arrives.
+          tabletopRef.current = EMPTY_TABLETOP_STATE
+          setTabletop(EMPTY_TABLETOP_STATE)
         }
         setRole('client')
         setRoomCode(code)
@@ -1020,12 +1116,17 @@ export function useSession(): Session {
         // For a re-join, surface the prior log right away — the welcome
         // snapshot will merge in on top once it lands.
         if (reused) await restoreFeedFromLog(reused)
+        // Same treatment for the tabletop: a re-join restores the grid
+        // we last persisted, and the host's welcome may then update it.
+        // For a fresh join `loadTabletop` finds nothing and the reset
+        // above sticks.
+        await restoreTabletopFromStorage(sid)
       } catch {
         // onError already surfaced the failure.
         goOffline()
       }
     },
-    [addMarker, ensureRoom, goOffline, restoreFeedFromLog, selfPlayer],
+    [addMarker, ensureRoom, goOffline, restoreFeedFromLog, restoreTabletopFromStorage, selfPlayer],
   )
 
   const leaveRoom = useCallback(() => {
@@ -1227,6 +1328,7 @@ export function useSession(): Session {
           setRoomNameState(pointer.roomName)
         }
         await restoreFeedFromLog(sid)
+        await restoreTabletopFromStorage(sid)
       }
       setRoomCode(code)
       roomCodeRef.current = code
@@ -1239,7 +1341,7 @@ export function useSession(): Session {
         void joinRoom(code, sid ?? undefined)
       }
     },
-    [joinRoom, markReconnecting, restoreFeedFromLog],
+    [joinRoom, markReconnecting, restoreFeedFromLog, restoreTabletopFromStorage],
   )
 
   /**
@@ -1661,5 +1763,7 @@ export function useSession(): Session {
     sendChat,
     sendTyping,
     clearFeed,
+    tabletop,
+    updateGrid,
   }
 }
