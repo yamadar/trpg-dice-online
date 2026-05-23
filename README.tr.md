@@ -147,6 +147,7 @@ GitHub Pages dağıtımında kullanmak için bunları repo gizli anahtarları ol
 ## Belgeler
 
 - Gereksinimler ve uygulama planı: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Değişiklik günlüğü: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Gerçek zamanlı çeviri API araştırması: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Lisans

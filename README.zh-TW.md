@@ -147,6 +147,7 @@ WebRTC 在 UDP 被阻擋或對稱型 NAT 的網路（咖啡廳、公共 Wi-Fi �
 ## 文件
 
 - 需求與實作計畫: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- 變更紀錄: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - 即時翻譯 API 研究: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## 授權

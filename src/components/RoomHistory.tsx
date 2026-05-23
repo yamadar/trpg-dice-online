@@ -22,20 +22,26 @@ import { speakerImageKey } from '../feed/feed'
 import { FeedList, type FeedDetailTarget } from './FeedList'
 import { Lightbox } from './Lightbox'
 import { PlayerDetailCard } from './PlayerDetailCard'
-import { AllIcon, AttachIcon, ChatIcon, DiceIcon, type IconProps } from './icons'
+import { Sheet } from './Sheet'
+import { AllIcon, AttachIcon, ChatIcon, DiceIcon, PlayerIcon, type IconProps } from './icons'
 
 // Icon-only filter chips — same glyphs the live ActivityPanel uses so the
 // past-session feed reads with one consistent vocabulary.
 const FILTERS: { id: FeedFilter; Icon: ComponentType<IconProps> }[] = [
   { id: 'all', Icon: AllIcon },
-  { id: 'rolls', Icon: DiceIcon },
   { id: 'chat', Icon: ChatIcon },
+  { id: 'rolls', Icon: DiceIcon },
   { id: 'files', Icon: AttachIcon },
 ]
 
 interface Props {
   /** The local player id — passed through to the read-only feed. */
   playerId: string
+  /** The session currently being viewed. `null` is the list view.
+   *  Controlled by the parent so the room Sheet can mirror it as a
+   *  "past room" menu and call `onSelect(null)` to return to the list. */
+  selected: SessionSummary | null
+  onSelect: (s: SessionSummary | null) => void
   /** Return to the lobby home screen. */
   onBack: () => void
 }
@@ -54,10 +60,9 @@ interface LoadedLog {
  * the last-known portrait). Sessions can be deleted individually or all
  * at once.
  */
-export function RoomHistory({ playerId, onBack }: Props) {
+export function RoomHistory({ playerId, selected, onSelect, onBack }: Props) {
   const { t, lang } = useI18n()
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null)
-  const [selected, setSelected] = useState<SessionSummary | null>(null)
   // The loaded log and portrait map are tagged with their session id, so a
   // result that lands after the selection moved on is dropped at render
   // time rather than overwriting the newer view.
@@ -78,18 +83,32 @@ export function RoomHistory({ playerId, onBack }: Props) {
     refresh()
   }, [refresh])
 
-  const openSession = useCallback((s: SessionSummary) => {
-    setSelected(s)
+  // Reset per-session UI state whenever the selection changes — a
+  // freshly opened session always starts from the unfiltered top of
+  // its feed, and closing one drops any leftover detail / lightbox
+  // overlay. Done in render via the "store info from previous render"
+  // pattern (React docs §"You Might Not Need an Effect") so the state
+  // update is folded into the same render rather than triggering a
+  // separate cascading-effect render.
+  const selectedId = selected?.sessionId
+  const [prevSelectedId, setPrevSelectedId] = useState<string | undefined>(selectedId)
+  if (prevSelectedId !== selectedId) {
+    setPrevSelectedId(selectedId)
     setFilter('all')
     setLightboxIndex(null)
     setDetail(null)
-  }, [])
+  }
+
+  const openSession = useCallback(
+    (s: SessionSummary) => {
+      onSelect(s)
+    },
+    [onSelect],
+  )
 
   const closeSession = useCallback(() => {
-    setSelected(null)
-    setLightboxIndex(null)
-    setDetail(null)
-  }, [])
+    onSelect(null)
+  }, [onSelect])
 
   // Load the selected session's full log and its per-(player, character)
   // records in parallel. Both are tagged with the session id so a stale
@@ -186,31 +205,13 @@ export function RoomHistory({ playerId, onBack }: Props) {
     [images],
   )
 
-  // --- detail view: a player's character snapshot from this session ------
-  if (selected && detail) {
-    const record = sessionCharacters[speakerImageKey(detail)]
-    return (
-      <div className="room-history">
-        <div className="history-head">
-          <button type="button" className="link" onClick={() => setDetail(null)}>
-            ← {t('room.back')}
-          </button>
-        </div>
-        <PlayerDetailCard
-          player={null}
-          playerId={detail.playerId}
-          displayName={record?.playerName ?? ''}
-          characterName={record?.characterName ?? ''}
-          background={record?.background ?? ''}
-          image={record?.image || undefined}
-          isSelf={detail.playerId === playerId}
-        />
-      </div>
-    )
-  }
-
   // --- session view: one past session's read-only feed -------------------
+  // Tapping a name opens the player-detail card as a modal Sheet on top
+  // of the feed, mirroring the live ActivityPanel — so the back stack
+  // stays "list → session → detail (overlay)" instead of swapping the
+  // session view out for the detail page.
   if (selected) {
+    const detailRecord = detail ? sessionCharacters[speakerImageKey(detail)] : null
     return (
       <div className="room-history room-history--session">
         <div className="history-head">
@@ -219,23 +220,35 @@ export function RoomHistory({ playerId, onBack }: Props) {
           </button>
           <h3 className="history-head-title">{selected.name.trim() || t('history.unnamed')}</h3>
         </div>
-        <div className="feed-filter" role="group" aria-label={t('feed.section')}>
-          {FILTERS.map(({ id, Icon }) => {
-            const label = t(`feed.${id}`)
-            return (
-              <button
-                key={id}
-                type="button"
-                className={id === filter ? 'filter-btn active' : 'filter-btn'}
-                aria-pressed={id === filter}
-                aria-label={label}
-                title={label}
-                onClick={() => setFilter(id)}
-              >
-                <Icon />
-              </button>
-            )
-          })}
+        <div className="panel-head feed-head">
+          {/* Match the live ActivityPanel's 3-column grid (spacer · centred
+              filter chips · right slot) so the chips sit on exactly the
+              same optical centre line as in the live feed. There is no
+              "clear view" trash button in the history view, so the right
+              slot holds an invisible placeholder of the same width — the
+              centring stays identical. */}
+          <span className="feed-head-spacer" aria-hidden="true" />
+          <div className="feed-filter" role="group" aria-label={t('feed.section')}>
+            {FILTERS.map(({ id, Icon }) => {
+              const label = t(`feed.${id}`)
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={id === filter ? 'filter-btn active' : 'filter-btn'}
+                  aria-pressed={id === filter}
+                  aria-label={label}
+                  title={label}
+                  onClick={() => setFilter(id)}
+                >
+                  <Icon />
+                </button>
+              )
+            })}
+          </div>
+          <div className="feed-head-end">
+            <span className="feed-clear-placeholder" aria-hidden="true" />
+          </div>
         </div>
         {loadedLog === null ? (
           <p className="hint history-loading">…</p>
@@ -253,6 +266,23 @@ export function RoomHistory({ playerId, onBack }: Props) {
             onOpenDetail={setDetail}
             onOpenImage={openImage}
           />
+        )}
+        {detail && (
+          <Sheet
+            title={t('feed.playerDetail')}
+            titleIcon={<PlayerIcon size={20} />}
+            onClose={() => setDetail(null)}
+          >
+            <PlayerDetailCard
+              player={null}
+              playerId={detail.playerId}
+              displayName={detailRecord?.playerName ?? ''}
+              characterName={detailRecord?.characterName ?? ''}
+              background={detailRecord?.background ?? ''}
+              image={detailRecord?.image || undefined}
+              isSelf={detail.playerId === playerId}
+            />
+          </Sheet>
         )}
         {lightboxIndex !== null && images[lightboxIndex] && (
           <Lightbox

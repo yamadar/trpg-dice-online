@@ -147,6 +147,7 @@ push ไป `main` จะ trigger workflow GitHub Actions (`.github/workflows/de
 ## เอกสาร
 
 - ข้อกำหนดและแผนการพัฒนา: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- บันทึกการเปลี่ยนแปลง: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - งานสำรวจ API แปลภาษาเรียลไทม์: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## ใบอนุญาต

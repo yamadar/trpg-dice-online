@@ -147,6 +147,7 @@ WebRTC 在 UDP 被屏蔽或对称型 NAT 的网络（咖啡馆、公共 Wi-Fi �
 ## 文档
 
 - 需求与实现方案: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- 更新日志: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - 实时翻译 API 调研: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## 许可证

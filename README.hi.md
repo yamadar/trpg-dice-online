@@ -147,6 +147,7 @@ GitHub Pages डिप्लॉय में इस्तेमाल के ल
 ## दस्तावेज़
 
 - आवश्यकताएँ और कार्यान्वयन योजना: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- बदलाव लॉग: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - रियल-टाइम ट्रांसलेशन API रिसर्च: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## लाइसेंस

@@ -29,10 +29,12 @@ import { SettingsMenu } from './components/SettingsMenu'
 import { Dock, type SheetId } from './components/Dock'
 import { Sheet } from './components/Sheet'
 import { RoomPanel } from './components/RoomPanel'
+import { RoomHistory } from './components/RoomHistory'
 import { CharacterPanel } from './components/CharacterPanel'
 import { DiceRoller, type Draft } from './components/DiceRoller'
 import { PatternList } from './components/PatternList'
 import { ActivityPanel } from './components/ActivityPanel'
+import type { SessionSummary } from './storage/roomLog'
 
 const DEFAULT_DRAFT: Draft = {
   name: '',
@@ -61,6 +63,15 @@ function App() {
   const [notice, setNotice] = useState<Notice | null>(null)
   const [initialJoinCode] = useState(roomCodeFromUrl)
   const [openSheet, setOpenSheet] = useState<SheetId | null>(null)
+  // Past-session browser. Rendered as a top-level page replacing the
+  // ActivityPanel rather than nested inside the room Sheet, so the
+  // multi-level navigation (sessions → feed → speaker detail) is not
+  // competing with the Sheet's own close affordances. `historySession`
+  // is the session whose feed is currently being viewed (controlled
+  // here so the room Sheet can mirror it as a "past room" menu); null
+  // while the user is browsing the session list.
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [historySession, setHistorySession] = useState<SessionSummary | null>(null)
   const [showTutorial, setShowTutorial] = useState(() => !isTutorialSeen())
   // Denser feed layout — a display preference, so its toggle sits in the
   // settings menu while the feed itself consumes the value.
@@ -140,15 +151,18 @@ function App() {
     noticeTimerRef.current = setTimeout(() => setNotice(null), 2500)
   }, [])
 
-  // RollResult only carries (playerId, characterId) for the speaker; the
-  // display name / background / GM mark are pulled from the per-(player,
-  // character) record in `sessionCharacters` at render time.
+  // The roll's speaker fields: (playerId, characterId) identify the
+  // record the feed looks up the display name / background / portrait
+  // from, and `isGM` captures the GM mark at the moment of the roll so
+  // the feed renders the speaker's role as it was, independent of any
+  // later role change.
   const roller = useMemo(
     () => ({
       id: session.playerId,
       characterId: activeCharacterId,
+      isGM: session.isGM,
     }),
-    [session.playerId, activeCharacterId],
+    [session.playerId, activeCharacterId, session.isGM],
   )
 
   const handleRoll = useCallback(
@@ -226,6 +240,19 @@ function App() {
 
   const toggleSheet = (id: SheetId) => setOpenSheet((cur) => (cur === id ? null : id))
 
+  // Opening the history closes the room Sheet so the full-screen browser
+  // is unobstructed; the history's own back button returns to the feed.
+  const openHistory = useCallback(() => {
+    setOpenSheet(null)
+    setHistoryOpen(true)
+    setHistorySession(null)
+  }, [])
+
+  const closeHistory = useCallback(() => {
+    setHistoryOpen(false)
+    setHistorySession(null)
+  }, [])
+
   // Persist the feed-density preference as it is toggled.
   const toggleCompact = () => {
     const next = !compact
@@ -296,15 +323,24 @@ function App() {
       )}
 
       <main className="app-main">
-        <ActivityPanel
-          session={session}
-          characters={characters.characters}
-          compact={compact}
-          showTyping={showTyping}
-          broadcastTyping={broadcastTyping}
-          onNotice={flash}
-          onOpenRoom={() => setOpenSheet('room')}
-        />
+        {historyOpen ? (
+          <RoomHistory
+            playerId={session.playerId}
+            selected={historySession}
+            onSelect={setHistorySession}
+            onBack={closeHistory}
+          />
+        ) : (
+          <ActivityPanel
+            session={session}
+            characters={characters.characters}
+            compact={compact}
+            showTyping={showTyping}
+            broadcastTyping={broadcastTyping}
+            onNotice={flash}
+            onOpenRoom={() => setOpenSheet('room')}
+          />
+        )}
       </main>
 
       <Dock active={openSheet} onOpen={toggleSheet} />
@@ -313,7 +349,9 @@ function App() {
         <Sheet
           title={t(
             openSheet === 'room'
-              ? 'room.section'
+              ? historySession
+                ? 'room.pastSection'
+                : 'room.section'
               : openSheet === 'character'
                 ? 'character.section'
                 : openSheet === 'dice'
@@ -334,7 +372,19 @@ function App() {
           onClose={() => setOpenSheet(null)}
         >
           {openSheet === 'room' && (
-            <RoomPanel session={session} initialJoinCode={initialJoinCode} onNotice={flash} />
+            <RoomPanel
+              session={session}
+              initialJoinCode={initialJoinCode}
+              onNotice={flash}
+              onOpenHistory={openHistory}
+              historyOpen={historyOpen}
+              historySession={historySession}
+              onCloseHistory={closeHistory}
+              onCloseHistorySession={() => {
+                setHistorySession(null)
+                setOpenSheet(null)
+              }}
+            />
           )}
           {openSheet === 'character' && (
             <CharacterPanel characters={characters} onNotice={flash} />

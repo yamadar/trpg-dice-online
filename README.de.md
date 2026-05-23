@@ -147,6 +147,7 @@ Ein Push auf `main` löst den GitHub-Actions-Workflow (`.github/workflows/deploy
 ## Dokumentation
 
 - Anforderungen und Implementierungsplan: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Änderungsverlauf: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Recherche zu Echtzeit-Übersetzungs-APIs: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Lizenz

@@ -199,6 +199,7 @@ export const id: Dict = {
   'marker.codeChanged': 'Kode ruang berubah ke {code}',
 
   'room.section': 'Ruang',
+  'room.pastSection': 'Ruangan sebelumnya',
   'room.offline': 'Luring (hanya kamu)',
   'room.name': 'Nama ruang',
   'room.namePlaceholder': 'mis. Petualangan Jumat',
@@ -220,6 +221,8 @@ export const id: Dict = {
   'room.copied': 'Tersalin',
   'room.exportHistory': 'Ekspor riwayat',
   'room.importHistory': 'Impor riwayat',
+  'room.importHistoryHeading': 'Atau pulihkan dari file',
+  'room.importHistoryHint': 'Pulihkan ruangan yang sebelumnya diekspor dari file ZIP-nya. Anda akan menjadi GM.',
   'room.history': 'Ruang sebelumnya',
   'room.importError': 'Tidak bisa membaca file riwayat itu',
   'room.leave': 'Tinggalkan ruang',

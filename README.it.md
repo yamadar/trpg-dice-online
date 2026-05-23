@@ -147,6 +147,7 @@ Un push su `main` attiva il workflow GitHub Actions (`.github/workflows/deploy.y
 ## Documentazione
 
 - Requisiti e piano d'implementazione: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Registro modifiche: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Ricerca su API di traduzione real-time: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Licenza

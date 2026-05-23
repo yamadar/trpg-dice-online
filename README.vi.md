@@ -147,6 +147,7 @@ Push lên `main` kích hoạt workflow GitHub Actions (`.github/workflows/deploy
 ## Tài liệu
 
 - Yêu cầu và kế hoạch triển khai: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Nhật ký thay đổi: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Nghiên cứu API dịch thời gian thực: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Giấy phép

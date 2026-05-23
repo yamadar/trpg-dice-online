@@ -149,6 +149,7 @@ npm run build    # بناء الإنتاج إلى dist/
 ## التوثيق
 
 - المتطلّبات وخطة التنفيذ: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- سجل التغييرات: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - بحث حول واجهات الترجمة في الزمن الحقيقي: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## الترخيص

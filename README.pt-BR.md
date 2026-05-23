@@ -147,6 +147,7 @@ Push para `main` dispara o workflow do GitHub Actions (`.github/workflows/deploy
 ## Documentação
 
 - Requisitos e plano de implementação: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Histórico de mudanças: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Pesquisa sobre APIs de tradução em tempo real: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Licença

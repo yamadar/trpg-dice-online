@@ -38,6 +38,10 @@ export function rollPattern(
   player: {
     id: string
     characterId?: string
+    /** Whether the roller was the GM at this moment. Captured per-roll so
+     *  the feed displays the speaker's GM status as it was when the
+     *  roll happened, independent of any later role changes. */
+    isGM?: boolean
   },
   hidden = false,
 ): RollResult {
@@ -56,6 +60,7 @@ export function rollPattern(
     value: sum + pattern.modifier,
     playerId: player.id,
     characterId: player.characterId ?? '',
+    isGM: player.isGM ?? false,
     hidden,
     timestamp: Date.now(),
   }

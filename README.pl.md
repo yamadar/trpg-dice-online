@@ -147,6 +147,7 @@ Push do `main` uruchamia workflow GitHub Actions (`.github/workflows/deploy.yml`
 ## Dokumentacja
 
 - Wymagania i plan implementacji: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Lista zmian: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Badania nad API tłumaczeń w czasie rzeczywistym: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Licencja

@@ -147,6 +147,7 @@ WebRTC нужен TURN-релей, чтобы подключать игроко�
 ## Документация
 
 - Требования и план реализации: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Журнал изменений: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Исследование API перевода в реальном времени: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Лицензия

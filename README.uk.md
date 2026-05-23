@@ -147,6 +147,7 @@ Push до `main` запускає workflow GitHub Actions (`.github/workflows/de
 ## Документація
 
 - Вимоги та план реалізації: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Журнал змін: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Дослідження API перекладу в реальному часі: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Ліцензія

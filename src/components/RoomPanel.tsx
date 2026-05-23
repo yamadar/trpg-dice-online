@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { getCachedTranslation, seedTranslation } from '../i18n/translator'
 import { loadLastRoomCode } from '../storage/room'
-import { loadFullLog, loadSessionCharacters } from '../storage/roomLog'
+import {
+  loadFullLog,
+  loadSessionCharacters,
+  type SessionSummary,
+} from '../storage/roomLog'
 import { buildRoomExport, roomExportFilename, type TranslationRecord } from '../storage/roomExport'
 import { parseRoomImport } from '../storage/roomImport'
 import { normalizeRoomCode, type ChatMessage, type Player } from '../net/protocol'
@@ -10,19 +14,49 @@ import { playerColor } from '../players/colors'
 import { composeName } from '../players/identity'
 import type { Session } from '../hooks/useSession'
 import { useConfirm } from '../hooks/useConfirm'
-import { RoomHistory } from './RoomHistory'
+import { PastRoomMenu } from './PastRoomMenu'
 
 interface Props {
   session: Session
   /** Room code from the URL (?room=CODE), used to prefill the join field. */
   initialJoinCode: string
   onNotice: (message: string) => void
+  /** Hand off to the top-level history browser. The room Sheet closes so
+   *  the multi-level history navigation (sessions → feed → speaker
+   *  detail) is unobstructed by the Sheet's own close affordances. */
+  onOpenHistory: () => void
+  /** Whether the user is currently browsing the past-session list (the
+   *  history page is rendered behind / instead of the live feed). */
+  historyOpen: boolean
+  /** The past session whose feed is being viewed, if any. When set, the
+   *  panel renders the "past room" menu (participants + room code +
+   *  export + back-to-list) instead of the normal lobby / active-room
+   *  flows. */
+  historySession: SessionSummary | null
+  /** Close the history page entirely, returning the main area to the
+   *  live ActivityPanel. Called when the user starts a real-room flow
+   *  (create / join / import) from the lobby home while history is
+   *  open. */
+  onCloseHistory: () => void
+  /** Clear the past-session selection so the history page steps back
+   *  from "session feed" to "session list". Called by the past-room
+   *  menu's back button. */
+  onCloseHistorySession: () => void
 }
 
 /** Which lobby screen is shown while not in a room. */
-type LobbyView = 'home' | 'create' | 'join' | 'history'
+type LobbyView = 'home' | 'create' | 'join'
 
-export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
+export function RoomPanel({
+  session,
+  initialJoinCode,
+  onNotice,
+  onOpenHistory,
+  historyOpen,
+  historySession,
+  onCloseHistory,
+  onCloseHistorySession,
+}: Props) {
   const { t, lang } = useI18n()
   // Creating and joining are now distinct screens; a URL code jumps
   // straight to the join screen with the field prefilled.
@@ -273,6 +307,28 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
     </div>
   )
 
+  // Close the history page in the background when the user kicks off a
+  // real-room flow (create / join / import) from the lobby — the room
+  // they end up in should show through the now-closed Sheet onto the
+  // live ActivityPanel, not back onto the past-session list. No-op when
+  // history wasn't open in the first place.
+  const closeHistoryIfOpen = () => {
+    if (historyOpen) onCloseHistory()
+  }
+
+  // --- past-room menu: mirrors the active-room block for a past session ---
+  if (historySession) {
+    return (
+      <section className="panel">
+        <PastRoomMenu
+          session={historySession}
+          playerId={playerId}
+          onBack={onCloseHistorySession}
+        />
+      </section>
+    )
+  }
+
   return (
     <section className="panel">
       {/* The panel title + icon lives in the parent `Sheet` header so the
@@ -284,41 +340,35 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
             type="button"
             className="primary big"
             disabled={busy}
-            onClick={() => setView('create')}
+            onClick={() => {
+              closeHistoryIfOpen()
+              setView('create')
+            }}
           >
             {t('room.create')}
           </button>
-          <button type="button" className="big" disabled={busy} onClick={() => setView('join')}>
+          <button
+            type="button"
+            className="big"
+            disabled={busy}
+            onClick={() => {
+              closeHistoryIfOpen()
+              setView('join')
+            }}
+          >
             {t('room.join')}
           </button>
+          {/* `historyOpen` greys the entry out because the user is
+              already inside the history page — re-opening it would be a
+              no-op tap. */}
           <button
             type="button"
             className="link"
-            disabled={busy}
-            onClick={() => setView('history')}
+            disabled={busy || historyOpen}
+            onClick={onOpenHistory}
           >
             {t('room.history')}
           </button>
-          <button
-            type="button"
-            className="link"
-            disabled={busy}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {t('room.importHistory')}
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".zip,application/zip"
-            hidden
-            onChange={handleImportFile}
-          />
-          {importError && (
-            <p className="banner error" role="alert">
-              {t('room.importError')}
-            </p>
-          )}
         </div>
       )}
 
@@ -368,6 +418,37 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
               {t('room.connecting')}
             </p>
           )}
+
+          {/* Importing an exported room is the same flow as creating
+              one — both end with the local player hosting as GM — so
+              the entry lives here, presented as an alternative path
+              with a short explanation rather than a bare button. */}
+          <div className="room-import-section">
+            <h3 className="room-import-heading">{t('room.importHistoryHeading')}</h3>
+            <p className="hint">{t('room.importHistoryHint')}</p>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                closeHistoryIfOpen()
+                fileInputRef.current?.click()
+              }}
+            >
+              {t('room.importHistory')}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".zip,application/zip"
+              hidden
+              onChange={handleImportFile}
+            />
+            {importError && (
+              <p className="banner error" role="alert">
+                {t('room.importError')}
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -406,10 +487,6 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
             </p>
           )}
         </div>
-      )}
-
-      {!online && view === 'history' && (
-        <RoomHistory playerId={playerId} onBack={() => setView('home')} />
       )}
 
       {online && (

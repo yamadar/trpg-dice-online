@@ -506,6 +506,9 @@
   font-size: 0.8rem;
   color: var(--text-dim);
 }
+.settings-help-btn + .about-line {
+  margin-top: 12px;
+}
 .about-line a {
   color: var(--accent);
 }
@@ -625,6 +628,23 @@
 }
 .room-setup-buttons button {
   flex: 1;
+}
+/* The "or restore from a file" path sits below the main Create form as
+   a clearly separate alternative — a top border + extra top spacing
+   keeps it visually decoupled from the Create form's inputs so a
+   reader does not mistake it for a continuation of the form. */
+.room-import-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.room-import-heading {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-h);
 }
 .room-code-edit {
   display: flex;
@@ -849,27 +869,26 @@ button.player-row {
   flex-direction: column;
   gap: 10px;
 }
-/* Session view: make the chain from `.sheet` down to `.feed` a column flex
-   stack so the feed fills the body and only its own scrollbar is shown.
-   Without this, `.feed`'s `max-height: 60vh` plus the head + filter could
-   overflow the sheet body on mobile (where `vh` > `svh`), giving the user
-   two stacked scrollbars. The sheet has to switch from `max-height` to a
-   definite `height` because a `flex: 1` body inside a `max-height`-only
-   container collapses to 0. Mirrors the `.app-main .feed` pattern the
-   live activity panel uses. */
-.sheet:has(.room-history--session) {
-  height: 88svh;
-}
-.sheet-body:has(.room-history--session) {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.sheet-body:has(.room-history--session) > .panel {
+/* The history browser is a top-level page that takes over `.app-main`,
+   so it has to fill the row-flex parent (`.app-main`) and stack its own
+   children as a column. Two view shapes share this rule:
+   - List view (`.room-history` alone): the outer scrolls so a long
+     session list pages naturally.
+   - Session view (`.room-history--session`): the feed inside scrolls
+     internally, so the outer is clipped — without `overflow: hidden`
+     here the outer also became a scroll container whenever the feed's
+     bottom landed even one pixel past the available height, giving a
+     stray "extra" scroll outside the feed. */
+.app-main > .room-history {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  padding: 16px;
+}
+.app-main > .room-history:not(.room-history--session) {
+  overflow-y: auto;
+}
+.app-main > .room-history--session {
+  overflow: hidden;
 }
 .room-history--session {
   flex: 1;
@@ -2556,7 +2575,7 @@ button.char-avatar-large:disabled {
      short viewport. */
   display: flex;
   flex-direction: column;
-  height: 460px;
+  height: 420px;
   max-height: calc(100svh - 40px);
 }
 .tutorial-skip {

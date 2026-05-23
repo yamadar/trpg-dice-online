@@ -47,9 +47,18 @@ export interface RollResult {
   playerId: string
   /** Active character id when the roll was made ('' when the roller was
    *  acting directly, no character). The speaker's display name /
-   *  background / GM mark are pulled from the per-(player, character)
+   *  background / portrait are pulled from the per-(player, character)
    *  record in `sessionCharacters` rather than carried inline. */
   characterId: string
+  /** GM mark at the moment the roll was made. Carried per-entry so the
+   *  feed shows the speaker's GM status as it was at the time, not as
+   *  it is now — a player who is currently GM but was a client when
+   *  this roll happened is not retroactively badged as GM, and an
+   *  imported session's restored entries keep their original
+   *  attribution. Optional for backward compatibility with entries
+   *  persisted before this field existed; consumers fall back to the
+   *  per-(player, character) record's `isGM` when missing. */
+  isGM?: boolean
   /** When true the value is hidden from non-GM players. */
   hidden: boolean
   timestamp: number

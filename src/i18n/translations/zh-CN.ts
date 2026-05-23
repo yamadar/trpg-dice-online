@@ -199,6 +199,7 @@ export const zhCN: Dict = {
   'marker.codeChanged': '房间代码已变更为 {code}',
 
   'room.section': '房间',
+  'room.pastSection': '过去的房间',
   'room.offline': '离线（仅你自己）',
   'room.name': '房间名',
   'room.namePlaceholder': '例如：周五冒险',
@@ -220,6 +221,8 @@ export const zhCN: Dict = {
   'room.copied': '已复制',
   'room.exportHistory': '导出历史',
   'room.importHistory': '导入历史',
+  'room.importHistoryHeading': '或从文件还原',
+  'room.importHistoryHint': '从之前导出的 ZIP 文件还原房间。你将作为 GM 来主持。',
   'room.history': '过往房间',
   'room.importError': '无法读取该历史文件',
   'room.leave': '离开房间',

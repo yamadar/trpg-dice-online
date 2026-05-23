@@ -147,6 +147,7 @@ Push ke `main` memicu workflow GitHub Actions (`.github/workflows/deploy.yml`) y
 ## Dokumentasi
 
 - Kebutuhan dan rencana implementasi: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Catatan perubahan: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Riset API penerjemah real-time: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Lisensi

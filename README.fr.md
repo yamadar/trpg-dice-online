@@ -147,6 +147,7 @@ Un push sur `main` déclenche le workflow GitHub Actions (`.github/workflows/dep
 ## Documentation
 
 - Cahier des charges et plan d'implémentation : [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Journal des modifications : [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Recherche sur les API de traduction en temps réel : [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Licence

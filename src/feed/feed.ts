@@ -110,8 +110,10 @@ function collapseSystemRuns(items: FeedItem[]): FeedItem[] {
  *
  * The filter then hides the kinds a view does not want: `rolls` drops
  * chat, `chat` drops rolls, and `files` is a focused gallery of just the
- * chat messages that carry an attachment. Entries are de-duplicated by
- * id, since paged-in older history overlaps the live window.
+ * chat messages that carry an attachment. System markers only show in
+ * the `all` view so a narrowed-down view stays focused on the kind it
+ * names. Entries are de-duplicated by id, since paged-in older history
+ * overlaps the live window.
  */
 export function buildFeed(
   history: RollResult[],
@@ -148,6 +150,6 @@ export function buildFeed(
       if (filter === 'files') return item.message.file !== undefined
       return true
     }
-    return filter !== 'files'
+    return filter === 'all'
   })
 }

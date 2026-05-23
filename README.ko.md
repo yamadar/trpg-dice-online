@@ -147,6 +147,7 @@ GitHub Pages 배포에서 사용하려면 위 값을 리포지토리 Secrets로 
 ## 문서
 
 - 요구사항·구현 계획: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- 변경 이력: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - 실시간 번역 API 조사: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## 라이선스
