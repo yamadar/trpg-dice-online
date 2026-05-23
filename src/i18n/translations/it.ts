@@ -70,7 +70,7 @@ export const it: Dict = {
     'Salva i dadi che usi spesso come «Modelli» con un nome e lanciali con un tocco dalla lista. Come GM puoi marcare un modello come tiro nascosto.',
   'tutorial.room.title': 'Condividi in una stanza',
   'tutorial.room.body':
-    'Da «Stanza» crei una stanza (diventi GM) o ti unisci con un codice. Il GM può scegliere o cambiare il codice, e la riconnessione è automatica se la rete cade.',
+    'Da «Stanza» crei una stanza (diventi GM) o ti unisci con un codice. Il GM può scegliere o cambiare il codice, e la riconnessione è automatica se la rete cade. Il GM è l’host della stanza: se va offline, anche gli altri giocatori vengono disconnessi.',
   'tutorial.pastRooms.title': 'Stanze passate',
   'tutorial.pastRooms.body':
     'Ogni sessione viene conservata come registro in sola lettura. Dalla schermata «Stanza» tocca «Stanze passate» per riaprire una sessione precedente; puoi cancellare i registri uno per uno o tutti insieme.',
@@ -203,8 +203,10 @@ export const it: Dict = {
   'room.name': 'Nome stanza',
   'room.namePlaceholder': 'es. Avventura del venerdì',
   'room.create': 'Crea stanza',
-  'room.createGmHint': 'Diventerai il GM della stanza che crei.',
+  'room.createGmHint':
+    'Diventerai il GM della stanza che crei. Il GM è l’host della stanza: se il GM va offline, anche gli altri giocatori vengono disconnessi.',
   'room.join': 'Unisciti a una stanza',
+  'room.joinGmHint': 'Se il GM (l’host) va offline, anche gli altri giocatori vengono disconnessi.',
   'room.back': 'Indietro',
   'room.gmSection': 'GM',
   'room.codePlaceholder': 'Codice stanza',

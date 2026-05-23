@@ -70,7 +70,7 @@ export const pl: Dict = {
     'Zapisuj często używane kości jako nazwane „Szablony” i rzucaj jednym dotknięciem z listy. Jako MG możesz oznaczyć szablon jako rzut ukryty.',
   'tutorial.room.title': 'Wspólnie w pokoju',
   'tutorial.room.body':
-    'Z „Pokoju” utwórz pokój (zostaniesz MG) lub dołącz z kodem. MG może wybrać i zmieniać kod, a po zerwaniu połączenia jest automatycznie wznawiane.',
+    'Z „Pokoju” utwórz pokój (zostaniesz MG) lub dołącz z kodem. MG może wybrać i zmieniać kod, a po zerwaniu połączenia jest automatycznie wznawiane. MG jest hostem pokoju: jeśli MG przejdzie w tryb offline, inni gracze również zostaną rozłączeni.',
   'tutorial.pastRooms.title': 'Poprzednie pokoje',
   'tutorial.pastRooms.body':
     'Każda sesja jest zapisywana jako dziennik tylko do odczytu. Na ekranie „Pokój” dotknij „Poprzednie pokoje”, aby ponownie otworzyć wcześniejszą sesję; dzienniki możesz usuwać pojedynczo lub wszystkie naraz.',
@@ -203,8 +203,10 @@ export const pl: Dict = {
   'room.name': 'Nazwa pokoju',
   'room.namePlaceholder': 'np. Piątkowa przygoda',
   'room.create': 'Utwórz pokój',
-  'room.createGmHint': 'Stajesz się MG pokoju, który tworzysz.',
+  'room.createGmHint':
+    'Stajesz się MG pokoju, który tworzysz. MG jest hostem pokoju: jeśli MG przejdzie w tryb offline, inni gracze również zostaną rozłączeni.',
   'room.join': 'Dołącz do pokoju',
+  'room.joinGmHint': 'Jeśli MG (host) przejdzie w tryb offline, inni gracze również zostaną rozłączeni.',
   'room.back': 'Wstecz',
   'room.gmSection': 'MG',
   'room.codePlaceholder': 'Kod pokoju',

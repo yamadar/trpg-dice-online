@@ -70,7 +70,7 @@ export const zhCN: Dict = {
     '把常用骰子保存为带名称的「模板」，从列表一键投掷。作为 GM 可以把模板标记为暗骰。',
   'tutorial.room.title': '在房间中共享',
   'tutorial.room.body':
-    '从「房间」创建房间（你将成为 GM）或用代码加入。GM 可以选择或更改房间代码，断线时会自动重连。',
+    '从「房间」创建房间（你将成为 GM）或用代码加入。GM 可以选择或更改房间代码，断线时会自动重连。GM 是房间的主机，GM 离线后其他参与者也会断开连接。',
   'tutorial.pastRooms.title': '过往房间',
   'tutorial.pastRooms.body':
     '每场会话都会保存为只读日志。在「房间」界面点击「过往房间」可重新查看之前的会话，记录可以逐条删除，也可以一次全部清空。',
@@ -203,8 +203,10 @@ export const zhCN: Dict = {
   'room.name': '房间名',
   'room.namePlaceholder': '例如：周五冒险',
   'room.create': '创建房间',
-  'room.createGmHint': '你将成为所创建房间的 GM。',
+  'room.createGmHint':
+    '你将成为所创建房间的 GM。GM 是房间的主机，因此 GM 离线后其他参与者也会断开连接。',
   'room.join': '加入房间',
+  'room.joinGmHint': 'GM（主机）离线后，其他参与者也会断开连接。',
   'room.back': '返回',
   'room.gmSection': 'GM',
   'room.codePlaceholder': '房间代码',

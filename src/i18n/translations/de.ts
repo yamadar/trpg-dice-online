@@ -70,7 +70,7 @@ export const de: Dict = {
     'Speichere oft benutzte Würfel als benannte „Muster“ und würfle sie per Tipp aus der Liste. Als SL kannst du ein Muster als verdeckten Wurf markieren.',
   'tutorial.room.title': 'In einem Raum teilen',
   'tutorial.room.body':
-    'Unter „Raum“ erstellst du einen Raum (du wirst SL) oder trittst mit einem Code bei. Die SL kann den Code wählen oder ändern; abgerissene Verbindungen werden automatisch wiederhergestellt.',
+    'Unter „Raum“ erstellst du einen Raum (du wirst SL) oder trittst mit einem Code bei. Die SL kann den Code wählen oder ändern; abgerissene Verbindungen werden automatisch wiederhergestellt. Die SL ist der Host des Raums: Geht die SL offline, werden auch die anderen Spielenden getrennt.',
   'tutorial.pastRooms.title': 'Vergangene Räume',
   'tutorial.pastRooms.body':
     'Jede Sitzung wird als schreibgeschütztes Protokoll aufbewahrt. Tippe im Raum-Bildschirm auf „Vergangene Räume“, um eine frühere Sitzung erneut zu öffnen; Protokolle lassen sich einzeln oder alle auf einmal löschen.',
@@ -203,8 +203,10 @@ export const de: Dict = {
   'room.name': 'Raumname',
   'room.namePlaceholder': 'z. B. Freitagsabenteuer',
   'room.create': 'Raum erstellen',
-  'room.createGmHint': 'Du wirst die SL des Raums, den du erstellst.',
+  'room.createGmHint':
+    'Du wirst die SL des Raums, den du erstellst. Die SL ist der Host des Raums: Geht die SL offline, werden auch die anderen Spielenden getrennt.',
   'room.join': 'Raum beitreten',
+  'room.joinGmHint': 'Geht die SL (der Host) offline, werden auch die anderen Spielenden getrennt.',
   'room.back': 'Zurück',
   'room.gmSection': 'SL',
   'room.codePlaceholder': 'Raumcode',

@@ -70,7 +70,7 @@ export const zhTW: Dict = {
     '把常用的骰子以名稱儲存為「範本」，從清單一鍵投擲。作為 GM 可將範本標記為暗骰。',
   'tutorial.room.title': '在房間中共享',
   'tutorial.room.body':
-    '從「房間」建立房間（你會成為 GM）或以代碼加入。GM 可指定或變更房間代碼，連線中斷時會自動重連。',
+    '從「房間」建立房間（你會成為 GM）或以代碼加入。GM 可指定或變更房間代碼，連線中斷時會自動重連。GM 是房間的主機，GM 離線後其他參與者也會中斷連線。',
   'tutorial.pastRooms.title': '過往房間',
   'tutorial.pastRooms.body':
     '每場會話都會保留為唯讀紀錄。在「房間」畫面點擊「過往房間」可重新檢視先前的會話，紀錄可逐筆刪除，也可一次全部刪除。',
@@ -203,8 +203,10 @@ export const zhTW: Dict = {
   'room.name': '房間名稱',
   'room.namePlaceholder': '例如:週五冒險',
   'room.create': '建立房間',
-  'room.createGmHint': '你將成為所建立房間的 GM。',
+  'room.createGmHint':
+    '你將成為所建立房間的 GM。GM 是房間的主機，因此 GM 離線後其他參與者也會中斷連線。',
   'room.join': '加入房間',
+  'room.joinGmHint': 'GM（主機）離線後，其他參與者也會中斷連線。',
   'room.back': '返回',
   'room.gmSection': 'GM',
   'room.codePlaceholder': '房間代碼',

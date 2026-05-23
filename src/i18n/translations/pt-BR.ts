@@ -70,7 +70,7 @@ export const ptBR: Dict = {
     'Salve os dados que você usa muito como «Padrões» com nome e role-os com um toque na lista. Como mestre você pode marcar um padrão como rolagem oculta.',
   'tutorial.room.title': 'Compartilhar em uma sala',
   'tutorial.room.body':
-    'Em «Sala» crie uma sala (vira mestre) ou entre com um código. O mestre pode escolher ou trocar o código, e a reconexão é automática se cair.',
+    'Em «Sala» crie uma sala (vira mestre) ou entre com um código. O mestre pode escolher ou trocar o código, e a reconexão é automática se cair. O mestre é o anfitrião da sala: se ele ficar offline, os outros jogadores também são desconectados.',
   'tutorial.pastRooms.title': 'Salas anteriores',
   'tutorial.pastRooms.body':
     'Cada sessão fica salva como um registro somente leitura. Na tela «Sala», toque em «Salas anteriores» para reabrir uma sessão antiga; você pode apagar os registros um a um ou todos de uma vez.',
@@ -203,8 +203,10 @@ export const ptBR: Dict = {
   'room.name': 'Nome da sala',
   'room.namePlaceholder': 'ex.: Aventura de sexta',
   'room.create': 'Criar sala',
-  'room.createGmHint': 'Você se torna o mestre da sala que criar.',
+  'room.createGmHint':
+    'Você se torna o mestre da sala que criar. O mestre é o anfitrião da sala, então se ele ficar offline os outros jogadores também são desconectados.',
   'room.join': 'Entrar em sala',
+  'room.joinGmHint': 'Se o mestre (anfitrião) ficar offline, os outros jogadores também são desconectados.',
   'room.back': 'Voltar',
   'room.gmSection': 'Mestre',
   'room.codePlaceholder': 'Código da sala',
