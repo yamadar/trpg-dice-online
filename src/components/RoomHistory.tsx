@@ -29,8 +29,8 @@ import { AllIcon, AttachIcon, ChatIcon, DiceIcon, PlayerIcon, type IconProps } f
 // past-session feed reads with one consistent vocabulary.
 const FILTERS: { id: FeedFilter; Icon: ComponentType<IconProps> }[] = [
   { id: 'all', Icon: AllIcon },
-  { id: 'rolls', Icon: DiceIcon },
   { id: 'chat', Icon: ChatIcon },
+  { id: 'rolls', Icon: DiceIcon },
   { id: 'files', Icon: AttachIcon },
 ]
 

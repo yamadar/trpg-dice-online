@@ -42,8 +42,8 @@ import {
 // dice step, so the dice concept reads with a single unified glyph.
 const FILTERS: { id: FeedFilter; Icon: ComponentType<IconProps> }[] = [
   { id: 'all', Icon: AllIcon },
-  { id: 'rolls', Icon: DiceIcon },
   { id: 'chat', Icon: ChatIcon },
+  { id: 'rolls', Icon: DiceIcon },
   { id: 'files', Icon: AttachIcon },
 ]
 
