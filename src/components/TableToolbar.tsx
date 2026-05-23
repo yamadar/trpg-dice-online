@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import {
   MAX_CELL_SIZE,
@@ -6,8 +6,10 @@ import {
   type Grid,
   type GridKind,
   type MapBackground,
+  type Token,
 } from '../tabletop/types'
 import type { MapImageError } from '../tabletop/imageBackground'
+import { TrashIcon } from './icons'
 
 interface Props {
   grid: Grid
@@ -15,6 +17,9 @@ interface Props {
   map: MapBackground | undefined
   onSetMap: (file: File) => Promise<'ok' | MapImageError>
   onClearMap: () => void
+  tokens: ReadonlyArray<Token>
+  onAddGmToken: (file: File, label?: string) => Promise<'ok' | 'unreadable'>
+  onRemoveToken: (tokenId: string) => void
   /** Surface a flash message (e.g. "image too large"). Optional — the
    *  Toolbar still works without it, just without notice feedback. */
   onNotice?: (text: string, kind: 'success' | 'error') => void
@@ -32,12 +37,21 @@ export function TableToolbar({
   map,
   onSetMap,
   onClearMap,
+  tokens,
+  onAddGmToken,
+  onRemoveToken,
   onNotice,
 }: Props) {
   const { t } = useI18n()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const gmTokenInputRef = useRef<HTMLInputElement | null>(null)
+  // The label input is controlled so the picked file can be paired
+  // with whatever the GM typed at the moment they tap "add". A
+  // separate state — not a ref — so the input echoes the edits.
+  const [gmTokenLabel, setGmTokenLabel] = useState('')
   const set = <K extends keyof Grid>(key: K, value: Grid[K]) =>
     onChange({ ...grid, [key]: value })
+  const gmTokens = tokens.filter((tok) => tok.kind === 'gm')
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -52,6 +66,20 @@ export function TableToolbar({
       onNotice?.(t('tabletop.map.tooLarge'), 'error')
     } else {
       onNotice?.(t('tabletop.map.unreadable'), 'error')
+    }
+  }
+
+  const handleGmTokenFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const result = await onAddGmToken(file, gmTokenLabel)
+    if (result === 'ok') {
+      onNotice?.(t('tabletop.gmToken.added'), 'success')
+      // Clear the label so the next add does not silently inherit it.
+      setGmTokenLabel('')
+    } else {
+      onNotice?.(t('tabletop.gmToken.unreadable'), 'error')
     }
   }
 
@@ -174,6 +202,53 @@ export function TableToolbar({
             {t('tabletop.map.clear')}
           </button>
         </>
+      )}
+
+      <hr className="tabletop-toolbar-divider" />
+      <h3 className="tabletop-toolbar-title">{t('tabletop.gmToken.title')}</h3>
+      <input
+        ref={gmTokenInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleGmTokenFile}
+      />
+      <input
+        type="text"
+        className="tabletop-toolbar-input"
+        placeholder={t('tabletop.gmToken.labelPlaceholder')}
+        value={gmTokenLabel}
+        onChange={(e) => setGmTokenLabel(e.target.value)}
+        maxLength={32}
+      />
+      <button
+        type="button"
+        className="tabletop-toolbar-button"
+        onClick={() => gmTokenInputRef.current?.click()}
+      >
+        {t('tabletop.gmToken.add')}
+      </button>
+      {gmTokens.length > 0 && (
+        <ul className="tabletop-toolbar-list">
+          {gmTokens.map((token) => (
+            <li key={token.id} className="tabletop-toolbar-list-item">
+              <span className="tabletop-toolbar-list-label" title={token.kind === 'gm' ? token.label : ''}>
+                {token.kind === 'gm' && token.label
+                  ? token.label
+                  : t('tabletop.gmToken.unlabeled')}
+              </span>
+              <button
+                type="button"
+                className="icon-btn tabletop-toolbar-list-remove"
+                aria-label={t('tabletop.gmToken.remove')}
+                title={t('tabletop.gmToken.remove')}
+                onClick={() => onRemoveToken(token.id)}
+              >
+                <TrashIcon />
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </aside>
   )

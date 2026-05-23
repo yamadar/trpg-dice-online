@@ -59,8 +59,10 @@ import {
   applyTokenRemove,
   applyTokenUpsert,
   canMoveToken,
+  makeGmToken,
   planPcTokenAdds,
 } from '../tabletop/tokens'
+import { prepareCharacterImage } from '../characters/image'
 import { ChunkBuffer, chunkString } from '../tabletop/imageChunk'
 import { readMapBackground, type MapImageError } from '../tabletop/imageBackground'
 import type { MapMeta } from '../net/protocol'
@@ -180,6 +182,15 @@ export interface Session {
   setMapBackground: (file: File) => Promise<'ok' | MapImageError>
   /** GM-only: clear the current background map. Broadcasts `mapCleared`. */
   clearMapBackground: () => void
+  /**
+   * GM-only: add a standalone token (NPC / monster / prop). The image
+   * goes through the same downscale pipeline as a character portrait
+   * (≤ 2560 px / ~2 MB). Resolves to `'ok'` on success or
+   * `'unreadable'` when the image cannot be processed.
+   */
+  addGmToken: (file: File, label?: string) => Promise<'ok' | 'unreadable'>
+  /** GM-only: remove any token by id (PC or GM). Broadcasts `tokenRemove`. */
+  removeToken: (tokenId: string) => void
 }
 
 /** Keep at most `max` items, dropping the oldest. */
@@ -746,6 +757,49 @@ export function useSession(): Session {
     applyTabletop(next)
     roomRef.current?.broadcast({ t: 'mapCleared' })
   }, [applyTabletop])
+
+  /**
+   * GM-only: add a standalone NPC / monster token. The image runs
+   * through the character-portrait pipeline (2560 px / ~2 MB cap) so
+   * the bytes stay under the per-message ceiling without needing
+   * chunking — these tokens travel inside a single `tokenUpsert`.
+   */
+  const addGmToken = useCallback(
+    async (file: File, label?: string): Promise<'ok' | 'unreadable'> => {
+      if (roleRef.current === 'client') return 'unreadable'
+      const image = await prepareCharacterImage(file)
+      if (!image) return 'unreadable'
+      const token = makeGmToken(
+        { image, label },
+        tabletopRef.current.tokens,
+        tabletopRef.current.grid,
+      )
+      applyTabletop({
+        ...tabletopRef.current,
+        tokens: [...tabletopRef.current.tokens, token],
+      })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token })
+      return 'ok'
+    },
+    [applyTabletop],
+  )
+
+  /**
+   * GM-only: remove any token (PC or GM) by id. Broadcast the removal
+   * so every client drops it locally too. PR 4's automatic PC token
+   * re-creation does not re-add it because `ensurePcTokens` only
+   * fires on roster / identity transitions, not on every render.
+   */
+  const removeToken = useCallback(
+    (tokenId: string) => {
+      if (roleRef.current === 'client') return
+      const tokens = applyTokenRemove(tabletopRef.current.tokens, tokenId)
+      if (tokens === tabletopRef.current.tokens) return
+      applyTabletop({ ...tabletopRef.current, tokens })
+      roomRef.current?.broadcast({ t: 'tokenRemove', tokenId })
+    },
+    [applyTabletop],
+  )
 
   /**
    * Load any saved tabletop state for this session id and adopt it.
@@ -2128,5 +2182,7 @@ export function useSession(): Session {
     moveTokenCommit,
     setMapBackground,
     clearMapBackground,
+    addGmToken,
+    removeToken,
   }
 }

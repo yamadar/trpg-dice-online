@@ -7,7 +7,7 @@
  */
 
 import type { Player } from '../net/protocol'
-import type { Grid, PcToken, Token } from './types'
+import type { GmToken, Grid, PcToken, Token } from './types'
 import { newTokenId } from './types'
 
 /** Minimal speaker identity used by the placement / permission helpers. */
@@ -76,6 +76,29 @@ export function canMoveToken(token: Token, actor: TokenMoveActor): boolean {
   if (actor.isHost) return true
   if (token.kind === 'pc') return token.ownerPlayerId === actor.playerId
   return false
+}
+
+/**
+ * Build a fresh GM-only token. The position is the same staggered slot
+ * that `planPcTokenAdds` uses, so existing tokens never overlap with a
+ * newly-added GM one regardless of which order they arrived in.
+ */
+export function makeGmToken(
+  options: { image: string; label?: string },
+  existing: ReadonlyArray<Token>,
+  grid: Grid,
+): GmToken {
+  const cell = grid.cellSize
+  const index = existing.length
+  const label = (options.label ?? '').trim()
+  return {
+    id: newTokenId(),
+    kind: 'gm',
+    x: grid.originX + cell / 2 + index * cell,
+    y: grid.originY + cell / 2,
+    image: options.image,
+    ...(label ? { label } : {}),
+  }
 }
 
 /**

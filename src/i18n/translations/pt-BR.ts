@@ -56,6 +56,13 @@ export const ptBR: Dict = {
   'tabletop.map.set': 'Map updated',
   'tabletop.map.tooLarge': 'Image is too large (max 8 MB).',
   'tabletop.map.unreadable': 'Could not read that image.',
+  'tabletop.gmToken.title': 'NPC / monster tokens',
+  'tabletop.gmToken.add': 'Add token…',
+  'tabletop.gmToken.labelPlaceholder': 'Label (optional)',
+  'tabletop.gmToken.remove': 'Remove',
+  'tabletop.gmToken.added': 'Token added',
+  'tabletop.gmToken.unreadable': 'Could not read that image.',
+  'tabletop.gmToken.unlabeled': '(no label)',
 
 
   'status.offline': 'Offline',
