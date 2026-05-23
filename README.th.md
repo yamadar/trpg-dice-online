@@ -99,6 +99,7 @@ GitHub Pages base path คือ `/trpg-dice-online/`; เปลี่ยนไ�
 ## เอกสาร
 
 - ข้อกำหนดและแผน: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- บันทึกการเปลี่ยนแปลง: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - การศึกษา API แปลภาษา: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## สัญญาอนุญาต

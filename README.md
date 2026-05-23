@@ -147,6 +147,7 @@ Pushing to `main` triggers the GitHub Actions workflow (`.github/workflows/deplo
 ## Documentation
 
 - Requirements and implementation plan: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Changelog: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Real-time translation API research: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## License

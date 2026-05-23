@@ -115,6 +115,7 @@ ailleurs.
 ## Documentation
 
 - Spécifications et plan : [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Journal des modifications : [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Recherche sur les APIs de traduction : [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Licence

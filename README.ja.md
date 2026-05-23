@@ -147,6 +147,7 @@ GitHub Pages にデプロイして使う場合は、これらをリポジトリ 
 ## ドキュメント
 
 - 要件定義・実装プラン: [`docs/REQUIREMENTS.ja.md`](docs/REQUIREMENTS.ja.md)
+- 変更履歴: [`docs/CHANGELOG.ja.md`](docs/CHANGELOG.ja.md)
 - リアルタイム翻訳 API の調査: [`docs/TRANSLATION_API_RESEARCH.ja.md`](docs/TRANSLATION_API_RESEARCH.ja.md)
 
 ## ライセンス

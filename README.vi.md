@@ -105,6 +105,7 @@ GitHub Pages. Base path trong production là `/trpg-dice-online/`; ghi
 ## Tài liệu
 
 - Yêu cầu và kế hoạch: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Nhật ký thay đổi: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Nghiên cứu API dịch: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Giấy phép

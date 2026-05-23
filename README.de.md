@@ -116,6 +116,7 @@ mit der Umgebungsvariable `BASE_PATH` änderst du ihn für anderes Hosting.
 ## Dokumentation
 
 - Anforderungen & Plan: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- Änderungsverlauf: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Übersetzungs-API-Recherche: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## Lizenz

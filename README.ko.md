@@ -103,6 +103,7 @@ Pages에 배포합니다. 프로덕션 베이스 경로는 `/trpg-dice-online/`�
 ## 문서
 
 - 요구사항·구현 계획: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- 변경 이력: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - 번역 API 조사: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## 라이선스

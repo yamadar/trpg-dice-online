@@ -102,6 +102,7 @@ GitHub Pages पर प्रकाशन। प्रोडक्शन base pa
 ## दस्तावेज़
 
 - आवश्यकताएँ और योजना: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- बदलाव लॉग: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - अनुवाद API शोध: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## लाइसेंस
