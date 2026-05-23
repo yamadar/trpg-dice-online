@@ -10,7 +10,7 @@ An SPA where players roll TRPG dice and share results with other players in real
 
 - Hosted as a static site on GitHub Pages
 - No backend server; browser-to-browser P2P sync via PeerJS
-- Japanese / English UI
+- 19-language UI with optional chat auto-translation
 
 ## 2. Glossary
 
@@ -110,6 +110,9 @@ An SPA where players roll TRPG dice and share results with other players in real
 ### 3.7 Online sharing
 - Create / join a room and share roll history, chat, and the player list.
 - The room creator becomes GM and P2P host.
+- The create and join screens both surface a hint that the GM acts as
+  the room's host, so the GM going offline disconnects everyone — the
+  star-topology constraint is made visible before users commit to a room.
 - The lobby is split into home → create / join / past rooms. The create
   screen takes the room name and an optional code; the join screen only
   takes the code. Opening with `?room=CODE` jumps straight to the join
@@ -157,6 +160,10 @@ An SPA where players roll TRPG dice and share results with other players in real
 ### 3.9 Chat
 - Room members can exchange text messages.
 - Show a subtle "typing…" indicator while another player is typing.
+- Both sides of the typing indicator are independently opt-out in the
+  settings menu. "Show others typing" silences incoming signals on this
+  client; "Broadcast my own typing" stops sending the signal at all.
+  Both default on; both are persisted per browser.
 - Files can be attached to chat; with no backend they travel as base64 data
   URLs over the P2P channel, and images are downscaled before sending.
 - Image attachments show a thumbnail in the feed and open a fullscreen
@@ -182,18 +189,32 @@ An SPA where players roll TRPG dice and share results with other players in real
   listed twice.
 
 ### 3.11 i18n
-- Toggle the UI between Japanese and English.
-- Language preference stored in localStorage.
+- The UI ships in 19 languages, picked from the settings menu and
+  labelled in each language's own script: English, 日本語, Español,
+  Português (Brasil), 简体中文, 繁體中文, Deutsch, Français, 한국어,
+  Italiano, Русский, ไทย, Türkçe, Bahasa Indonesia, Polski,
+  Tiếng Việt, हिन्दी, العربية, Українська.
+- Arabic switches the document to `dir="rtl"` so the layout mirrors
+  for right-to-left scripts.
+- Language preference is stored per browser in localStorage.
 - Rolls are synced as data; text is formatted in each viewer's language.
+- Chat carries its source language on every message so the auto-translate
+  layer can pick the right "from" when translating into the UI language
+  (see §3.6 and [`TRANSLATION_API_RESEARCH.md`](TRANSLATION_API_RESEARCH.md)).
 
 ### 3.12 Characters
 - Characters are distinct from the player (person).
 - A character has a name, public background, private memo, pattern list,
   and an optional portrait image.
-- A single portrait image can be attached to a character. On attach and on
-  import its size is checked, and an image over ~2560 px on the long edge
-  or ~2 MB is automatically downscaled / compressed. It shows as a small
-  thumbnail in the character info and opens full size on tap.
+- A single portrait image can be attached to a character. After the user
+  picks a file, a crop dialog opens with a 1:1 aspect lock and a circular
+  preview that matches the round avatars used in the feed and roster;
+  drag to reposition, slide to zoom, confirm to save. On confirm and on
+  import the image is checked, and anything over ~2560 px on the long
+  edge or ~2 MB is automatically downscaled / JPEG-compressed. Portraits
+  arriving via JSON import skip the crop — they already carry an
+  author-chosen frame. It shows as a small thumbnail in the character
+  info and opens full size on tap.
 - The character portrait is synced to the other players in the room — the
   player-detail card (opened by tapping a name in the feed) shows that
   player's current portrait. The image travels on its own channel, apart
@@ -212,18 +233,37 @@ An SPA where players roll TRPG dice and share results with other players in real
   details (name and background).
 
 ### 3.13 App-like UI
-- Dice count 1-10 is picked from buttons; the modifier uses a −／＋ stepper.
-- Low-frequency controls (player name, language, theme) live in a settings menu.
+- The "Roll dice" sheet lays the dice expression out as one row: count
+  (1–10 stepper), die type (`<select>`) and modifier (−／＋ stepper).
+  The pre-roll preview spells the expression out as "count × type ±
+  modifier" (e.g. `3 × D6 + 2`) tinted with the kind's accent colour,
+  so a first-time TRPG player can read what is multiplied by what
+  before tapping Roll. The feed's own detail row keeps the compact
+  `NdM±k` shorthand TRPG veterans expect.
+- Low-frequency controls (player name, language, theme, text size,
+  typing toggles) live in a settings menu, grouped under titled
+  sections ("Language & translation", "Appearance", "Typing indicator",
+  "About").
+  Each row carries a Lucide icon next to its label so the panel reads
+  as a glanceable list. On a tall enough viewport the menu opens as a
+  dropdown; otherwise it falls back to a full-height drawer.
 - A colour theme can be picked in the settings — six themes (four dark,
   two light), and the choice is saved per browser.
 - A text size (small / medium / large) can be picked in the settings; the
   whole UI scales with it and the choice is saved per browser.
-- Character background and memo are collapsible.
+- Character background and memo are shown inline when a character is
+  active; their text areas grow to several rows for comfortable editing.
 - Changing the player / character / room name and saving a pattern is
   confirmed with a toast. For fields without a save button (the names),
   the toast fires when the field loses focus or the modal closes — not
   while typing.
-- A confirmation is shown before the page is left (reload, back, close).
+- A confirmation is shown before the page is left while in a room
+  (reload, back, close); offline (not in a room) it is suppressed.
+- Every confirmation prompt (clear feed, close room as GM, delete a
+  character / pattern / past session, overwrite a pattern, etc.) uses an
+  in-app themed dialog rather than the browser's `window.confirm`. The
+  cancel button takes initial focus on destructive prompts, and focus
+  is restored to the trigger when the dialog closes.
 - History & chat is the dominant, always-visible view; the header keeps a
   minimal status (room, character, player count).
 - Tapping the header's room / character status opens the matching sheet;
@@ -231,7 +271,12 @@ An SPA where players roll TRPG dice and share results with other players in real
 - The room sheet's participant detail uses a prominent toggle caret and a
   button to expand / collapse every participant's detail at once.
 - Room / character / dice / patterns open on demand from a bottom dock as
-  a sheet — a bottom sheet on mobile, a centered modal on desktop.
+  a sheet — a bottom sheet on mobile, a centered modal on desktop. Every
+  sheet pins its title + close `×` in a header row so the title never
+  scrolls away when the body is long.
+- Every in-app icon comes from a single unified vocabulary: Lucide for
+  UI chrome and semantic concepts, and a Game Icons d6 silhouette for
+  every dice affordance (see [CREDITS](CREDITS.md)).
 - The site name, license and GitHub link are tucked into the settings menu.
 - When no player name is set, entering one is required before the app can
   be used (with a note that it can be changed later in the settings).
@@ -283,8 +328,15 @@ An SPA where players roll TRPG dice and share results with other players in real
 | UI | React 19 + TypeScript | Type-safe SPA |
 | Realtime | PeerJS (WebRTC P2P) | No backend; compatible with GitHub Pages |
 | Persistence | localStorage + IndexedDB | localStorage for name/language/characters, IndexedDB for the per-session log, metadata and portraits |
-| Test | Vitest | Unit tests for the dice logic |
+| Icons | lucide-react + a single Game Icons d6 SVG | One unified visual vocabulary |
+| Image crop | react-easy-crop | 1:1 portrait crop with circular preview |
+| ZIP archives | fflate | Room export / import packaged as a `.zip` |
+| PWA | vite-plugin-pwa | Web manifest + service worker (app-shell precache) |
+| Test | Vitest | Unit tests across dice, format, feed, storage, chat, players, characters, net, i18n and theme |
 | Hosting | GitHub Pages + GitHub Actions | Automated build & deploy |
+
+Third-party asset attribution (Lucide, Game Icons, etc.) lives in
+[`CREDITS.md`](CREDITS.md).
 
 ### Realtime model
 
@@ -308,7 +360,9 @@ traffic, so the app stays a fully static site.
 DiceType   = 'D4'|'D6'|'D8'|'D10'|'D12'|'D20'|'D100'
 PatternKind = 'damage' | 'judgment'
 
-Lang        = 'ja' | 'en'
+Lang        = 'en' | 'ja' | 'es' | 'pt-BR' | 'zh-CN' | 'zh-TW' | 'de'
+            | 'fr' | 'ko' | 'it' | 'ru' | 'th' | 'tr' | 'id' | 'pl'
+            | 'vi' | 'hi' | 'ar' | 'uk'
 
 Pattern    = { id, name, kind, diceType, diceCount, modifier }
 // RollResult / ChatMessage carry just `(playerId, characterId)` for
@@ -360,7 +414,7 @@ Commit after each step.
 
 1. **Initial commit** — Requirements + project scaffold
 2. **Core dice logic** — Dice types, roll math, D100, face computation + unit tests
-3. **i18n** — Japanese / English dictionaries and a switcher
+3. **i18n** — Per-language dictionaries and a switcher (started with Japanese / English; the UI now ships in 19 languages)
 4. **Patterns** — Pattern creation UI and localStorage save / recall
 5. **Realtime + Chat + Hidden rolls** — PeerJS rooms, chat, GM hidden rolls
 6. **UI assembly & styling** — Screen composition, responsive styles
@@ -380,10 +434,10 @@ Commit after each step.
 - [x] Closing a room as GM notifies every player correctly
 - [x] After leaving, past-room history is clearly marked
 - [x] GM hidden rolls are hidden from other players
-- [x] Switch between Japanese / English
+- [x] Switch between any of the 19 supported UI languages
 - [x] Create / switch / export / import characters
 - [x] Character name / background shared in the room; memo stays private
-- [x] Pick the dice count (1-10) and modifier via buttons / stepper
+- [x] Pick the dice count (1-10), die type and modifier via stepper / select
 - [x] Published on GitHub Pages and works in the browser
 
 ## 9. Revisions
