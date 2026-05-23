@@ -6,6 +6,7 @@ import {
   Layer,
   Line,
   Stage,
+  Text,
 } from 'react-konva'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
@@ -334,6 +335,9 @@ export function TablePanel({ session, onClose }: Props) {
           map={tabletop.map}
           onSetMap={session.setMapBackground}
           onClearMap={session.clearMapBackground}
+          tokens={tabletop.tokens}
+          onAddGmToken={session.addGmToken}
+          onRemoveToken={session.removeToken}
         />
       )}
     </div>
@@ -415,6 +419,15 @@ function TokenView({
   // Strokes / dashes are given in world coords; scale them down so they
   // render about one device pixel regardless of zoom.
   const strokeWidth = 2 / scale
+  const label = token.kind === 'gm' ? token.label : undefined
+  // Label sizing: pick world-space units that render around 14 device
+  // pixels regardless of zoom.
+  const labelFontSize = 14 / scale
+  const labelStroke = 2 / scale
+  const labelGap = 6 / scale
+  // Reserve a wide box so the centred `align` has room to centre; the
+  // box itself has no fill, so an empty side just paints nothing.
+  const labelWidth = radius * 4
   return (
     <Group
       x={token.x}
@@ -429,6 +442,22 @@ function TokenView({
         <Circle radius={radius} fill={fallback} />
       )}
       <Circle radius={radius} stroke={fallback} strokeWidth={strokeWidth} />
+      {label && (
+        <Text
+          text={label}
+          x={-labelWidth / 2}
+          y={radius + labelGap}
+          width={labelWidth}
+          align="center"
+          fontSize={labelFontSize}
+          fontStyle="bold"
+          fill="#fff"
+          stroke="#000"
+          strokeWidth={labelStroke}
+          fillAfterStrokeEnabled
+          listening={false}
+        />
+      )}
     </Group>
   )
 }

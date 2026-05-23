@@ -4,6 +4,7 @@ import {
   applyTokenRemove,
   applyTokenUpsert,
   canMoveToken,
+  makeGmToken,
   planPcTokenAdds,
 } from './tokens'
 import { DEFAULT_GRID, type GmToken, type PcToken, type Token } from './types'
@@ -117,6 +118,39 @@ describe('canMoveToken', () => {
 
   it('blocks a non-host from moving a GM token', () => {
     expect(canMoveToken(gm(), { playerId: 'p1', isHost: false })).toBe(false)
+  })
+})
+
+describe('makeGmToken', () => {
+  it('places a fresh GM token at the first staggered slot when empty', () => {
+    const token = makeGmToken({ image: 'data:image/png;base64,x' }, [], grid)
+    expect(token.kind).toBe('gm')
+    expect(token.x).toBe(25)
+    expect(token.y).toBe(25)
+    expect(token.image).toBe('data:image/png;base64,x')
+  })
+
+  it('staggers past existing tokens (PC or GM) by index', () => {
+    const tokens = [pc(), gm()]
+    const token = makeGmToken({ image: 'x' }, tokens, grid)
+    expect(token.x).toBe(125)
+  })
+
+  it('keeps a non-empty label, drops an empty / whitespace one', () => {
+    expect(makeGmToken({ image: 'x', label: 'Goblin' }, [], grid).label).toBe('Goblin')
+    expect(makeGmToken({ image: 'x', label: '  ' }, [], grid).label).toBeUndefined()
+    expect(makeGmToken({ image: 'x' }, [], grid).label).toBeUndefined()
+  })
+
+  it('trims whitespace from the label', () => {
+    expect(makeGmToken({ image: 'x', label: '  Goblin  ' }, [], grid).label).toBe('Goblin')
+  })
+
+  it('respects an origin offset', () => {
+    const off = { ...grid, originX: 100, originY: 200 }
+    const token = makeGmToken({ image: 'x' }, [], off)
+    expect(token.x).toBe(125)
+    expect(token.y).toBe(225)
   })
 })
 

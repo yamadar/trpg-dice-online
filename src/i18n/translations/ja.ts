@@ -56,6 +56,13 @@ export const ja: Dict = {
   'tabletop.map.set': 'マップを更新しました',
   'tabletop.map.tooLarge': '画像が大きすぎます（最大 8 MB）',
   'tabletop.map.unreadable': '画像を読み込めませんでした',
+  'tabletop.gmToken.title': 'NPC・モンスター',
+  'tabletop.gmToken.add': 'トークンを追加…',
+  'tabletop.gmToken.labelPlaceholder': 'ラベル（任意）',
+  'tabletop.gmToken.remove': '削除',
+  'tabletop.gmToken.added': 'トークンを追加しました',
+  'tabletop.gmToken.unreadable': '画像を読み込めませんでした',
+  'tabletop.gmToken.unlabeled': '（ラベルなし）',
 
 
   'status.offline': 'オフライン',
