@@ -1,52 +1,118 @@
-# Dice & Chat
+<p align="center">
+  <img src="public/brand-icon.svg" width="120" alt="Dice & Chat" />
+</p>
 
-**Languages:** [English](README.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [한국어](README.ko.md) · [Italiano](README.it.md) · [Русский](README.ru.md) · [ไทย](README.th.md) · [Türkçe](README.tr.md) · [Bahasa Indonesia](README.id.md) · [Polski](README.pl.md) · [Tiếng Việt](README.vi.md) · [हिन्दी](README.hi.md) · [العربية](README.ar.md) · [Українська](README.uk.md)
+<h1 align="center">Dice &amp; Chat</h1>
 
-桌上 TRPG 用的在线骰子工具：投掷骰子、保存可复用的模板，并与同伴实时共享
-结果、历史与聊天——全部由一个无后端的静态页面完成。
+<p align="center"><strong>口袋里的骰子房，陪你度过 TRPG 之夜。</strong></p>
 
-**🎲 在线演示：** https://yamadar.github.io/trpg-dice-online/
+<p align="center">
+  打开网页，把一段短短的房间码报给同伴，整桌人就能一起开骰 ——<br/>
+  无需账号、无需安装、不靠任何游戏服务器，只要一个链接和骰子。
+</p>
 
-## 功能
+<p align="center">
+  <a href="https://yamadar.github.io/trpg-dice-online/"><strong>打开在线 Demo →</strong></a>
+</p>
 
-- **骰子 (A)** — 每次投掷前选择数量与种类
-  （`D4, D6, D8, D10, D12, D20, D100`）。`D100` 用两枚 d10 作为位数，
-  `00` 视为 100。
-- **修正 (B)** — 对结果加减整数修正。
-- **用途 (C)** — `伤害` 或 `判定`。伤害显示「`{模板}` `{值}` 点伤害」；
-  判定显示「`{模板}` 判定结果 `{值}`」。
-- **角色** — 维护多个角色（名称、公开背景、私密备注、可选头像、模板列表
-  与按角色保存的「导出时包含备注」偏好），可切换并以 JSON 导入/导出。
-- **模板** — 把 A + B + C 取名后按角色保存，从列表一键投掷。
-- **历史 & 聊天动态** — 投掷与聊天在同一时间线，可按 全部 / 骰子 /
-  聊天 / 文件 过滤。
-- **过往房间历史** — 每次会话都会持久化保存；可在大厅以只读模式浏览动态，
-  按会话或全部删除。轻触动态中的姓名可查看当时的角色快照与最后已知头像。
-- **在线房间** — 创建 / 加入分别使用独立界面，房间代码最少 4 位（自动
-  生成为 6 位）；历史、聊天和玩家列表通过 P2P 共享，刷新后 GM 自动重新
-  主持，玩家自动重新加入。
-- **GM 控制** — 房间改名与代码变更收纳在折叠的 GM 区域，GM 的离开按钮
-  写作「关闭房间」。
-- **GM 暗骰** — GM 可隐藏点数，其他人只看到发生了暗骰。
-- **玩家颜色与输入提示** — 每位参与者拥有稳定颜色；提示器低调显示谁在
-  输入。
-- **房间动态** — 加入/离开会写入动态，GM 关闭房间时会通知所有人。
-- **多语言与自动翻译** — 界面支持 19 种语言。可选的自动翻译会把其他玩家
-  的聊天翻译为你的界面语言；优先使用设备上的 Chrome Translator API，无法
-  使用时回退到无需密钥的
-  [MyMemory](https://mymemory.translated.net/) REST API。在已翻译的消息上
-  点击「原文」可查看对方原本发送的内容。
+<p align="center">
+  <em><strong>语言:</strong></em>
+  <a href="README.md">English</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.es.md">Español</a> ·
+  <a href="README.pt-BR.md">Português (Brasil)</a> ·
+  <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="README.zh-TW.md">繁體中文</a> ·
+  <a href="README.de.md">Deutsch</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.ko.md">한국어</a> ·
+  <a href="README.it.md">Italiano</a> ·
+  <a href="README.ru.md">Русский</a> ·
+  <a href="README.th.md">ไทย</a> ·
+  <a href="README.tr.md">Türkçe</a> ·
+  <a href="README.id.md">Bahasa Indonesia</a> ·
+  <a href="README.pl.md">Polski</a> ·
+  <a href="README.vi.md">Tiếng Việt</a> ·
+  <a href="README.hi.md">हिन्दी</a> ·
+  <a href="README.ar.md">العربية</a> ·
+  <a href="README.uk.md">Українська</a>
+</p>
 
-## 在线共享原理
+<p align="center">
+  <img src="public/images/lobby-mobile.png" width="280" alt="手机上的空大厅，带 Dice & Chat 品牌标识" />
+  &nbsp;
+  <img src="public/images/feed-mobile.png" width="280" alt="实时显示骰点与聊天的信息流" />
+</p>
 
-应用使用 **基于 [PeerJS](https://peerjs.com/) 的 WebRTC P2P 连接**。
-房间创建者（GM）作为主机；其他玩家直接连到 GM，由 GM 转发共享状态。没有
-任何数据经过本项目的服务器。由于是 P2P，房间仅在 GM 保持页面打开时有效。
+## 为什么选它来跑下一场团
+
+- **报个房间码就能开骰。** GM 创建房间后把 4–6 位的房间码读出来，其他人输入即可。没有账号，没有邮箱验证，什么都不用注册。
+- **骰点只在你们之间。** 完全基于 WebRTC 的 P2P：骰点和聊天直接在设备间传递，不会经过我们的任何服务器。
+- **桌上手机刚好顺手。** 移动优先布局，可在 iOS / Android 上安装为 PWA，启动后全屏运行。
+- **支持 19 种语言，还能自动翻译聊天。** 德语牧师可以和日语游侠斗嘴，所有人都不会跳出沉浸感。
+- **下次还想再打开。** 角色、模板、主题、字体大小、过去的房间都保存在本机，App 用起来就像*你自己的*骰盒，而不是别人借你的工具。
+
+## 30 秒开局
+
+1. **GM:** 打开 Demo，点 **房间 → 创建**，把房间码读出来。
+2. **玩家:** 打开 Demo，点 **房间 → 加入**，输入房间码。
+3. **全体:** 一起开骰、聊天、为第一颗自然 20 欢呼。
+
+GM 就是 host：只要这个标签页还开着，房间就在。关掉标签页 = 本场结束 —— 过去的房间会留在本地，之后可以再翻看记录。
+
+## 骰盒里有什么
+
+### 一眼就能读懂的骰子
+
+`d4 · d6 · d8 · d10 · d12 · d20 · d100`，可设置数量、带符号的修正值，以及 **伤害 / 检定** 两种类型，结果会按桌面说话的方式呈现 —— *"侦查检定结果：18"*、*"巨剑：11 点伤害"*。每个出目以与骰子顶视轮廓相符的小图标显示，看一眼就懂。
+
+### 模板 —— 拿手好戏一键搞定
+
+把 `2D6 + 3 — 伤害` 起个名字，比如 *"巨剑"*，下回合一点就重玩。模板挂在角色名下，所以同一台设备上的两个 PC 各有各的模板，互不混淆。
+
+### 带头像、备注与专属模板的角色
+
+每位玩家可以管理多个 PC。每个角色都有名字、与全员共享的背景、只有自己能看的私密备注、可选头像、专属模板列表，以及"导出时是否包含备注"的个人偏好。可以导出 JSON 备份，在别的设备导入，把 PC 带到下一场团。当某人正在扮演角色时，名字会显示为 `角色名（玩家名）`。
+
+### 骰点与聊天 *同一条信息流*
+
+骰点和聊天共用一条时间线，带 **全部 / 骰点 / 聊天 / 文件** 过滤。`@` 自动补全可以提到正确的玩家，`@all` 一次喊全场。给消息附图片会自动压缩后再发送。
+
+### 可回顾的过去房间
+
+每场过去的会话都以会话级日志的形式保存在本地。在大厅可以以只读方式打开旧房间；点击旧记录里的玩家名字，可以看到当时的角色快照与最后一次的头像。整间房（聊天、骰点、图片）可以打包为单个 ZIP 导出。
+
+### GM 工具
+
+GM 可以 **暗骰**：其他人只看到 *"有人做了一次暗骰"*，看不到数字。GM 专区还把改名和重新生成房间码收进了折叠菜单，GM 的退出按钮写的是 **关闭房间**，让人一目了然这是结束本场。
+
+### 19 种界面语言 &amp; 聊天自动翻译
+
+UI 支持 19 种语言。可选的聊天自动翻译会优先使用设备端的 Chrome Translator API；若不可用，则回落到无需密钥的 [MyMemory](https://mymemory.translated.net/) REST API。点击已翻译消息上的 **原文** 即可查看对方原始发送内容。
+
+### 一些贴心小细节
+
+每位玩家固定颜色、低调的"正在输入"指示、入退房事件写进信息流、可切换主题、可调节字号，以及 GM 关闭房间时的友好提示。
+
+## 加入主屏幕（PWA）
+
+本站是 Progressive Web App，可添加到 iOS / Android 主屏幕，全屏启动 —— 没有浏览器外壳，再次打开几乎瞬时。
+
+- **Android (Chrome):** 打开 Demo，从浏览器菜单选择 **安装应用**（或 *添加到主屏幕*）。
+- **iOS (Safari):** 打开 Demo，点分享按钮选择 **添加到主屏幕**。
+
+Service Worker 会预缓存 App 外壳，所以再次启动几乎瞬时；但房间本身是 WebRTC P2P，仍需要实时网络连接。
+
+**屏幕方向：** manifest 没有固定或覆盖方向，因此 PWA 启动后会遵循设备本身的"自动旋转 / 旋转锁定"设置（例如 Android 关闭自动旋转后，即便倾斜设备 App 也保持当前方向）。
+
+## 在线共享如何工作
+
+房间使用 [PeerJS](https://peerjs.com/) 的 **WebRTC P2P** 连接。房间创建者（GM）作为 host，其他玩家直接连到 GM，由 GM 转发共享状态。本项目不运营任何会经过游戏数据的服务器。由于是 P2P，只要 GM 关掉标签页，房间就关闭。
 
 ## 技术栈
 
 - [Vite](https://vite.dev/) + [React 19](https://react.dev/) + TypeScript
-- [PeerJS](https://peerjs.com/)（WebRTC P2P）
+- [PeerJS](https://peerjs.com/)（WebRTC P2P 房间）
 - [Vitest](https://vitest.dev/)（单元测试）
 - GitHub Pages + GitHub Actions（托管）
 
@@ -56,45 +122,33 @@
 npm install      # 安装依赖
 npm run dev      # 启动开发服务器
 npm test         # 运行单元测试
-npm run lint     # 代码检查
-npm run build    # 生产构建至 dist/
+npm run lint     # 代码 Lint
+npm run build    # 生产构建到 dist/
 ```
 
-## 配置（TURN 中继）
+## 配置（TURN 中继，可选）
 
-当玩家所在网络封禁 UDP 或使用对称型 NAT（公共 Wi-Fi 常见）时，WebRTC
-需要 TURN 中继才能建立连接。默认会回退到 Open Relay Project 的免费公共
-TURN 服务器——足以试用，但属于「尽力而为」。要使用稳定的中继，请将
-`.env.example` 复制为 `.env` 并设置：
+WebRTC 在 UDP 被屏蔽或对称型 NAT 的网络（咖啡馆、公共 Wi-Fi 等很常见）下需要 TURN 中继。默认情况下 App 会回落到 Open Relay Project 的免费公共 TURN —— 临时玩玩够用，但是 best-effort。
 
-- `VITE_TURN_URLS` — 用逗号分隔的 TURN URL。请包含通过 TCP/443 的
-  `turns:` 条目，以便在封禁 UDP 的网络仍能连通。
-- `VITE_TURN_USERNAME` — TURN 用户名。
-- `VITE_TURN_CREDENTIAL` — TURN 凭据（密码）。
+如果想要稳定的中继，请把 `.env.example` 复制为 `.env` 并填写：
 
-**安全提示：** Vite 会把所有 `VITE_*` 变量内联到生产构建包里，因此你在
-这里设置的 TURN 凭据对任何打开页面的人都是可见的。为降低被滥用的
-风险，请使用短期 / 临时 TURN 凭据（例如 TURN REST API 的时限式凭据
-模式），并配合服务提供方的限制（允许来源、IP 过滤、月度配额）。请
-不要把长期有效的生产凭据复用到此处。
+- `VITE_TURN_URLS` —— 用逗号分隔的 TURN URL。请包含一条 TCP/443 的 `turns:` 项，以便在 UDP 被屏蔽时也能通。
+- `VITE_TURN_USERNAME` —— TURN 用户名。
+- `VITE_TURN_CREDENTIAL` —— TURN 密钥 / 密码。
 
-若要在 GitHub Pages 部署中使用，请将其添加为仓库 Secrets，并在
-`.github/workflows/deploy.yml` 的构建步骤中传入。免费选择包括
-[Metered](https://www.metered.ca/) 免费额度或自托管
-[coturn](https://github.com/coturn/coturn)。
+> **安全提示：** Vite 会把所有 `VITE_*` 变量内联进生产 bundle，所以这里设置的 TURN 凭据对任何打开页面的访客都是可见的。请使用短期 / 临时 TURN 凭据（例如 TURN REST API 限时凭据模式），并配合服务商端限制（允许来源、IP 过滤、月度配额）。不要把长期有效的生产凭据用在这里。
+
+要在 GitHub Pages 部署中使用，把这些值加为仓库 Secrets，并在 `.github/workflows/deploy.yml` 的构建步骤里传入。免费选项包括 [Metered](https://www.metered.ca/) 免费额度或自托管 [coturn](https://github.com/coturn/coturn)。
 
 ## 部署
 
-向 `main` 推送会触发 GitHub Actions 工作流
-（`.github/workflows/deploy.yml`），执行 lint、测试、构建并发布到 GitHub
-Pages。生产基础路径为 `/trpg-dice-online/`；如要在别处托管，请用
-`BASE_PATH` 环境变量覆盖。
+推送到 `main` 会触发 GitHub Actions 工作流（`.github/workflows/deploy.yml`），依次执行 lint、test、build，然后发布到 GitHub Pages。生产 base path 是 `/trpg-dice-online/`；如部署到别处，可以用 `BASE_PATH` 环境变量覆盖。
 
 ## 文档
 
-- 需求与实现计划：[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
-- 更新日志：[`docs/CHANGELOG.md`](docs/CHANGELOG.md)
-- 翻译 API 研究：[`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
+- 需求与实现方案: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
+- 更新日志: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
+- 实时翻译 API 调研: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
 
 ## 许可证
 
