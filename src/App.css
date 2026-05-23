@@ -506,6 +506,9 @@
   font-size: 0.8rem;
   color: var(--text-dim);
 }
+.settings-help-btn + .about-line {
+  margin-top: 12px;
+}
 .about-line a {
   color: var(--accent);
 }
