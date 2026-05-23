@@ -1,5 +1,7 @@
 import type { RollResult } from '../dice/types'
 import type { Lang } from '../i18n/translations'
+import type { Chunk, ChunkSpec } from '../tabletop/imageChunk'
+import type { Grid, TabletopState, Token } from '../tabletop/types'
 
 export interface Player {
   id: string
@@ -78,6 +80,14 @@ export interface Snapshot {
    * image only travels when it actually changes.
    */
   images: Record<string, string>
+  /**
+   * Tabletop state (background metadata, grid, tokens). Optional for
+   * backward compatibility with pre-tabletop hosts. When a map is
+   * present its `dataUrl` arrives separately via `mapMeta` + `mapChunk`
+   * right after this snapshot, so the inline value is the empty string
+   * until the chunked transfer completes.
+   */
+  tabletop?: TabletopState
 }
 
 /** A "someone is typing" signal carrying who is typing. */
@@ -96,6 +106,14 @@ export interface Identity {
   lang: Lang
 }
 
+/** Background-map metadata (everything but the data URL itself). */
+export interface MapMeta {
+  id: string
+  name: string
+  width: number
+  height: number
+}
+
 /** Messages a client sends to the host. */
 export type ClientMessage =
   | { t: 'hello'; player: Player }
@@ -107,6 +125,11 @@ export type ClientMessage =
   | { t: 'typing'; signal: TypingSignal }
   /** Periodic liveness signal so the host can detect dropped clients. */
   | { t: 'ping' }
+  /**
+   * The client wants to move one of their tokens. The host validates
+   * (existence, ownership, bounds) before applying and broadcasting.
+   */
+  | { t: 'tokenMove'; tokenId: string; x: number; y: number }
 
 /** Messages a host sends to clients. */
 export type HostMessage =
@@ -124,6 +147,24 @@ export type HostMessage =
   /** Periodic keepalive so a client can tell a quiet GM from an absent one. */
   | { t: 'alive' }
   | { t: 'roomClosed' }
+  /** Authoritative token move (host echoes after validating). */
+  | { t: 'tokenMove'; tokenId: string; x: number; y: number }
+  /** A token was added or replaced. */
+  | { t: 'tokenUpsert'; token: Token }
+  /** A token was removed. */
+  | { t: 'tokenRemove'; tokenId: string }
+  /** Grid settings changed. */
+  | { t: 'gridChange'; grid: Grid }
+  /**
+   * A new background-map transfer starts. The receiver opens a
+   * `ChunkBuffer` keyed by `chunkSpec.id` and assembles `mapChunk`
+   * messages until complete.
+   */
+  | { t: 'mapMeta'; map: MapMeta; chunkSpec: ChunkSpec }
+  /** A slice of the active background-map data URL. */
+  | { t: 'mapChunk'; chunk: Chunk }
+  /** The GM cleared the background map. */
+  | { t: 'mapCleared' }
 
 export type NetMessage = ClientMessage | HostMessage
 
