@@ -295,6 +295,15 @@ export function TablePanel({ session, onClose }: Props) {
             onTouchEnd={handleTouchEnd}
           >
             <Layer listening={false}>
+              {tabletop.map?.dataUrl && (
+                <MapImage
+                  src={tabletop.map.dataUrl}
+                  width={tabletop.map.width}
+                  height={tabletop.map.height}
+                />
+              )}
+            </Layer>
+            <Layer listening={false}>
               <GridLines
                 grid={tabletop.grid}
                 viewport={viewport}
@@ -318,9 +327,36 @@ export function TablePanel({ session, onClose }: Props) {
           </Stage>
         )}
       </div>
-      {canEdit && <TableToolbar grid={tabletop.grid} onChange={updateGrid} />}
+      {canEdit && (
+        <TableToolbar
+          grid={tabletop.grid}
+          onChange={updateGrid}
+          map={tabletop.map}
+          onSetMap={session.setMapBackground}
+          onClearMap={session.clearMapBackground}
+        />
+      )}
     </div>
   )
+}
+
+/**
+ * Background map rendered at world origin (0, 0). Kept on its own
+ * layer below the grid + tokens so panning / zooming the Stage is
+ * what moves it — there is no per-image transform to maintain.
+ */
+function MapImage({
+  src,
+  width,
+  height,
+}: {
+  src: string
+  width: number
+  height: number
+}) {
+  const [image] = useImage(src)
+  if (!image) return null
+  return <KonvaImage image={image} x={0} y={0} width={width} height={height} />
 }
 
 /** Resolve the portrait to render on a token, or `undefined`. */

@@ -47,7 +47,9 @@ import type { RoomImport } from '../storage/roomImport'
 import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 import {
   EMPTY_TABLETOP_STATE,
+  newMapId,
   type Grid,
+  type MapBackground,
   type TabletopState,
 } from '../tabletop/types'
 import { loadTabletop, saveTabletop } from '../storage/tabletop'
@@ -59,6 +61,9 @@ import {
   canMoveToken,
   planPcTokenAdds,
 } from '../tabletop/tokens'
+import { ChunkBuffer, chunkString } from '../tabletop/imageChunk'
+import { readMapBackground, type MapImageError } from '../tabletop/imageBackground'
+import type { MapMeta } from '../net/protocol'
 
 export type Role = 'offline' | 'host' | 'client'
 export type ErrorKind = 'connect' | 'hostLost' | 'codeTaken' | null
@@ -166,6 +171,15 @@ export interface Session {
    * throttle so the last frame is never dropped.
    */
   moveTokenCommit: (tokenId: string, x: number, y: number) => void
+  /**
+   * GM-only: pick an image File as the background map. The file is
+   * downscaled to fit `MAX_MAP_EDGE`, persisted locally, then sent to
+   * clients in chunks (`mapMeta` + `mapChunk`). Resolves to `'ok'` on
+   * success or an error tag when the file is too large / unreadable.
+   */
+  setMapBackground: (file: File) => Promise<'ok' | MapImageError>
+  /** GM-only: clear the current background map. Broadcasts `mapCleared`. */
+  clearMapBackground: () => void
 }
 
 /** Keep at most `max` items, dropping the oldest. */
@@ -577,6 +591,15 @@ export function useSession(): Session {
    * fluid (Konva paints at 60 fps but the wire only needs ~20 Hz).
    */
   const lastTokenBroadcastRef = useRef(0)
+  /**
+   * Chunked-map receive: holds the in-flight `ChunkBuffer` (and the
+   * announced map metadata) while `mapChunk` messages stream in. A
+   * fresh `mapMeta` blows the previous one away — that is correct
+   * even mid-transfer because the new transfer is the authoritative
+   * one.
+   */
+  const pendingMapBufferRef = useRef<ChunkBuffer | null>(null)
+  const pendingMapMetaRef = useRef<MapMeta | null>(null)
   /** Local helper: send a tokenMove on the appropriate channel. */
   const sendTokenMove = useCallback(
     (tokenId: string, x: number, y: number) => {
@@ -641,6 +664,88 @@ export function useSession(): Session {
     },
     [applyTabletop, sendTokenMove],
   )
+
+  /**
+   * Broadcast a `MapBackground` to every client as a chunked transfer.
+   * `mapMeta` declares the size; `mapChunk` messages follow in order.
+   * Sender is the only call site; the host's own state already carries
+   * the full `dataUrl` (set before this fires) so no echo to self.
+   */
+  const broadcastMapAsChunks = useCallback((map: MapBackground) => {
+    const room = roomRef.current
+    if (!room) return
+    const { spec, chunks } = chunkString(map.id, map.dataUrl)
+    room.broadcast({
+      t: 'mapMeta',
+      map: {
+        id: map.id,
+        name: map.name,
+        width: map.width,
+        height: map.height,
+      },
+      chunkSpec: spec,
+    })
+    for (const chunk of chunks) {
+      room.broadcast({ t: 'mapChunk', chunk })
+    }
+  }, [])
+
+  /**
+   * Send a `MapBackground` to one specific client — used right after
+   * `welcome` so a late joiner pulls the current map without making
+   * every existing client re-receive it.
+   */
+  const sendMapAsChunksTo = useCallback((peerId: string, map: MapBackground) => {
+    const room = roomRef.current
+    if (!room) return
+    const { spec, chunks } = chunkString(map.id, map.dataUrl)
+    room.sendTo(peerId, {
+      t: 'mapMeta',
+      map: {
+        id: map.id,
+        name: map.name,
+        width: map.width,
+        height: map.height,
+      },
+      chunkSpec: spec,
+    })
+    for (const chunk of chunks) {
+      room.sendTo(peerId, { t: 'mapChunk', chunk })
+    }
+  }, [])
+
+  /**
+   * GM-only: pick a file, downscale, save locally, send to clients.
+   * Non-image / oversized files surface their error tag back to the
+   * caller (Toolbar) so it can flash a notice.
+   */
+  const setMapBackground = useCallback(
+    async (file: File): Promise<'ok' | MapImageError> => {
+      if (roleRef.current === 'client') return 'unreadable'
+      const result = await readMapBackground(file)
+      if (!result.ok) return result.error
+      const map: MapBackground = {
+        id: newMapId(),
+        name: result.name,
+        width: result.width,
+        height: result.height,
+        dataUrl: result.dataUrl,
+      }
+      applyTabletop({ ...tabletopRef.current, map })
+      broadcastMapAsChunks(map)
+      return 'ok'
+    },
+    [applyTabletop, broadcastMapAsChunks],
+  )
+
+  /** GM-only: drop the current background map. */
+  const clearMapBackground = useCallback(() => {
+    if (roleRef.current === 'client') return
+    const next: TabletopState = { ...tabletopRef.current }
+    delete next.map
+    applyTabletop(next)
+    roomRef.current?.broadcast({ t: 'mapCleared' })
+  }, [applyTabletop])
 
   /**
    * Load any saved tabletop state for this session id and adopt it.
@@ -764,13 +869,25 @@ export function useSession(): Session {
           for (const [id, img] of Object.entries(playerImagesRef.current)) {
             if (rosterIds.has(id) && img) snapshotImages[id] = img
           }
+          // Strip the map's `dataUrl` from the snapshot — even a
+          // downscaled background can be several MB, big enough to
+          // make the welcome message itself slow. The client sees the
+          // metadata in the snapshot (so the UI can flash a "loading
+          // map" hint), then `sendMapAsChunksTo` streams the actual
+          // bytes right after.
+          const tableForSnapshot: TabletopState = tabletopRef.current.map
+            ? {
+                ...tabletopRef.current,
+                map: { ...tabletopRef.current.map, dataUrl: '' },
+              }
+            : tabletopRef.current
           const snapshot: Snapshot = {
             players: roster,
             history: historyRef.current.map(redactRoll),
             chat: chatRef.current,
             roomName: roomNameRef.current,
             images: snapshotImages,
-            tabletop: tabletopRef.current,
+            tabletop: tableForSnapshot,
           }
           roomRef.current?.sendTo(peerId, { t: 'welcome', snapshot })
           broadcastPlayers()
@@ -786,6 +903,11 @@ export function useSession(): Session {
           // — the new client receives it via the broadcast tokenUpsert
           // (their welcome above carries the pre-insert state).
           ensurePcTokens()
+          // If we have a map, stream it to the new client now that the
+          // welcome (with the metadata-only placeholder) has been sent.
+          if (tabletopRef.current.map?.dataUrl) {
+            sendMapAsChunksTo(peerId, tabletopRef.current.map)
+          }
           break
         }
         case 'identity': {
@@ -892,6 +1014,7 @@ export function useSession(): Session {
       ensurePcTokens,
       noteTyping,
       putPlayerImage,
+      sendMapAsChunksTo,
     ],
   )
 
@@ -1114,12 +1237,41 @@ export function useSession(): Session {
           }
           break
         }
-        case 'mapMeta':
-        case 'mapChunk':
-        case 'mapCleared':
-          // PR 5 wires up the background-map handlers — left blank so
-          // the protocol surface stays explicit on the receiver side.
+        case 'mapMeta': {
+          // Adopt the metadata immediately so the UI can show a
+          // "loading map" placeholder, and prepare the buffer for the
+          // chunks that follow. A new `mapMeta` mid-transfer wipes the
+          // previous buffer — the new map is the authoritative one.
+          pendingMapBufferRef.current = new ChunkBuffer(msg.chunkSpec)
+          pendingMapMetaRef.current = msg.map
+          const placeholder: MapBackground = { ...msg.map, dataUrl: '' }
+          applyTabletop({ ...tabletopRef.current, map: placeholder })
           break
+        }
+        case 'mapChunk': {
+          const buf = pendingMapBufferRef.current
+          if (!buf) break
+          const complete = buf.add(msg.chunk)
+          if (!complete) break
+          const dataUrl = buf.reassemble()
+          const meta = pendingMapMetaRef.current
+          pendingMapBufferRef.current = null
+          pendingMapMetaRef.current = null
+          if (!dataUrl || !meta) break
+          applyTabletop({
+            ...tabletopRef.current,
+            map: { ...meta, dataUrl },
+          })
+          break
+        }
+        case 'mapCleared': {
+          pendingMapBufferRef.current = null
+          pendingMapMetaRef.current = null
+          const next: TabletopState = { ...tabletopRef.current }
+          delete next.map
+          applyTabletop(next)
+          break
+        }
       }
     },
     [
@@ -1974,5 +2126,7 @@ export function useSession(): Session {
     updateGrid,
     moveTokenLive,
     moveTokenCommit,
+    setMapBackground,
+    clearMapBackground,
   }
 }

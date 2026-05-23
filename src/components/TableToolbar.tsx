@@ -1,26 +1,60 @@
+import { useRef } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import {
   MAX_CELL_SIZE,
   MIN_CELL_SIZE,
   type Grid,
   type GridKind,
+  type MapBackground,
 } from '../tabletop/types'
+import type { MapImageError } from '../tabletop/imageBackground'
 
 interface Props {
   grid: Grid
   onChange: (grid: Grid) => void
+  map: MapBackground | undefined
+  onSetMap: (file: File) => Promise<'ok' | MapImageError>
+  onClearMap: () => void
+  /** Surface a flash message (e.g. "image too large"). Optional — the
+   *  Toolbar still works without it, just without notice feedback. */
+  onNotice?: (text: string, kind: 'success' | 'error') => void
 }
 
 /**
- * GM-only floating toolbar for tweaking the grid configuration. Lives
- * in a corner of the tabletop so the Stage stays the focus. Every
- * field commits on change — there is no separate "apply" step — so the
- * preview always matches what the GM sees.
+ * GM-only floating toolbar: grid configuration on top, map controls
+ * below. Lives in a corner of the tabletop so the Stage stays the
+ * focus. Every field commits on change — there is no separate "apply"
+ * step — so the preview always matches what the GM sees.
  */
-export function TableToolbar({ grid, onChange }: Props) {
+export function TableToolbar({
+  grid,
+  onChange,
+  map,
+  onSetMap,
+  onClearMap,
+  onNotice,
+}: Props) {
   const { t } = useI18n()
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const set = <K extends keyof Grid>(key: K, value: Grid[K]) =>
     onChange({ ...grid, [key]: value })
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    // Reset the input so picking the same file twice (after a failure)
+    // still fires `change` the second time.
+    e.target.value = ''
+    if (!file) return
+    const result = await onSetMap(file)
+    if (result === 'ok') {
+      onNotice?.(t('tabletop.map.set'), 'success')
+    } else if (result === 'tooLarge') {
+      onNotice?.(t('tabletop.map.tooLarge'), 'error')
+    } else {
+      onNotice?.(t('tabletop.map.unreadable'), 'error')
+    }
+  }
+
   return (
     <aside className="tabletop-toolbar" aria-label={t('tabletop.grid.title')}>
       <h3 className="tabletop-toolbar-title">{t('tabletop.grid.title')}</h3>
@@ -107,6 +141,40 @@ export function TableToolbar({ grid, onChange }: Props) {
           onChange={(e) => set('snap', e.target.checked)}
         />
       </label>
+
+      <hr className="tabletop-toolbar-divider" />
+      <h3 className="tabletop-toolbar-title">{t('tabletop.map.title')}</h3>
+      {/* The file input is hidden — a real `button` triggers it so the
+          chrome matches the rest of the toolbar instead of the OS's
+          native file-picker styling. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleFile}
+      />
+      <button
+        type="button"
+        className="tabletop-toolbar-button"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        {map ? t('tabletop.map.replace') : t('tabletop.map.choose')}
+      </button>
+      {map && (
+        <>
+          <p className="tabletop-toolbar-meta" title={map.name}>
+            {map.name} ({map.width}×{map.height})
+          </p>
+          <button
+            type="button"
+            className="tabletop-toolbar-button outline"
+            onClick={onClearMap}
+          >
+            {t('tabletop.map.clear')}
+          </button>
+        </>
+      )}
     </aside>
   )
 }

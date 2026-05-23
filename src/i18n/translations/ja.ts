@@ -49,6 +49,13 @@ export const ja: Dict = {
   'tabletop.grid.strokeColor': '線色',
   'tabletop.grid.strokeOpacity': '透明度',
   'tabletop.grid.snap': 'グリッドにスナップ',
+  'tabletop.map.title': '背景マップ',
+  'tabletop.map.choose': '画像を選ぶ…',
+  'tabletop.map.replace': '画像を変更…',
+  'tabletop.map.clear': 'マップを外す',
+  'tabletop.map.set': 'マップを更新しました',
+  'tabletop.map.tooLarge': '画像が大きすぎます（最大 8 MB）',
+  'tabletop.map.unreadable': '画像を読み込めませんでした',
 
 
   'status.offline': 'オフライン',

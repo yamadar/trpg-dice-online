@@ -500,6 +500,38 @@
   width: 18px;
   height: 18px;
 }
+.tabletop-toolbar-divider {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}
+.tabletop-toolbar-button {
+  padding: 8px 12px;
+  background: var(--accent-bg, rgba(192, 132, 252, 0.18));
+  color: var(--accent, var(--text));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tabletop-toolbar-button.outline {
+  background: transparent;
+  color: var(--text);
+  font-weight: 500;
+}
+.tabletop-toolbar-button:hover {
+  filter: brightness(1.1);
+}
+.tabletop-toolbar-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Buttons whose only content is an inline SVG icon (close, trash, etc.) —
    `.icon-btn` centres the icon, `.icon-svg` keeps the SVG itself from
