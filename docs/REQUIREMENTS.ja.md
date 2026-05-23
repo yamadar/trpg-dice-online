@@ -652,6 +652,17 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
   表す情報伝達アイコンのため。サードパーティ素材の帰属は
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md) に集約する。
+- v1.80 — 「GM がオフラインになると参加者も切断される」という P2P スター型
+  の仕様上の制約をユーザーに明示する。これまでは GM がルームを閉じる確認
+  ダイアログ（`room.leaveConfirmGM`）と、切断後のエラーバナー
+  （`room.hostLost`）でしか触れていなかったため、ルームを作る前／参加する
+  前にこの依存関係を知る手段がなかった。3 箇所に追記する: ルーム作成
+  画面の `room.createGmHint` を「GM はルームのホストになるため、GM が
+  オフラインになると参加者も切断されます」まで拡張、参加画面に新キー
+  `room.joinGmHint`（「GM（ホスト）がオフラインになると、参加者も切断
+  されます」）を新設して `<p className="hint">` で表示、チュートリアル
+  `tutorial.room.body` の末尾に同じ趣旨の一文を追加。19 言語すべてに
+  反映する（`translations.test.ts` のキー対応で担保）。
 - v1.79 — 各パネルを「ヘッダ固定＋本文スクロール」で統一する。設定パネルは
   本文中に見出しとフロート × が重なって配置され、長い本文をスクロールすると
   タイトルが流れていたため、`.settings-header` を `.sheet-header` と同じ

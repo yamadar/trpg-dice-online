@@ -70,7 +70,7 @@ export const ja: Dict = {
     'よく使うダイスは「パターン」に名前を付けて保存し、一覧からワンタップで振れます。GM はパターンに隠しロールを設定できます。',
   'tutorial.room.title': 'ルームで共有',
   'tutorial.room.body':
-    '「ルーム」でルームを作成（GM になる）するか、コードで参加します。GM はルームコードを指定・変更でき、通信が切れても自動で再接続します。',
+    '「ルーム」でルームを作成（GM になる）するか、コードで参加します。GM はルームコードを指定・変更でき、通信が切れても自動で再接続します。GM はルームのホストになるため、GM がオフラインになるとほかの参加者も切断されます。',
   'tutorial.pastRooms.title': '過去のルーム',
   'tutorial.pastRooms.body':
     '各セッションは読み取り専用のログとして残ります。「ルーム」画面の「過去のルーム」から過去のセッションを開けます。ログは 1 件ずつ、または全件まとめて削除できます。',
@@ -203,8 +203,10 @@ export const ja: Dict = {
   'room.name': 'ルーム名',
   'room.namePlaceholder': '例: 金曜の冒険',
   'room.create': 'ルームを作成',
-  'room.createGmHint': 'ルームを作成するとあなたが GM になります。',
+  'room.createGmHint':
+    'ルームを作成するとあなたが GM になります。GM はルームのホストになるため、GM がオフラインになると参加者も切断されます。',
   'room.join': 'ルームに参加',
+  'room.joinGmHint': 'GM（ホスト）がオフラインになると、参加者も切断されます。',
   'room.back': '戻る',
   'room.gmSection': 'GM',
   'room.codePlaceholder': 'ルームコード',

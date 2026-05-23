@@ -70,7 +70,7 @@ export const es: Dict = {
     'Guarda los dados que más usas como «Patrones» con nombre y tíralos con un toque desde la lista. Como GM puedes marcar un patrón como tirada oculta.',
   'tutorial.room.title': 'Compartir en una sala',
   'tutorial.room.body':
-    'Desde «Sala» crea una sala (te conviertes en GM) o únete con un código. El GM puede elegir o cambiar el código, y la reconexión es automática si se cae.',
+    'Desde «Sala» crea una sala (te conviertes en GM) o únete con un código. El GM puede elegir o cambiar el código, y la reconexión es automática si se cae. El GM es el anfitrión de la sala: si el GM se desconecta, los demás jugadores también son desconectados.',
   'tutorial.pastRooms.title': 'Salas anteriores',
   'tutorial.pastRooms.body':
     'Cada sesión se guarda como un registro de solo lectura. En la pantalla «Sala» toca «Salas anteriores» para volver a abrir una sesión anterior; puedes borrar los registros uno a uno o todos a la vez.',
@@ -203,8 +203,10 @@ export const es: Dict = {
   'room.name': 'Nombre de la sala',
   'room.namePlaceholder': 'p. ej. Aventura del viernes',
   'room.create': 'Crear sala',
-  'room.createGmHint': 'Te convertirás en el GM de la sala que crees.',
+  'room.createGmHint':
+    'Te convertirás en el GM de la sala que crees. El GM actúa como anfitrión de la sala, así que cuando el GM se desconecta los demás jugadores también son desconectados.',
   'room.join': 'Unirse a una sala',
+  'room.joinGmHint': 'Cuando el GM (anfitrión) se desconecta, los demás jugadores también son desconectados.',
   'room.back': 'Atrás',
   'room.gmSection': 'GM',
   'room.codePlaceholder': 'Código de la sala',

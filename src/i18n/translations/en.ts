@@ -70,7 +70,7 @@ export const en: Dict = {
     'Save dice you use often as named "Patterns" and roll them with one tap from the list. As GM you can mark a pattern as a hidden roll.',
   'tutorial.room.title': 'Share in a room',
   'tutorial.room.body':
-    'From "Room", create a room (become GM) or join with a code. The GM can choose or change the room code, and a dropped connection reconnects automatically.',
+    'From "Room", create a room (become GM) or join with a code. The GM can choose or change the room code, and a dropped connection reconnects automatically. The GM is the room host, so when the GM is offline the other players are disconnected too.',
   'tutorial.pastRooms.title': 'Past rooms',
   'tutorial.pastRooms.body':
     'Every session is kept as a read-only log. From the Room screen tap "Past rooms" to revisit a previous session, and delete logs one by one or all at once.',
@@ -203,8 +203,10 @@ export const en: Dict = {
   'room.name': 'Room name',
   'room.namePlaceholder': 'e.g. Friday adventure',
   'room.create': 'Create room',
-  'room.createGmHint': 'You become the GM of the room you create.',
+  'room.createGmHint':
+    'You become the GM of the room you create. The GM acts as the room host, so when the GM goes offline the other players are disconnected too.',
   'room.join': 'Join room',
+  'room.joinGmHint': 'When the GM (the host) goes offline, the other players are disconnected too.',
   'room.back': 'Back',
   'room.gmSection': 'GM',
   'room.codePlaceholder': 'Room code',

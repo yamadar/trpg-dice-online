@@ -70,7 +70,7 @@ export const ko: Dict = {
     '자주 사용하는 주사위는 이름을 붙여 「패턴」으로 저장하고 목록에서 한 번에 굴릴 수 있습니다. GM은 패턴에 히든 롤을 지정할 수 있습니다.',
   'tutorial.room.title': '룸에서 공유',
   'tutorial.room.body':
-    '「룸」에서 룸을 만들거나(나는 GM이 됩니다) 코드로 참여하세요. GM은 룸 코드를 지정·변경할 수 있고, 연결이 끊겨도 자동으로 재접속합니다.',
+    '「룸」에서 룸을 만들거나(나는 GM이 됩니다) 코드로 참여하세요. GM은 룸 코드를 지정·변경할 수 있고, 연결이 끊겨도 자동으로 재접속합니다. GM이 룸의 호스트이므로 GM이 오프라인이 되면 다른 참가자도 연결이 끊깁니다.',
   'tutorial.pastRooms.title': '지난 룸',
   'tutorial.pastRooms.body':
     '모든 세션이 읽기 전용 로그로 저장됩니다. 「룸」 화면에서 「지난 룸」을 누르면 이전 세션을 다시 열 수 있고, 로그는 하나씩 또는 한꺼번에 삭제할 수 있습니다.',
@@ -203,8 +203,10 @@ export const ko: Dict = {
   'room.name': '룸 이름',
   'room.namePlaceholder': '예: 금요일의 모험',
   'room.create': '룸 만들기',
-  'room.createGmHint': '만든 룸의 GM이 됩니다.',
+  'room.createGmHint':
+    '만든 룸의 GM이 됩니다. GM이 룸의 호스트이므로, GM이 오프라인이 되면 다른 참가자도 연결이 끊깁니다.',
   'room.join': '룸 참여',
+  'room.joinGmHint': 'GM(호스트)이 오프라인이 되면 참가자도 연결이 끊깁니다.',
   'room.back': '뒤로',
   'room.gmSection': 'GM',
   'room.codePlaceholder': '룸 코드',

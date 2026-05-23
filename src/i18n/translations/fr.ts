@@ -70,7 +70,7 @@ export const fr: Dict = {
     'Enregistrez les dés que vous utilisez souvent comme « Modèles » nommés et lancez-les d’un toucher depuis la liste. En tant que MJ, vous pouvez marquer un modèle comme jet caché.',
   'tutorial.room.title': 'Partager dans une salle',
   'tutorial.room.body':
-    'Depuis « Salle », créez une salle (vous devenez MJ) ou rejoignez avec un code. Le MJ peut choisir ou modifier le code ; la reconnexion est automatique en cas de coupure.',
+    'Depuis « Salle », créez une salle (vous devenez MJ) ou rejoignez avec un code. Le MJ peut choisir ou modifier le code ; la reconnexion est automatique en cas de coupure. Le MJ est l’hôte de la salle : s’il passe hors ligne, les autres joueurs sont également déconnectés.',
   'tutorial.pastRooms.title': 'Salles passées',
   'tutorial.pastRooms.body':
     'Chaque session est conservée comme journal en lecture seule. Depuis l’écran « Salle », touchez « Salles passées » pour rouvrir une session précédente ; vous pouvez supprimer les journaux un par un ou tous d’un coup.',
@@ -203,8 +203,10 @@ export const fr: Dict = {
   'room.name': 'Nom de la salle',
   'room.namePlaceholder': 'p. ex. Aventure du vendredi',
   'room.create': 'Créer une salle',
-  'room.createGmHint': 'Vous devenez le MJ de la salle que vous créez.',
+  'room.createGmHint':
+    'Vous devenez le MJ de la salle que vous créez. Le MJ est l’hôte de la salle : s’il passe hors ligne, les autres joueurs sont également déconnectés.',
   'room.join': 'Rejoindre une salle',
+  'room.joinGmHint': 'Si le MJ (l’hôte) passe hors ligne, les autres joueurs sont également déconnectés.',
   'room.back': 'Retour',
   'room.gmSection': 'MJ',
   'room.codePlaceholder': 'Code de la salle',

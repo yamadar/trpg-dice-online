@@ -386,6 +386,7 @@ export function RoomPanel({ session, initialJoinCode, onNotice }: Props) {
               onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
             />
           </label>
+          <p className="hint">{t('room.joinGmHint')}</p>
           <div className="room-setup-buttons">
             <button type="button" disabled={busy} onClick={() => setView('home')}>
               {t('room.back')}

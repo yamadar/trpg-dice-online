@@ -70,7 +70,7 @@ export const tr: Dict = {
     'Sık kullandığın zarları isimli «Şablonlar» olarak kaydet ve listeden tek dokunuşla at. GM olarak bir şablonu gizli atış olarak işaretleyebilirsin.',
   'tutorial.room.title': 'Bir odada paylaş',
   'tutorial.room.body':
-    '«Oda»dan oda oluştur (GM olursun) ya da bir kodla katıl. GM oda kodunu seçip değiştirebilir; bağlantı koparsa otomatik yeniden bağlanır.',
+    '«Oda»dan oda oluştur (GM olursun) ya da bir kodla katıl. GM oda kodunu seçip değiştirebilir; bağlantı koparsa otomatik yeniden bağlanır. GM, odanın sunucusudur; GM çevrimdışı olursa diğer oyuncuların da bağlantısı kesilir.',
   'tutorial.pastRooms.title': 'Önceki odalar',
   'tutorial.pastRooms.body':
     'Her oturum salt okunur kayıt olarak saklanır. «Oda» ekranında «Önceki odalar»a dokunarak geçmiş bir oturumu yeniden açabilirsin; kayıtları tek tek ya da tümünü birden silebilirsin.',
@@ -203,8 +203,10 @@ export const tr: Dict = {
   'room.name': 'Oda adı',
   'room.namePlaceholder': 'örn. Cuma macerası',
   'room.create': 'Oda oluştur',
-  'room.createGmHint': 'Oluşturduğun odanın GM’i sen olursun.',
+  'room.createGmHint':
+    'Oluşturduğun odanın GM’i sen olursun. GM, odanın sunucusudur; GM çevrimdışı olursa diğer oyuncuların da bağlantısı kesilir.',
   'room.join': 'Odaya katıl',
+  'room.joinGmHint': 'GM (sunucu) çevrimdışı olursa diğer oyuncuların da bağlantısı kesilir.',
   'room.back': 'Geri',
   'room.gmSection': 'GM',
   'room.codePlaceholder': 'Oda kodu',

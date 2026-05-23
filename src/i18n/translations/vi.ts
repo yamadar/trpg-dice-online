@@ -70,7 +70,7 @@ export const vi: Dict = {
     'Lưu các kiểu xúc xắc dùng thường thành «Mẫu» có tên và tung bằng một lần chạm. Là GM, bạn có thể đánh dấu mẫu là tung ẩn.',
   'tutorial.room.title': 'Chia sẻ trong phòng',
   'tutorial.room.body':
-    'Từ «Phòng», tạo phòng (bạn trở thành GM) hoặc tham gia bằng mã. GM có thể đặt hoặc đổi mã phòng, và tự kết nối lại nếu mất kết nối.',
+    'Từ «Phòng», tạo phòng (bạn trở thành GM) hoặc tham gia bằng mã. GM có thể đặt hoặc đổi mã phòng, và tự kết nối lại nếu mất kết nối. GM là chủ phòng (host): khi GM ngoại tuyến, người chơi khác cũng bị ngắt kết nối.',
   'tutorial.pastRooms.title': 'Phòng trước đây',
   'tutorial.pastRooms.body':
     'Mỗi phiên được lưu lại dưới dạng nhật ký chỉ đọc. Trên màn hình «Phòng», chạm «Phòng trước đây» để mở lại một phiên cũ; nhật ký có thể xóa từng cái hoặc tất cả cùng lúc.',
@@ -203,8 +203,10 @@ export const vi: Dict = {
   'room.name': 'Tên phòng',
   'room.namePlaceholder': 'ví dụ: Cuộc phiêu lưu thứ Sáu',
   'room.create': 'Tạo phòng',
-  'room.createGmHint': 'Bạn sẽ trở thành GM của phòng bạn tạo.',
+  'room.createGmHint':
+    'Bạn sẽ trở thành GM của phòng bạn tạo. GM là chủ phòng (host), nên khi GM ngoại tuyến, người chơi khác cũng bị ngắt kết nối.',
   'room.join': 'Vào phòng',
+  'room.joinGmHint': 'Khi GM (chủ phòng) ngoại tuyến, người chơi khác cũng bị ngắt kết nối.',
   'room.back': 'Quay lại',
   'room.gmSection': 'GM',
   'room.codePlaceholder': 'Mã phòng',

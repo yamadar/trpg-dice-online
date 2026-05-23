@@ -691,6 +691,19 @@ Commit after each step.
   Third-party attribution lives in
   [`CREDITS.md`](CREDITS.md) /
   [`CREDITS.ja.md`](CREDITS.ja.md).
+- v1.80 — Make the P2P star-topology constraint "if the GM goes offline,
+  everyone else is disconnected too" visible before users commit to a
+  room. Until now this dependency was only surfaced in the GM's
+  close-room confirmation (`room.leaveConfirmGM`) and the post-disconnect
+  error banner (`room.hostLost`); there was no way to learn it before
+  creating or joining a room. Three additions: the create screen's
+  `room.createGmHint` is extended to read "The GM acts as the room host,
+  so when the GM goes offline the other players are disconnected too";
+  the join screen gains a new key `room.joinGmHint` rendered as a
+  `<p className="hint">` ("When the GM (the host) goes offline, the
+  other players are disconnected too"); the tutorial step
+  `tutorial.room.body` appends the same idea. Rolled out across all 19
+  languages (the key-parity test in `translations.test.ts` enforces it).
 - v1.79 — Unify every panel around a "pinned header, scrolling body"
   pattern. The settings drawer used to render its "Settings" heading
   inside the scroll region with the close × floating on top, which

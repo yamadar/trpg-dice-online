@@ -70,7 +70,7 @@ export const id: Dict = {
     'Simpan dadu yang sering kamu pakai sebagai «Pola» bernama dan lempar lewat satu ketuk dari daftar. Sebagai GM kamu bisa menandai pola sebagai lemparan tersembunyi.',
   'tutorial.room.title': 'Berbagi di ruang',
   'tutorial.room.body':
-    'Dari «Ruang», buat ruang (jadi GM) atau gabung dengan kode. GM bisa memilih atau mengubah kode, dan koneksi yang putus akan tersambung kembali otomatis.',
+    'Dari «Ruang», buat ruang (jadi GM) atau gabung dengan kode. GM bisa memilih atau mengubah kode, dan koneksi yang putus akan tersambung kembali otomatis. GM adalah host ruang: jika GM offline, pemain lain juga ikut terputus.',
   'tutorial.pastRooms.title': 'Ruang sebelumnya',
   'tutorial.pastRooms.body':
     'Setiap sesi disimpan sebagai log baca-saja. Dari layar «Ruang», ketuk «Ruang sebelumnya» untuk membuka kembali sesi sebelumnya; log bisa dihapus satu per satu atau semuanya sekaligus.',
@@ -203,8 +203,10 @@ export const id: Dict = {
   'room.name': 'Nama ruang',
   'room.namePlaceholder': 'mis. Petualangan Jumat',
   'room.create': 'Buat ruang',
-  'room.createGmHint': 'Kamu menjadi GM dari ruang yang kamu buat.',
+  'room.createGmHint':
+    'Kamu menjadi GM dari ruang yang kamu buat. GM adalah host ruang, jadi jika GM offline, pemain lain juga ikut terputus.',
   'room.join': 'Gabung ruang',
+  'room.joinGmHint': 'Jika GM (host) offline, pemain lain juga ikut terputus.',
   'room.back': 'Kembali',
   'room.gmSection': 'GM',
   'room.codePlaceholder': 'Kode ruang',
