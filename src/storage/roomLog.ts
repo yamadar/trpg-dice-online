@@ -19,7 +19,7 @@
  */
 
 const DB_NAME = 'trpg-dice'
-const DB_VERSION = 6
+const DB_VERSION = 7
 const STORE = 'roomLog'
 const META = 'sessions'
 /** v6 renamed the portrait store to match its expanded role
@@ -27,6 +27,8 @@ const META = 'sessions'
  *  hand for the one-shot v5→v6 migration. */
 const CHARACTERS = 'sessionCharacters'
 const LEGACY_PORTRAITS = 'sessionPortraits'
+/** v7 introduces the per-session tabletop store (map / grid / tokens). */
+const TABLETOP = 'sessionTable'
 
 /** Which feed list an entry belongs to. */
 export type LogKind = 'roll' | 'chat' | 'marker'
@@ -185,6 +187,16 @@ export function newSessionId(): string {
 }
 
 let dbPromise: Promise<IDBDatabase | null> | null = null
+
+/**
+ * Open (and cache) the per-room IndexedDB. Exported so sibling storage
+ * modules (`./tabletop.ts`) can reuse the same connection — keeping
+ * `DB_NAME` / `DB_VERSION` / the migration code in one place instead of
+ * letting each module open its own.
+ */
+export function openRoomDb(): Promise<IDBDatabase | null> {
+  return openDb()
+}
 
 /** Re-key existing v1 records (code-keyed) into one session per room code. */
 function migrateV1(logStore: IDBObjectStore, metaStore: IDBObjectStore): void {
@@ -385,6 +397,11 @@ function openDb(): Promise<IDBDatabase | null> {
           newStore.put(cur.value)
           cur.continue()
         }
+      }
+      // v7 adds the per-session tabletop store. No data to migrate — the
+      // feature is new — so the upgrade is just a store creation.
+      if (!db.objectStoreNames.contains(TABLETOP)) {
+        db.createObjectStore(TABLETOP, { keyPath: 'sessionId' })
       }
     }
     req.onsuccess = () => {
@@ -704,8 +721,9 @@ export async function deleteSession(sessionId: string | null): Promise<void> {
     try {
       // Include the legacy portraits store in the transaction when it
       // still exists, so a delete also reaches whatever speaker
-      // snapshots the v5→v6 copy left behind for this session.
-      const stores: string[] = [STORE, META, CHARACTERS]
+      // snapshots the v5→v6 copy left behind for this session. The v7
+      // tabletop store always exists on a current-version DB.
+      const stores: string[] = [STORE, META, CHARACTERS, TABLETOP]
       const legacyExists = db.objectStoreNames.contains(LEGACY_PORTRAITS)
       if (legacyExists) stores.push(LEGACY_PORTRAITS)
       const tx = db.transaction(stores, 'readwrite')
@@ -721,6 +739,7 @@ export async function deleteSession(sessionId: string | null): Promise<void> {
         }
       }
       tx.objectStore(META).delete(sessionId)
+      tx.objectStore(TABLETOP).delete(sessionId)
       const portraitCursor = tx
         .objectStore(CHARACTERS)
         .index('bySession')
@@ -762,13 +781,14 @@ export async function deleteAllSessions(): Promise<void> {
       // Same as `deleteSession`: include the legacy portraits store
       // if it's still around, so a full wipe leaves no orphaned
       // speaker snapshots behind on disk.
-      const stores: string[] = [STORE, META, CHARACTERS]
+      const stores: string[] = [STORE, META, CHARACTERS, TABLETOP]
       const legacyExists = db.objectStoreNames.contains(LEGACY_PORTRAITS)
       if (legacyExists) stores.push(LEGACY_PORTRAITS)
       const tx = db.transaction(stores, 'readwrite')
       tx.objectStore(STORE).clear()
       tx.objectStore(META).clear()
       tx.objectStore(CHARACTERS).clear()
+      tx.objectStore(TABLETOP).clear()
       if (legacyExists) tx.objectStore(LEGACY_PORTRAITS).clear()
       tx.oncomplete = () => resolve()
       tx.onerror = () => resolve()
