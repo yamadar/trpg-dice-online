@@ -220,23 +220,35 @@ export function RoomHistory({ playerId, selected, onSelect, onBack }: Props) {
           </button>
           <h3 className="history-head-title">{selected.name.trim() || t('history.unnamed')}</h3>
         </div>
-        <div className="feed-filter" role="group" aria-label={t('feed.section')}>
-          {FILTERS.map(({ id, Icon }) => {
-            const label = t(`feed.${id}`)
-            return (
-              <button
-                key={id}
-                type="button"
-                className={id === filter ? 'filter-btn active' : 'filter-btn'}
-                aria-pressed={id === filter}
-                aria-label={label}
-                title={label}
-                onClick={() => setFilter(id)}
-              >
-                <Icon />
-              </button>
-            )
-          })}
+        <div className="panel-head feed-head">
+          {/* Match the live ActivityPanel's 3-column grid (spacer · centred
+              filter chips · right slot) so the chips sit on exactly the
+              same optical centre line as in the live feed. There is no
+              "clear view" trash button in the history view, so the right
+              slot holds an invisible placeholder of the same width — the
+              centring stays identical. */}
+          <span className="feed-head-spacer" aria-hidden="true" />
+          <div className="feed-filter" role="group" aria-label={t('feed.section')}>
+            {FILTERS.map(({ id, Icon }) => {
+              const label = t(`feed.${id}`)
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={id === filter ? 'filter-btn active' : 'filter-btn'}
+                  aria-pressed={id === filter}
+                  aria-label={label}
+                  title={label}
+                  onClick={() => setFilter(id)}
+                >
+                  <Icon />
+                </button>
+              )
+            })}
+          </div>
+          <div className="feed-head-end">
+            <span className="feed-clear-placeholder" aria-hidden="true" />
+          </div>
         </div>
         {loadedLog === null ? (
           <p className="hint history-loading">…</p>
