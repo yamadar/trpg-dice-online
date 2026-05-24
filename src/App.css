@@ -671,6 +671,32 @@
 .tabletop-toolbar-list-remove:hover {
   color: var(--text);
 }
+.tabletop-toolbar-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.tabletop-toolbar-thumb.placeholder {
+  background: var(--panel-2);
+}
+.tabletop-toolbar-list-action {
+  padding: 4px 10px;
+  background: var(--accent-bg, rgba(192, 132, 252, 0.18));
+  color: var(--accent, var(--text));
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.tabletop-toolbar-list-action:hover {
+  filter: brightness(1.1);
+}
 
 /* --- Selected-token edit popover ---
    Floats next to the token's screen-space centre. The position is

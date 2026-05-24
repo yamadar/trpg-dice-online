@@ -84,13 +84,32 @@ export interface MapBackground {
 }
 
 /**
+ * A GM-curated NPC / monster ready to be placed on the map. The library
+ * is the GM's collection of pre-prepared tokens; entries here are NOT
+ * on the map until the GM explicitly places them (which mints a fresh
+ * `GmToken` copying the image / label). Removing a library entry does
+ * NOT touch already-placed tokens — they keep their inline image.
+ */
+export interface NpcDef {
+  id: string
+  /** Display name (required so the library list is readable). */
+  name: string
+  /** NPC token image as a base64 data URL (≤ ~200 KB). */
+  image: string
+}
+
+/**
  * Everything the table renders. `map` is optional: a tabletop with only
- * a grid and tokens (whiteboard mode) is valid.
+ * a grid and tokens (whiteboard mode) is valid. `npcLibrary` is the
+ * GM's NPC stash — separate from `tokens` so adding to the library
+ * does not auto-place, and placing on the map does not consume the
+ * library entry.
  */
 export interface TabletopState {
   map?: MapBackground
   grid: Grid
   tokens: Token[]
+  npcLibrary: NpcDef[]
 }
 
 /** Sensible defaults for a fresh tabletop: no map, no grid, no tokens. */
@@ -107,6 +126,7 @@ export const DEFAULT_GRID: Grid = {
 export const EMPTY_TABLETOP_STATE: TabletopState = {
   grid: { ...DEFAULT_GRID },
   tokens: [],
+  npcLibrary: [],
 }
 
 /** Largest cell size we accept from the UI / network (px). */
@@ -120,4 +140,8 @@ export function newTokenId(): string {
 
 export function newMapId(): string {
   return `map-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+export function newNpcDefId(): string {
+  return `npc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }

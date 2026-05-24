@@ -17,6 +17,7 @@ import { playerColor } from '../players/colors'
 import { characterImagesKey } from '../storage/roomLog'
 import { canMoveToken } from '../tabletop/tokens'
 import type { Grid, Token } from '../tabletop/types'
+import type { Character } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
 import { ChatIcon, CloseIcon, DiceIcon, TabletopIcon, TrashIcon } from './icons'
 import { TableToolbar } from './TableToolbar'
@@ -24,6 +25,14 @@ import { TableToolbar } from './TableToolbar'
 interface Props {
   session: Session
   onClose: () => void
+  /** Local player's characters (from `useCharacters`). Used by the
+   *  toolbar to list "place my X" buttons and by the initial-centre
+   *  logic to find the user's active character's token. */
+  characters: ReadonlyArray<Character>
+  /** Local player's active character id ('' when acting directly).
+   *  The tabletop's first paint pans the stage to centre on a token
+   *  for this character if one exists. */
+  activeCharacterId: string
   /**
    * The feed + chat composer to render as a floating overlay when the
    * "chat" toggle is on. Owned by the parent so it shares one
@@ -37,6 +46,8 @@ interface Props {
    * reuse the same draft state as the Dock-launched dice Sheet.
    */
   dicePanel?: ReactNode
+  /** Surface a flash message (forwarded to the toolbar). */
+  onNotice?: (text: string, kind: 'success' | 'error') => void
 }
 
 interface PanState {
@@ -67,7 +78,15 @@ const WHEEL_ZOOM_FACTOR = 1.1
  * pan / zoom for every layer at once. Pan is deliberately *not* a
  * single-finger drag so PR 4's token drag does not collide with it.
  */
-export function TablePanel({ session, onClose, chatPanel, dicePanel }: Props) {
+export function TablePanel({
+  session,
+  onClose,
+  characters,
+  activeCharacterId,
+  chatPanel,
+  dicePanel,
+  onNotice,
+}: Props) {
   const { t } = useI18n()
   const { tabletop, updateGrid, moveTokenLive, moveTokenCommit } = session
   // Grid editing is GM-only when in a room, but always available when
@@ -108,6 +127,13 @@ export function TablePanel({ session, onClose, chatPanel, dicePanel }: Props) {
         : tabletop.tokens.find((t) => t.id === selectedTokenId) ?? null,
     [selectedTokenId, tabletop.tokens],
   )
+
+  /** Whether the first-paint centring step has already fired this
+   *  mount. State (not a ref) so the React 19 lint rule that forbids
+   *  ref writes during render is honoured; once flipped, the
+   *  condition guarding the camera write goes false and no further
+   *  re-pan happens. */
+  const [initialCenterDone, setInitialCenterDone] = useState(false)
 
   const containerRef = useRef<HTMLDivElement | null>(null)
   const stageRef = useRef<Konva.Stage | null>(null)
@@ -289,6 +315,42 @@ export function TablePanel({ session, onClose, chatPanel, dicePanel }: Props) {
     [stageX, stageY, stageScale, size.width, size.height],
   )
 
+  /**
+   * Find the local player's PC token for their active character so the
+   * first paint can centre on it. `null` when none exists (no
+   * character set, or no placement yet) — the centring effect
+   * short-circuits and the user starts at (0, 0).
+   */
+  const myActiveToken = useMemo(() => {
+    if (!activeCharacterId) return null
+    return (
+      tabletop.tokens.find(
+        (tok) =>
+          tok.kind === 'pc' &&
+          tok.ownerPlayerId === session.playerId &&
+          tok.characterId === activeCharacterId,
+      ) ?? null
+    )
+  }, [tabletop.tokens, activeCharacterId, session.playerId])
+
+  // Pan so the active character's token sits at the centre of the
+  // viewport — once, on the first paint where both the stage size
+  // and the token are known. Uses React's "derive state during
+  // render" pattern: the state guard (`initialCenterDone`) flips
+  // synchronously, the next render skips this block, no loop. The
+  // user's later panning is never overridden because the condition
+  // can't be true again.
+  if (
+    !initialCenterDone &&
+    size.width > 0 &&
+    size.height > 0 &&
+    myActiveToken
+  ) {
+    setInitialCenterDone(true)
+    setStageX(size.width / 2 - myActiveToken.x * stageScale)
+    setStageY(size.height / 2 - myActiveToken.y * stageScale)
+  }
+
   return (
     <div
       className="tabletop-layer"
@@ -452,18 +514,21 @@ export function TablePanel({ session, onClose, chatPanel, dicePanel }: Props) {
           />
         )}
       </div>
-      {canEdit && showMapOps && (
+      {showMapOps && (
         <TableToolbar
           grid={tabletop.grid}
           onChange={updateGrid}
           map={tabletop.map}
           onSetMap={session.setMapBackground}
           onClearMap={session.clearMapBackground}
-          tokens={tabletop.tokens}
-          players={session.players}
-          onAddGmToken={session.addGmToken}
-          onAddPlayerToken={session.addPlayerToken}
-          onRemoveToken={session.removeToken}
+          characters={characters}
+          onPlaceMyCharacter={session.placeMyCharacterToken}
+          npcLibrary={tabletop.npcLibrary}
+          onAddNpcDef={session.addNpcDef}
+          onRemoveNpcDef={session.removeNpcDef}
+          onPlaceNpcFromLibrary={session.placeNpcFromLibrary}
+          isHost={canEdit}
+          onNotice={onNotice}
         />
       )}
       {chatPanel && showChat && (
