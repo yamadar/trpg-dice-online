@@ -325,15 +325,21 @@ An SPA where players roll TRPG dice and share results with other players in real
   image), stroke color and stroke opacity. Token-drag snapping is
   toggleable.
 - Tokens come in two kinds.
-  - **PC tokens** are generated from the session's characters
-    (`sessionCharacters`) and reuse the character portrait as the
-    token image. They are moved by the owning player and by the GM,
-    auto-added when a character enters the session, and removed only
-    by the GM.
+  - **PC tokens** are tied to a session character and reuse the
+    character portrait as the token image. The owning player and the
+    GM can move them. Placement is an explicit action by the owner or
+    the GM, and a single character can have multiple tokens on the
+    map (for twin / clone fiction). Only the GM removes a token.
   - **GM-only tokens** are not tied to a PC (for NPCs, monsters,
     props). Only the GM adds, moves or removes them. Images go
-    through the same pipeline as character portraits (long-edge
-    2560 px / ~2 MB).
+    through a dedicated pipeline (long-edge 300 px / ~200 KB).
+- Before placing on the map the GM can curate an **NPC library**.
+  A library entry is a "name + image" template; placing it mints a
+  fresh GM token with the image copied inline, so editing the
+  library entry afterwards does not retroactively change tokens
+  already on the table.
+- Tapping a placed token opens an edit popover. The GM can rename
+  and re-image GM-only tokens, and remove either kind of token.
 - Token positions are stored in pixels and snapped to the grid at
   render time (free placement when snapping is off).
 - Sync follows the existing host-authoritative / last-write-wins model.
@@ -345,6 +351,21 @@ An SPA where players roll TRPG dice and share results with other players in real
 - The tabletop state is persisted to IndexedDB per `sessionId` and
   restored across reload. Room export ZIPs grow to include
   `table.json` and `attachments/maps/*` (manifest bumped to v6).
+- The GM can also save the current tabletop under a name into a
+  **tabletop library**. This library is stored globally in IndexedDB
+  (`tabletopLibrary` store, DB v8), not per-session, so a GM can
+  prepare scenes ahead of time and load them into any room. Two
+  flavours coexist:
+  - **Template**: the initial layout with PC tokens stripped, plus
+    the viewport centre stashed as `pcSpawn`. Loading re-spawns the
+    GM's existing PCs around `pcSpawn` so switching scenes does not
+    force every player to re-place themselves.
+  - **Snapshot**: the full state including PC tokens. Loading
+    restores everything verbatim.
+  A load broadcasts a fresh `tabletopState` to every client; the
+  map image streams through the existing `mapMeta` / `mapChunk`
+  path so a multi-megabyte background does not block the data
+  channel.
 - On mobile the tabletop is shown as a **full-screen mode** rather
   than a Dock sheet. The Dock's tabletop icon opens it and a
   dedicated close button leaves it. To keep chat and rolls visible
@@ -458,7 +479,9 @@ TabletopState = {
   map?: { id, name, width, height, dataUrl },
   grid: { kind: 'none'|'square', cellSize, originX, originY,
           strokeColor, strokeOpacity, snap },
-  tokens: Token[]
+  tokens: Token[],
+  npcLibrary: NpcDef[],          // GM's NPC stash, independent of placement
+  pcSpawn?: { x, y }             // set by templates; initial PC drop point
 }
 Token = {
   id, kind: 'pc'|'gm',
@@ -467,6 +490,16 @@ Token = {
   characterId?: string   // pc only
   image?: string         // gm only (pc reuses the character portrait)
   label?: string         // gm: optional display label
+}
+NpcDef = { id, name, image }     // NPC library entry — placement template
+
+// GM's tabletop library. Stored globally (not per-session) in IndexedDB so
+// scenes can be prepared ahead and reused across rooms.
+SavedTabletop = {
+  id, name,
+  kind: 'template'|'save',       // template strips PC tokens; carries pcSpawn
+  state: TabletopState,
+  createdAt, updatedAt
 }
 ```
 
@@ -506,13 +539,16 @@ Commit after each step.
 - [x] Character name / background shared in the room; memo stays private
 - [x] Pick the dice count (1-10), die type and modifier via stepper / select
 - [x] Published on GitHub Pages and works in the browser
-- [ ] The GM can upload a background map and it is synced to every participant
-- [ ] The square grid's cell size, offset, color and opacity can be configured
-- [ ] PC tokens are generated from the session's characters and can be moved by the owner and the GM
-- [ ] GM-only tokens can be added, moved and removed by the GM
-- [ ] Pan and zoom work on both touch and mouse
+- [x] The GM can upload a background map and it is synced to every participant
+- [x] The square grid's cell size, offset, color and opacity can be configured
+- [x] PC tokens are generated from the session's characters and can be moved by the owner and the GM
+- [x] A player can place multiple tokens of their own character at any time
+- [x] GM-only tokens can be added, moved and removed by the GM
+- [x] The GM can register NPCs in a library and place them on the map when needed
+- [x] The GM can save the current tabletop as a template / snapshot and load it later
+- [x] Pan and zoom work on both touch and mouse
+- [x] The tabletop state is restored across reload
 - [ ] On mobile, the tabletop is shown full-screen with a swipe-up bottom sheet for the feed
-- [ ] The tabletop state is restored across reload
 - [ ] The exported ZIP carries the tabletop state and importing restores it
 
 ## 9. Revisions
