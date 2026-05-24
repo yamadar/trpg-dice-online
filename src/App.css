@@ -776,6 +776,26 @@
   font-size: 0.78rem;
   max-width: 132px;
 }
+.tabletop-tools-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+/* Narrow screens (mobile portrait): collapse the palette to a single
+   column of icon-only buttons so it does not overlap with the right-
+   side map-ops toolbar. Pen / text settings still appear but with
+   their text labels hidden. */
+@media (max-width: 720px) {
+  .tabletop-tools {
+    max-width: 56px;
+    padding: 6px 4px;
+  }
+  .tabletop-tools-label {
+    display: none;
+  }
+  .tabletop-tools-row > span {
+    display: none;
+  }
+}
 .tabletop-tools-btn {
   display: flex;
   flex-direction: column;
@@ -851,6 +871,95 @@
   flex: 1;
   font-size: 0.75rem;
   padding: 4px 6px;
+}
+
+/* --- Error fallback panels ---
+   Shown when an ErrorBoundary catches a render-phase exception. Two
+   shapes: a tabletop-local panel (covers the tabletop area only) and
+   an app-wide panel (covers the viewport). Both use a centered card
+   so the recovery actions remain reachable even on small screens. */
+.error-fallback {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.6);
+}
+.error-fallback-local {
+  position: absolute;
+  z-index: 4;
+}
+.error-fallback-card {
+  width: min(420px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--text);
+}
+.error-fallback-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.error-fallback-body {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.error-fallback-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.error-fallback-actions > button {
+  padding: 8px 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.error-fallback-actions > button:hover {
+  background: var(--panel);
+}
+.error-fallback-actions > button.primary {
+  background: var(--accent, #3b6ea5);
+  color: #fff;
+  border-color: transparent;
+}
+.error-fallback-details {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+.error-fallback-details > summary {
+  cursor: pointer;
+  padding: 4px 0;
+}
+.error-fallback-details > pre {
+  margin: 4px 0 0;
+  padding: 8px;
+  background: var(--panel-2);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 /* --- Tabletop floating overlays (chat / dice) ---

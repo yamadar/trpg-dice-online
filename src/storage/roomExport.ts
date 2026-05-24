@@ -16,13 +16,28 @@ import { strToU8, zipSync } from 'fflate'
 import type { LogEntry, SessionCharacterRecord } from './roomLog'
 import type { ChatMessage, Player } from '../net/protocol'
 import type { Lang } from '../i18n/translations'
+import type {
+  DrawStroke,
+  FogState,
+  Grid,
+  MapText,
+  NpcDef,
+  TabletopState,
+  Token,
+} from '../tabletop/types'
 
 /** Marks our room-export archives. */
 const FILE_TYPE = 'trpg-dice-room-log'
-/** v5: per-(player, character) records (name / background / isGM /
+/** v6: tabletop state (map + grid + tokens + NPC library + annotation
+ *  layers: texts / strokes / fog of war) rides along with the archive.
+ *  Map image bytes are extracted to `attachments/maps/` alongside
+ *  chat attachments; the rest of the state stays inline in the
+ *  manifest.
+ *
+ *  v5: per-(player, character) records (name / background / isGM /
  *  portrait) ride along so room history can render past entries
  *  without the live session. */
-const FILE_VERSION = 5
+const FILE_VERSION = 6
 
 /** Room identity stored in the manifest. */
 interface ExportRoom {
@@ -189,10 +204,93 @@ function extractCharacters(records: ReadonlyArray<SessionCharacterRecord>): {
 }
 
 /**
+ * The map background as it lives in the manifest. The image bytes are
+ * extracted to `attachments/maps/{id}.{ext}` (like chat attachments) and
+ * re-inlined on import. `imagePath` is absent when the source map had
+ * no usable data URL — the importer drops the map in that case rather
+ * than restore a broken record.
+ */
+export interface ExportTabletopMap {
+  id: string
+  name: string
+  width: number
+  height: number
+  imagePath?: string
+  imageType?: string
+}
+
+/**
+ * Tabletop state as it appears in the manifest. The shape mirrors
+ * `TabletopState` except the map's `dataUrl` is replaced by an
+ * `imagePath` / `imageType` pair pointing at a file in the archive.
+ * NPC and GM-token images stay inline because they are already capped
+ * at ~200 KB by the upload pipeline; only the multi-megabyte map
+ * background is worth splitting out.
+ */
+export interface ExportTabletop {
+  map?: ExportTabletopMap
+  grid: Grid
+  tokens: Token[]
+  npcLibrary: NpcDef[]
+  pcSpawn?: { x: number; y: number }
+  texts: MapText[]
+  strokes: DrawStroke[]
+  fog: FogState
+}
+
+/**
+ * Split the tabletop's background-map image out of the manifest into a
+ * separate archive file (mirroring `extractAttachments` for chat
+ * files). The remaining fields are forwarded verbatim. When the source
+ * map has no parseable data URL (e.g., it was somehow cleared mid-way
+ * through a sync) the export drops the map entirely instead of writing
+ * a record that points at a missing path.
+ */
+function extractTabletop(state: TabletopState): {
+  tabletop: ExportTabletop
+  files: Record<string, Uint8Array>
+} {
+  const files: Record<string, Uint8Array> = {}
+  let map: ExportTabletopMap | undefined
+  if (state.map) {
+    const parsed = state.map.dataUrl
+      ? parseImageDataUrl(state.map.dataUrl)
+      : null
+    if (parsed) {
+      const path = `attachments/maps/${encodeURIComponent(state.map.id)}.${imageExt(parsed.type)}`
+      files[path] = parsed.bytes
+      map = {
+        id: state.map.id,
+        name: state.map.name,
+        width: state.map.width,
+        height: state.map.height,
+        imagePath: path,
+        imageType: parsed.type,
+      }
+    }
+  }
+  return {
+    tabletop: {
+      ...(map ? { map } : {}),
+      grid: state.grid,
+      tokens: state.tokens,
+      npcLibrary: state.npcLibrary,
+      ...(state.pcSpawn ? { pcSpawn: state.pcSpawn } : {}),
+      texts: state.texts,
+      strokes: state.strokes,
+      fog: state.fog,
+    },
+    files,
+  }
+}
+
+/**
  * Build the ZIP archive bytes for a room export. `entries` is the
  * durable log oldest-first; `characters` is the per-(player,
- * character) record set (with portraits); `exportedAt` is injectable
- * so the manifest is deterministic in tests.
+ * character) record set (with portraits); `tabletop` is the optional
+ * shared map state (map + grid + tokens + annotation layers);
+ * `exportedAt` is injectable so the manifest is deterministic in
+ * tests.
  */
 export function buildRoomExport(
   room: ExportRoom,
@@ -201,9 +299,11 @@ export function buildRoomExport(
   translations: TranslationRecord[],
   characters: ReadonlyArray<SessionCharacterRecord> = [],
   exportedAt: number = Date.now(),
+  tabletop: TabletopState | null = null,
 ): Uint8Array<ArrayBuffer> {
   const splitEntries = extractAttachments(entries)
   const splitCharacters = extractCharacters(characters)
+  const splitTabletop = tabletop ? extractTabletop(tabletop) : null
   const manifest = {
     type: FILE_TYPE,
     version: FILE_VERSION,
@@ -213,11 +313,13 @@ export function buildRoomExport(
     entries: splitEntries.entries,
     translations,
     characters: splitCharacters.characters,
+    ...(splitTabletop ? { tabletop: splitTabletop.tabletop } : {}),
   }
   const zip = zipSync({
     'room.json': strToU8(JSON.stringify(manifest, null, 2)),
     ...splitEntries.files,
     ...splitCharacters.files,
+    ...(splitTabletop?.files ?? {}),
   })
   // fflate types its output buffer loosely; it is always a plain
   // ArrayBuffer, which a Blob download needs.

@@ -46,13 +46,11 @@ import {
 import type { RoomImport } from '../storage/roomImport'
 import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 import {
-  DEFAULT_FOG,
   EMPTY_TABLETOP_STATE,
   newMapId,
   newNpcDefId,
   newSavedTabletopId,
   newTokenId,
-  type DrawStroke,
   type FogState,
   type Grid,
   type MapBackground,
@@ -74,7 +72,15 @@ import {
   makeDrawStroke,
   makeMapText,
 } from '../tabletop/annotations'
+import {
+  validateDrawStrokeAddRequest,
+  validateDrawStrokeRemoveRequest,
+  validateMapTextAddRequest,
+  validateMapTextRemoveRequest,
+  validateMapTextUpdateRequest,
+} from '../tabletop/hostValidation'
 import { loadPresetMap } from '../tabletop/presetMaps'
+import { fillTabletopDefaults, stripMapBytesForWire } from '../tabletop/snapshot'
 import { loadTabletop, saveTabletop } from '../storage/tabletop'
 import {
   deleteLibraryEntry as deleteLibraryEntryStorage,
@@ -338,15 +344,28 @@ export interface Session {
   setFogEnabled: (enabled: boolean) => void
   /**
    * GM-only: reveal or conceal a batch of fog cells (grid coordinates).
-   * Sends the whole fog state for simplicity — payload is small (a
-   * list of "col,row" strings).
+   * Two modes:
+   *
+   *  - default (no options): one-shot. Applies locally, broadcasts the
+   *    full fog state and persists to IndexedDB. Used by the toolbar's
+   *    "cover all" / "reveal all" buttons.
+   *  - `{ live: true }`: in-drag path. Applies locally, broadcasts at
+   *    a 150 ms throttle so clients see the painting progress, and
+   *    *skips* the IndexedDB save. The follow-up `commitFog()` flushes
+   *    the final state at drag-end so the wire and the durable record
+   *    converge on the same value.
    */
   paintFog: (
     cells: ReadonlyArray<{ col: number; row: number }>,
     reveal: boolean,
+    options?: { live?: boolean },
   ) => void
-  /** GM-only: replace the entire fog state (used by "reveal all" /
-   *  "fill all" toolbar buttons). */
+  /** GM-only: flush a live fog drag (force broadcast + IndexedDB save
+   *  of the current fog state). Called from the canvas on mouseup /
+   *  touchend so the wire and disk converge on the final value. */
+  commitFog: () => void
+  /** GM-only: replace the entire fog state (used by reveal-all /
+   *  cover-all). */
   setFog: (fog: FogState) => void
   /**
    * GM-only: pick a bundled preset map from `public/maps/` and load it
@@ -359,23 +378,6 @@ export interface Session {
 /** Keep at most `max` items, dropping the oldest. */
 function capEnd<T>(list: T[], max: number): T[] {
   return list.length > max ? list.slice(list.length - max) : list
-}
-
-/**
- * Defence-in-depth normaliser for `TabletopState` shapes arriving over
- * the wire. A pre-PR-12 host may not include the new annotation fields,
- * in which case we default them so the renderer's `.map` calls never
- * trip on `undefined`. Used by the welcome-snapshot and `tabletopState`
- * adoption paths.
- */
-function fillTabletopDefaults(state: TabletopState): TabletopState {
-  return {
-    ...state,
-    npcLibrary: state.npcLibrary ?? [],
-    texts: state.texts ?? [],
-    strokes: state.strokes ?? [],
-    fog: state.fog ?? { ...DEFAULT_FOG },
-  }
 }
 
 /** Merge two id-keyed, timestamped lists, de-duplicating and sorting oldest-first. */
@@ -1254,10 +1256,16 @@ export function useSession(): Session {
       if (kind === 'template') {
         // Strip PC tokens — templates describe the *initial* layout
         // and PCs re-place themselves at the spawn point on load.
+        // Also drop pen strokes (typically session-specific GM /
+        // player markings) so a saved scenario starts with a clean
+        // sketch surface. Text labels and fog are kept on purpose:
+        // labels often carry GM hints ("door here") and fog is
+        // frequently part of the scenario setup (unexplored rooms).
         const tokens = source.tokens.filter((t) => t.kind !== 'pc')
         state = {
           ...source,
           tokens,
+          strokes: [],
           ...(viewportCenter ? { pcSpawn: viewportCenter } : {}),
         }
       } else {
@@ -1315,12 +1323,13 @@ export function useSession(): Session {
         next = { ...next, tokens: [...next.tokens, ...relocated] }
       }
       applyTabletop(next)
-      // Broadcast to clients. Strip the map's dataUrl from the wire
-      // message — the chunked send below fills it back in.
-      const wireState: TabletopState = next.map
-        ? { ...next, map: { ...next.map, dataUrl: '' } }
-        : next
-      roomRef.current?.broadcast({ t: 'tabletopState', state: wireState })
+      // Broadcast to clients. The shared snapshot helper strips the
+      // map's `dataUrl` so the JSON message stays small; the chunked
+      // send below streams the bytes separately.
+      roomRef.current?.broadcast({
+        t: 'tabletopState',
+        state: stripMapBytesForWire(next),
+      })
       if (next.map?.dataUrl) {
         broadcastMapAsChunks(next.map)
       }
@@ -1564,9 +1573,21 @@ export function useSession(): Session {
     [setFog],
   )
 
+  /**
+   * Last time we broadcast a `fogSet` from inside a live drag. Drives
+   * the throttle that keeps clients updated without flooding the data
+   * channel with one message per painted cell.
+   */
+  const fogBroadcastThrottleRef = useRef(0)
+
   const paintFog = useCallback(
-    (cells: ReadonlyArray<{ col: number; row: number }>, reveal: boolean) => {
+    (
+      cells: ReadonlyArray<{ col: number; row: number }>,
+      reveal: boolean,
+      options?: { live?: boolean },
+    ) => {
       if (cells.length === 0) return
+      if (roleRef.current === 'client') return
       const fog = tabletopRef.current.fog
       const set = new Set(fog.revealed)
       if (reveal) {
@@ -1575,10 +1596,33 @@ export function useSession(): Session {
         for (const c of cells) set.delete(`${c.col},${c.row}`)
       }
       const next: FogState = { ...fog, revealed: [...set] }
-      setFog(next)
+      if (options?.live) {
+        // In-drag fast path: mutate the in-memory state and notify
+        // React, but skip IndexedDB (every cell paint would otherwise
+        // queue a write) and throttle the broadcast to ~6 Hz. The
+        // `commitFog` call at drag-end forces the final state to the
+        // wire and the disk.
+        const updated: TabletopState = { ...tabletopRef.current, fog: next }
+        tabletopRef.current = updated
+        setTabletop(updated)
+        const now = Date.now()
+        if (now - fogBroadcastThrottleRef.current >= 150) {
+          fogBroadcastThrottleRef.current = now
+          roomRef.current?.broadcast({ t: 'fogSet', fog: next })
+        }
+      } else {
+        setFog(next)
+      }
     },
     [setFog],
   )
+
+  const commitFog = useCallback(() => {
+    if (roleRef.current === 'client') return
+    // Force the next broadcast to fire regardless of the throttle.
+    fogBroadcastThrottleRef.current = 0
+    setFog(tabletopRef.current.fog)
+  }, [setFog])
 
   const setMapFromPreset = useCallback(
     async (preset: PresetMap): Promise<'ok' | 'tooLarge' | 'unreadable'> => {
@@ -1727,12 +1771,7 @@ export function useSession(): Session {
           // metadata in the snapshot (so the UI can flash a "loading
           // map" hint), then `sendMapAsChunksTo` streams the actual
           // bytes right after.
-          const tableForSnapshot: TabletopState = tabletopRef.current.map
-            ? {
-                ...tabletopRef.current,
-                map: { ...tabletopRef.current.map, dataUrl: '' },
-              }
-            : tabletopRef.current
+          const tableForSnapshot = stripMapBytesForWire(tabletopRef.current)
           const snapshot: Snapshot = {
             players: roster,
             history: historyRef.current.map(redactRoll),
@@ -1890,24 +1929,10 @@ export function useSession(): Session {
           break
         }
         case 'mapTextAddRequest': {
-          // Host stamps the canonical ownerPlayerId from the connection
-          // so a client cannot impersonate another player. Anything
-          // else on the label is taken as-is after a length cap.
           const sender = peerPlayersRef.current.get(peerId)
           if (!sender) break
-          const raw = msg.text
-          if (!raw || typeof raw.text !== 'string') break
-          const cleaned = raw.text.trim().slice(0, 200)
-          if (!cleaned) break
-          const next: MapText = {
-            id: raw.id,
-            x: typeof raw.x === 'number' ? raw.x : 0,
-            y: typeof raw.y === 'number' ? raw.y : 0,
-            text: cleaned,
-            color: typeof raw.color === 'string' ? raw.color : '#ffffff',
-            fontSize: typeof raw.fontSize === 'number' ? raw.fontSize : 20,
-            ownerPlayerId: sender.id,
-          }
+          const next = validateMapTextAddRequest(msg, { id: sender.id })
+          if (!next) break
           applyTabletop({
             ...tabletopRef.current,
             texts: applyMapTextUpsert(tabletopRef.current.texts, next),
@@ -1919,21 +1944,12 @@ export function useSession(): Session {
           const sender = peerPlayersRef.current.get(peerId)
           if (!sender) break
           const existing = tabletopRef.current.texts.find((t) => t.id === msg.id)
-          if (!existing) break
-          if (!canEditMapText(existing, { playerId: sender.id, isHost: false })) break
-          const next: MapText = {
-            ...existing,
-            ...(typeof msg.text === 'string'
-              ? { text: msg.text.slice(0, 200) }
-              : {}),
-            ...(typeof msg.x === 'number' ? { x: msg.x } : {}),
-            ...(typeof msg.y === 'number' ? { y: msg.y } : {}),
-            ...(typeof msg.color === 'string' ? { color: msg.color } : {}),
-            ...(typeof msg.fontSize === 'number'
-              ? { fontSize: msg.fontSize }
-              : {}),
-          }
-          if (!next.text.trim()) break
+          const next = validateMapTextUpdateRequest(
+            msg,
+            { id: sender.id },
+            existing,
+          )
+          if (!next) break
           applyTabletop({
             ...tabletopRef.current,
             texts: applyMapTextUpsert(tabletopRef.current.texts, next),
@@ -1945,33 +1961,20 @@ export function useSession(): Session {
           const sender = peerPlayersRef.current.get(peerId)
           if (!sender) break
           const existing = tabletopRef.current.texts.find((t) => t.id === msg.id)
-          if (!existing) break
-          if (!canEditMapText(existing, { playerId: sender.id, isHost: false })) break
+          const id = validateMapTextRemoveRequest(msg, { id: sender.id }, existing)
+          if (!id) break
           applyTabletop({
             ...tabletopRef.current,
-            texts: applyMapTextRemove(tabletopRef.current.texts, msg.id),
+            texts: applyMapTextRemove(tabletopRef.current.texts, id),
           })
-          roomRef.current?.broadcast({ t: 'mapTextRemove', id: msg.id })
+          roomRef.current?.broadcast({ t: 'mapTextRemove', id })
           break
         }
         case 'drawStrokeAddRequest': {
           const sender = peerPlayersRef.current.get(peerId)
           if (!sender) break
-          const raw = msg.stroke
-          if (!raw || !Array.isArray(raw.points) || raw.points.length < 2) break
-          // Re-stamp ownerPlayerId from the connection so the eraser
-          // permission check on every peer sees the real owner.
-          const next: DrawStroke = {
-            id: raw.id,
-            points: raw.points.filter(
-              (p: unknown): p is number =>
-                typeof p === 'number' && Number.isFinite(p),
-            ),
-            color: typeof raw.color === 'string' ? raw.color : '#ff0000',
-            width: typeof raw.width === 'number' ? raw.width : 4,
-            ownerPlayerId: sender.id,
-          }
-          if (next.points.length < 2) break
+          const next = validateDrawStrokeAddRequest(msg, { id: sender.id })
+          if (!next) break
           applyTabletop({
             ...tabletopRef.current,
             strokes: applyDrawStrokeUpsert(tabletopRef.current.strokes, next),
@@ -1983,13 +1986,17 @@ export function useSession(): Session {
           const sender = peerPlayersRef.current.get(peerId)
           if (!sender) break
           const existing = tabletopRef.current.strokes.find((s) => s.id === msg.id)
-          if (!existing) break
-          if (!canEraseStroke(existing, { playerId: sender.id, isHost: false })) break
+          const id = validateDrawStrokeRemoveRequest(
+            msg,
+            { id: sender.id },
+            existing,
+          )
+          if (!id) break
           applyTabletop({
             ...tabletopRef.current,
-            strokes: applyDrawStrokeRemove(tabletopRef.current.strokes, msg.id),
+            strokes: applyDrawStrokeRemove(tabletopRef.current.strokes, id),
           })
-          roomRef.current?.broadcast({ t: 'drawStrokeRemove', id: msg.id })
+          roomRef.current?.broadcast({ t: 'drawStrokeRemove', id })
           break
         }
       }
@@ -2806,12 +2813,20 @@ export function useSession(): Session {
         roomNameRef.current = data.roomName
         setRoomNameState(data.roomName)
         setPlayers([selfPlayer(true)])
+        // Restore the tabletop state from the archive when present
+        // (v6+ exports carry it). The map's data URL was re-inlined
+        // by the importer, so `applyTabletop` can persist it through
+        // the usual IndexedDB write — no chunked transfer needed
+        // because there are no clients to receive one yet.
+        if (data.tabletop) {
+          applyTabletop(data.tabletop)
+        }
       } catch (err) {
         setErrorKind(err === 'unavailable-id' ? 'codeTaken' : 'connect')
         goOffline()
       }
     },
-    [ensureRoom, goOffline, selfPlayer],
+    [applyTabletop, ensureRoom, goOffline, selfPlayer],
   )
 
   const roll = useCallback(
@@ -3203,6 +3218,7 @@ export function useSession(): Session {
     removeDrawStroke,
     setFogEnabled,
     paintFog,
+    commitFog,
     setFog,
     setMapFromPreset,
   }

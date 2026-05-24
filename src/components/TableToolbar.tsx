@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useConfirm } from '../hooks/useConfirm'
 import { useI18n } from '../i18n/useI18n'
 import {
   MAX_CELL_SIZE,
@@ -111,6 +112,7 @@ export function TableToolbar({
   onNotice,
 }: Props) {
   const { t } = useI18n()
+  const confirm = useConfirm()
   const mapInputRef = useRef<HTMLInputElement | null>(null)
   const npcInputRef = useRef<HTMLInputElement | null>(null)
   // NPC add flow state. The name is collected from a text field; the
@@ -159,17 +161,28 @@ export function TableToolbar({
     }
   }
 
-  const handleFogFillAll = () => {
-    if (!confirm(t('tabletop.fog.confirmFillAll'))) return
+  const handleFogFillAll = async () => {
+    const ok = await confirm({
+      message: t('tabletop.fog.confirmFillAll'),
+      destructive: true,
+    })
+    if (!ok) return
     // "Cover all" = revealed list empty + fog on.
     onFogReplace({ enabled: true, revealed: [] })
   }
 
-  const handleFogClearAll = () => {
-    if (!confirm(t('tabletop.fog.confirmClearAll'))) return
-    // "Reveal all" = fog off (the revealed list itself stays put so a
-    // future re-enable picks up where the GM left off).
-    onFogReplace({ ...fog, enabled: false })
+  const handleFogClearAll = async () => {
+    const ok = await confirm({
+      message: t('tabletop.fog.confirmClearAll'),
+      destructive: true,
+    })
+    if (!ok) return
+    // "Reveal all" = drop every previously-painted cell AND disable
+    // the layer. The earlier behaviour preserved `revealed` so a
+    // re-enable would restore the old pattern, but that contradicted
+    // the button name ("reveal all") and surprised testers. A fresh
+    // start matches the prompt and lets the GM build a new layout.
+    onFogReplace({ enabled: false, revealed: [] })
   }
 
   const handleSaveAs = async (kind: TabletopLibraryKind) => {
@@ -203,7 +216,11 @@ export function TableToolbar({
   }
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(t('tabletop.library.confirmDelete', { name }))) return
+    const ok = await confirm({
+      message: t('tabletop.library.confirmDelete', { name }),
+      destructive: true,
+    })
+    if (!ok) return
     await onDeleteTabletopFromLibrary(id)
     onNotice?.(t('tabletop.library.deleted'), 'success')
   }

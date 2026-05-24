@@ -16,7 +16,7 @@ import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
 import { playerColor } from '../players/colors'
 import { characterImagesKey } from '../storage/roomLog'
-import { canEditMapText, canEraseStroke } from '../tabletop/annotations'
+import { canEditMapText, canEraseStroke, isCellRevealed } from '../tabletop/annotations'
 import { canMoveToken } from '../tabletop/tokens'
 import {
   DEFAULT_PEN_COLOR,
@@ -127,6 +127,7 @@ export function TablePanel({
     addDrawStroke,
     removeDrawStroke,
     paintFog,
+    commitFog,
   } = session
   // Grid editing is GM-only when in a room, but always available when
   // offline so a player can experiment with the table on their own —
@@ -214,12 +215,13 @@ export function TablePanel({
   // multiple events so we cannot rely on closure state alone.
   const drawingRef = useRef<number[] | null>(null)
   const fogPaintingRef = useRef<'reveal' | 'conceal' | null>(null)
-  /** Pending text input: world coords where the user clicked. */
-  const [textDraft, setTextDraft] = useState<{
-    x: number
-    y: number
-    value: string
-  } | null>(null)
+  /** Pending text input: world coords where the user clicked. The
+   *  actual draft *value* lives in `TextDraftInput`'s local state so a
+   *  keystroke does not re-render the whole tabletop (and every Konva
+   *  layer along with it). */
+  const [textDraft, setTextDraft] = useState<{ x: number; y: number } | null>(
+    null,
+  )
 
   // Track the container's pixel size so the Stage matches the
   // available viewport. ResizeObserver covers window resizes plus the
@@ -264,6 +266,21 @@ export function TablePanel({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  // Auto-revert the active tool to 'select' during render whenever
+  // the underlying pre-conditions disappear — a fog tool with no
+  // square grid or a non-GM viewer can't actually do anything, so
+  // leaving it selected gives the user a "stuck" palette button until
+  // they manually pick another tool. Using the "adjust state during
+  // render" pattern (rather than an effect) because the React 19
+  // `set-state-in-effect` lint rule disallows the effect form, and
+  // this is the documented escape hatch for derived state.
+  const fogToolInvalid =
+    (tool === 'fog-reveal' || tool === 'fog-conceal') &&
+    (!canEdit || tabletop.grid.kind !== 'square')
+  if (fogToolInvalid) {
+    setTool('select')
+  }
 
   const handleWheel = useCallback(
     (e: KonvaEventObject<WheelEvent>) => {
@@ -349,9 +366,31 @@ export function TablePanel({
       const key = `${cell.col},${cell.row}`
       if (fogGestureCellsRef.current.has(key)) return
       fogGestureCellsRef.current.add(key)
-      paintFog([cell], reveal)
+      // Live path: throttled broadcast + no IDB save. `commitFog` at
+      // drag-end flushes the final state to the wire and disk.
+      paintFog([cell], reveal, { live: true })
     },
     [paintFog, tabletop.grid],
+  )
+
+  /**
+   * Non-GM clicks on fogged cells are silently ignored for pen / text
+   * tools. The cell is invisible to them, so adding a stroke or label
+   * there would result in untraceable hidden content. Eraser is
+   * already blocked by the listening fog layer; this check covers the
+   * tools that go through the stage's mousedown handler regardless of
+   * what was hit (clicks always bubble to the stage).
+   */
+  const isHiddenByFog = useCallback(
+    (w: { x: number; y: number }): boolean => {
+      if (canEdit) return false
+      const fog = tabletop.fog
+      if (!fog.enabled) return false
+      if (tabletop.grid.kind !== 'square') return false
+      const cell = cellFromWorld(w.x, w.y, tabletop.grid)
+      return !isCellRevealed(fog, cell.col, cell.row)
+    },
+    [canEdit, tabletop.fog, tabletop.grid],
   )
 
   const handleMouseDown = useCallback(
@@ -378,11 +417,19 @@ export function TablePanel({
       const w = worldFromPointer()
       if (!w) return
       if (tool === 'pen') {
+        if (isHiddenByFog(w)) return
         startDrawing(w)
       } else if (tool === 'text') {
-        setTextDraft({ x: w.x, y: w.y, value: '' })
+        if (isHiddenByFog(w)) return
+        setTextDraft({ x: w.x, y: w.y })
       } else if (tool === 'fog-reveal' || tool === 'fog-conceal') {
         if (!canEdit) return
+        // Grid must be square for the cell math; if it is not we
+        // refuse to start the gesture so mouseup does not emit a
+        // pointless commit broadcast. The TableTools palette also
+        // disables the buttons in this state — this is defence in
+        // depth for keyboard / programmatic activation.
+        if (tabletop.grid.kind !== 'square') return
         fogPaintingRef.current = tool === 'fog-reveal' ? 'reveal' : 'conceal'
         fogGestureCellsRef.current = new Set()
         paintFogAt(w, tool === 'fog-reveal')
@@ -393,9 +440,11 @@ export function TablePanel({
       stageY,
       tool,
       canEdit,
+      tabletop.grid.kind,
       worldFromPointer,
       startDrawing,
       paintFogAt,
+      isHiddenByFog,
     ],
   )
 
@@ -421,9 +470,13 @@ export function TablePanel({
   const handleMouseUp = useCallback(() => {
     panStateRef.current = null
     if (drawingRef.current) finishDrawing()
+    if (fogPaintingRef.current) {
+      // Flush the throttled fog drag to the wire / disk.
+      commitFog()
+    }
     fogPaintingRef.current = null
     fogGestureCellsRef.current.clear()
-  }, [finishDrawing])
+  }, [finishDrawing, commitFog])
 
   // Two-finger pinch + pan. A single touch is the active tool's
   // gesture: token drag for 'select', stroke / text / fog for the
@@ -434,13 +487,20 @@ export function TablePanel({
       const touches = e.evt.touches
       if (touches.length === 2) {
         e.evt.preventDefault()
-        // A pinch arriving mid-stroke would otherwise commit a broken
-        // line where the user accidentally added a second finger.
-        // Drop the in-flight gesture cleanly.
+        // A pinch arriving mid-pen-stroke aborts the line — the
+        // points haven't been committed yet, so discarding them
+        // matches the user's likely "I'm switching to zoom" intent.
         if (drawingRef.current) {
           drawingRef.current = null
           setDrawingPoints(null)
         }
+        // Fog paints are different: each cell was already applied
+        // locally (and broadcast through the throttled live path)
+        // during the drag, so commit the partial work to push the
+        // final state to the wire / disk before yielding to the
+        // pinch. Otherwise the throttle could have dropped the last
+        // few cells and clients would be left out of sync.
+        if (fogPaintingRef.current) commitFog()
         fogPaintingRef.current = null
         fogGestureCellsRef.current.clear()
         const t1 = touches[0]
@@ -463,11 +523,14 @@ export function TablePanel({
       if (!w) return
       e.evt.preventDefault()
       if (tool === 'pen') {
+        if (isHiddenByFog(w)) return
         startDrawing(w)
       } else if (tool === 'text') {
-        setTextDraft({ x: w.x, y: w.y, value: '' })
+        if (isHiddenByFog(w)) return
+        setTextDraft({ x: w.x, y: w.y })
       } else if (tool === 'fog-reveal' || tool === 'fog-conceal') {
         if (!canEdit) return
+        if (tabletop.grid.kind !== 'square') return
         fogPaintingRef.current = tool === 'fog-reveal' ? 'reveal' : 'conceal'
         fogGestureCellsRef.current = new Set()
         paintFogAt(w, tool === 'fog-reveal')
@@ -479,9 +542,12 @@ export function TablePanel({
       stageY,
       tool,
       canEdit,
+      tabletop.grid.kind,
       worldFromPointer,
       startDrawing,
       paintFogAt,
+      isHiddenByFog,
+      commitFog,
     ],
   )
 
@@ -531,11 +597,12 @@ export function TablePanel({
       // The tool drag is also over when the last finger lifts.
       if (e.evt.touches.length === 0) {
         if (drawingRef.current) finishDrawing()
+        if (fogPaintingRef.current) commitFog()
         fogPaintingRef.current = null
         fogGestureCellsRef.current.clear()
       }
     },
-    [finishDrawing],
+    [finishDrawing, commitFog],
   )
 
   // Compute the visible world rectangle so the grid renderer only draws
@@ -777,7 +844,13 @@ export function TablePanel({
                 />
               )}
             </Layer>
-            <Layer>
+            {/* Tokens. Listen for events only when 'select' (or any
+                non-eraser tool that the user might want to drag
+                tokens with) is active. In eraser mode the layer is
+                listening-free so a click reaches the stroke layer
+                directly underneath a token, otherwise a stroke
+                hidden under a token would be impossible to erase. */}
+            <Layer listening={tool !== 'eraser'}>
               {tabletop.tokens.map((token) => (
                 <TokenView
                   key={token.id}
@@ -818,11 +891,15 @@ export function TablePanel({
                 />
               ))}
             </Layer>
-            {/* Fog of war — top layer. listening=false so the GM can
-                paint with the fog tool: clicks pass straight through
-                to the stage's tool-aware mousedown handler. */}
+            {/* Fog of war — top layer. For the GM (or offline
+                sandbox), listening=false so the fog tools can paint
+                straight through to the stage's mousedown handler.
+                For non-GM, listening=true so the opaque fog also
+                blocks hit-testing on the layers beneath — a token
+                hidden under fog stays uninteractable, matching the
+                "players cannot see fogged areas" requirement. */}
             {tabletop.fog.enabled && (
-              <Layer listening={false}>
+              <Layer listening={!canEdit}>
                 <FogLayer
                   fog={tabletop.fog}
                   grid={tabletop.grid}
@@ -861,6 +938,11 @@ export function TablePanel({
         )}
         {textDraft && (
           <TextDraftInput
+            // Key on position so a fresh click in text mode remounts
+            // the input — the local value state resets to '' even
+            // when the parent's `textDraft` reference happens to
+            // change in place.
+            key={`${textDraft.x},${textDraft.y}`}
             stageX={stageX}
             stageY={stageY}
             stageScale={stageScale}
@@ -868,12 +950,8 @@ export function TablePanel({
             worldY={textDraft.y}
             color={toolColor}
             fontSize={textSize}
-            value={textDraft.value}
-            onChange={(value) =>
-              setTextDraft((prev) => (prev ? { ...prev, value } : prev))
-            }
-            onCommit={() => {
-              const trimmed = textDraft.value.trim()
+            onCommit={(value) => {
+              const trimmed = value.trim()
               if (trimmed) {
                 addMapText(trimmed, textDraft.x, textDraft.y, {
                   color: toolColor,
@@ -896,6 +974,7 @@ export function TablePanel({
         textSize={textSize}
         onTextSizeChange={setTextSize}
         canEditFog={canEdit}
+        fogPaintReady={tabletop.grid.kind === 'square'}
       />
       {showMapOps && (
         <TableToolbar
@@ -1105,7 +1184,16 @@ function MapImage({
   width: number
   height: number
 }) {
-  const [image] = useImage(src)
+  const [image, status] = useImage(src)
+  // Defensive: a corrupted dataUrl arriving over the wire, an image
+  // the browser cannot decode, or invalid dimensions from a malformed
+  // sync would otherwise reach Konva / canvas and could throw. Guard
+  // each so the ErrorBoundary stays a true safety net rather than the
+  // primary handler.
+  if (!src) return null
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null
+  if (width <= 0 || height <= 0) return null
+  if (status === 'failed') return null
   if (!image) return null
   return <KonvaImage image={image} x={0} y={0} width={width} height={height} />
 }
@@ -1496,9 +1584,9 @@ interface TextDraftInputProps {
   worldY: number
   color: string
   fontSize: number
-  value: string
-  onChange: (value: string) => void
-  onCommit: () => void
+  /** Commit the current draft text. The parent decides whether an
+   *  empty string cancels or no-ops (currently: cancel). */
+  onCommit: (value: string) => void
   onCancel: () => void
 }
 
@@ -1507,6 +1595,12 @@ interface TextDraftInputProps {
  * label. Positioned in screen coords matching the world-space click
  * point so the input visually replaces the label that will be
  * committed. Enter places it; Escape cancels.
+ *
+ * The draft text lives in this component's local state — bubbling
+ * every keystroke up to `TablePanel` would re-render the Konva stage
+ * on each character, which is wasteful (the stage doesn't depend on
+ * the draft). The parent re-keys this component on click position
+ * so a fresh placement starts with an empty input.
  */
 function TextDraftInput({
   stageX,
@@ -1516,16 +1610,34 @@ function TextDraftInput({
   worldY,
   color,
   fontSize,
-  value,
-  onChange,
   onCommit,
   onCancel,
 }: TextDraftInputProps) {
   const { t } = useI18n()
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
+  const [value, setValue] = useState('')
   const screenX = worldX * stageScale + stageX
   const screenY = worldY * stageScale + stageY
+  // Outside-click commits the draft so the user does not have to hit
+  // the explicit "place" button (or Enter) after typing. The effect
+  // re-binds when `value` or `onCommit` change so the listener always
+  // has fresh closures — a DOM listener rebind is cheap and avoids
+  // the React 19 "no ref writes during render" rule that a ref-based
+  // workaround would trip. `onCommit` decides commit-vs-cancel based
+  // on the value it receives.
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      const el = wrapperRef.current
+      if (!el) return
+      if (e.target instanceof Node && el.contains(e.target)) return
+      onCommit(value)
+    }
+    document.addEventListener('pointerdown', onDown, true)
+    return () => document.removeEventListener('pointerdown', onDown, true)
+  }, [value, onCommit])
   return (
     <div
+      ref={wrapperRef}
       className="tabletop-text-draft"
       style={{
         left: `${Math.round(screenX)}px`,
@@ -1537,11 +1649,11 @@ function TextDraftInput({
         type="text"
         maxLength={200}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault()
-            onCommit()
+            onCommit(value)
           } else if (e.key === 'Escape') {
             e.preventDefault()
             onCancel()
@@ -1554,7 +1666,11 @@ function TextDraftInput({
         }}
       />
       <div className="tabletop-text-draft-actions">
-        <button type="button" className="tabletop-toolbar-button" onClick={onCommit}>
+        <button
+          type="button"
+          className="tabletop-toolbar-button"
+          onClick={() => onCommit(value)}
+        >
           {t('tabletop.tools.textOk')}
         </button>
         <button

@@ -44,6 +44,10 @@ interface Props {
   /** True when the local actor is GM (or in offline sandbox). Gates the
    *  fog tools. */
   canEditFog: boolean
+  /** True when fog of war can actually be painted (square grid). The
+   *  fog reveal / conceal buttons are rendered but disabled when
+   *  false, with a tooltip explaining why. */
+  fogPaintReady: boolean
 }
 
 interface ToolButtonProps {
@@ -51,20 +55,38 @@ interface ToolButtonProps {
   label: string
   icon: React.ReactNode
   active: boolean
+  /** When true the button is rendered but disabled (greyed out). The
+   *  click handler is suppressed so a stuck-on tool cannot leak into
+   *  the canvas. */
+  disabled?: boolean
+  /** Tooltip override; defaults to `label`. */
+  title?: string
   onSelect: (tool: TableTool) => void
 }
 
 /** One pill in the tool palette. Hoisted out of `TableTools` so React
  *  does not recreate the component identity on every render — the
  *  react-hooks/static-components rule trips on inline components. */
-function ToolButton({ name, label, icon, active, onSelect }: ToolButtonProps) {
+function ToolButton({
+  name,
+  label,
+  icon,
+  active,
+  disabled,
+  title,
+  onSelect,
+}: ToolButtonProps) {
   return (
     <button
       type="button"
       className={`tabletop-tools-btn${active ? ' active' : ''}`}
       aria-pressed={active}
-      title={label}
-      onClick={() => onSelect(name)}
+      title={title ?? label}
+      disabled={disabled}
+      onClick={() => {
+        if (disabled) return
+        onSelect(name)
+      }}
     >
       {icon}
       <span className="tabletop-tools-label">{label}</span>
@@ -89,6 +111,7 @@ export function TableTools({
   textSize,
   onTextSizeChange,
   canEditFog,
+  fogPaintReady,
 }: Props) {
   const { t } = useI18n()
 
@@ -133,6 +156,12 @@ export function TableTools({
             label={t('tabletop.tools.fogReveal')}
             icon={<FogClearIcon size={18} />}
             active={tool === 'fog-reveal'}
+            disabled={!fogPaintReady}
+            title={
+              fogPaintReady
+                ? t('tabletop.tools.fogReveal')
+                : t('tabletop.fog.needGrid')
+            }
             onSelect={onToolChange}
           />
           <ToolButton
@@ -140,6 +169,12 @@ export function TableTools({
             label={t('tabletop.tools.fogConceal')}
             icon={<FogIcon size={18} />}
             active={tool === 'fog-conceal'}
+            disabled={!fogPaintReady}
+            title={
+              fogPaintReady
+                ? t('tabletop.tools.fogConceal')
+                : t('tabletop.fog.needGrid')
+            }
             onSelect={onToolChange}
           />
         </>

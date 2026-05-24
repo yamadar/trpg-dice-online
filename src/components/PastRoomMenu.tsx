@@ -8,6 +8,7 @@ import {
   type SessionSummary,
 } from '../storage/roomLog'
 import { buildRoomExport, roomExportFilename, type TranslationRecord } from '../storage/roomExport'
+import { loadTabletop } from '../storage/tabletop'
 import type { ChatMessage, Player } from '../net/protocol'
 import { playerColor } from '../players/colors'
 import { composeName } from '../players/identity'
@@ -103,9 +104,10 @@ export function PastRoomMenu({ session, playerId, onBack }: Props) {
     if (busy) return
     setBusy(true)
     try {
-      const [entries, characters] = await Promise.all([
+      const [entries, characters, tabletop] = await Promise.all([
         loadFullLog(session.sessionId),
         loadSessionCharacters(session.sessionId),
+        loadTabletop(session.sessionId),
       ])
       const translations: TranslationRecord[] = []
       const seen = new Set<string>()
@@ -139,6 +141,9 @@ export function PastRoomMenu({ session, playerId, onBack }: Props) {
         entries,
         translations,
         characters,
+        // No exportedAt override — let the function stamp `Date.now()`.
+        undefined,
+        tabletop,
       )
       const blob = new Blob([zip], { type: 'application/zip' })
       const url = URL.createObjectURL(blob)

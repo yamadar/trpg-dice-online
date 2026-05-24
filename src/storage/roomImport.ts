@@ -8,8 +8,10 @@
 
 import { strFromU8, unzipSync } from 'fflate'
 import { normalizeRoomCode } from '../net/protocol'
+import { sanitizeStoredTabletop } from './tabletop'
 import type { LogEntry, LogKind, SessionCharacterDraft } from './roomLog'
 import type { TranslationRecord } from './roomExport'
+import type { MapBackground, TabletopState } from '../tabletop/types'
 
 /** A room export parsed and ready to restore. */
 export interface RoomImport {
@@ -22,6 +24,11 @@ export interface RoomImport {
    *  portrait data URL inlined. Empty when reading a v4-or-older
    *  archive. */
   characters: SessionCharacterDraft[]
+  /** Tabletop state (v6+), with the background-map image re-inlined as
+   *  a data URL from the archive. Null when the archive is older than
+   *  v6, when the source room had no tabletop state, or when the
+   *  manifest's tabletop section was unrecognisable. */
+  tabletop: TabletopState | null
 }
 
 function isLogKind(value: unknown): value is LogKind {
@@ -128,6 +135,53 @@ function parseCharacter(
 }
 
 /**
+ * Validate the manifest's `tabletop` section, re-inlining the
+ * background-map image from the archive's `attachments/maps/` file.
+ * Everything else is normalised through `sanitizeStoredTabletop` so
+ * the same defence-in-depth used for IndexedDB-loaded state catches
+ * malformed wire data here too. Returns null when the section is
+ * absent / unrecognisable so the caller can default to "no tabletop".
+ */
+function parseTabletop(
+  raw: unknown,
+  files: Record<string, Uint8Array>,
+): TabletopState | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  // Re-inline the map's image bytes from the archive. If the path is
+  // missing or the bytes are not there, the map record is dropped —
+  // the sanitizer below would otherwise produce a record with an
+  // empty dataUrl that renderers cannot draw.
+  let map: MapBackground | undefined
+  if (r.map && typeof r.map === 'object') {
+    const m = r.map as Record<string, unknown>
+    const id = typeof m.id === 'string' ? m.id : ''
+    const imagePath = typeof m.imagePath === 'string' ? m.imagePath : ''
+    if (id && imagePath) {
+      const bytes = files[imagePath]
+      const type = typeof m.imageType === 'string' ? m.imageType : 'image/png'
+      if (bytes && type.startsWith('image/')) {
+        map = {
+          id,
+          name: typeof m.name === 'string' ? m.name : '',
+          width: typeof m.width === 'number' ? m.width : 0,
+          height: typeof m.height === 'number' ? m.height : 0,
+          dataUrl: bytesToDataUrl(bytes, type),
+        }
+      }
+    }
+  }
+  // Hand the rest to the existing sanitizer. It re-derives texts /
+  // strokes / fog / tokens / npcLibrary defensively, so a v6-or-newer
+  // archive that gained additional fields in the future will still
+  // round-trip the bits the current code understands.
+  return sanitizeStoredTabletop({
+    ...r,
+    ...(map ? { map } : { map: undefined }),
+  })
+}
+
+/**
  * Parse a room-export ZIP. Returns the room identity and its durable-log
  * entries (attachments re-inlined), or null if the bytes are not a
  * recognizable room export.
@@ -171,11 +225,13 @@ export function parseRoomImport(zipBytes: Uint8Array): RoomImport | null {
     const c = parseCharacter(raw, files)
     if (c) characters.push(c)
   }
+  const tabletop = parseTabletop(m.tabletop, files)
   return {
     roomCode,
     roomName: typeof room.name === 'string' ? room.name : '',
     entries,
     translations,
     characters,
+    tabletop,
   }
 }

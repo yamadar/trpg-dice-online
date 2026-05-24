@@ -4,6 +4,7 @@ import { buildRoomExport, type TranslationRecord } from './roomExport'
 import { parseRoomImport } from './roomImport'
 import type { LogEntry } from './roomLog'
 import type { Player } from '../net/protocol'
+import { DEFAULT_FOG, DEFAULT_GRID, type TabletopState } from '../tabletop/types'
 
 const players: Player[] = [
   {
@@ -112,6 +113,110 @@ describe('parseRoomImport', () => {
     expect(alice.image).toBe(HELLO_URL)
     const bob = result.characters.find((c) => c.playerId === 'p2')!
     expect(bob.image).toBe('')
+  })
+
+  it('round-trips the tabletop state with the map image re-inlined', () => {
+    const tabletop: TabletopState = {
+      map: {
+        id: 'map-1',
+        name: 'dungeon.png',
+        width: 100,
+        height: 100,
+        dataUrl: HELLO_URL,
+      },
+      grid: { ...DEFAULT_GRID, kind: 'square', cellSize: 50 },
+      tokens: [
+        { id: 'tok-1', kind: 'gm', x: 10, y: 20, image: '', label: 'Goblin' },
+      ],
+      npcLibrary: [{ id: 'npc-1', name: 'Goblin', image: '' }],
+      texts: [
+        {
+          id: 'txt-1',
+          x: 50,
+          y: 60,
+          text: 'door',
+          color: '#ffffff',
+          fontSize: 20,
+          ownerPlayerId: 'p1',
+        },
+      ],
+      strokes: [
+        {
+          id: 'str-1',
+          points: [0, 0, 10, 10, 20, 20],
+          color: '#ff0000',
+          width: 4,
+          ownerPlayerId: 'p1',
+        },
+      ],
+      fog: { enabled: true, revealed: ['0,0', '1,1'] },
+    }
+    const result = parsed(
+      buildRoomExport(
+        { code: 'ABCDEF', name: '' },
+        players,
+        [],
+        [],
+        [],
+        1,
+        tabletop,
+      ),
+    )
+    expect(result.tabletop).toBeDefined()
+    // The map's dataUrl was extracted to an archive file by the
+    // exporter; the importer reads the bytes back and re-inlines them
+    // so the result matches the original shape.
+    expect(result.tabletop?.map?.dataUrl).toBe(HELLO_URL)
+    expect(result.tabletop?.map?.width).toBe(100)
+    expect(result.tabletop?.texts).toEqual(tabletop.texts)
+    expect(result.tabletop?.strokes).toEqual(tabletop.strokes)
+    expect(result.tabletop?.fog).toEqual(tabletop.fog)
+    expect(result.tabletop?.tokens).toEqual(tabletop.tokens)
+    expect(result.tabletop?.npcLibrary).toEqual(tabletop.npcLibrary)
+  })
+
+  it('drops the tabletop map when its archive file is missing', () => {
+    // Construct a manifest that points at an attachment that doesn't
+    // actually live in the ZIP — the importer should fall back to a
+    // tabletop without the map rather than render a broken record.
+    const manifest = {
+      type: 'trpg-dice-room-log',
+      version: 6,
+      room: { code: 'ABCDEF', name: '' },
+      entries: [],
+      tabletop: {
+        map: {
+          id: 'map-1',
+          name: 'gone.png',
+          width: 100,
+          height: 100,
+          imagePath: 'attachments/maps/missing.png',
+          imageType: 'image/png',
+        },
+        grid: DEFAULT_GRID,
+        tokens: [],
+        npcLibrary: [],
+        texts: [],
+        strokes: [],
+        fog: DEFAULT_FOG,
+      },
+    }
+    const zip = zipSync({ 'room.json': strToU8(JSON.stringify(manifest)) })
+    const result = parsed(zip)
+    expect(result.tabletop?.map).toBeUndefined()
+    // The rest of the state still hydrates.
+    expect(result.tabletop?.grid).toBeDefined()
+  })
+
+  it('treats a v5-or-older archive as having no tabletop', () => {
+    const manifest = {
+      type: 'trpg-dice-room-log',
+      version: 5,
+      room: { code: 'ABCDEF', name: '' },
+      entries: [],
+    }
+    const zip = zipSync({ 'room.json': strToU8(JSON.stringify(manifest)) })
+    expect(parsed(zip).tabletop).toBeNull()
   })
 
   it('treats a v4-or-older archive as having no character records', () => {

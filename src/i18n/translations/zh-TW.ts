@@ -141,6 +141,16 @@ export const zhTW: Dict = {
   'tabletop.fog.needGrid': 'Set a square grid first.',
   'tabletop.text.removeOwn': 'Remove text',
   'tabletop.stroke.removeOwn': 'Erase stroke',
+  'tabletop.error.title': 'Tabletop hit a snag',
+  'tabletop.error.body': 'Something went wrong while drawing the tabletop. Your room is still connected — try one of the actions below to recover.',
+  'tabletop.error.retry': 'Try again',
+  'tabletop.error.clearMap': 'Remove background map',
+  'tabletop.error.close': 'Close tabletop',
+  'tabletop.error.details': 'Error details',
+  'app.error.title': 'Something went wrong',
+  'app.error.body': 'The app hit an unexpected error. Reloading usually fixes it; your saved data is kept.',
+  'app.error.reload': 'Reload',
+  'app.error.details': 'Error details',
 
 
   'status.offline': '離線',
