@@ -36,7 +36,6 @@ import {
   ChatIcon,
   CloseIcon,
   DiceIcon,
-  PatternsIcon,
   TabletopIcon,
   TrashIcon,
 } from './icons'
@@ -62,18 +61,13 @@ interface Props {
    */
   chatPanel?: ReactNode
   /**
-   * The dice roller as a floating overlay when the "dice" toggle is
-   * on. Composed by the parent so it can reuse the same draft state
-   * as the Dock-launched dice Sheet.
+   * The combined dice roller + saved-pattern list as a floating
+   * overlay when the "rolls" toggle is on. Composed by the parent so
+   * it can reuse the same draft state as the Dock-launched dice Sheet.
+   * The compact pattern list keeps both sections within ~320 px wide
+   * without the formula row overflowing.
    */
-  dicePanel?: ReactNode
-  /**
-   * The pattern list as a separate floating overlay when the
-   * "patterns" toggle is on. Split from the dice panel (PR fix)
-   * because cramming both into one ~320px overlay made the formula
-   * row overflow and the pattern chips unreadable.
-   */
-  patternsPanel?: ReactNode
+  rollsPanel?: ReactNode
   /** Surface a flash message (forwarded to the toolbar). */
   onNotice?: (text: string, kind: 'success' | 'error') => void
 }
@@ -112,8 +106,7 @@ export function TablePanel({
   characters,
   activeCharacterId,
   chatPanel,
-  dicePanel,
-  patternsPanel,
+  rollsPanel,
   onNotice,
 }: Props) {
   const { t } = useI18n()
@@ -141,8 +134,9 @@ export function TablePanel({
    */
   const [showMapOps, setShowMapOps] = useState(true)
   const [showChat, setShowChat] = useState(false)
-  const [showDice, setShowDice] = useState(false)
-  const [showPatterns, setShowPatterns] = useState(false)
+  /** Single toggle for the combined dice + patterns overlay (the two
+   *  used to be separate toggles but the dice sheet now houses both). */
+  const [showRolls, setShowRolls] = useState(false)
   // Mirrors the wire-level permission: a non-host can drag their own
   // PC tokens; a host (or offline sandbox) can drag anything. Wrapped
   // here so the `draggable` prop on each `TokenView` reads it
@@ -722,31 +716,17 @@ export function TablePanel({
               </span>
             </button>
           )}
-          {dicePanel && (
+          {rollsPanel && (
             <button
               type="button"
-              className={`tabletop-toggle-btn${showDice ? ' active' : ''}`}
-              aria-pressed={showDice}
+              className={`tabletop-toggle-btn${showRolls ? ' active' : ''}`}
+              aria-pressed={showRolls}
               title={t('tabletop.toggle.dice')}
-              onClick={() => setShowDice((v) => !v)}
+              onClick={() => setShowRolls((v) => !v)}
             >
               <DiceIcon size={18} />
               <span className="tabletop-toggle-label">
                 {t('tabletop.toggle.dice')}
-              </span>
-            </button>
-          )}
-          {patternsPanel && (
-            <button
-              type="button"
-              className={`tabletop-toggle-btn${showPatterns ? ' active' : ''}`}
-              aria-pressed={showPatterns}
-              title={t('tabletop.toggle.patterns')}
-              onClick={() => setShowPatterns((v) => !v)}
-            >
-              <PatternsIcon size={18} />
-              <span className="tabletop-toggle-label">
-                {t('tabletop.toggle.patterns')}
               </span>
             </button>
           )}
@@ -1021,20 +1001,12 @@ export function TablePanel({
           {chatPanel}
         </aside>
       )}
-      {dicePanel && showDice && (
+      {rollsPanel && showRolls && (
         <aside
-          className="tabletop-overlay tabletop-overlay-dice"
+          className="tabletop-overlay tabletop-overlay-rolls"
           aria-label={t('tabletop.toggle.dice')}
         >
-          {dicePanel}
-        </aside>
-      )}
-      {patternsPanel && showPatterns && (
-        <aside
-          className="tabletop-overlay tabletop-overlay-patterns"
-          aria-label={t('tabletop.toggle.patterns')}
-        >
-          {patternsPanel}
+          {rollsPanel}
         </aside>
       )}
     </div>

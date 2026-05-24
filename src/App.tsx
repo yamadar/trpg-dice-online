@@ -19,7 +19,6 @@ import {
   CharacterIcon,
   CloseIcon,
   DiceIcon,
-  PatternsIcon,
   RoomIcon,
 } from './components/icons'
 import { StatusBar } from './components/StatusBar'
@@ -31,8 +30,8 @@ import { Sheet } from './components/Sheet'
 import { RoomPanel } from './components/RoomPanel'
 import { RoomHistory } from './components/RoomHistory'
 import { CharacterPanel } from './components/CharacterPanel'
-import { DiceRoller, type Draft } from './components/DiceRoller'
-import { PatternList } from './components/PatternList'
+import { type Draft } from './components/DiceRoller'
+import { RollsPanel } from './components/RollsPanel'
 import { ActivityPanel } from './components/ActivityPanel'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { TablePanel } from './components/TablePanel'
@@ -380,19 +379,15 @@ function App() {
                 : 'room.section'
               : openSheet === 'character'
                 ? 'character.section'
-                : openSheet === 'dice'
-                  ? 'dice.section'
-                  : 'pattern.section',
+                : 'dice.section',
           )}
           titleIcon={
             openSheet === 'room' ? (
               <RoomIcon size={20} />
             ) : openSheet === 'character' ? (
               <CharacterIcon size={20} />
-            ) : openSheet === 'dice' ? (
-              <DiceIcon size={20} />
             ) : (
-              <PatternsIcon size={20} />
+              <DiceIcon size={20} />
             )
           }
           onClose={() => setOpenSheet(null)}
@@ -416,20 +411,15 @@ function App() {
             <CharacterPanel characters={characters} onNotice={flash} />
           )}
           {openSheet === 'dice' && (
-            <DiceRoller
+            <RollsPanel
               draft={draft}
-              onChange={setDraft}
+              onDraftChange={setDraft}
               isGM={session.isGM}
               onRoll={handleRoll}
               onSave={handleSave}
-            />
-          )}
-          {openSheet === 'patterns' && (
-            <PatternList
               hasCharacter={characters.activeCharacter !== null}
               characterName={characters.activeCharacter?.name ?? ''}
               patterns={characters.activeCharacter?.patterns ?? []}
-              isGM={session.isGM}
               onLoad={handleLoad}
               onQuickRoll={handleQuickRoll}
               onDelete={handleDeletePattern}
@@ -484,21 +474,16 @@ function App() {
                 onOpenRoom={() => setOpenSheet('room')}
               />
             }
-            dicePanel={
-              <DiceRoller
+            rollsPanel={
+              <RollsPanel
                 draft={draft}
-                onChange={setDraft}
+                onDraftChange={setDraft}
                 isGM={session.isGM}
                 onRoll={handleRoll}
                 onSave={handleSave}
-              />
-            }
-            patternsPanel={
-              <PatternList
                 hasCharacter={characters.activeCharacter !== null}
                 characterName={characters.activeCharacter?.name ?? ''}
                 patterns={characters.activeCharacter?.patterns ?? []}
-                isGM={session.isGM}
                 onLoad={handleLoad}
                 onQuickRoll={handleQuickRoll}
                 onDelete={handleDeletePattern}
