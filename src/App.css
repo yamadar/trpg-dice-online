@@ -844,6 +844,35 @@
 .tabletop-tools-row > input {
   width: 100%;
 }
+/* Make the pen / text colour input render as a flat swatch so the
+   currently-selected colour is clearly visible. The browser default
+   varies (Chrome shows a small inset chip, Firefox shows an opaque
+   button), so we strip the chrome with `appearance: none` and use
+   the WebKit `color-swatch` pseudo to fill the box edge-to-edge.
+   Clicking still opens the native picker — only the rendering of
+   the resting state changes. */
+.tabletop-tools-color-input {
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+.tabletop-tools-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.tabletop-tools-color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+.tabletop-tools-color-input::-moz-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
 
 /* --- Tabletop text-draft input ---
    The floating HTML input shown while the user types a new map

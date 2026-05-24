@@ -77,6 +77,8 @@ export const ja: Dict = {
   'tabletop.tokenEdit.remove': '削除',
   'tabletop.tokenEdit.close': '閉じる',
   'tabletop.playerToken.place': '配置',
+  'tabletop.playerToken.placed': '配置済み',
+  'tabletop.playerToken.alreadyPlaced': 'このキャラクターは既にマップ上に配置されています',
   'tabletop.playerToken.noCharacters': 'まずキャラクターを作成してください',
   'tabletop.npcLibrary.title': 'NPC ライブラリ',
   'tabletop.npcLibrary.namePlaceholder': 'NPC 名',

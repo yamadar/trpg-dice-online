@@ -26,14 +26,24 @@ interface Props {
   onSetMap: (file: File) => Promise<'ok' | MapImageError>
   onClearMap: () => void
   /** Local player's own characters (from `useCharacters`). The toolbar
-   *  surfaces these as "place token" buttons so a player can add
-   *  themselves to the map — multiple times if they want. */
+   *  surfaces these as "place token" buttons so a player can add their
+   *  characters to the map. Each character can only have one token on
+   *  the map at a time; `placedCharacterIds` flips the per-character
+   *  button to a disabled "already placed" state. */
   characters: ReadonlyArray<Character>
+  /**
+   * IDs of the local player's characters that already have a token on
+   * the map. Used to disable the "place" button so the GM (and the
+   * player) cannot accidentally produce duplicates.
+   */
+  placedCharacterIds: ReadonlySet<string>
   /** Place a fresh PC token for the local player's named character.
-   *  Multi-placement is allowed: each call mints a new token id.
-   *  `characterName` and `image` are stamped onto the token's
-   *  `snapshot` so the renderer can show a portrait and label for
-   *  characters that are not currently the player's active one. */
+   *  One token per `(playerId, characterId)` is enforced at the
+   *  session level; this UI just hides the affordance when one is
+   *  already on the map. `characterName` and `image` are stamped onto
+   *  the token's `snapshot` so the renderer can show a portrait and
+   *  label for characters that are not currently the player's active
+   *  one. */
   onPlaceMyCharacter: (
     characterId: string,
     characterName: string,
@@ -96,6 +106,7 @@ export function TableToolbar({
   onClearMap,
   characters,
   onPlaceMyCharacter,
+  placedCharacterIds,
   npcLibrary,
   onAddNpcDef,
   onRemoveNpcDef,
@@ -499,34 +510,49 @@ export function TableToolbar({
             </p>
           ) : (
             <ul className="tabletop-toolbar-list">
-              {characters.map((char) => (
-                <li key={char.id} className="tabletop-toolbar-list-item">
-                  {char.image ? (
-                    <img
-                      src={char.image}
-                      alt=""
-                      className="tabletop-toolbar-thumb"
-                    />
-                  ) : (
-                    <span className="tabletop-toolbar-thumb placeholder" />
-                  )}
-                  <span
-                    className="tabletop-toolbar-list-label"
-                    title={char.name}
-                  >
-                    {char.name}
-                  </span>
-                  <button
-                    type="button"
-                    className="tabletop-toolbar-list-action"
-                    onClick={() =>
-                      onPlaceMyCharacter(char.id, char.name, char.image || '')
-                    }
-                  >
-                    {t('tabletop.playerToken.place')}
-                  </button>
-                </li>
-              ))}
+              {characters.map((char) => {
+                const placed = placedCharacterIds.has(char.id)
+                return (
+                  <li key={char.id} className="tabletop-toolbar-list-item">
+                    {char.image ? (
+                      <img
+                        src={char.image}
+                        alt=""
+                        className="tabletop-toolbar-thumb"
+                      />
+                    ) : (
+                      <span className="tabletop-toolbar-thumb placeholder" />
+                    )}
+                    <span
+                      className="tabletop-toolbar-list-label"
+                      title={char.name}
+                    >
+                      {char.name}
+                    </span>
+                    <button
+                      type="button"
+                      className="tabletop-toolbar-list-action"
+                      disabled={placed}
+                      title={
+                        placed
+                          ? t('tabletop.playerToken.alreadyPlaced')
+                          : t('tabletop.playerToken.place')
+                      }
+                      onClick={() =>
+                        onPlaceMyCharacter(
+                          char.id,
+                          char.name,
+                          char.image || '',
+                        )
+                      }
+                    >
+                      {placed
+                        ? t('tabletop.playerToken.placed')
+                        : t('tabletop.playerToken.place')}
+                    </button>
+                  </li>
+                )
+              })}
             </ul>
           )}
 

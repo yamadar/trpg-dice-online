@@ -77,6 +77,8 @@ export const ru: Dict = {
   'tabletop.tokenEdit.remove': 'Remove',
   'tabletop.tokenEdit.close': 'Close',
   'tabletop.playerToken.place': 'Place',
+  'tabletop.playerToken.placed': 'On map',
+  'tabletop.playerToken.alreadyPlaced': 'This character already has a token on the map.',
   'tabletop.playerToken.noCharacters': 'Create a character first to place a token.',
   'tabletop.npcLibrary.title': 'NPC library',
   'tabletop.npcLibrary.namePlaceholder': 'NPC name',

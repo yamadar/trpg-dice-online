@@ -613,6 +613,22 @@ export function TablePanel({
   )
 
   /**
+   * Character ids the local player has already placed on the map. The
+   * toolbar uses this to disable per-character "place" buttons so the
+   * one-token-per-character rule shows up in the UI instead of the
+   * click silently no-op'ing.
+   */
+  const placedCharacterIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const tok of tabletop.tokens) {
+      if (tok.kind === 'pc' && tok.ownerPlayerId === session.playerId) {
+        ids.add(tok.characterId)
+      }
+    }
+    return ids
+  }, [tabletop.tokens, session.playerId])
+
+  /**
    * Find the local player's PC token for their active character so the
    * first paint can centre on it. `null` when none exists (no
    * character set, or no placement yet) — the centring effect
@@ -964,6 +980,10 @@ export function TablePanel({
           onSetMap={session.setMapBackground}
           onClearMap={session.clearMapBackground}
           characters={characters}
+          // One PC token per character — collect the local player's
+          // already-placed characterIds so the toolbar can disable
+          // their "place" button instead of letting the click no-op.
+          placedCharacterIds={placedCharacterIds}
           onPlaceMyCharacter={session.placeMyCharacterToken}
           npcLibrary={tabletop.npcLibrary}
           onAddNpcDef={session.addNpcDef}

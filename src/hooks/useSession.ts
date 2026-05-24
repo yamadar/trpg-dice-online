@@ -1097,11 +1097,11 @@ export function useSession(): Session {
   )
 
   /**
-   * Place ANOTHER PC token for the local player's named character.
-   * Unlike `addPlayerToken` (host-only, "one token if missing"), this
-   * mints a fresh token id every call so the same character can have
-   * multiple placements. Clients send a request; the host validates
-   * the sender's identity then mints.
+   * Place a PC token for the local player's named character. One token
+   * per `(playerId, characterId)` pair is the rule — the call is a
+   * no-op when a token already exists. Clients send a request; the
+   * host validates the sender's identity and applies the same
+   * uniqueness check before broadcasting.
    *
    * `characterName` and `image` are the caller's snapshot of the
    * character at place time — they get stamped onto the token's
@@ -1113,6 +1113,17 @@ export function useSession(): Session {
   const placeMyCharacterToken = useCallback(
     (characterId: string, characterName?: string, image?: string) => {
       if (roleRef.current === 'client') {
+        // Client-side guard: also bail early if the local view already
+        // shows a token for this character. The host re-checks
+        // authoritatively, so this is only a UX optimisation that
+        // avoids a wasted round-trip.
+        const has = tabletopRef.current.tokens.some(
+          (t) =>
+            t.kind === 'pc' &&
+            t.ownerPlayerId === playerId &&
+            t.characterId === characterId,
+        )
+        if (has) return
         roomRef.current?.sendToHost({
           t: 'pcTokenPlaceRequest',
           characterId,
@@ -1121,12 +1132,20 @@ export function useSession(): Session {
         })
         return
       }
-      // Host (or offline) places for themselves. The placement origin
-      // follows the shared "where do new tokens go" rule
+      // Host (or offline) places for themselves. One PC token per
+      // `(playerId, characterId)` — bail when one already exists.
+      const tabletop = tabletopRef.current
+      const has = tabletop.tokens.some(
+        (t) =>
+          t.kind === 'pc' &&
+          t.ownerPlayerId === playerId &&
+          t.characterId === characterId,
+      )
+      if (has) return
+      // The placement origin follows the shared rule
       // (`defaultPlacementOrigin`): pcSpawn → map centre → grid first
       // cell. With a background map present this lands tokens near
       // the middle of the scene rather than the world's top-left.
-      const tabletop = tabletopRef.current
       const cell = tabletop.grid.cellSize
       const index = tabletop.tokens.length
       const origin = defaultPlacementOrigin(tabletop)
@@ -1938,6 +1957,17 @@ export function useSession(): Session {
           const sender = peerPlayersRef.current.get(peerId)
           if (!sender) break
           const tabletop = tabletopRef.current
+          // Enforce one PC token per `(playerId, characterId)` — the
+          // client guards against duplicates locally, but the host
+          // re-checks authoritatively so a stale / racy request from
+          // a not-yet-updated client cannot bypass the rule.
+          const has = tabletop.tokens.some(
+            (t) =>
+              t.kind === 'pc' &&
+              t.ownerPlayerId === sender.id &&
+              t.characterId === msg.characterId,
+          )
+          if (has) break
           const cell = tabletop.grid.cellSize
           const index = tabletop.tokens.length
           // Shared default-placement rule (see `defaultPlacementOrigin`):
