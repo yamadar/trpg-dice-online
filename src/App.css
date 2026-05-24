@@ -3288,7 +3288,25 @@ button.char-avatar-large:disabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  /* Bumped padding + gap so the icon and text breathe. Without this
+     the icon sits flush against the label and squeezes the chip's
+     usable area — the label legibility complaint that prompted
+     adding explicit `color` / `font-weight` below. */
+  gap: 8px;
+  padding: 8px 12px;
+  /* `.chip` itself has no explicit text colour, so it inherits from
+     the parent — which can land on the dim default in some themes.
+     Pin the colour and a slightly heavier weight here so the chip's
+     label reads cleanly next to a brightly-tinted kind icon. */
+  color: var(--text);
+  font-weight: 500;
+}
+.chip-kind.active {
+  /* Active state already gets `color: #fff` and `font-weight: 600`
+     from `.chip.active`. Override font-weight to a slightly heavier
+     value so the label outweighs the icon visually when both are
+     white on the accent bg. */
+  font-weight: 700;
 }
 .chip-kind-icon {
   display: inline-flex;
