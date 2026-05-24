@@ -699,6 +699,53 @@
 .tabletop-toolbar-thumb.placeholder {
   background: var(--panel-2);
 }
+/* Initial-letter avatar used when a token / NPC has no image. Matches
+   the canvas-side fallback the renderer paints inside the circle so
+   the user sees the same glyph regardless of where the token is
+   shown. */
+.tabletop-toolbar-thumb-initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--panel-2);
+  text-transform: none;
+  line-height: 1;
+}
+/* Per-row icon button (e.g. "set image" for an NPC). Smaller than the
+   "place" action so the rows do not bloat. */
+.tabletop-toolbar-list-icon-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.tabletop-toolbar-list-icon-btn:hover {
+  background: var(--panel);
+  color: var(--text);
+}
+/* Small "kind" tag (PC / NPC) shown in the placed-tokens list so the
+   row reads at a glance. */
+.tabletop-toolbar-list-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
 .tabletop-toolbar-list-action {
   padding: 4px 10px;
   background: var(--accent-bg, rgba(192, 132, 252, 0.18));

@@ -263,11 +263,15 @@ export interface Session {
   ) => void
   /**
    * GM-only: add an NPC to the library (host-side stash that can be
-   * placed on the map repeatedly). The image runs through the
-   * 300-px / ~200 KB pipeline so the broadcast `npcDefUpsert` stays
-   * inline. Returns `'ok'` or `'unreadable'`.
+   * placed on the map repeatedly). The image is optional at add-time
+   * — the GM enters a name first and can attach (or change) the
+   * portrait later via `updateNpcDef`. When supplied, the image
+   * runs through the 300-px / ~200 KB pipeline so the broadcast
+   * `npcDefUpsert` stays inline. Returns `'ok'` or `'unreadable'`
+   * (the latter only when the image was supplied and failed to
+   * decode; a name-only add cannot fail on image grounds).
    */
-  addNpcDef: (input: File | string, name: string) => Promise<'ok' | 'unreadable'>
+  addNpcDef: (name: string, input?: File | string) => Promise<'ok' | 'unreadable'>
   /** GM-only: edit an NPC library entry's name / image. */
   updateNpcDef: (
     defId: string,
@@ -1208,12 +1212,23 @@ export function useSession(): Session {
    * the GM presses "Place" on it (see `placeNpcFromLibrary`).
    */
   const addNpcDef = useCallback(
-    async (input: File | string, name: string): Promise<'ok' | 'unreadable'> => {
+    async (
+      name: string,
+      input?: File | string,
+    ): Promise<'ok' | 'unreadable'> => {
       if (roleRef.current === 'client') return 'unreadable'
       const trimmed = name.trim()
       if (!trimmed) return 'unreadable'
-      const image = await prepareNpcTokenImage(input)
-      if (!image) return 'unreadable'
+      // Image is optional: the new flow is "add by name, attach the
+      // portrait later via `updateNpcDef`". When supplied here, the
+      // pipeline still rejects unreadable bytes so a corrupted image
+      // doesn't smuggle itself onto the wire under the wrong NPC.
+      let image = ''
+      if (input !== undefined) {
+        const prepared = await prepareNpcTokenImage(input)
+        if (!prepared) return 'unreadable'
+        image = prepared
+      }
       const def: NpcDef = { id: newNpcDefId(), name: trimmed, image }
       applyTabletop({
         ...tabletopRef.current,

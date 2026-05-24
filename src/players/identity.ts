@@ -25,3 +25,17 @@ export function feedName(composedName: string, characterName: string, compact: b
   if (compact && character) return character
   return composedName
 }
+
+/**
+ * First code-point of a name, used as the fallback initial on avatar /
+ * token circles when no portrait has been set. `[...name][0]` (instead
+ * of `name[0]`) keeps a surrogate-pair emoji or a combining-mark glyph
+ * intact. Returns an empty string for a missing / whitespace name so
+ * the caller can decide whether to render the dot blank.
+ */
+export function avatarInitial(name: string | undefined | null): string {
+  if (!name) return ''
+  const trimmed = name.trim()
+  if (!trimmed) return ''
+  return [...trimmed][0] ?? ''
+}
