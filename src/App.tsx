@@ -439,7 +439,42 @@ function App() {
       )}
 
       {tabletopOpen && (
-        <TablePanel session={session} onClose={() => setTabletopOpen(false)} />
+        <TablePanel
+          session={session}
+          onClose={() => setTabletopOpen(false)}
+          chatPanel={
+            <ActivityPanel
+              session={session}
+              characters={characters.characters}
+              compact={compact}
+              showTyping={showTyping}
+              broadcastTyping={broadcastTyping}
+              onNotice={flash}
+              onOpenRoom={() => setOpenSheet('room')}
+            />
+          }
+          dicePanel={
+            <div className="tabletop-dice-stack">
+              <DiceRoller
+                draft={draft}
+                onChange={setDraft}
+                isGM={session.isGM}
+                onRoll={handleRoll}
+                onSave={handleSave}
+              />
+              <PatternList
+                hasCharacter={characters.activeCharacter !== null}
+                characterName={characters.activeCharacter?.name ?? ''}
+                patterns={characters.activeCharacter?.patterns ?? []}
+                isGM={session.isGM}
+                onLoad={handleLoad}
+                onQuickRoll={handleQuickRoll}
+                onDelete={handleDeletePattern}
+                onMove={handleMovePattern}
+              />
+            </div>
+          }
+        />
       )}
 
       {notice && (
