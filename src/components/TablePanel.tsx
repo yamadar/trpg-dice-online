@@ -17,7 +17,8 @@ import { playerColor } from '../players/colors'
 import { characterImagesKey } from '../storage/roomLog'
 import { canMoveToken } from '../tabletop/tokens'
 import type { Grid, Token } from '../tabletop/types'
-import { CloseIcon, TabletopIcon } from './icons'
+import { prepareCharacterImage } from '../characters/image'
+import { CloseIcon, TabletopIcon, TrashIcon } from './icons'
 import { TableToolbar } from './TableToolbar'
 
 interface Props {
@@ -67,6 +68,23 @@ export function TablePanel({ session, onClose }: Props) {
   const tokenActor = useMemo(
     () => ({ playerId: session.playerId, isHost: canEdit }),
     [session.playerId, canEdit],
+  )
+
+  /**
+   * The token whose edit popover is currently open. Cleared by:
+   *   - clicking an empty area of the stage,
+   *   - tapping the same token again (toggle off),
+   *   - pressing the popover's close button,
+   *   - the underlying token being removed (the popover render bails
+   *     out when it cannot find the token in the list).
+   */
+  const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null)
+  const selectedToken = useMemo(
+    () =>
+      selectedTokenId === null
+        ? null
+        : tabletop.tokens.find((t) => t.id === selectedTokenId) ?? null,
+    [selectedTokenId, tabletop.tokens],
   )
 
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -294,6 +312,17 @@ export function TablePanel({ session, onClose }: Props) {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            onClick={(e) => {
+              // A tap that lands on the Stage itself (not a shape)
+              // means the user clicked outside any token — close the
+              // edit popover. The check is `target === stage`, not a
+              // listening flag, so a layer the user has chosen not to
+              // make interactive still counts as "background" here.
+              if (e.target === e.target.getStage()) setSelectedTokenId(null)
+            }}
+            onTap={(e) => {
+              if (e.target === e.target.getStage()) setSelectedTokenId(null)
+            }}
           >
             <Layer listening={false}>
               {tabletop.map?.dataUrl && (
@@ -322,10 +351,35 @@ export function TablePanel({ session, onClose }: Props) {
                   portrait={portraitForToken(token, session)}
                   onDragMove={moveTokenLive}
                   onDragEnd={moveTokenCommit}
+                  onSelect={canEdit ? setSelectedTokenId : undefined}
                 />
               ))}
             </Layer>
           </Stage>
+        )}
+        {canEdit && selectedToken && (
+          <TokenPopover
+            // Key on token id so a selection swap remounts the popover
+            // and `useState(initialLabel)` reseeds for the new token —
+            // avoids a render-phase ref write that the React 19 lint
+            // rule forbids.
+            key={selectedToken.id}
+            token={selectedToken}
+            stageX={stageX}
+            stageY={stageY}
+            stageScale={stageScale}
+            onClose={() => setSelectedTokenId(null)}
+            onRename={(label) =>
+              session.updateGmToken(selectedToken.id, { label })
+            }
+            onChangeImage={(image) =>
+              session.updateGmToken(selectedToken.id, { image })
+            }
+            onRemove={() => {
+              session.removeToken(selectedToken.id)
+              setSelectedTokenId(null)
+            }}
+          />
         )}
       </div>
       {canEdit && (
@@ -336,10 +390,141 @@ export function TablePanel({ session, onClose }: Props) {
           onSetMap={session.setMapBackground}
           onClearMap={session.clearMapBackground}
           tokens={tabletop.tokens}
+          players={session.players}
           onAddGmToken={session.addGmToken}
+          onAddPlayerToken={session.addPlayerToken}
           onRemoveToken={session.removeToken}
         />
       )}
+    </div>
+  )
+}
+
+interface TokenPopoverProps {
+  token: Token
+  stageX: number
+  stageY: number
+  stageScale: number
+  onClose: () => void
+  /** GM-only: change the GM token's label. PC tokens use the character
+   *  record so the popover hides the label field for them. */
+  onRename: (label: string) => void
+  /** GM-only: replace the GM token's image. */
+  onChangeImage: (image: string) => void
+  /** GM-only: remove the token. */
+  onRemove: () => void
+}
+
+/**
+ * Edit menu that floats next to the selected token. DOM (not Konva)
+ * so the inputs use the browser's native chrome, with absolute
+ * positioning over the canvas to keep the popover anchored as the
+ * stage pans / zooms.
+ */
+function TokenPopover({
+  token,
+  stageX,
+  stageY,
+  stageScale,
+  onClose,
+  onRename,
+  onChangeImage,
+  onRemove,
+}: TokenPopoverProps) {
+  const { t } = useI18n()
+  // Local edit buffer so the input stays responsive while waiting for
+  // the host commit to echo back. Commits on blur / Enter, so a typing
+  // burst is a single network update. The parent keys this component
+  // on `token.id`, so a new selection remounts and reseeds this state.
+  const initialLabel = token.kind === 'gm' ? token.label ?? '' : ''
+  const [labelDraft, setLabelDraft] = useState(initialLabel)
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
+
+  // Anchor: 12 px to the right of the token's right edge in screen
+  // space. The radius lookup matches the renderer's `cellSize / 2 - 2`
+  // shape (with the 8 px floor) so the popover sits flush with the
+  // outer ring.
+  const screenX = token.x * stageScale + stageX
+  const screenY = token.y * stageScale + stageY
+
+  const commitLabel = () => {
+    if (labelDraft === initialLabel) return
+    onRename(labelDraft)
+  }
+
+  const handleImagePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const next = await prepareCharacterImage(file)
+    if (next) onChangeImage(next)
+  }
+
+  return (
+    <div
+      className="tabletop-token-popover"
+      style={{
+        left: `${Math.round(screenX)}px`,
+        top: `${Math.round(screenY)}px`,
+      }}
+    >
+      <header className="tabletop-token-popover-header">
+        <span className="tabletop-token-popover-title">
+          {token.kind === 'gm'
+            ? t('tabletop.tokenEdit.titleGm')
+            : t('tabletop.tokenEdit.titlePc')}
+        </span>
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label={t('tabletop.tokenEdit.close')}
+          onClick={onClose}
+        >
+          <CloseIcon size={14} />
+        </button>
+      </header>
+      {token.kind === 'gm' && (
+        <>
+          <label className="tabletop-token-popover-row">
+            <span>{t('tabletop.tokenEdit.label')}</span>
+            <input
+              type="text"
+              value={labelDraft}
+              maxLength={32}
+              onChange={(e) => setLabelDraft(e.target.value)}
+              onBlur={commitLabel}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  commitLabel()
+                  ;(e.target as HTMLInputElement).blur()
+                }
+              }}
+            />
+          </label>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleImagePick}
+          />
+          <button
+            type="button"
+            className="tabletop-toolbar-button outline"
+            onClick={() => imageInputRef.current?.click()}
+          >
+            {t('tabletop.tokenEdit.changeImage')}
+          </button>
+        </>
+      )}
+      <button
+        type="button"
+        className="tabletop-toolbar-button outline danger"
+        onClick={onRemove}
+      >
+        <TrashIcon />
+        <span>{t('tabletop.tokenEdit.remove')}</span>
+      </button>
     </div>
   )
 }
@@ -381,6 +566,10 @@ interface TokenViewProps {
   portrait: string | undefined
   onDragMove: (tokenId: string, x: number, y: number) => void
   onDragEnd: (tokenId: string, x: number, y: number) => void
+  /** Called on a tap / click that is not the start of a drag. Used to
+   *  open the token-edit popover. `undefined` when the viewer has no
+   *  edit permission so the click is a no-op. */
+  onSelect?: (tokenId: string) => void
 }
 
 /**
@@ -398,8 +587,12 @@ function TokenView({
   portrait,
   onDragMove,
   onDragEnd,
+  onSelect,
 }: TokenViewProps) {
   const radius = Math.max(8, grid.cellSize / 2 - 2)
+  const handleSelect = useCallback(() => {
+    onSelect?.(token.id)
+  }, [onSelect, token.id])
   const handleDragMove = useCallback(
     (e: KonvaEventObject<Event>) => {
       onDragMove(token.id, e.target.x(), e.target.y())
@@ -435,6 +628,8 @@ function TokenView({
       draggable={draggable}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
+      onClick={handleSelect}
+      onTap={handleSelect}
     >
       {portrait ? (
         <ClippedPortrait src={portrait} radius={radius} fallback={fallback} />

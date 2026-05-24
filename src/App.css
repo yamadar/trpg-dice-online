@@ -448,7 +448,14 @@
   top: 64px;
   right: 12px;
   z-index: 1;
-  width: min(240px, calc(100vw - 24px));
+  width: min(260px, calc(100vw - 24px));
+  /* The toolbar must never extend past the viewport — bottom is the
+     tabletop's full-screen edge. Cap to the available space below the
+     toolbar's top offset, with a small safety margin, and let the
+     content scroll internally when it overflows. */
+  max-height: calc(100vh - 96px);
+  max-height: calc(100svh - 96px);
+  overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -458,6 +465,50 @@
   flex-direction: column;
   gap: 8px;
   font-size: 0.85rem;
+}
+.tabletop-toolbar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tabletop-toolbar-summary {
+  cursor: pointer;
+  padding: 6px 4px;
+  margin: -6px -4px 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+  border-radius: 6px;
+  user-select: none;
+}
+.tabletop-toolbar-summary:hover {
+  background: var(--panel-2);
+}
+.tabletop-toolbar-section[open] > .tabletop-toolbar-summary {
+  margin-bottom: 4px;
+}
+.tabletop-toolbar-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tabletop-toolbar-select {
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+}
+.tabletop-toolbar-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.tabletop-toolbar-button.danger {
+  color: var(--damage, #e88);
+}
+.tabletop-toolbar-button.danger .icon-svg {
+  margin-right: 4px;
 }
 .tabletop-toolbar-title {
   margin: 0 0 4px;
@@ -575,6 +626,54 @@
 }
 .tabletop-toolbar-list-remove:hover {
   color: var(--text);
+}
+
+/* --- Selected-token edit popover ---
+   Floats next to the token's screen-space centre. The position is
+   computed in JS from `(token.x * scale + offset)` so it stays
+   anchored as the user pans / zooms. */
+.tabletop-token-popover {
+  position: absolute;
+  z-index: 2;
+  width: 220px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.85rem;
+  /* Offset 12 px to the right and centre vertically on the token. */
+  transform: translate(12px, -50%);
+  pointer-events: auto;
+}
+.tabletop-token-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tabletop-token-popover-title {
+  font-weight: 600;
+  color: var(--text);
+}
+.tabletop-token-popover-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tabletop-token-popover-row > span {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+.tabletop-token-popover-row > input[type='text'] {
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
 }
 
 /* Buttons whose only content is an inline SVG icon (close, trash, etc.) —
