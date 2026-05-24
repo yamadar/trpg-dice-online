@@ -66,6 +66,8 @@ export const vi: Dict = {
   'tabletop.panel.title': 'Tabletop controls',
   'tabletop.panel.mapGrid': 'Map & grid',
   'tabletop.panel.tokens': 'Tokens',
+  'tabletop.panel.nav': 'Toolbar categories',
+  'tabletop.panel.close': 'Close panel',
   'tabletop.playerToken.title': 'Player tokens',
   'tabletop.playerToken.choose': 'Choose participant…',
   'tabletop.playerToken.add': 'Add player token',

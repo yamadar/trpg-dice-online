@@ -13,6 +13,7 @@ import {
   Info,
   Languages,
   Layers,
+  Library,
   MessageCircleMore,
   MousePointer2,
   Paperclip,
@@ -421,6 +422,22 @@ export function PenIcon({ size = 16 }: IconProps) {
 export function EraserIcon({ size = 16 }: IconProps) {
   return (
     <Eraser
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Library (stacked books) — the GM's tabletop-library section
+ *  (templates + snapshots) in the right-side toolbar. Picked over
+ *  PastRoomsIcon (a clock) because "library" is the user-facing name
+ *  and a book stack reads as "saved scenarios" at a glance. */
+export function LibraryIcon({ size = 18 }: IconProps) {
+  return (
+    <Library
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}

@@ -20,6 +20,19 @@ import type { Character } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
 import { avatarInitial } from '../players/identity'
 import { CloseIcon, EditIcon, TrashIcon } from './icons'
+import {
+  CharacterIcon,
+  FogIcon,
+  LibraryIcon,
+  TabletopIcon,
+  type IconProps,
+} from './icons'
+import type { ComponentType } from 'react'
+
+/** Right-side toolbar categories. Each maps to an icon button in the
+ *  vertical strip plus the body rendered in the side-expanding panel.
+ *  Order = display order in the strip. */
+type CategoryId = 'mapGrid' | 'fog' | 'tokens' | 'library'
 import { CharacterImageCropDialog } from './CharacterImageCropDialog'
 
 interface Props {
@@ -175,6 +188,16 @@ export function TableToolbar({
   const [loadingPreset, setLoadingPreset] = useState(false)
   const templates = tabletopLibrary.filter((e) => e.kind === 'template')
   const saves = tabletopLibrary.filter((e) => e.kind === 'save')
+
+  // The right-side toolbar is now an icon strip + a side-expanding
+  // detail panel; this state names which category (if any) is the
+  // currently-open panel. Only one category can be open at once —
+  // clicking another icon swaps the panel rather than stacking
+  // them. `null` means the icon strip is the only thing rendered,
+  // which is the default so the canvas is uncluttered on open.
+  const [expandedCategory, setExpandedCategory] = useState<CategoryId | null>(
+    null,
+  )
 
   // Fetch the preset-map manifest once per mount. Errors degrade to an
   // empty list — the toolbar still shows the hand-pick path.
@@ -359,17 +382,67 @@ export function TableToolbar({
     if (editingNpcId === def.id) setEditingNpcId(null)
   }
 
+  // Available categories: GM gets everything; non-GM only sees
+  // tokens (their own PC list). Re-derived each render so a mid-
+  // session role change immediately re-shows/hides icons.
+  const categories: Array<{
+    id: CategoryId
+    Icon: ComponentType<IconProps>
+    labelKey: string
+  }> = [
+    ...(isHost
+      ? ([
+          { id: 'mapGrid' as const, Icon: TabletopIcon, labelKey: 'tabletop.panel.mapGrid' },
+          { id: 'fog' as const, Icon: FogIcon, labelKey: 'tabletop.fog.title' },
+        ])
+      : []),
+    { id: 'tokens', Icon: CharacterIcon, labelKey: 'tabletop.panel.tokens' },
+    ...(isHost
+      ? ([
+          { id: 'library' as const, Icon: LibraryIcon, labelKey: 'tabletop.library.title' },
+        ])
+      : []),
+  ]
+  // If the user just lost the GM bit while a host-only category was
+  // open, auto-collapse so the panel never references a category that
+  // is no longer in the icon strip. "Adjust state during render" is
+  // the React-recommended escape hatch for this kind of derived
+  // state.
+  if (expandedCategory && !categories.some((c) => c.id === expandedCategory)) {
+    setExpandedCategory(null)
+  }
+  const expandedLabelKey = categories.find((c) => c.id === expandedCategory)?.labelKey
+
   return (
-    <aside className="tabletop-toolbar" aria-label={t('tabletop.panel.title')}>
-      {/* The "Map & grid" section is GM-only — it edits the table's
-          authoritative state. Players see only the Tokens section
-          (their own characters' "place" buttons). */}
-      {isHost && (
-      <details className="tabletop-toolbar-section" open>
-        <summary className="tabletop-toolbar-summary">
-          {t('tabletop.panel.mapGrid')}
-        </summary>
-        <div className="tabletop-toolbar-section-body">
+    <aside
+      className="tabletop-toolbar-wrapper"
+      aria-label={t('tabletop.panel.title')}
+    >
+      {expandedCategory && expandedLabelKey && (
+        <div
+          className="tabletop-toolbar-panel"
+          role="region"
+          aria-labelledby="tabletop-panel-title"
+        >
+          <header className="tabletop-toolbar-panel-header">
+            <h2
+              id="tabletop-panel-title"
+              className="tabletop-toolbar-panel-title"
+            >
+              {t(expandedLabelKey)}
+            </h2>
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label={t('tabletop.panel.close')}
+              onClick={() => setExpandedCategory(null)}
+            >
+              <CloseIcon size={16} />
+            </button>
+          </header>
+          <div className="tabletop-toolbar-panel-body">
+      {expandedCategory === 'mapGrid' && isHost && (
+        <>
           <h3 className="tabletop-toolbar-title">{t('tabletop.grid.title')}</h3>
           <label className="tabletop-toolbar-row">
             <span>{t('tabletop.grid.kind')}</span>
@@ -529,16 +602,10 @@ export function TableToolbar({
               </button>
             </>
           )}
-        </div>
-      </details>
+        </>
       )}
-
-      {isHost && (
-        <details className="tabletop-toolbar-section">
-          <summary className="tabletop-toolbar-summary">
-            {t('tabletop.fog.title')}
-          </summary>
-          <div className="tabletop-toolbar-section-body">
+      {expandedCategory === 'fog' && isHost && (
+        <>
             {grid.kind === 'none' ? (
               // Fog of war is cell-based, so without a grid there is
               // nothing meaningful to toggle. Surface the requirement
@@ -579,15 +646,10 @@ export function TableToolbar({
                 </button>
               </>
             )}
-          </div>
-        </details>
+        </>
       )}
-
-      <details className="tabletop-toolbar-section" open>
-        <summary className="tabletop-toolbar-summary">
-          {t('tabletop.panel.tokens')}
-        </summary>
-        <div className="tabletop-toolbar-section-body">
+      {expandedCategory === 'tokens' && (
+        <>
           <h3 className="tabletop-toolbar-title">
             {t('tabletop.playerToken.title')}
           </h3>
@@ -796,19 +858,10 @@ export function TableToolbar({
               })}
             </ul>
           )}
-        </div>
-      </details>
-
-      {/* GM-only テーブルマップ ライブラリ. Lets a GM save the current
-          table as a named "template" (initial layout, PC tokens
-          stripped, viewport centre stashed as the PC spawn point) or
-          "save" (full snapshot), and load / delete saved entries. */}
-      {isHost && (
-        <details className="tabletop-toolbar-section">
-          <summary className="tabletop-toolbar-summary">
-            {t('tabletop.library.title')}
-          </summary>
-          <div className="tabletop-toolbar-section-body">
+        </>
+      )}
+      {expandedCategory === 'library' && isHost && (
+        <>
             <h3 className="tabletop-toolbar-title">
               {t('tabletop.library.saveCurrent')}
             </h3>
@@ -915,10 +968,35 @@ export function TableToolbar({
                 ))}
               </ul>
             )}
-          </div>
-        </details>
+        </>
       )}
-
+          </div>
+        </div>
+      )}
+      <nav
+        className="tabletop-toolbar-icons"
+        aria-label={t('tabletop.panel.nav')}
+      >
+        {categories.map(({ id, Icon, labelKey }) => {
+          const active = expandedCategory === id
+          return (
+            <button
+              key={id}
+              type="button"
+              className={`tabletop-toolbar-icon-btn${active ? ' active' : ''}`}
+              aria-pressed={active}
+              aria-expanded={active}
+              title={t(labelKey)}
+              onClick={() =>
+                setExpandedCategory((cur) => (cur === id ? null : id))
+              }
+            >
+              <Icon size={20} />
+              <span className="tabletop-toolbar-icon-label">{t(labelKey)}</span>
+            </button>
+          )
+        })}
+      </nav>
       {cropSrc && (
         <CharacterImageCropDialog
           src={cropSrc}
