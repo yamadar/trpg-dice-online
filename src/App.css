@@ -252,6 +252,13 @@
   color: var(--accent);
   background: var(--accent-bg, rgba(192, 132, 252, 0.12));
 }
+/* The tabletop button sits visually apart from the session-state
+   buttons (room / character / dice) with an auto margin on its left,
+   so it gets pushed to the right end of the dock. The other buttons
+   still share equal flex width on the leading side. */
+.dock-btn-trailing {
+  margin-left: auto;
+}
 .dock-icon {
   font-size: 1.25rem;
   line-height: 1;
@@ -984,25 +991,14 @@
   width: min(360px, calc(100vw - 24px));
   height: min(60svh, 480px);
 }
-.tabletop-overlay-dice {
+.tabletop-overlay-rolls {
+  /* Combined dice + patterns overlay. Width sized for the dice
+     formula row (count / type / modifier steppers, each ~110px) so it
+     doesn't overflow; the compact pattern list below fits in the same
+     width without competing for space. */
   left: 12px;
   top: 64px;
-  /* Widened from 320px so the dice formula row (count / type / modifier
-     steppers, each minimum ~110px) fits without horizontal overflow.
-     Patterns moved to their own overlay (`.tabletop-overlay-patterns`)
-     so they no longer compete with dice for vertical space. */
   width: min(400px, calc(100vw - 24px));
-  max-height: calc(100svh - 96px);
-  overflow-y: auto;
-  padding: 12px;
-}
-.tabletop-overlay-patterns {
-  /* Sits to the right of the dice overlay (or alone on narrow screens
-     when only patterns is on). Independent width so the chip grid has
-     room to render without wrapping awkwardly. */
-  right: 12px;
-  top: 64px;
-  width: min(360px, calc(100vw - 24px));
   max-height: calc(100svh - 96px);
   overflow-y: auto;
   padding: 12px;
@@ -1910,53 +1906,137 @@ label.setting-row {
   padding: 0;
   display: flex;
   flex-direction: column;
+  gap: 4px;
+}
+/* --- Compact pattern row ---
+   Single line per pattern so a character with many patterns fits in
+   one screen. Reorder ▲▼ on the left, name + meta in the middle
+   (truncate-on-overflow), icon-only action buttons on the right. */
+.pattern-list-compact > li {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   gap: 6px;
-}
-.pattern-list li {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   background: var(--panel-2);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 6px;
+  padding: 3px 6px;
+  min-height: 34px;
 }
-.pattern-info {
+.pattern-list-compact .pattern-reorder {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  gap: 1px;
+  flex-shrink: 0;
 }
-.pattern-name {
+.pattern-list-compact .move-btn {
+  width: 20px;
+  height: 14px;
+  padding: 0;
+  font-size: 0.55rem;
+  line-height: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.pattern-list-compact .move-btn:hover:not(:disabled) {
+  background: var(--panel);
+  color: var(--text);
+}
+.pattern-list-compact .move-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.pattern-list-compact .pattern-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+}
+.pattern-list-compact .pattern-name {
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
-.pattern-hidden {
-  margin-left: 5px;
-  font-size: 0.85em;
-}
-.pattern-meta {
-  font-size: 0.78rem;
+.pattern-list-compact .pattern-meta {
+  font-size: 0.75rem;
   color: var(--text-dim);
   font-family: var(--mono);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.pattern-buttons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.pattern-buttons .primary {
-  flex: 1;
-}
-.pattern-reorder {
+.pattern-list-compact .pattern-actions {
   display: flex;
   gap: 2px;
+  flex-shrink: 0;
 }
-.move-btn {
-  width: 30px;
-  padding: 6px 0;
-  font-size: 0.7rem;
-  line-height: 1;
+.pattern-list-compact .pattern-action {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.pattern-list-compact .pattern-action:hover {
+  background: var(--panel);
+  color: var(--text);
+}
+.pattern-list-compact .pattern-action-roll {
+  background: var(--accent-bg, rgba(192, 132, 252, 0.15));
+  color: var(--accent);
+  border-color: transparent;
+}
+.pattern-list-compact .pattern-action-roll:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+.pattern-list-compact .pattern-action-delete:hover {
+  background: var(--damage, #e88);
+  color: var(--bg);
+  border-color: transparent;
+}
+.pattern-list-compact .pattern-hidden {
+  margin-left: 4px;
+  font-size: 0.85em;
+}
+/* When dice + patterns share a sheet, give the list its own little
+   heading so the user can see where the list starts under the
+   roller. */
+.pattern-panel-heading {
+  margin: 4px 0 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* --- Combined dice + patterns panel ---
+   The two sections sit in one vertical stack with a single rule
+   between them so the visual break is light. Each section keeps its
+   own padding from `.panel`; this container only provides the gap. */
+.rolls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rolls-panel .pattern-panel {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 4px;
 }
 
 /* --- activity feed --- */
