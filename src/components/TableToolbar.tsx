@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useConfirm } from '../hooks/useConfirm'
 import { useI18n } from '../i18n/useI18n'
 import {
@@ -19,7 +19,7 @@ import { loadPresetMapManifest } from '../tabletop/presetMaps'
 import type { Character } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
 import { avatarInitial } from '../players/identity'
-import { EditIcon, TrashIcon } from './icons'
+import { CloseIcon, EditIcon, TrashIcon } from './icons'
 import { CharacterImageCropDialog } from './CharacterImageCropDialog'
 
 interface Props {
@@ -153,13 +153,20 @@ export function TableToolbar({
   const mapInputRef = useRef<HTMLInputElement | null>(null)
   const npcImageInputRef = useRef<HTMLInputElement | null>(null)
   // NPC add flow state: just the name. The portrait is attached after
-  // the NPC has been added through the per-row "set image" button so
-  // a GM can register a stack of NPCs first and worry about art
-  // later. `cropSrc` holds the picked image while the user crops it;
-  // `editingNpcDefId` remembers which NPC the crop result applies to.
+  // the NPC has been added through the per-row "edit" button so a GM
+  // can register a stack of NPCs first and worry about art later.
+  //   `editingNpcId`   - which library entry's inline editor card is
+  //                      currently open (name / image / delete).
+  //   `imageTargetNpcId` - which entry the active file-picker /
+  //                      crop-dialog flow is acting on; usually
+  //                      matches `editingNpcId` but is tracked
+  //                      separately so the editor can close without
+  //                      cancelling an in-flight crop.
+  //   `cropSrc`        - the picked image while the crop dialog is up.
   const [npcName, setNpcName] = useState('')
+  const [editingNpcId, setEditingNpcId] = useState<string | null>(null)
+  const [imageTargetNpcId, setImageTargetNpcId] = useState<string | null>(null)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
-  const [editingNpcDefId, setEditingNpcDefId] = useState<string | null>(null)
   // Library save flow state: a single name input feeds both save
   // flavours; the buttons differ only in `kind`.
   const [libraryName, setLibraryName] = useState('')
@@ -300,7 +307,7 @@ export function TableToolbar({
   ) => {
     const file = e.target.files?.[0]
     e.target.value = ''
-    if (!file || !editingNpcDefId) return
+    if (!file || !imageTargetNpcId) return
     // Read the file as a data URL so the crop dialog can decode it
     // without further await chain. The dialog crops and hands the
     // result back via `onConfirm` — at that point we hit
@@ -309,16 +316,16 @@ export function TableToolbar({
     const reader = new FileReader()
     reader.onload = () => setCropSrc(String(reader.result))
     reader.onerror = () => {
-      setEditingNpcDefId(null)
+      setImageTargetNpcId(null)
       onNotice?.(t('tabletop.npcLibrary.unreadable'), 'error')
     }
     reader.readAsDataURL(file)
   }
 
   const handleCropConfirm = async (croppedDataUrl: string) => {
-    const defId = editingNpcDefId
+    const defId = imageTargetNpcId
     setCropSrc(null)
-    setEditingNpcDefId(null)
+    setImageTargetNpcId(null)
     if (!defId) return
     // The crop dialog returns the user's framing of the original file
     // verbatim; run it through the NPC-portrait pipeline so the
@@ -334,12 +341,22 @@ export function TableToolbar({
 
   const handleCropCancel = () => {
     setCropSrc(null)
-    setEditingNpcDefId(null)
+    setImageTargetNpcId(null)
   }
 
   const handleSetNpcImage = (defId: string) => {
-    setEditingNpcDefId(defId)
+    setImageTargetNpcId(defId)
     npcImageInputRef.current?.click()
+  }
+
+  const handleNpcDelete = async (def: NpcDef) => {
+    const ok = await confirm({
+      message: t('tabletop.npcLibrary.confirmDelete', { name: def.name }),
+      destructive: true,
+    })
+    if (!ok) return
+    onRemoveNpcDef(def.id)
+    if (editingNpcId === def.id) setEditingNpcId(null)
   }
 
   return (
@@ -521,37 +538,45 @@ export function TableToolbar({
             {t('tabletop.fog.title')}
           </summary>
           <div className="tabletop-toolbar-section-body">
-            <label className="tabletop-toolbar-row">
-              <span>{t('tabletop.fog.title')}</span>
-              <input
-                type="checkbox"
-                checked={fog.enabled}
-                onChange={(e) => onFogEnabledChange(e.target.checked)}
-                aria-label={
-                  fog.enabled
-                    ? t('tabletop.fog.disable')
-                    : t('tabletop.fog.enable')
-                }
-              />
-            </label>
-            <button
-              type="button"
-              className="tabletop-toolbar-button"
-              onClick={handleFogFillAll}
-            >
-              {t('tabletop.fog.fillAll')}
-            </button>
-            <button
-              type="button"
-              className="tabletop-toolbar-button outline"
-              onClick={handleFogClearAll}
-            >
-              {t('tabletop.fog.clearAll')}
-            </button>
-            {grid.kind !== 'square' && (
+            {grid.kind === 'none' ? (
+              // Fog of war is cell-based, so without a grid there is
+              // nothing meaningful to toggle. Surface the requirement
+              // up-front and hide every control so a stale state
+              // (e.g. fog left enabled from before the grid was
+              // switched off) cannot be mistaken for "still working".
               <p className="tabletop-toolbar-meta wrap">
                 {t('tabletop.fog.needGrid')}
               </p>
+            ) : (
+              <>
+                <label className="tabletop-toolbar-row">
+                  <span>{t('tabletop.fog.title')}</span>
+                  <input
+                    type="checkbox"
+                    checked={fog.enabled}
+                    onChange={(e) => onFogEnabledChange(e.target.checked)}
+                    aria-label={
+                      fog.enabled
+                        ? t('tabletop.fog.disable')
+                        : t('tabletop.fog.enable')
+                    }
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="tabletop-toolbar-button"
+                  onClick={handleFogFillAll}
+                >
+                  {t('tabletop.fog.fillAll')}
+                </button>
+                <button
+                  type="button"
+                  className="tabletop-toolbar-button outline"
+                  onClick={handleFogClearAll}
+                >
+                  {t('tabletop.fog.clearAll')}
+                </button>
+              </>
             )}
           </div>
         </details>
@@ -647,63 +672,69 @@ export function TableToolbar({
               </button>
               {npcLibrary.length > 0 && (
                 <ul className="tabletop-toolbar-list">
-                  {npcLibrary.map((def) => (
-                    <li key={def.id} className="tabletop-toolbar-list-item">
-                      {def.image ? (
-                        <img
-                          src={def.image}
-                          alt=""
-                          className="tabletop-toolbar-thumb"
-                        />
-                      ) : (
-                        <span
-                          className="tabletop-toolbar-thumb tabletop-toolbar-thumb-initial"
-                          aria-hidden="true"
-                        >
-                          {avatarInitial(def.name)}
-                        </span>
-                      )}
-                      <span
-                        className="tabletop-toolbar-list-label"
-                        title={def.name}
-                      >
-                        {def.name}
-                      </span>
-                      <button
-                        type="button"
-                        className="icon-btn tabletop-toolbar-list-icon-btn"
-                        aria-label={
-                          def.image
-                            ? t('tabletop.npcLibrary.changeImage')
-                            : t('tabletop.npcLibrary.setImage')
-                        }
-                        title={
-                          def.image
-                            ? t('tabletop.npcLibrary.changeImage')
-                            : t('tabletop.npcLibrary.setImage')
-                        }
-                        onClick={() => handleSetNpcImage(def.id)}
-                      >
-                        <EditIcon />
-                      </button>
-                      <button
-                        type="button"
-                        className="tabletop-toolbar-list-action"
-                        onClick={() => onPlaceNpcFromLibrary(def.id)}
-                      >
-                        {t('tabletop.npcLibrary.place')}
-                      </button>
-                      <button
-                        type="button"
-                        className="icon-btn tabletop-toolbar-list-remove"
-                        aria-label={t('tabletop.npcLibrary.remove')}
-                        title={t('tabletop.npcLibrary.remove')}
-                        onClick={() => onRemoveNpcDef(def.id)}
-                      >
-                        <TrashIcon />
-                      </button>
-                    </li>
-                  ))}
+                  {npcLibrary.map((def) => {
+                    const isEditing = editingNpcId === def.id
+                    return (
+                      <Fragment key={def.id}>
+                        <li className="tabletop-toolbar-list-item">
+                          {def.image ? (
+                            <img
+                              src={def.image}
+                              alt=""
+                              className="tabletop-toolbar-thumb"
+                            />
+                          ) : (
+                            <span
+                              className="tabletop-toolbar-thumb tabletop-toolbar-thumb-initial"
+                              aria-hidden="true"
+                            >
+                              {avatarInitial(def.name)}
+                            </span>
+                          )}
+                          <span
+                            className="tabletop-toolbar-list-label"
+                            title={def.name}
+                          >
+                            {def.name}
+                          </span>
+                          <button
+                            type="button"
+                            className={`icon-btn tabletop-toolbar-list-icon-btn${isEditing ? ' active' : ''}`}
+                            aria-label={t('tabletop.npcLibrary.edit')}
+                            aria-expanded={isEditing}
+                            title={t('tabletop.npcLibrary.edit')}
+                            onClick={() =>
+                              setEditingNpcId((cur) =>
+                                cur === def.id ? null : def.id,
+                              )
+                            }
+                          >
+                            <EditIcon />
+                          </button>
+                          <button
+                            type="button"
+                            className="tabletop-toolbar-list-action"
+                            onClick={() => onPlaceNpcFromLibrary(def.id)}
+                          >
+                            {t('tabletop.npcLibrary.place')}
+                          </button>
+                        </li>
+                        {isEditing && (
+                          <li className="tabletop-toolbar-editor-row">
+                            <NpcInlineEditor
+                              def={def}
+                              onChangeName={(name) =>
+                                onUpdateNpcDef(def.id, { name })
+                              }
+                              onChangeImage={() => handleSetNpcImage(def.id)}
+                              onRemove={() => void handleNpcDelete(def)}
+                              onClose={() => setEditingNpcId(null)}
+                            />
+                          </li>
+                        )}
+                      </Fragment>
+                    )
+                  })}
                 </ul>
               )}
             </>
@@ -895,5 +926,96 @@ export function TableToolbar({
         />
       )}
     </aside>
+  )
+}
+
+interface NpcInlineEditorProps {
+  def: NpcDef
+  /** Commit a new name for the entry. Called on blur / Enter so a
+   *  typing burst is a single network update. */
+  onChangeName: (name: string) => void
+  /** Open the file picker for this NPC's portrait. The crop flow then
+   *  runs through the parent's `handleCropConfirm`. */
+  onChangeImage: () => void
+  /** Remove the entry. The caller surfaces the confirm dialog. */
+  onRemove: () => void
+  /** Collapse the editor (e.g. on cancel). */
+  onClose: () => void
+}
+
+/**
+ * Inline editor card shown beneath an NPC library row when the user
+ * clicks its edit icon. Mirrors the canvas-side `TokenPopover`
+ * shape — name input, change-image button, remove — so the
+ * NPC-library and on-canvas editing flows feel like the same UI. The
+ * name is committed on blur / Enter (matching the popover) so a
+ * typing burst stays one network update.
+ */
+function NpcInlineEditor({
+  def,
+  onChangeName,
+  onChangeImage,
+  onRemove,
+  onClose,
+}: NpcInlineEditorProps) {
+  const { t } = useI18n()
+  const [nameDraft, setNameDraft] = useState(def.name)
+  const commitName = () => {
+    const trimmed = nameDraft.trim()
+    if (!trimmed) {
+      setNameDraft(def.name)
+      return
+    }
+    if (trimmed !== def.name) onChangeName(trimmed)
+  }
+  return (
+    <div className="tabletop-toolbar-editor">
+      <header className="tabletop-toolbar-editor-header">
+        <span className="tabletop-toolbar-editor-title">
+          {t('tabletop.npcLibrary.editTitle')}
+        </span>
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label={t('tabletop.tokenEdit.close')}
+          onClick={onClose}
+        >
+          <CloseIcon size={14} />
+        </button>
+      </header>
+      <label className="tabletop-toolbar-editor-field">
+        <span>{t('tabletop.npcLibrary.nameLabel')}</span>
+        <input
+          type="text"
+          value={nameDraft}
+          maxLength={32}
+          onChange={(e) => setNameDraft(e.target.value)}
+          onBlur={commitName}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              commitName()
+              ;(e.target as HTMLInputElement).blur()
+            }
+          }}
+        />
+      </label>
+      <button
+        type="button"
+        className="tabletop-toolbar-button outline"
+        onClick={onChangeImage}
+      >
+        {def.image
+          ? t('tabletop.npcLibrary.changeImage')
+          : t('tabletop.npcLibrary.setImage')}
+      </button>
+      <button
+        type="button"
+        className="tabletop-toolbar-button outline danger"
+        onClick={onRemove}
+      >
+        <TrashIcon />
+        <span>{t('tabletop.npcLibrary.remove')}</span>
+      </button>
+    </div>
   )
 }

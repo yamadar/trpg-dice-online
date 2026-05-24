@@ -732,6 +732,55 @@
   background: var(--panel);
   color: var(--text);
 }
+/* --- Inline NPC / token editor row ---
+   Sits beneath the NPC library row whose edit icon was clicked,
+   inheriting the list's left-aligned card layout. Mirrors the
+   on-canvas `TokenPopover` shape (name input + change image +
+   delete) so the GM has one mental model for "edit a token-y
+   thing". */
+.tabletop-toolbar-editor-row {
+  display: block;
+  list-style: none;
+  margin: -4px 0 4px;
+  padding: 0;
+  background: transparent;
+}
+.tabletop-toolbar-editor {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tabletop-toolbar-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+.tabletop-toolbar-editor-title {
+  color: var(--text);
+}
+.tabletop-toolbar-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tabletop-toolbar-editor-field > span {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+.tabletop-toolbar-editor-field > input[type='text'] {
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+}
+
 /* Small "kind" tag (PC / NPC) shown in the placed-tokens list so the
    row reads at a glance. */
 .tabletop-toolbar-list-tag {
@@ -890,6 +939,78 @@
 }
 .tabletop-tools-row > input {
   width: 100%;
+}
+/* --- Tool setting trigger + popover ---
+   The trigger sits in the palette like any other button and shows
+   the current numeric value next to its icon. Clicking it opens a
+   floating popover to the right of the palette where the actual
+   slider (sized for a comfortable touch target) lives. */
+.tabletop-tools-setting-wrapper {
+  position: relative;
+}
+.tabletop-tools-setting-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  padding: 6px 4px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+}
+.tabletop-tools-setting-trigger:hover {
+  background: var(--panel);
+}
+.tabletop-tools-setting-trigger.active {
+  background: var(--accent, #3b6ea5);
+  color: #fff;
+  border-color: transparent;
+}
+.tabletop-tools-setting-value {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  font-family: var(--mono);
+}
+.tabletop-tools-setting-popover {
+  position: absolute;
+  z-index: 5;
+  left: calc(100% + 8px);
+  top: 0;
+  width: 220px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--text);
+}
+.tabletop-tools-setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+.tabletop-tools-setting-row > input[type='range'] {
+  width: 100%;
+  height: 28px;
+}
+/* On narrow screens the palette sits against the left edge; pivot
+   the popover beneath it so the wide slider doesn't get clipped or
+   cause a horizontal scrollbar. */
+@media (max-width: 720px) {
+  .tabletop-tools-setting-popover {
+    left: 0;
+    top: calc(100% + 8px);
+    width: min(220px, calc(100vw - 24px));
+  }
 }
 /* Make the pen / text colour input render as a flat swatch so the
    currently-selected colour is clearly visible. The browser default
