@@ -7,8 +7,42 @@
  */
 
 import type { Player } from '../net/protocol'
-import type { GmToken, Grid, PcToken, Token } from './types'
+import type { GmToken, Grid, MapBackground, PcToken, TabletopState, Token } from './types'
 import { newTokenId } from './types'
+
+/**
+ * Where new tokens should be placed when no `pcSpawn` is set.
+ *
+ * Pre-fix, every placement defaulted to the grid origin (top-left of
+ * the world), which made tokens stack at the corner of the loaded
+ * background image rather than near where the GM was looking. Users
+ * reported "everything is anchored to the top-left." The fix is a
+ * shared default: when a background map is present, place at its
+ * centre (the natural "middle of the scene"); otherwise fall back to
+ * the grid origin's first cell. `pcSpawn` (template-set) overrides
+ * both — it explicitly says "land here."
+ *
+ * Pure so the same rule applies to the host's local placement, the
+ * host's pcTokenPlaceRequest handler, and the GM token / NPC library
+ * placement paths without each one re-deriving the logic.
+ */
+export function defaultPlacementOrigin(
+  state: Pick<TabletopState, 'grid' | 'map' | 'pcSpawn'>,
+): { x: number; y: number } {
+  if (state.pcSpawn) return state.pcSpawn
+  if (state.map) return mapCenter(state.map)
+  const { grid } = state
+  return {
+    x: grid.originX + grid.cellSize / 2,
+    y: grid.originY + grid.cellSize / 2,
+  }
+}
+
+/** Pixel coordinates of a map's centre. The map is rendered at world
+ *  origin (0, 0), so its centre is just (width / 2, height / 2). */
+export function mapCenter(map: MapBackground): { x: number; y: number } {
+  return { x: map.width / 2, y: map.height / 2 }
+}
 
 /** Minimal speaker identity used by the placement / permission helpers. */
 export interface TokenOwnerInfo {
@@ -79,23 +113,26 @@ export function canMoveToken(token: Token, actor: TokenMoveActor): boolean {
 }
 
 /**
- * Build a fresh GM-only token. The position is the same staggered slot
- * that `planPcTokenAdds` uses, so existing tokens never overlap with a
- * newly-added GM one regardless of which order they arrived in.
+ * Build a fresh GM-only token. New tokens stagger horizontally from
+ * the shared "default placement origin" (see `defaultPlacementOrigin`)
+ * so a freshly-placed NPC lands near where the GM is working — on the
+ * map's centre when a background is present — instead of stacking at
+ * the world origin's top-left.
  */
 export function makeGmToken(
   options: { image: string; label?: string },
   existing: ReadonlyArray<Token>,
-  grid: Grid,
+  state: Pick<TabletopState, 'grid' | 'map' | 'pcSpawn'>,
 ): GmToken {
-  const cell = grid.cellSize
+  const cell = state.grid.cellSize
   const index = existing.length
+  const origin = defaultPlacementOrigin(state)
   const label = (options.label ?? '').trim()
   return {
     id: newTokenId(),
     kind: 'gm',
-    x: grid.originX + cell / 2 + index * cell,
-    y: grid.originY + cell / 2,
+    x: origin.x + index * cell,
+    y: origin.y,
     image: options.image,
     ...(label ? { label } : {}),
   }

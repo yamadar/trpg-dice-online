@@ -4,12 +4,29 @@ import {
   applyTokenRemove,
   applyTokenUpsert,
   canMoveToken,
+  defaultPlacementOrigin,
   makeGmToken,
   planPcTokenAdds,
 } from './tokens'
-import { DEFAULT_GRID, type GmToken, type PcToken, type Token } from './types'
+import {
+  DEFAULT_GRID,
+  type GmToken,
+  type MapBackground,
+  type PcToken,
+  type Token,
+} from './types'
 
 const grid = { ...DEFAULT_GRID, kind: 'square' as const, cellSize: 50 }
+/** Tabletop slice shaped for `makeGmToken` / `defaultPlacementOrigin`
+ *  — only the fields they read. */
+const stateOnly = { grid, map: undefined, pcSpawn: undefined }
+const sampleMap: MapBackground = {
+  id: 'map-1',
+  name: 'dungeon.png',
+  width: 800,
+  height: 600,
+  dataUrl: 'data:image/png;base64,XX',
+}
 
 function pc(over: Partial<PcToken> = {}): PcToken {
   return {
@@ -123,7 +140,7 @@ describe('canMoveToken', () => {
 
 describe('makeGmToken', () => {
   it('places a fresh GM token at the first staggered slot when empty', () => {
-    const token = makeGmToken({ image: 'data:image/png;base64,x' }, [], grid)
+    const token = makeGmToken({ image: 'data:image/png;base64,x' }, [], stateOnly)
     expect(token.kind).toBe('gm')
     expect(token.x).toBe(25)
     expect(token.y).toBe(25)
@@ -132,25 +149,75 @@ describe('makeGmToken', () => {
 
   it('staggers past existing tokens (PC or GM) by index', () => {
     const tokens = [pc(), gm()]
-    const token = makeGmToken({ image: 'x' }, tokens, grid)
+    const token = makeGmToken({ image: 'x' }, tokens, stateOnly)
     expect(token.x).toBe(125)
   })
 
   it('keeps a non-empty label, drops an empty / whitespace one', () => {
-    expect(makeGmToken({ image: 'x', label: 'Goblin' }, [], grid).label).toBe('Goblin')
-    expect(makeGmToken({ image: 'x', label: '  ' }, [], grid).label).toBeUndefined()
-    expect(makeGmToken({ image: 'x' }, [], grid).label).toBeUndefined()
+    expect(makeGmToken({ image: 'x', label: 'Goblin' }, [], stateOnly).label).toBe(
+      'Goblin',
+    )
+    expect(makeGmToken({ image: 'x', label: '  ' }, [], stateOnly).label).toBeUndefined()
+    expect(makeGmToken({ image: 'x' }, [], stateOnly).label).toBeUndefined()
   })
 
   it('trims whitespace from the label', () => {
-    expect(makeGmToken({ image: 'x', label: '  Goblin  ' }, [], grid).label).toBe('Goblin')
+    expect(
+      makeGmToken({ image: 'x', label: '  Goblin  ' }, [], stateOnly).label,
+    ).toBe('Goblin')
   })
 
   it('respects an origin offset', () => {
     const off = { ...grid, originX: 100, originY: 200 }
-    const token = makeGmToken({ image: 'x' }, [], off)
+    const token = makeGmToken({ image: 'x' }, [], { ...stateOnly, grid: off })
     expect(token.x).toBe(125)
     expect(token.y).toBe(225)
+  })
+
+  it('places at the map centre when a background is loaded', () => {
+    // The user's complaint: a freshly-placed NPC stacked at the
+    // top-left of the world rather than near the map's centre. With a
+    // map present, the default origin should be the map's middle so
+    // tokens land where the GM is actually looking.
+    const token = makeGmToken({ image: 'x' }, [], { ...stateOnly, map: sampleMap })
+    expect(token.x).toBe(400) // sampleMap.width / 2
+    expect(token.y).toBe(300) // sampleMap.height / 2
+  })
+
+  it('uses pcSpawn over the map centre when both are set', () => {
+    // Templates pin a specific spawn point — that wins over the
+    // generic map-centre default so a loaded template's PCs land
+    // exactly where the GM stored them.
+    const token = makeGmToken({ image: 'x' }, [], {
+      ...stateOnly,
+      map: sampleMap,
+      pcSpawn: { x: 50, y: 60 },
+    })
+    expect(token.x).toBe(50)
+    expect(token.y).toBe(60)
+  })
+})
+
+describe('defaultPlacementOrigin', () => {
+  it('falls back to the grid origin first cell when no map / no spawn', () => {
+    expect(defaultPlacementOrigin(stateOnly)).toEqual({ x: 25, y: 25 })
+  })
+
+  it('returns the map centre when a map is present', () => {
+    expect(defaultPlacementOrigin({ ...stateOnly, map: sampleMap })).toEqual({
+      x: 400,
+      y: 300,
+    })
+  })
+
+  it('returns pcSpawn when set, overriding the map', () => {
+    expect(
+      defaultPlacementOrigin({
+        ...stateOnly,
+        map: sampleMap,
+        pcSpawn: { x: 10, y: 20 },
+      }),
+    ).toEqual({ x: 10, y: 20 })
   })
 })
 

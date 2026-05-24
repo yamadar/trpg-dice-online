@@ -71,6 +71,7 @@ import {
   applyTokenRemove,
   applyTokenUpsert,
   canMoveToken,
+  defaultPlacementOrigin,
   makeGmToken,
   planPcTokenAdds,
 } from '../tabletop/tokens'
@@ -907,7 +908,7 @@ export function useSession(): Session {
       const token = makeGmToken(
         { image, label },
         tabletopRef.current.tokens,
-        tabletopRef.current.grid,
+        tabletopRef.current,
       )
       applyTabletop({
         ...tabletopRef.current,
@@ -992,18 +993,15 @@ export function useSession(): Session {
         })
         return
       }
-      // Host (or offline) places for themselves. With `pcSpawn` set
-      // (templates set it on load), each new PC token clusters around
-      // that point; otherwise the legacy "stagger from grid origin"
-      // behaviour is used.
+      // Host (or offline) places for themselves. The placement origin
+      // follows the shared "where do new tokens go" rule
+      // (`defaultPlacementOrigin`): pcSpawn → map centre → grid first
+      // cell. With a background map present this lands tokens near
+      // the middle of the scene rather than the world's top-left.
       const tabletop = tabletopRef.current
-      const grid = tabletop.grid
-      const cell = grid.cellSize
+      const cell = tabletop.grid.cellSize
       const index = tabletop.tokens.length
-      const origin = tabletop.pcSpawn ?? {
-        x: grid.originX + cell / 2,
-        y: grid.originY + cell / 2,
-      }
+      const origin = defaultPlacementOrigin(tabletop)
       const snapshot =
         characterName || image
           ? { name: characterName ?? '', image: image ?? '' }
@@ -1261,14 +1259,18 @@ export function useSession(): Session {
       if (roleRef.current === 'client') return
       const def = tabletopRef.current.npcLibrary.find((d) => d.id === defId)
       if (!def) return
-      const grid = tabletopRef.current.grid
-      const cell = grid.cellSize
-      const index = tabletopRef.current.tokens.length
+      const tabletop = tabletopRef.current
+      const cell = tabletop.grid.cellSize
+      const index = tabletop.tokens.length
+      // Shared default-placement rule: pcSpawn → map centre → grid
+      // first cell. So a freshly-placed NPC lands near the middle of
+      // the loaded background rather than at the world's top-left.
+      const origin = defaultPlacementOrigin(tabletop)
       const token: Token = {
         id: newTokenId(),
         kind: 'gm',
-        x: grid.originX + cell / 2 + index * cell,
-        y: grid.originY + cell / 2,
+        x: origin.x + index * cell,
+        y: origin.y,
         image: def.image,
         label: def.name,
       }
@@ -1542,16 +1544,13 @@ export function useSession(): Session {
           const sender = peerPlayersRef.current.get(peerId)
           if (!sender) break
           const tabletop = tabletopRef.current
-          const grid = tabletop.grid
-          const cell = grid.cellSize
+          const cell = tabletop.grid.cellSize
           const index = tabletop.tokens.length
-          // Honour `pcSpawn` (set by templates) so loaded templates put
-          // requested PCs near the GM's intended start point too —
-          // the local placement path already does this; mirror it here.
-          const origin = tabletop.pcSpawn ?? {
-            x: grid.originX + cell / 2,
-            y: grid.originY + cell / 2,
-          }
+          // Shared default-placement rule (see `defaultPlacementOrigin`):
+          // pcSpawn → map centre → grid first cell. With a background
+          // map present this lands the requested PC near the middle of
+          // the scene rather than the top-left.
+          const origin = defaultPlacementOrigin(tabletop)
           // The client may send a snapshot of the character (name +
           // image) so the host can stamp it onto the token; pre-fix
           // clients omit it and the token simply has no snapshot.
