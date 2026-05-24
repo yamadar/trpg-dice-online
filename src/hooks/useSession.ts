@@ -90,7 +90,7 @@ import {
   listLibrary,
   saveLibraryEntry,
 } from '../storage/tabletopLibrary'
-import { snapToGrid } from '../tabletop/grid'
+import { snapPlacementToGrid, snapToGrid } from '../tabletop/grid'
 import {
   applyTokenMove as applyTokenMoveHelper,
   applyTokenRemove,
@@ -1153,6 +1153,13 @@ export function useSession(): Session {
       const cell = tabletop.grid.cellSize
       const index = tabletop.tokens.length
       const origin = defaultPlacementOrigin(tabletop)
+      // Force a cell-centre snap so hex placements land on a hex
+      // cell rather than the square-stagger raw position.
+      const pos = snapPlacementToGrid(
+        origin.x + index * cell,
+        origin.y,
+        tabletop.grid,
+      )
       const snapshot =
         characterName || image
           ? { name: characterName ?? '', image: image ?? '' }
@@ -1160,8 +1167,8 @@ export function useSession(): Session {
       const token: Token = {
         id: newTokenId(),
         kind: 'pc',
-        x: origin.x + index * cell,
-        y: origin.y,
+        x: pos.x,
+        y: pos.y,
         ownerPlayerId: playerId,
         characterId,
         ...(snapshot ? { snapshot } : {}),
@@ -1435,11 +1442,16 @@ export function useSession(): Session {
       // first cell. So a freshly-placed NPC lands near the middle of
       // the loaded background rather than at the world's top-left.
       const origin = defaultPlacementOrigin(tabletop)
+      const pos = snapPlacementToGrid(
+        origin.x + index * cell,
+        origin.y,
+        tabletop.grid,
+      )
       const token: Token = {
         id: newTokenId(),
         kind: 'gm',
-        x: origin.x + index * cell,
-        y: origin.y,
+        x: pos.x,
+        y: pos.y,
         image: def.image,
         label: def.name,
       }
@@ -1996,11 +2008,16 @@ export function useSession(): Session {
           const name = typeof msg.characterName === 'string' ? msg.characterName : ''
           const image = typeof msg.image === 'string' ? msg.image : ''
           const snapshot = name || image ? { name, image } : undefined
+          const pos = snapPlacementToGrid(
+            origin.x + index * cell,
+            origin.y,
+            tabletop.grid,
+          )
           const token: Token = {
             id: newTokenId(),
             kind: 'pc',
-            x: origin.x + index * cell,
-            y: origin.y,
+            x: pos.x,
+            y: pos.y,
             ownerPlayerId: sender.id,
             characterId: msg.characterId,
             ...(snapshot ? { snapshot } : {}),

@@ -7,6 +7,7 @@ import {
   iterHexCellsInViewport,
   snapToHexCell,
 } from './hexGrid'
+import { cellFromWorld } from './types'
 
 const SQRT3 = Math.sqrt(3)
 
@@ -162,5 +163,26 @@ describe('iterHexCellsInViewport', () => {
       cells.push(c)
     }
     expect(cells).toEqual([])
+  })
+})
+
+describe('cellFromWorld dispatch on grid.kind', () => {
+  it('routes hex grids through the hex algorithm', () => {
+    const grid = {
+      kind: 'hex' as const,
+      cellSize: 100,
+      originX: 0,
+      originY: 0,
+    }
+    // A point at hex (2, 1)'s centre must round-trip back to (2, 1).
+    const c = hexCellCenter(2, 1, grid)
+    expect(cellFromWorld(c.x, c.y, grid)).toEqual({ col: 2, row: 1 })
+  })
+
+  it('falls back to the square algorithm when kind is omitted', () => {
+    // Square cell (3, 4) with cellSize 50, origin (0, 0):
+    // any point with floor(x/50)=3, floor(y/50)=4 maps to (3, 4).
+    const grid = { cellSize: 50, originX: 0, originY: 0 }
+    expect(cellFromWorld(170, 220, grid)).toEqual({ col: 3, row: 4 })
   })
 })

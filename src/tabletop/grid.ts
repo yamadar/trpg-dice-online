@@ -96,3 +96,27 @@ export function cellCenterToWorld(col: number, row: number, grid: Grid): Vec2 {
 function hexCellHeight(grid: Grid): number {
   return (grid.cellSize * Math.sqrt(3)) / 2
 }
+
+/**
+ * Snap a brand-new token position to the nearest hex cell centre.
+ * Square placements are returned verbatim because the raw "map
+ * centre + horizontal stagger" math is what users have always seen,
+ * and snapping it shifts tokens away from "exactly where the GM was
+ * looking" by up to half a cell. Hex grids are different: the raw
+ * stagger lands BETWEEN rows because odd columns are vertically
+ * offset, so a snap is required to keep new tokens on-grid even
+ * before the user drags them.
+ *
+ * The user's `snap` toggle is intentionally ignored here — that
+ * toggle controls drag behaviour, not initial placement. A "snap
+ * off" hex grid still spawns tokens on cell centres so they do not
+ * visually float; the user can then drag them freely.
+ */
+export function snapPlacementToGrid(
+  x: number,
+  y: number,
+  grid: Grid,
+): Vec2 {
+  if (grid.kind !== 'hex') return { x, y }
+  return snapToHexCell(x, y, grid)
+}

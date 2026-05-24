@@ -6,6 +6,7 @@ import {
   Layer,
   Line,
   Rect,
+  Shape,
   Stage,
   Text,
 } from 'react-konva'
@@ -1595,30 +1596,43 @@ function FogLayer({
   }
   const revealedSet = new Set(fog.revealed)
   if (grid.kind === 'hex') {
-    const shapes: ReactNode[] = []
+    // Gather every unrevealed hex inside the visible portion of the
+    // fog bounds. The list is then drawn as a SINGLE filled path so
+    // adjacent cells share an edge instead of double-painting it
+    // (drawing each hex as its own polygon would composite the
+    // shared edge twice, producing visible "scars" at GM opacity).
     const h = hexHeight(grid.cellSize)
+    const cells: Array<{ col: number; row: number }> = []
     for (const { col, row } of iterHexCellsInViewport(visViewport, grid)) {
       const key = `${col},${row}`
       if (revealedSet.has(key)) continue
       const center = hexCellCenter(col, row, grid)
       if (mapWidth !== undefined) {
-        // Skip cells whose bounding box lies entirely outside the
-        // map area (mirrors the square-grid bounds check below).
         if (center.x + grid.cellSize / 2 <= 0 || center.x - grid.cellSize / 2 >= mapWidth) continue
         if (center.y + h / 2 <= 0 || center.y - h / 2 >= mapHeight!) continue
       }
-      shapes.push(
-        <Line
-          key={key}
-          points={hexCellPolygon(col, row, grid)}
-          fill={color}
-          opacity={opacity}
-          closed
-          listening={false}
-        />,
-      )
+      cells.push({ col, row })
     }
-    return <>{shapes}</>
+    if (cells.length === 0) return null
+    return (
+      <Shape
+        sceneFunc={(ctx, shape) => {
+          ctx.beginPath()
+          for (const { col, row } of cells) {
+            const poly = hexCellPolygon(col, row, grid)
+            ctx.moveTo(poly[0], poly[1])
+            for (let i = 2; i < poly.length; i += 2) {
+              ctx.lineTo(poly[i], poly[i + 1])
+            }
+            ctx.closePath()
+          }
+          ctx.fillStrokeShape(shape)
+        }}
+        fill={color}
+        opacity={opacity}
+        listening={false}
+      />
+    )
   }
   const cell = grid.cellSize
   const startCol = Math.floor((visX0 - grid.originX) / cell)
