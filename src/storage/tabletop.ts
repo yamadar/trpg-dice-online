@@ -17,11 +17,24 @@
 
 import { openRoomDb } from './roomLog'
 import {
+  DEFAULT_FOG,
   DEFAULT_GRID,
+  DEFAULT_PEN_COLOR,
+  DEFAULT_PEN_WIDTH,
+  DEFAULT_TEXT_COLOR,
+  DEFAULT_TEXT_FONT_SIZE,
   MAX_CELL_SIZE,
+  MAX_PEN_WIDTH,
+  MAX_TEXT_FONT_SIZE,
+  MAX_TEXT_LENGTH,
   MIN_CELL_SIZE,
+  MIN_PEN_WIDTH,
+  MIN_TEXT_FONT_SIZE,
+  type DrawStroke,
+  type FogState,
   type Grid,
   type MapBackground,
+  type MapText,
   type NpcDef,
   type TabletopState,
   type Token,
@@ -145,6 +158,74 @@ function sanitizeNpcDef(raw: unknown): NpcDef | null {
   return { id, name, image: asString(r.image) }
 }
 
+function sanitizeMapText(raw: unknown): MapText | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const r = raw as Record<string, unknown>
+  const id = asString(r.id)
+  if (!id) return null
+  const text = asString(r.text).slice(0, MAX_TEXT_LENGTH)
+  if (!text) return null
+  return {
+    id,
+    x: asNumber(r.x, 0),
+    y: asNumber(r.y, 0),
+    text,
+    color: asString(r.color) || DEFAULT_TEXT_COLOR,
+    fontSize: clamp(
+      asNumber(r.fontSize, DEFAULT_TEXT_FONT_SIZE),
+      MIN_TEXT_FONT_SIZE,
+      MAX_TEXT_FONT_SIZE,
+    ),
+    ownerPlayerId: asString(r.ownerPlayerId),
+  }
+}
+
+function sanitizeDrawStroke(raw: unknown): DrawStroke | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const r = raw as Record<string, unknown>
+  const id = asString(r.id)
+  if (!id) return null
+  const rawPoints = r.points
+  if (!Array.isArray(rawPoints) || rawPoints.length < 2) return null
+  const points: number[] = []
+  for (const p of rawPoints) {
+    if (typeof p === 'number' && Number.isFinite(p)) points.push(p)
+  }
+  // Need at least two coordinates pairs to render anything meaningful.
+  if (points.length < 2) return null
+  return {
+    id,
+    points,
+    color: asString(r.color) || DEFAULT_PEN_COLOR,
+    width: clamp(
+      asNumber(r.width, DEFAULT_PEN_WIDTH),
+      MIN_PEN_WIDTH,
+      MAX_PEN_WIDTH,
+    ),
+    ownerPlayerId: asString(r.ownerPlayerId),
+  }
+}
+
+function sanitizeFog(raw: unknown): FogState {
+  if (typeof raw !== 'object' || raw === null) return { ...DEFAULT_FOG }
+  const r = raw as Record<string, unknown>
+  const enabled = asBool(r.enabled, false)
+  const revealed: string[] = []
+  if (Array.isArray(r.revealed)) {
+    const seen = new Set<string>()
+    for (const v of r.revealed) {
+      if (typeof v !== 'string') continue
+      // "col,row" — both must parse as integers, otherwise drop.
+      const m = /^(-?\d+),(-?\d+)$/.exec(v)
+      if (!m) continue
+      if (seen.has(v)) continue
+      seen.add(v)
+      revealed.push(v)
+    }
+  }
+  return { enabled, revealed }
+}
+
 function sanitizePcSpawn(raw: unknown): { x: number; y: number } | undefined {
   if (typeof raw !== 'object' || raw === null) return undefined
   const r = raw as Record<string, unknown>
@@ -167,7 +248,14 @@ function sanitizePcSpawn(raw: unknown): { x: number; y: number } | undefined {
  */
 export function sanitizeStoredTabletop(raw: unknown): TabletopState {
   if (typeof raw !== 'object' || raw === null) {
-    return { grid: { ...DEFAULT_GRID }, tokens: [], npcLibrary: [] }
+    return {
+      grid: { ...DEFAULT_GRID },
+      tokens: [],
+      npcLibrary: [],
+      texts: [],
+      strokes: [],
+      fog: { ...DEFAULT_FOG },
+    }
   }
   const r = raw as Record<string, unknown>
   const map = sanitizeMap(r.map)
@@ -185,12 +273,30 @@ export function sanitizeStoredTabletop(raw: unknown): TabletopState {
       if (def) npcLibrary.push(def)
     }
   }
+  const texts: MapText[] = []
+  if (Array.isArray(r.texts)) {
+    for (const raw of r.texts) {
+      const text = sanitizeMapText(raw)
+      if (text) texts.push(text)
+    }
+  }
+  const strokes: DrawStroke[] = []
+  if (Array.isArray(r.strokes)) {
+    for (const raw of r.strokes) {
+      const stroke = sanitizeDrawStroke(raw)
+      if (stroke) strokes.push(stroke)
+    }
+  }
+  const fog = sanitizeFog(r.fog)
   const pcSpawn = sanitizePcSpawn(r.pcSpawn)
   return {
     ...(map ? { map } : {}),
     grid: sanitizeGrid(r.grid),
     tokens,
     npcLibrary,
+    texts,
+    strokes,
+    fog,
     ...(pcSpawn ? { pcSpawn } : {}),
   }
 }

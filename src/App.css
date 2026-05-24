@@ -755,6 +755,104 @@
   font: inherit;
 }
 
+/* --- Tabletop tools palette ---
+   Floating left-side toolbar that picks the active tool (select,
+   pen, eraser, text, fog). One column on desktop; full-width strip
+   at the top of the canvas on narrow viewports so it does not eat
+   the map view. */
+.tabletop-tools {
+  position: absolute;
+  z-index: 1;
+  top: 64px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-size: 0.78rem;
+  max-width: 132px;
+}
+.tabletop-tools-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+}
+.tabletop-tools-btn:hover {
+  background: var(--panel);
+}
+.tabletop-tools-btn.active {
+  background: var(--accent, #3b6ea5);
+  color: #fff;
+  border-color: transparent;
+}
+.tabletop-tools-label {
+  font-size: 0.72rem;
+  line-height: 1.1;
+  text-align: center;
+}
+.tabletop-tools-divider {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}
+.tabletop-tools-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+}
+.tabletop-tools-row > input {
+  width: 100%;
+}
+
+/* --- Tabletop text-draft input ---
+   The floating HTML input shown while the user types a new map
+   text. Position is set inline in screen coords; this just controls
+   the look. */
+.tabletop-text-draft {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+.tabletop-text-draft > input {
+  min-width: 180px;
+  padding: 4px 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+}
+.tabletop-text-draft-actions {
+  display: flex;
+  gap: 4px;
+}
+.tabletop-text-draft-actions > button {
+  flex: 1;
+  font-size: 0.75rem;
+  padding: 4px 6px;
+}
+
 /* --- Tabletop floating overlays (chat / dice) ---
    The map ops toolbar already lives at top-right. The other two
    overlays park in the unused corners so they do not collide. Each

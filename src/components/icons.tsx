@@ -2,7 +2,10 @@ import { useId } from 'react'
 import {
   ALargeSmall,
   ChevronDown,
+  Cloud,
+  CloudOff,
   Drama,
+  Eraser,
   Grid2x2,
   Hand,
   HelpCircle,
@@ -11,6 +14,7 @@ import {
   Languages,
   Layers,
   MessageCircleMore,
+  MousePointer2,
   Paperclip,
   Palette,
   Pencil,
@@ -19,6 +23,7 @@ import {
   Settings,
   Star,
   Trash2,
+  Type,
   User,
   Users,
   X,
@@ -359,6 +364,86 @@ export function HelpIcon({ size = 16 }: IconProps) {
 export function InfoIcon({ size = 16 }: IconProps) {
   return (
     <Info
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/* ---- Tabletop tools ---- */
+
+/** Mouse-pointer for the "select / drag tokens" default tool. */
+export function PointerIcon({ size = 16 }: IconProps) {
+  return (
+    <MousePointer2
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Capital T for the text-placement tool. */
+export function TextIcon({ size = 16 }: IconProps) {
+  return (
+    <Type
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Pencil for the pen tool. */
+export function PenIcon({ size = 16 }: IconProps) {
+  return (
+    <Pencil
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Eraser for the stroke eraser tool. */
+export function EraserIcon({ size = 16 }: IconProps) {
+  return (
+    <Eraser
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Cloud — fog conceal (paint cells back in). */
+export function FogIcon({ size = 16 }: IconProps) {
+  return (
+    <Cloud
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Cloud with a slash — fog reveal (clear cells). */
+export function FogClearIcon({ size = 16 }: IconProps) {
+  return (
+    <CloudOff
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}

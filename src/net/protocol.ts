@@ -1,7 +1,15 @@
 import type { RollResult } from '../dice/types'
 import type { Lang } from '../i18n/translations'
 import type { Chunk, ChunkSpec } from '../tabletop/imageChunk'
-import type { Grid, NpcDef, TabletopState, Token } from '../tabletop/types'
+import type {
+  DrawStroke,
+  FogState,
+  Grid,
+  MapText,
+  NpcDef,
+  TabletopState,
+  Token,
+} from '../tabletop/types'
 
 export interface Player {
   id: string
@@ -147,6 +155,18 @@ export type ClientMessage =
       characterName?: string
       image?: string
     }
+  /** Any participant asks the host to add a free text label. The host
+   *  stamps the canonical id and broadcasts the result as `textUpsert`. */
+  | { t: 'mapTextAddRequest'; text: MapText }
+  /** Any participant asks the host to update a label they own. The host
+   *  enforces ownership (owner or GM) before applying. */
+  | { t: 'mapTextUpdateRequest'; id: string; text?: string; x?: number; y?: number; color?: string; fontSize?: number }
+  /** Any participant asks the host to remove a label they own. */
+  | { t: 'mapTextRemoveRequest'; id: string }
+  /** Any participant asks the host to record a pen stroke they drew. */
+  | { t: 'drawStrokeAddRequest'; stroke: DrawStroke }
+  /** Any participant asks the host to drop a stroke they own. */
+  | { t: 'drawStrokeRemoveRequest'; id: string }
 
 /** Messages a host sends to clients. */
 export type HostMessage =
@@ -193,6 +213,16 @@ export type HostMessage =
    * the welcome-snapshot pattern).
    */
   | { t: 'tabletopState'; state: TabletopState }
+  /** A free text label was added or replaced. */
+  | { t: 'mapTextUpsert'; text: MapText }
+  /** A free text label was removed. */
+  | { t: 'mapTextRemove'; id: string }
+  /** A pen stroke was added. */
+  | { t: 'drawStrokeAdd'; stroke: DrawStroke }
+  /** A pen stroke was removed. */
+  | { t: 'drawStrokeRemove'; id: string }
+  /** GM-authoritative fog of war replacement. */
+  | { t: 'fogSet'; fog: FogState }
 
 export type NetMessage = ClientMessage | HostMessage
 
