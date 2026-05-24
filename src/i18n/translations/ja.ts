@@ -141,6 +141,16 @@ export const ja: Dict = {
   'tabletop.fog.needGrid': '先にスクエアグリッドを設定してください',
   'tabletop.text.removeOwn': 'テキストを削除',
   'tabletop.stroke.removeOwn': 'ストロークを消す',
+  'tabletop.error.title': 'テーブルマップでエラーが発生しました',
+  'tabletop.error.body': 'マップの描画中に問題が起きました。ルームは接続されたままです。下のいずれかの操作で復帰してください。',
+  'tabletop.error.retry': 'もう一度試す',
+  'tabletop.error.clearMap': '背景マップを外して再開',
+  'tabletop.error.close': 'テーブルを閉じる',
+  'tabletop.error.details': 'エラーの詳細',
+  'app.error.title': '予期しないエラーが発生しました',
+  'app.error.body': 'アプリで予期しないエラーが発生しました。リロードすると復帰できることがほとんどです。保存済みデータは保持されます。',
+  'app.error.reload': 'リロード',
+  'app.error.details': 'エラーの詳細',
 
 
   'status.offline': 'オフライン',

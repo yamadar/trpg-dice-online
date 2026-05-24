@@ -34,6 +34,7 @@ import { CharacterPanel } from './components/CharacterPanel'
 import { DiceRoller, type Draft } from './components/DiceRoller'
 import { PatternList } from './components/PatternList'
 import { ActivityPanel } from './components/ActivityPanel'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { TablePanel } from './components/TablePanel'
 import type { SessionSummary } from './storage/roomLog'
 
@@ -439,45 +440,72 @@ function App() {
       )}
 
       {tabletopOpen && (
-        <TablePanel
-          session={session}
-          onClose={() => setTabletopOpen(false)}
-          characters={characters.characters}
-          activeCharacterId={activeCharacterId}
-          onNotice={flash}
-          chatPanel={
-            <ActivityPanel
-              session={session}
-              characters={characters.characters}
-              compact={compact}
-              showTyping={showTyping}
-              broadcastTyping={broadcastTyping}
-              onNotice={flash}
-              onOpenRoom={() => setOpenSheet('room')}
+        // The tabletop is Konva-heavy and the most likely source of a
+        // render-phase crash (bad image data, NaN coords from a broken
+        // sync, etc.). Wrap it in an ErrorBoundary so a thrown error
+        // surfaces a recovery card instead of unmounting the whole app
+        // tree — the user can close the tabletop, clear the offending
+        // background map, or just retry. `resetKey={tabletopOpen}`
+        // means closing+reopening the panel also resets the boundary.
+        <ErrorBoundary
+          resetKey={tabletopOpen}
+          fallback={({ error, reset }) => (
+            <TabletopErrorFallback
+              error={error}
+              onRetry={reset}
+              onClearMap={() => {
+                session.clearMapBackground()
+                reset()
+              }}
+              onClose={() => {
+                setTabletopOpen(false)
+                reset()
+              }}
+              hasMap={!!session.tabletop.map}
+              canClearMap={session.role !== 'client'}
             />
-          }
-          dicePanel={
-            <DiceRoller
-              draft={draft}
-              onChange={setDraft}
-              isGM={session.isGM}
-              onRoll={handleRoll}
-              onSave={handleSave}
-            />
-          }
-          patternsPanel={
-            <PatternList
-              hasCharacter={characters.activeCharacter !== null}
-              characterName={characters.activeCharacter?.name ?? ''}
-              patterns={characters.activeCharacter?.patterns ?? []}
-              isGM={session.isGM}
-              onLoad={handleLoad}
-              onQuickRoll={handleQuickRoll}
-              onDelete={handleDeletePattern}
-              onMove={handleMovePattern}
-            />
-          }
-        />
+          )}
+        >
+          <TablePanel
+            session={session}
+            onClose={() => setTabletopOpen(false)}
+            characters={characters.characters}
+            activeCharacterId={activeCharacterId}
+            onNotice={flash}
+            chatPanel={
+              <ActivityPanel
+                session={session}
+                characters={characters.characters}
+                compact={compact}
+                showTyping={showTyping}
+                broadcastTyping={broadcastTyping}
+                onNotice={flash}
+                onOpenRoom={() => setOpenSheet('room')}
+              />
+            }
+            dicePanel={
+              <DiceRoller
+                draft={draft}
+                onChange={setDraft}
+                isGM={session.isGM}
+                onRoll={handleRoll}
+                onSave={handleSave}
+              />
+            }
+            patternsPanel={
+              <PatternList
+                hasCharacter={characters.activeCharacter !== null}
+                characterName={characters.activeCharacter?.name ?? ''}
+                patterns={characters.activeCharacter?.patterns ?? []}
+                isGM={session.isGM}
+                onLoad={handleLoad}
+                onQuickRoll={handleQuickRoll}
+                onDelete={handleDeletePattern}
+                onMove={handleMovePattern}
+              />
+            }
+          />
+        </ErrorBoundary>
       )}
 
       {notice && (
@@ -499,6 +527,71 @@ function App() {
           }}
         />
       )}
+    </div>
+  )
+}
+
+interface TabletopErrorFallbackProps {
+  error: Error
+  onRetry: () => void
+  onClearMap: () => void
+  onClose: () => void
+  hasMap: boolean
+  /** Hide the "clear map" affordance for clients — they can't mutate
+   *  the host-authoritative background. */
+  canClearMap: boolean
+}
+
+/**
+ * Recovery card shown when the tabletop's render tree throws. Kept in
+ * App.tsx (not the boundary itself) so it can wire host-authoritative
+ * recovery actions like clearing the background map; the boundary
+ * itself stays generic.
+ */
+function TabletopErrorFallback({
+  error,
+  onRetry,
+  onClearMap,
+  onClose,
+  hasMap,
+  canClearMap,
+}: TabletopErrorFallbackProps) {
+  const { t } = useI18n()
+  return (
+    <div
+      className="error-fallback"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="tabletop-error-title"
+    >
+      <div className="error-fallback-card">
+        <h2 id="tabletop-error-title" className="error-fallback-title">
+          {t('tabletop.error.title')}
+        </h2>
+        <p className="error-fallback-body">{t('tabletop.error.body')}</p>
+        <div className="error-fallback-actions">
+          <button
+            type="button"
+            className="primary"
+            onClick={onRetry}
+            autoFocus
+          >
+            {t('tabletop.error.retry')}
+          </button>
+          {canClearMap && hasMap && (
+            <button type="button" onClick={onClearMap}>
+              {t('tabletop.error.clearMap')}
+            </button>
+          )}
+          <button type="button" onClick={onClose}>
+            {t('tabletop.error.close')}
+          </button>
+        </div>
+        <details className="error-fallback-details">
+          <summary>{t('tabletop.error.details')}</summary>
+          <pre>{error.stack ?? error.message}</pre>
+        </details>
+      </div>
     </div>
   )
 }

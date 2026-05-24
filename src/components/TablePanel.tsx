@@ -1124,7 +1124,16 @@ function MapImage({
   width: number
   height: number
 }) {
-  const [image] = useImage(src)
+  const [image, status] = useImage(src)
+  // Defensive: a corrupted dataUrl arriving over the wire, an image
+  // the browser cannot decode, or invalid dimensions from a malformed
+  // sync would otherwise reach Konva / canvas and could throw. Guard
+  // each so the ErrorBoundary stays a true safety net rather than the
+  // primary handler.
+  if (!src) return null
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null
+  if (width <= 0 || height <= 0) return null
+  if (status === 'failed') return null
   if (!image) return null
   return <KonvaImage image={image} x={0} y={0} width={width} height={height} />
 }
