@@ -2035,6 +2035,10 @@ label.setting-row {
 }
 .pattern-list-compact .pattern-name {
   font-weight: 600;
+  /* Pattern names are typically short ("攻撃", "回避判定" 等) — drop
+     one size class compared to the surrounding body so the row reads
+     as a tight info block rather than a heading. */
+  font-size: 0.85rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2047,6 +2051,25 @@ label.setting-row {
   font-family: var(--mono);
   white-space: nowrap;
   flex-shrink: 0;
+}
+/* Kind icon column: tinted by the same `--damage` / `--judgment` theme
+   variables that colour the dice-summary headline, so the pattern row
+   reads at a glance — red sword for damage, blue target for judgment.
+   The fixed width keeps the name column aligned across rows of mixed
+   kinds. */
+.pattern-list-compact .pattern-kind {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+}
+.pattern-list-compact .pattern-kind--damage {
+  color: var(--damage);
+}
+.pattern-list-compact .pattern-kind--judgment {
+  color: var(--judgment);
 }
 .pattern-list-compact .pattern-actions {
   display: flex;
@@ -3254,6 +3277,33 @@ button.char-avatar-large:disabled {
   border-color: var(--accent-2);
   color: #fff;
   font-weight: 600;
+}
+/* Dice-kind chips (damage / judgment) — show the kind icon alongside
+   the label and tint the icon with the matching theme variable, even
+   in the un-active state, so the user can read the colour mapping at
+   a glance before they pick a kind. When active, the chip itself
+   keeps the standard `--accent-2` highlight so it does not overpower
+   the page-wide focus colour. */
+.chip-kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.chip-kind-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.chip-kind--damage .chip-kind-icon {
+  color: var(--damage);
+}
+.chip-kind--judgment .chip-kind-icon {
+  color: var(--judgment);
+}
+.chip-kind.active .chip-kind-icon {
+  /* On the active state the chip itself goes solid accent — switch
+     the icon to white so it stays legible against the new bg. */
+  color: #fff;
 }
 
 /* --- modifier stepper --- */

@@ -2,6 +2,7 @@ import { useI18n } from '../i18n/useI18n'
 import type { Pattern } from '../dice/types'
 import { formatDiceSummary } from '../dice/format'
 import { useConfirm } from '../hooks/useConfirm'
+import { KindIcon } from './DiceRoller'
 import { CloseIcon, DiceIcon, EditIcon } from './icons'
 
 interface Props {
@@ -90,6 +91,13 @@ export function PatternList({
                   ▼
                 </button>
               </div>
+              <span
+                className={`pattern-kind pattern-kind--${p.kind}`}
+                aria-label={t(`kind.${p.kind}`)}
+                title={t(`kind.${p.kind}`)}
+              >
+                <KindIcon kind={p.kind} size={16} />
+              </span>
               <div className="pattern-info">
                 <span className="pattern-name" title={p.name || t('pattern.unnamed')}>
                   {p.name || t('pattern.unnamed')}
@@ -101,7 +109,7 @@ export function PatternList({
                   )}
                 </span>
                 <span className="pattern-meta">
-                  {formatDiceSummary(p.diceCount, p.diceType, p.modifier)} · {t(`kind.${p.kind}`)}
+                  {formatDiceSummary(p.diceCount, p.diceType, p.modifier)}
                 </span>
               </div>
               <div className="pattern-actions">
