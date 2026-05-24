@@ -101,7 +101,25 @@ function sanitizeToken(raw: unknown): Token | null {
     const ownerPlayerId = asString(r.ownerPlayerId)
     const characterId = asString(r.characterId)
     if (!ownerPlayerId) return null
-    return { id, kind: 'pc', x, y, ownerPlayerId, characterId }
+    // Round-trip an optional snapshot (multi-character display fix).
+    // A malformed snapshot is dropped rather than coerced to garbage —
+    // the renderer falls back to the live sessionCharacters lookup.
+    let snapshot: { name: string; image: string } | undefined
+    if (typeof r.snapshot === 'object' && r.snapshot !== null) {
+      const s = r.snapshot as Record<string, unknown>
+      const name = asString(s.name)
+      const image = asString(s.image)
+      if (name || image) snapshot = { name, image }
+    }
+    return {
+      id,
+      kind: 'pc',
+      x,
+      y,
+      ownerPlayerId,
+      characterId,
+      ...(snapshot ? { snapshot } : {}),
+    }
   }
   if (r.kind === 'gm') {
     const label = asString(r.label)

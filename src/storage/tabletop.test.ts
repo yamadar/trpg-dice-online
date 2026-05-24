@@ -185,4 +185,63 @@ describe('sanitizeStoredTabletop', () => {
     const result = sanitizeStoredTabletop({ pcSpawn: 'origin' })
     expect(result.pcSpawn).toBeUndefined()
   })
+
+  it('round-trips a PC token snapshot', () => {
+    // The snapshot lets the renderer show a portrait and label for a
+    // non-active character of the same player — the sessionCharacters
+    // map only carries the player's *active* character, so without
+    // this fallback a second-character token would render blank.
+    const result = sanitizeStoredTabletop({
+      tokens: [
+        {
+          id: 'tok-1',
+          kind: 'pc',
+          x: 0,
+          y: 0,
+          ownerPlayerId: 'p1',
+          characterId: 'chr-knight',
+          snapshot: { name: 'Knight', image: 'data:image/png;base64,XX' },
+        },
+      ],
+    })
+    expect(result.tokens[0]).toMatchObject({
+      snapshot: { name: 'Knight', image: 'data:image/png;base64,XX' },
+    })
+  })
+
+  it('omits the snapshot when both name and image are empty', () => {
+    // A legitimate "no snapshot" entry should not crowd the saved
+    // shape with an empty object.
+    const result = sanitizeStoredTabletop({
+      tokens: [
+        {
+          id: 'tok-1',
+          kind: 'pc',
+          x: 0,
+          y: 0,
+          ownerPlayerId: 'p1',
+          characterId: 'chr',
+          snapshot: { name: '', image: '' },
+        },
+      ],
+    })
+    expect(result.tokens[0]).not.toHaveProperty('snapshot')
+  })
+
+  it('keeps an old PC token without a snapshot field', () => {
+    // Tokens placed before the snapshot field existed must still load.
+    const result = sanitizeStoredTabletop({
+      tokens: [
+        { id: 'tok-1', kind: 'pc', x: 0, y: 0, ownerPlayerId: 'p1', characterId: 'chr' },
+      ],
+    })
+    expect(result.tokens[0]).toEqual({
+      id: 'tok-1',
+      kind: 'pc',
+      x: 0,
+      y: 0,
+      ownerPlayerId: 'p1',
+      characterId: 'chr',
+    })
+  })
 })

@@ -26,8 +26,15 @@ interface Props {
    *  themselves to the map — multiple times if they want. */
   characters: ReadonlyArray<Character>
   /** Place a fresh PC token for the local player's named character.
-   *  Multi-placement is allowed: each call mints a new token id. */
-  onPlaceMyCharacter: (characterId: string) => void
+   *  Multi-placement is allowed: each call mints a new token id.
+   *  `characterName` and `image` are stamped onto the token's
+   *  `snapshot` so the renderer can show a portrait and label for
+   *  characters that are not currently the player's active one. */
+  onPlaceMyCharacter: (
+    characterId: string,
+    characterName: string,
+    image: string,
+  ) => void
   /** GM-only: the NPC library. Empty list hides the library section. */
   npcLibrary: ReadonlyArray<NpcDef>
   /** GM-only: add a fresh NPC to the library. Caller is responsible
@@ -350,7 +357,9 @@ export function TableToolbar({
                   <button
                     type="button"
                     className="tabletop-toolbar-list-action"
-                    onClick={() => onPlaceMyCharacter(char.id)}
+                    onClick={() =>
+                      onPlaceMyCharacter(char.id, char.name, char.image || '')
+                    }
                   >
                     {t('tabletop.playerToken.place')}
                   </button>

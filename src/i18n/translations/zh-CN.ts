@@ -111,6 +111,7 @@ export const zhCN: Dict = {
   'tabletop.toggle.mapOps': 'Map ops',
   'tabletop.toggle.chat': 'Chat',
   'tabletop.toggle.dice': 'Dice',
+  'tabletop.toggle.patterns': 'Patterns',
 
 
   'status.offline': '离线',

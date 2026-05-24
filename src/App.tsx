@@ -457,25 +457,25 @@ function App() {
             />
           }
           dicePanel={
-            <div className="tabletop-dice-stack">
-              <DiceRoller
-                draft={draft}
-                onChange={setDraft}
-                isGM={session.isGM}
-                onRoll={handleRoll}
-                onSave={handleSave}
-              />
-              <PatternList
-                hasCharacter={characters.activeCharacter !== null}
-                characterName={characters.activeCharacter?.name ?? ''}
-                patterns={characters.activeCharacter?.patterns ?? []}
-                isGM={session.isGM}
-                onLoad={handleLoad}
-                onQuickRoll={handleQuickRoll}
-                onDelete={handleDeletePattern}
-                onMove={handleMovePattern}
-              />
-            </div>
+            <DiceRoller
+              draft={draft}
+              onChange={setDraft}
+              isGM={session.isGM}
+              onRoll={handleRoll}
+              onSave={handleSave}
+            />
+          }
+          patternsPanel={
+            <PatternList
+              hasCharacter={characters.activeCharacter !== null}
+              characterName={characters.activeCharacter?.name ?? ''}
+              patterns={characters.activeCharacter?.patterns ?? []}
+              isGM={session.isGM}
+              onLoad={handleLoad}
+              onQuickRoll={handleQuickRoll}
+              onDelete={handleDeletePattern}
+              onMove={handleMovePattern}
+            />
           }
         />
       )}

@@ -17,7 +17,14 @@ export type TokenKind = 'pc' | 'gm'
  * A token bound to a session character. The portrait used at render time
  * is pulled from the `sessionCharacters` store (the same source as the
  * feed avatar) so a portrait change automatically propagates to the
- * tabletop.
+ * tabletop. `snapshot` is the fallback: the character's name and
+ * portrait at placement time, persisted with the token. It is needed
+ * because `sessionCharacters` only carries the player's *active*
+ * character (plus speakers in the in-memory feed window) — a token
+ * for a non-active character of the same player would otherwise have
+ * no record to read from, so the renderer would show a blank circle
+ * with no label. Optional for backward compatibility with tokens
+ * placed before this field existed.
  */
 export interface PcToken {
   id: string
@@ -29,6 +36,9 @@ export interface PcToken {
   ownerPlayerId: string
   /** Stable character id (`Character.id` or '' for "as player"). */
   characterId: string
+  /** Character name + portrait at placement time, used when the live
+   *  `sessionCharacters` record is absent. */
+  snapshot?: { name: string; image: string }
 }
 
 /**
