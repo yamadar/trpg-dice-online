@@ -16,7 +16,7 @@ import type { Session } from '../hooks/useSession'
 import { playerColor } from '../players/colors'
 import { characterImagesKey } from '../storage/roomLog'
 import { canMoveToken } from '../tabletop/tokens'
-import type { Grid, Token } from '../tabletop/types'
+import type { Grid, TabletopLibraryKind, Token } from '../tabletop/types'
 import type { Character } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
 import { ChatIcon, CloseIcon, DiceIcon, TabletopIcon, TrashIcon } from './icons'
@@ -528,6 +528,22 @@ export function TablePanel({
           onRemoveNpcDef={session.removeNpcDef}
           onPlaceNpcFromLibrary={session.placeNpcFromLibrary}
           isHost={canEdit}
+          tabletopLibrary={session.tabletopLibrary}
+          onSaveTabletopAs={(name, kind: TabletopLibraryKind) => {
+            // Templates need a PC spawn point — pass the world-space
+            // centre of the current viewport so a load drops PCs where
+            // the GM is currently looking. Saves do not use it.
+            const viewportCenter =
+              kind === 'template'
+                ? {
+                    x: -stageX / stageScale + size.width / 2 / stageScale,
+                    y: -stageY / stageScale + size.height / 2 / stageScale,
+                  }
+                : undefined
+            return session.saveTabletopAs(name, kind, viewportCenter)
+          }}
+          onLoadTabletopFromLibrary={session.loadTabletopFromLibrary}
+          onDeleteTabletopFromLibrary={session.deleteTabletopFromLibrary}
           onNotice={onNotice}
         />
       )}

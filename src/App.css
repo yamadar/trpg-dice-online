@@ -627,6 +627,15 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Multi-line variant for hint text under a button row. Overrides the
+   one-line ellipsis above so a long explanation reads as a paragraph
+   inside the toolbar's vertical flow. */
+.tabletop-toolbar-meta.wrap {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  line-height: 1.4;
+}
 .tabletop-toolbar-input {
   padding: 6px 8px;
   background: var(--panel-2);

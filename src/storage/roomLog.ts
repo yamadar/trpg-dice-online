@@ -19,7 +19,7 @@
  */
 
 const DB_NAME = 'trpg-dice'
-const DB_VERSION = 7
+const DB_VERSION = 8
 const STORE = 'roomLog'
 const META = 'sessions'
 /** v6 renamed the portrait store to match its expanded role
@@ -402,6 +402,13 @@ function openDb(): Promise<IDBDatabase | null> {
       // feature is new — so the upgrade is just a store creation.
       if (!db.objectStoreNames.contains(TABLETOP)) {
         db.createObjectStore(TABLETOP, { keyPath: 'sessionId' })
+      }
+      // v8 adds the GM's named tabletop library (templates + saves).
+      // Global (not per-session) so a GM can prepare scenes ahead and
+      // load them into any room.
+      if (!db.objectStoreNames.contains('tabletopLibrary')) {
+        const store = db.createObjectStore('tabletopLibrary', { keyPath: 'id' })
+        store.createIndex('byUpdatedAt', 'updatedAt')
       }
     }
     req.onsuccess = () => {

@@ -49,14 +49,22 @@ import {
   EMPTY_TABLETOP_STATE,
   newMapId,
   newNpcDefId,
+  newSavedTabletopId,
   newTokenId,
   type Grid,
   type MapBackground,
   type NpcDef,
+  type SavedTabletop,
+  type TabletopLibraryKind,
   type TabletopState,
   type Token,
 } from '../tabletop/types'
 import { loadTabletop, saveTabletop } from '../storage/tabletop'
+import {
+  deleteLibraryEntry as deleteLibraryEntryStorage,
+  listLibrary,
+  saveLibraryEntry,
+} from '../storage/tabletopLibrary'
 import { snapToGrid } from '../tabletop/grid'
 import {
   applyTokenMove as applyTokenMoveHelper,
@@ -246,6 +254,31 @@ export interface Session {
    * edit does not retroactively change the placed instance.
    */
   placeNpcFromLibrary: (defId: string) => void
+  /** All named tabletop templates + saves visible to this GM. Empty
+   *  when IndexedDB is unavailable or nothing has been saved. */
+  tabletopLibrary: ReadonlyArray<SavedTabletop>
+  /**
+   * GM-only: save the current tabletop with the given name and kind.
+   *
+   * - `template`: stores the layout (map + grid + NPC library + NPC
+   *   placements) along with the supplied viewport centre as the PC
+   *   spawn point; PC tokens are stripped so loading later does not
+   *   resurrect old players' placements.
+   * - `save`: stores the full state including all token positions.
+   */
+  saveTabletopAs: (
+    name: string,
+    kind: TabletopLibraryKind,
+    viewportCenter?: { x: number; y: number },
+  ) => Promise<'ok' | 'invalid'>
+  /**
+   * GM-only: replace the current tabletop with a saved one.
+   * Template loads transplant the GM's existing PCs to the new
+   * `pcSpawn`. Save loads restore exactly what was saved.
+   */
+  loadTabletopFromLibrary: (id: string) => Promise<'ok' | 'missing'>
+  /** GM-only: drop an entry from the library. */
+  deleteTabletopFromLibrary: (id: string) => Promise<void>
 }
 
 /** Keep at most `max` items, dropping the oldest. */
@@ -342,6 +375,15 @@ export function useSession(): Session {
    * re-host / resume; seeded from the welcome snapshot on join.
    */
   const [tabletop, setTabletop] = useState<TabletopState>(EMPTY_TABLETOP_STATE)
+  /**
+   * GM-only: the user's named tabletop library (templates + saves).
+   * Loaded asynchronously from IndexedDB on mount; the
+   * `saveTabletopAs` / `loadTabletopFromLibrary` /
+   * `deleteTabletopFromLibrary` mutations refresh it on success.
+   */
+  const [tabletopLibrary, setTabletopLibrary] = useState<
+    ReadonlyArray<SavedTabletop>
+  >([])
 
   /** Type of a single buffered (player, character) record save. The
    *  `sessionId` is captured at stage-time (not read from the live ref
@@ -934,21 +976,29 @@ export function useSession(): Session {
         roomRef.current?.sendToHost({ t: 'pcTokenPlaceRequest', characterId })
         return
       }
-      // Host (or offline) places for themselves.
-      const grid = tabletopRef.current.grid
+      // Host (or offline) places for themselves. With `pcSpawn` set
+      // (templates set it on load), each new PC token clusters around
+      // that point; otherwise the legacy "stagger from grid origin"
+      // behaviour is used.
+      const tabletop = tabletopRef.current
+      const grid = tabletop.grid
       const cell = grid.cellSize
-      const index = tabletopRef.current.tokens.length
+      const index = tabletop.tokens.length
+      const origin = tabletop.pcSpawn ?? {
+        x: grid.originX + cell / 2,
+        y: grid.originY + cell / 2,
+      }
       const token: Token = {
         id: newTokenId(),
         kind: 'pc',
-        x: grid.originX + cell / 2 + index * cell,
-        y: grid.originY + cell / 2,
+        x: origin.x + index * cell,
+        y: origin.y,
         ownerPlayerId: playerId,
         characterId,
       }
       applyTabletop({
-        ...tabletopRef.current,
-        tokens: [...tabletopRef.current.tokens, token],
+        ...tabletop,
+        tokens: [...tabletop.tokens, token],
       })
       roomRef.current?.broadcast({ t: 'tokenUpsert', token })
     },
@@ -1053,6 +1103,138 @@ export function useSession(): Session {
    * of the library — a later library edit / delete leaves the
    * placement alone (and vice versa).
    */
+  /**
+   * Reload the library from IndexedDB. Used internally after every
+   * save / delete so the UI stays in sync without round-tripping the
+   * mutation result. A bare-bones effect on mount kicks the first
+   * load.
+   */
+  const refreshTabletopLibrary = useCallback(async () => {
+    const entries = await listLibrary()
+    setTabletopLibrary(entries)
+  }, [])
+
+  // Mount-only async load of the library. The setState only fires
+  // from inside the .then callback (which the React 19 lint rule
+  // treats as "subscribing to an external source") rather than
+  // synchronously in the effect body, so the rule is satisfied.
+  // `cancelled` guards against a late resolution after unmount.
+  useEffect(() => {
+    let cancelled = false
+    listLibrary().then((entries) => {
+      if (!cancelled) setTabletopLibrary(entries)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  /**
+   * GM-only: save the current tabletop. Templates strip PC tokens and
+   * stash the supplied viewport centre as `pcSpawn`; saves keep
+   * everything verbatim.
+   */
+  const saveTabletopAs = useCallback(
+    async (
+      name: string,
+      kind: TabletopLibraryKind,
+      viewportCenter?: { x: number; y: number },
+    ): Promise<'ok' | 'invalid'> => {
+      if (roleRef.current === 'client') return 'invalid'
+      const trimmed = name.trim()
+      if (!trimmed) return 'invalid'
+      const source = tabletopRef.current
+      let state: TabletopState
+      if (kind === 'template') {
+        // Strip PC tokens — templates describe the *initial* layout
+        // and PCs re-place themselves at the spawn point on load.
+        const tokens = source.tokens.filter((t) => t.kind !== 'pc')
+        state = {
+          ...source,
+          tokens,
+          ...(viewportCenter ? { pcSpawn: viewportCenter } : {}),
+        }
+      } else {
+        // Save: snapshot the whole state, including PC tokens.
+        // pcSpawn is preserved if previously set by a loaded template.
+        state = { ...source }
+      }
+      const now = Date.now()
+      const entry: SavedTabletop = {
+        id: newSavedTabletopId(),
+        name: trimmed,
+        kind,
+        state,
+        createdAt: now,
+        updatedAt: now,
+      }
+      await saveLibraryEntry(entry)
+      await refreshTabletopLibrary()
+      return 'ok'
+    },
+    [refreshTabletopLibrary],
+  )
+
+  /**
+   * GM-only: replace the current tabletop with a saved one. The full
+   * state replacement is broadcast to clients via `tabletopState`;
+   * the map's `dataUrl` is stripped on the wire and then streamed
+   * through the existing chunked-map path so a multi-megabyte
+   * background does not block the data channel.
+   */
+  const loadTabletopFromLibrary = useCallback(
+    async (id: string): Promise<'ok' | 'missing'> => {
+      if (roleRef.current === 'client') return 'missing'
+      const entry = tabletopLibrary.find((e) => e.id === id)
+      if (!entry) return 'missing'
+      // Template loads transplant existing PCs to the spawn point so
+      // their player owns continuity (no "everyone re-place" friction).
+      let next: TabletopState = { ...entry.state }
+      if (entry.kind === 'template') {
+        const survivors = tabletopRef.current.tokens.filter(
+          (t) => t.kind === 'pc',
+        )
+        const spawn = entry.state.pcSpawn ?? {
+          x: entry.state.grid.originX + entry.state.grid.cellSize / 2,
+          y: entry.state.grid.originY + entry.state.grid.cellSize / 2,
+        }
+        // Place each surviving PC token in a staggered ring around the
+        // spawn point. Multiple PCs end up clustered but not stacked.
+        const cell = entry.state.grid.cellSize
+        const relocated = survivors.map((t, i) => ({
+          ...t,
+          x: spawn.x + i * cell,
+          y: spawn.y,
+        }))
+        next = { ...next, tokens: [...next.tokens, ...relocated] }
+      }
+      applyTabletop(next)
+      // Broadcast to clients. Strip the map's dataUrl from the wire
+      // message — the chunked send below fills it back in.
+      const wireState: TabletopState = next.map
+        ? { ...next, map: { ...next.map, dataUrl: '' } }
+        : next
+      roomRef.current?.broadcast({ t: 'tabletopState', state: wireState })
+      if (next.map?.dataUrl) {
+        broadcastMapAsChunks(next.map)
+      }
+      return 'ok'
+    },
+    [applyTabletop, broadcastMapAsChunks, tabletopLibrary],
+  )
+
+  /** GM-only: drop a saved entry from the library. The current
+   *  tabletop on the table is untouched (deletes affect the saved
+   *  copy only). */
+  const deleteTabletopFromLibrary = useCallback(
+    async (id: string) => {
+      if (roleRef.current === 'client') return
+      await deleteLibraryEntryStorage(id)
+      await refreshTabletopLibrary()
+    },
+    [refreshTabletopLibrary],
+  )
+
   const placeNpcFromLibrary = useCallback(
     (defId: string) => {
       if (roleRef.current === 'client') return
@@ -1649,6 +1831,19 @@ export function useSession(): Session {
           )
           if (npcLibrary.length === tabletopRef.current.npcLibrary.length) break
           applyTabletop({ ...tabletopRef.current, npcLibrary })
+          break
+        }
+        case 'tabletopState': {
+          // Full state replace (templates / saves load on host). The
+          // map's `dataUrl` arrives empty here — the host follows with
+          // `mapMeta` + `mapChunk` to fill it back in, same path the
+          // welcome snapshot uses.
+          pendingMapBufferRef.current = null
+          pendingMapMetaRef.current = null
+          applyTabletop({
+            ...msg.state,
+            npcLibrary: msg.state.npcLibrary ?? [],
+          })
           break
         }
       }
@@ -2516,5 +2711,9 @@ export function useSession(): Session {
     updateNpcDef,
     removeNpcDef,
     placeNpcFromLibrary,
+    tabletopLibrary,
+    saveTabletopAs,
+    loadTabletopFromLibrary,
+    deleteTabletopFromLibrary,
   }
 }
