@@ -880,11 +880,11 @@ export function useSession(): Session {
    */
   const removeToken = useCallback(
     (tokenId: string) => {
-      if (roleRef.current === 'client') {
-        // Send a request to host; only owner-owned PC tokens are honoured.
-        roomRef.current?.sendToHost({ t: 'tokenRemoveRequest', tokenId })
-        return
-      }
+      // GM-only: players are deliberately not allowed to delete their
+      // own PC tokens — they move them via drag, the GM cleans up.
+      // A client call is a silent no-op; the UI already gates the
+      // popover behind `canEdit` so this is defence-in-depth.
+      if (roleRef.current === 'client') return
       const tokens = applyTokenRemove(tabletopRef.current.tokens, tokenId)
       if (tokens === tabletopRef.current.tokens) return
       applyTabletop({ ...tabletopRef.current, tokens })
@@ -1354,23 +1354,6 @@ export function useSession(): Session {
             tokens: [...tabletopRef.current.tokens, token],
           })
           roomRef.current?.broadcast({ t: 'tokenUpsert', token })
-          break
-        }
-        case 'tokenRemoveRequest': {
-          // Same ownership rule as `tokenMove`: a client may remove
-          // their own PC tokens but nobody else's; GM tokens are
-          // GM-only to remove.
-          const sender = peerPlayersRef.current.get(peerId)
-          if (!sender) break
-          const token = tabletopRef.current.tokens.find(
-            (t) => t.id === msg.tokenId,
-          )
-          if (!token) break
-          if (token.kind !== 'pc' || token.ownerPlayerId !== sender.id) break
-          const tokens = applyTokenRemove(tabletopRef.current.tokens, msg.tokenId)
-          if (tokens === tabletopRef.current.tokens) break
-          applyTabletop({ ...tabletopRef.current, tokens })
-          roomRef.current?.broadcast({ t: 'tokenRemove', tokenId: msg.tokenId })
           break
         }
       }
