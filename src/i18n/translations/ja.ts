@@ -66,6 +66,8 @@ export const ja: Dict = {
   'tabletop.panel.title': 'テーブル操作',
   'tabletop.panel.mapGrid': 'マップとグリッド',
   'tabletop.panel.tokens': 'トークン',
+  'tabletop.panel.nav': 'ツールバーのカテゴリ',
+  'tabletop.panel.close': 'パネルを閉じる',
   'tabletop.playerToken.title': 'プレイヤートークン',
   'tabletop.playerToken.choose': '参加者を選ぶ…',
   'tabletop.playerToken.add': 'プレイヤートークンを追加',

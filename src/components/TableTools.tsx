@@ -123,10 +123,39 @@ export function TableTools({
   // open popover via the auto-close in `ToolSettingPopover`.
   const [openSetting, setOpenSetting] = useState<OpenSetting>(null)
 
+  // `focused` tracks whether the focus (or last pointer interaction)
+  // is inside the palette. On mobile the labels are hidden by
+  // default to keep the palette thin; flipping `focused` reveals
+  // them. The document-level `focusin` / `pointerdown` listeners
+  // capture taps and Tab navigation alike so the labels expand
+  // whenever the user actually engages with the palette and collapse
+  // when focus / pointer moves elsewhere.
+  const wrapperRef = useRef<HTMLElement | null>(null)
+  const [focused, setFocused] = useState(false)
+  useEffect(() => {
+    const isInside = (target: EventTarget | null): boolean => {
+      const el = wrapperRef.current
+      if (!el || !(target instanceof Node)) return false
+      return el.contains(target)
+    }
+    const onFocusIn = (e: FocusEvent) => setFocused(isInside(e.target))
+    const onPointerDown = (e: PointerEvent) => {
+      if (!isInside(e.target)) setFocused(false)
+    }
+    document.addEventListener('focusin', onFocusIn)
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => {
+      document.removeEventListener('focusin', onFocusIn)
+      document.removeEventListener('pointerdown', onPointerDown, true)
+    }
+  }, [])
+
   return (
     <aside
-      className="tabletop-tools"
+      ref={wrapperRef}
+      className={`tabletop-tools${focused ? ' focused' : ''}`}
       aria-label={t('tabletop.tools.title')}
+      onPointerDown={() => setFocused(true)}
     >
       <ToolButton
         name="select"
