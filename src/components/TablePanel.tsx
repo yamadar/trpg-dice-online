@@ -17,7 +17,7 @@ import { playerColor } from '../players/colors'
 import { characterImagesKey } from '../storage/roomLog'
 import { canMoveToken } from '../tabletop/tokens'
 import type { Grid, Token } from '../tabletop/types'
-import { prepareCharacterImage } from '../characters/image'
+import { prepareNpcTokenImage } from '../characters/image'
 import { CloseIcon, TabletopIcon, TrashIcon } from './icons'
 import { TableToolbar } from './TableToolbar'
 
@@ -349,6 +349,7 @@ export function TablePanel({ session, onClose }: Props) {
                   scale={stageScale}
                   draggable={canMoveToken(token, tokenActor)}
                   portrait={portraitForToken(token, session)}
+                  label={labelForToken(token, session)}
                   onDragMove={moveTokenLive}
                   onDragEnd={moveTokenCommit}
                   onSelect={canEdit ? setSelectedTokenId : undefined}
@@ -456,7 +457,7 @@ function TokenPopover({
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    const next = await prepareCharacterImage(file)
+    const next = await prepareNpcTokenImage(file)
     if (next) onChangeImage(next)
   }
 
@@ -558,12 +559,35 @@ function portraitForToken(token: Token, session: Session): string | undefined {
   return token.image || undefined
 }
 
+/**
+ * Resolve the display label for a token. GM tokens carry their own
+ * label; PC tokens read the character name (or, when the player is
+ * acting directly, the composed player display name) from the live
+ * `sessionCharacters` record. Returns `undefined` for tokens with no
+ * usable label so the renderer can skip drawing it.
+ */
+function labelForToken(token: Token, session: Session): string | undefined {
+  if (token.kind === 'gm') return token.label || undefined
+  const key = characterImagesKey(token.ownerPlayerId, token.characterId)
+  const record = session.sessionCharacters[key]
+  if (!record) return undefined
+  // For a character-bound PC token, prefer the character name itself —
+  // the GM-displayed "name" is the character, not the player.
+  // For a player acting directly (no characterId), fall back to the
+  // composed player display name.
+  return (token.characterId ? record.characterName : record.playerName) || undefined
+}
+
 interface TokenViewProps {
   token: Token
   grid: Grid
   scale: number
   draggable: boolean
   portrait: string | undefined
+  /** Display label rendered below the circle. For PC tokens this is
+   *  the character (or composed player) name; for GM tokens it is the
+   *  GM-typed label. `undefined` skips the text node entirely. */
+  label: string | undefined
   onDragMove: (tokenId: string, x: number, y: number) => void
   onDragEnd: (tokenId: string, x: number, y: number) => void
   /** Called on a tap / click that is not the start of a drag. Used to
@@ -585,6 +609,7 @@ function TokenView({
   scale,
   draggable,
   portrait,
+  label,
   onDragMove,
   onDragEnd,
   onSelect,
@@ -612,7 +637,6 @@ function TokenView({
   // Strokes / dashes are given in world coords; scale them down so they
   // render about one device pixel regardless of zoom.
   const strokeWidth = 2 / scale
-  const label = token.kind === 'gm' ? token.label : undefined
   // Label sizing: pick world-space units that render around 14 device
   // pixels regardless of zoom.
   const labelFontSize = 14 / scale

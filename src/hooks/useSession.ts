@@ -63,7 +63,7 @@ import {
   makeGmToken,
   planPcTokenAdds,
 } from '../tabletop/tokens'
-import { prepareCharacterImage } from '../characters/image'
+import { prepareNpcTokenImage } from '../characters/image'
 import { ChunkBuffer, chunkString } from '../tabletop/imageChunk'
 import { readMapBackground, type MapImageError } from '../tabletop/imageBackground'
 import type { MapMeta } from '../net/protocol'
@@ -818,7 +818,7 @@ export function useSession(): Session {
   const addGmToken = useCallback(
     async (file: File, label?: string): Promise<'ok' | 'unreadable'> => {
       if (roleRef.current === 'client') return 'unreadable'
-      const image = await prepareCharacterImage(file)
+      const image = await prepareNpcTokenImage(file)
       if (!image) return 'unreadable'
       const token = makeGmToken(
         { image, label },
