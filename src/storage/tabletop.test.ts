@@ -158,4 +158,31 @@ describe('sanitizeStoredTabletop', () => {
     const result = sanitizeStoredTabletop({ grid: { kind: 'square', strokeColor: '' } })
     expect(result.grid.strokeColor).toBe(DEFAULT_GRID.strokeColor)
   })
+
+  it('preserves a valid pcSpawn', () => {
+    const result = sanitizeStoredTabletop({ pcSpawn: { x: 200, y: -50 } })
+    expect(result.pcSpawn).toEqual({ x: 200, y: -50 })
+  })
+
+  it('drops pcSpawn when coordinates are non-finite', () => {
+    // A template restored from a partial / corrupted save must not crash
+    // the table view; falling back to "no spawn" lets `placeMyCharacterToken`
+    // fall through to the grid origin like a fresh table.
+    const result = sanitizeStoredTabletop({
+      pcSpawn: { x: Number.NaN, y: 0 },
+    })
+    expect(result.pcSpawn).toBeUndefined()
+  })
+
+  it('omits pcSpawn when absent', () => {
+    // Pre-PR-11 saves do not carry the field; the loader should produce
+    // a state without `pcSpawn` rather than an explicit undefined.
+    const result = sanitizeStoredTabletop({})
+    expect('pcSpawn' in result).toBe(false)
+  })
+
+  it('drops pcSpawn when not an object', () => {
+    const result = sanitizeStoredTabletop({ pcSpawn: 'origin' })
+    expect(result.pcSpawn).toBeUndefined()
+  })
 })

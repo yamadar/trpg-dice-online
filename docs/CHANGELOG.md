@@ -4,6 +4,37 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.82 — Round out the tabletop with the model and tooling needed
+  for actual scenario play, in four linked additions.
+  (1) **Separate ownership from placement**: PC tokens are placed
+  by an explicit action from the owner or the GM, and a single
+  character may have multiple tokens on the map (for twin / clone
+  fiction). Players can move their own tokens but not delete them
+  (GM-only).
+  (2) **NPC library**: the GM can curate "name + image" templates
+  for NPCs before placing them. Library images go through a
+  dedicated pipeline (long-edge 300 px / ~200 KB) with a crop UI
+  reusing CharacterImageCropDialog. Placement clones the entry
+  inline into a GmToken, so later library edits do not retroactively
+  change tokens already on the table.
+  (3) **Per-token edit popover**: tapping a placed token opens an
+  edit popover where the GM can rename and re-image GM tokens; the
+  GM can remove either flavour of token.
+  (4) **Tabletop library (templates / snapshots)**: the GM can save
+  the current tabletop under a name and reload it into any room
+  later. The library is global (not per-session) and lives in
+  IndexedDB's `tabletopLibrary` store (DB v8). Templates store the
+  initial layout (PC tokens stripped) along with the viewport
+  centre as `pcSpawn`, so a load re-spawns the GM's existing PCs
+  around `pcSpawn` and a scene swap does not force every player to
+  re-place themselves. Snapshots store the full state including PC
+  tokens and load restores everything verbatim. A full replace is
+  broadcast over the new HostMessage `tabletopState`; the map
+  image rides the existing `mapMeta` / `mapChunk` chunked path so
+  a multi-megabyte background does not block the data channel.
+  i18n gains `tabletop.playerToken.*`, `tabletop.npcLibrary.*`,
+  `tabletop.tokenEdit.*` and `tabletop.library.*` across all 19
+  locales (parity test maintained).
 - v1.81 — Add the tabletop feature. The GM uploads a single background
   map, places a square grid on it, and puts PC tokens (auto-generated
   from the session's characters, reusing the portrait as the token
