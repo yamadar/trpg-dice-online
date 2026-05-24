@@ -136,12 +136,6 @@ export type ClientMessage =
    * the character before creating the token.
    */
   | { t: 'pcTokenPlaceRequest'; characterId: string }
-  /**
-   * The client asks the host to remove one of THEIR OWN tokens from
-   * the map. The host validates ownership (PC tokens only — GM tokens
-   * are GM-only to remove).
-   */
-  | { t: 'tokenRemoveRequest'; tokenId: string }
 
 /** Messages a host sends to clients. */
 export type HostMessage =
