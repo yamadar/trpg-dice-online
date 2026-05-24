@@ -46,6 +46,7 @@ import {
 import type { RoomImport } from '../storage/roomImport'
 import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 import {
+  cellFromWorld,
   EMPTY_TABLETOP_STATE,
   newMapId,
   newNpcDefId,
@@ -69,8 +70,10 @@ import {
   applyMapTextUpsert,
   canEditMapText,
   canEraseStroke,
+  isCellRevealed,
   makeDrawStroke,
   makeMapText,
+  nearestRevealedCellCenter,
 } from '../tabletop/annotations'
 import {
   validateDrawStrokeAddRequest,
@@ -886,15 +889,51 @@ export function useSession(): Session {
    */
   const moveTokenCommit = useCallback(
     (tokenId: string, x: number, y: number) => {
-      const snapped = snapToGrid(x, y, tabletopRef.current.grid)
+      const tabletop = tabletopRef.current
+      // Existing snap behaviour runs first; the rescue below only ever
+      // triggers when the user is a non-GM client (the GM may
+      // deliberately position a token under fog, e.g., a hidden NPC).
+      let snapped = snapToGrid(x, y, tabletop.grid)
+      if (
+        roleRef.current === 'client' &&
+        tabletop.fog.enabled &&
+        tabletop.grid.kind === 'square' &&
+        tabletop.grid.cellSize > 0
+      ) {
+        const cell = cellFromWorld(snapped.x, snapped.y, tabletop.grid)
+        if (!isCellRevealed(tabletop.fog, cell.col, cell.row)) {
+          // The player's drag ended inside a fogged cell. The fog
+          // layer absorbs their clicks, so the token would become
+          // unreachable. Nudge it to the nearest revealed cell so
+          // they can keep playing. The snap setting is still honoured
+          // implicitly: the rescued point is a cell centre, which
+          // matches what `snapToGrid` would produce when snap is on;
+          // with snap off the player retains free placement on every
+          // *other* move and only this emergency case is coerced
+          // (placing them at the cell centre is the minimal safe
+          // landing).
+          const rescued = nearestRevealedCellCenter(
+            snapped.x,
+            snapped.y,
+            tabletop.fog,
+            tabletop.grid,
+          )
+          if (rescued) snapped = rescued
+          // If `rescued` is null the entire table is fogged and there
+          // is nowhere safe to land. Keep the (snapped) position
+          // rather than block the move outright — the GM can always
+          // reveal cells to recover, and silently dropping the move
+          // would leave the token visually frozen mid-drag.
+        }
+      }
       const tokens = applyTokenMoveHelper(
-        tabletopRef.current.tokens,
+        tabletop.tokens,
         tokenId,
         snapped.x,
         snapped.y,
       )
-      if (tokens === tabletopRef.current.tokens) return
-      applyTabletop({ ...tabletopRef.current, tokens })
+      if (tokens === tabletop.tokens) return
+      applyTabletop({ ...tabletop, tokens })
       lastTokenBroadcastRef.current = Date.now()
       sendTokenMove(tokenId, snapped.x, snapped.y)
     },

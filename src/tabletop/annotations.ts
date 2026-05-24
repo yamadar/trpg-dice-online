@@ -196,3 +196,53 @@ export function setFogCells(
 export function emptyFog(enabled = true): FogState {
   return { ...DEFAULT_FOG, enabled, revealed: [] }
 }
+
+/**
+ * Find the world-space centre of the revealed fog cell nearest to a
+ * given point. Used by the client-side "drop in fog" rescue: a
+ * player who drags their own token onto a fogged cell would
+ * otherwise lose interaction with it (the fog layer absorbs clicks
+ * for non-GM viewers), so the commit redirects to the nearest cell
+ * they can actually see.
+ *
+ * Returns null when the rescue is impossible — fog disabled, no
+ * cells revealed, or grid has no positive cell size — so the caller
+ * can decide whether to fall back to the original position rather
+ * than silently swallow the drop.
+ *
+ * Distance is squared world-space Euclidean from the input point to
+ * each cell centre. This favours the cell closest to where the user
+ * actually dropped the token, even if that means crossing several
+ * fogged cells, which matches the "move out of fog, but not far"
+ * intent.
+ */
+export function nearestRevealedCellCenter(
+  worldX: number,
+  worldY: number,
+  fog: FogState,
+  grid: { cellSize: number; originX: number; originY: number },
+): { x: number; y: number } | null {
+  if (!fog.enabled) return null
+  if (fog.revealed.length === 0) return null
+  if (grid.cellSize <= 0) return null
+  let bestDist = Infinity
+  let bestX = 0
+  let bestY = 0
+  for (const key of fog.revealed) {
+    const m = /^(-?\d+),(-?\d+)$/.exec(key)
+    if (!m) continue
+    const col = Number(m[1])
+    const row = Number(m[2])
+    const cx = grid.originX + col * grid.cellSize + grid.cellSize / 2
+    const cy = grid.originY + row * grid.cellSize + grid.cellSize / 2
+    const dx = cx - worldX
+    const dy = cy - worldY
+    const d = dx * dx + dy * dy
+    if (d < bestDist) {
+      bestDist = d
+      bestX = cx
+      bestY = cy
+    }
+  }
+  return Number.isFinite(bestDist) ? { x: bestX, y: bestY } : null
+}
