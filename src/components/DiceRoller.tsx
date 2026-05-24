@@ -1,8 +1,18 @@
 import { useI18n } from '../i18n/useI18n'
-import { DICE_TYPES, PATTERN_KINDS, type DiceType, type Pattern } from '../dice/types'
+import { DICE_TYPES, PATTERN_KINDS, type DiceType, type Pattern, type PatternKind } from '../dice/types'
 import { formatDicePreview } from '../dice/format'
+import { DamageIcon, JudgmentIcon } from './icons'
 
 export type Draft = Omit<Pattern, 'id'>
+
+/** Map a pattern kind to its representative icon. Damage is two
+ *  crossed swords (attack), judgment is a bullseye target (a check
+ *  trying to meet a target number). Used by the kind chips in the
+ *  dice roller and by the saved-pattern list so the same glyph
+ *  shows up wherever a kind is presented. */
+export function KindIcon({ kind, size = 14 }: { kind: PatternKind; size?: number }) {
+  return kind === 'damage' ? <DamageIcon size={size} /> : <JudgmentIcon size={size} />
+}
 
 /** Allowed dice counts: 1–10. Picked with a stepper so the row keeps
  *  individual / type / modifier together in one compact line. */
@@ -136,11 +146,14 @@ export function DiceRoller({ draft, onChange, isGM, onRoll, onSave }: Props) {
             <button
               key={k}
               type="button"
-              className={k === draft.kind ? 'chip active' : 'chip'}
+              className={`chip chip-kind chip-kind--${k}${k === draft.kind ? ' active' : ''}`}
               aria-pressed={k === draft.kind}
               onClick={() => set({ kind: k })}
             >
-              {t(`kind.${k}`)}
+              <span className="chip-kind-icon" aria-hidden="true">
+                <KindIcon kind={k} size={16} />
+              </span>
+              <span>{t(`kind.${k}`)}</span>
             </button>
           ))}
         </div>

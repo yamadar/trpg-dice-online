@@ -22,6 +22,8 @@ import {
   Send,
   Settings,
   Star,
+  Swords,
+  Target,
   Trash2,
   Type,
   User,
@@ -444,6 +446,38 @@ export function FogIcon({ size = 16 }: IconProps) {
 export function FogClearIcon({ size = 16 }: IconProps) {
   return (
     <CloudOff
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/* ---- Dice-roll kinds ---- */
+
+/** Crossed swords — represents the "damage" roll kind. Coloured by
+ *  the surrounding `currentColor`, so callers can tint it with the
+ *  `--damage` theme variable. */
+export function DamageIcon({ size = 16 }: IconProps) {
+  return (
+    <Swords
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Bullseye target — represents the "judgment" roll kind (a check
+ *  trying to meet a target number). Tinted via `currentColor` /
+ *  `--judgment`. */
+export function JudgmentIcon({ size = 16 }: IconProps) {
+  return (
+    <Target
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}

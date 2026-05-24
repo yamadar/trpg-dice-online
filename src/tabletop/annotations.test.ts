@@ -10,6 +10,7 @@ import {
   isCellRevealed,
   makeDrawStroke,
   makeMapText,
+  nearestRevealedCellCenter,
   setFogCells,
 } from './annotations'
 import {
@@ -288,5 +289,71 @@ describe('fog helpers', () => {
     const fog = { enabled: false, revealed: [] }
     const next = setFogCells(fog, [{ col: 0, row: 0 }], true)
     expect(next.enabled).toBe(false)
+  })
+})
+
+describe('nearestRevealedCellCenter', () => {
+  // Grid: 50-unit cells starting at world origin (0, 0). Cell (col, row)
+  // covers x ∈ [col*50, col*50+50) and similarly for y. Cell centres
+  // therefore land at (col*50 + 25, row*50 + 25).
+  const grid = { cellSize: 50, originX: 0, originY: 0 }
+
+  it('returns null when fog is disabled', () => {
+    const fog = { enabled: false, revealed: ['0,0'] }
+    expect(nearestRevealedCellCenter(0, 0, fog, grid)).toBeNull()
+  })
+
+  it('returns null when no cells are revealed', () => {
+    const fog = { enabled: true, revealed: [] }
+    expect(nearestRevealedCellCenter(0, 0, fog, grid)).toBeNull()
+  })
+
+  it('returns null when the grid has no positive cell size', () => {
+    const fog = { enabled: true, revealed: ['0,0'] }
+    expect(
+      nearestRevealedCellCenter(0, 0, fog, { ...grid, cellSize: 0 }),
+    ).toBeNull()
+  })
+
+  it('returns the centre of the single revealed cell when only one is open', () => {
+    const fog = { enabled: true, revealed: ['2,3'] }
+    const result = nearestRevealedCellCenter(1000, 1000, fog, grid)
+    // Cell (2, 3) centre = (2*50 + 25, 3*50 + 25) = (125, 175)
+    expect(result).toEqual({ x: 125, y: 175 })
+  })
+
+  it('picks the closest revealed cell to the world point', () => {
+    const fog = {
+      enabled: true,
+      revealed: ['0,0', '5,5', '10,0'],
+    }
+    // Drop near cell (4, 4): nearest revealed is (5, 5) at (275, 275).
+    const result = nearestRevealedCellCenter(220, 220, fog, grid)
+    expect(result).toEqual({ x: 275, y: 275 })
+  })
+
+  it('ignores malformed "col,row" keys in the revealed list', () => {
+    const fog = {
+      enabled: true,
+      revealed: ['bogus', '2,3', 'a,b'],
+    }
+    const result = nearestRevealedCellCenter(0, 0, fog, grid)
+    // Only "2,3" is parseable — its centre at (125, 175) is the answer.
+    expect(result).toEqual({ x: 125, y: 175 })
+  })
+
+  it('respects a non-zero grid origin', () => {
+    const offsetGrid = { cellSize: 50, originX: 10, originY: 20 }
+    const fog = { enabled: true, revealed: ['1,1'] }
+    const result = nearestRevealedCellCenter(0, 0, fog, offsetGrid)
+    // Cell (1, 1) centre = (10 + 50 + 25, 20 + 50 + 25) = (85, 95).
+    expect(result).toEqual({ x: 85, y: 95 })
+  })
+
+  it('handles negative cell coordinates', () => {
+    const fog = { enabled: true, revealed: ['-1,-1'] }
+    const result = nearestRevealedCellCenter(0, 0, fog, grid)
+    // Cell (-1, -1) centre = (-50 + 25, -50 + 25) = (-25, -25).
+    expect(result).toEqual({ x: -25, y: -25 })
   })
 })

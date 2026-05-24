@@ -12,11 +12,14 @@ import {
   type PresetMap,
   type SavedTabletop,
   type TabletopLibraryKind,
+  type Token,
 } from '../tabletop/types'
 import type { MapImageError } from '../tabletop/imageBackground'
 import { loadPresetMapManifest } from '../tabletop/presetMaps'
 import type { Character } from '../characters/types'
-import { TrashIcon } from './icons'
+import { prepareNpcTokenImage } from '../characters/image'
+import { avatarInitial } from '../players/identity'
+import { EditIcon, TrashIcon } from './icons'
 import { CharacterImageCropDialog } from './CharacterImageCropDialog'
 
 interface Props {
@@ -26,14 +29,24 @@ interface Props {
   onSetMap: (file: File) => Promise<'ok' | MapImageError>
   onClearMap: () => void
   /** Local player's own characters (from `useCharacters`). The toolbar
-   *  surfaces these as "place token" buttons so a player can add
-   *  themselves to the map — multiple times if they want. */
+   *  surfaces these as "place token" buttons so a player can add their
+   *  characters to the map. Each character can only have one token on
+   *  the map at a time; `placedCharacterIds` flips the per-character
+   *  button to a disabled "already placed" state. */
   characters: ReadonlyArray<Character>
+  /**
+   * IDs of the local player's characters that already have a token on
+   * the map. Used to disable the "place" button so the GM (and the
+   * player) cannot accidentally produce duplicates.
+   */
+  placedCharacterIds: ReadonlySet<string>
   /** Place a fresh PC token for the local player's named character.
-   *  Multi-placement is allowed: each call mints a new token id.
-   *  `characterName` and `image` are stamped onto the token's
-   *  `snapshot` so the renderer can show a portrait and label for
-   *  characters that are not currently the player's active one. */
+   *  One token per `(playerId, characterId)` is enforced at the
+   *  session level; this UI just hides the affordance when one is
+   *  already on the map. `characterName` and `image` are stamped onto
+   *  the token's `snapshot` so the renderer can show a portrait and
+   *  label for characters that are not currently the player's active
+   *  one. */
   onPlaceMyCharacter: (
     characterId: string,
     characterName: string,
@@ -44,9 +57,29 @@ interface Props {
   /** GM-only: add a fresh NPC to the library. Caller is responsible
    *  for cropping; image arrives as a data URL ready for the
    *  300-px / 200-KB downscale pipeline. */
-  onAddNpcDef: (input: File | string, name: string) => Promise<'ok' | 'unreadable'>
+  /** Add an NPC to the library. The image is optional at add time —
+   *  the GM enters a name first and can attach / change the portrait
+   *  later through the NPC list's "set image" button (which uses
+   *  `onUpdateNpcDef`). */
+  onAddNpcDef: (name: string, input?: File | string) => Promise<'ok' | 'unreadable'>
+  /** Edit an existing NPC's name or image. */
+  onUpdateNpcDef: (
+    defId: string,
+    updates: { name?: string; image?: string },
+  ) => void
   onRemoveNpcDef: (defId: string) => void
   onPlaceNpcFromLibrary: (defId: string) => void
+  /** Snapshot of every token currently on the map, enriched with the
+   *  display data (portrait / label) the renderer already computes.
+   *  Used to render the "placed tokens" inventory section. */
+  placedTokens: ReadonlyArray<{
+    token: Token
+    portrait: string | undefined
+    label: string | undefined
+  }>
+  /** GM-only: drop the named token from the map. Mirrors the popover
+   *  remove action so the GM can manage placements from a list too. */
+  onRemoveToken: (tokenId: string) => void
   /** When true, render the GM-only NPC library section. */
   isHost: boolean
   /** GM-only: named templates and saves persisted globally in
@@ -96,10 +129,14 @@ export function TableToolbar({
   onClearMap,
   characters,
   onPlaceMyCharacter,
+  placedCharacterIds,
   npcLibrary,
   onAddNpcDef,
+  onUpdateNpcDef,
   onRemoveNpcDef,
   onPlaceNpcFromLibrary,
+  placedTokens,
+  onRemoveToken,
   isHost,
   tabletopLibrary,
   onSaveTabletopAs,
@@ -114,12 +151,15 @@ export function TableToolbar({
   const { t } = useI18n()
   const confirm = useConfirm()
   const mapInputRef = useRef<HTMLInputElement | null>(null)
-  const npcInputRef = useRef<HTMLInputElement | null>(null)
-  // NPC add flow state. The name is collected from a text field; the
-  // image is read into `cropSrc` so the CharacterImageCropDialog can
-  // crop it square / circular before save.
+  const npcImageInputRef = useRef<HTMLInputElement | null>(null)
+  // NPC add flow state: just the name. The portrait is attached after
+  // the NPC has been added through the per-row "set image" button so
+  // a GM can register a stack of NPCs first and worry about art
+  // later. `cropSrc` holds the picked image while the user crops it;
+  // `editingNpcDefId` remembers which NPC the crop result applies to.
   const [npcName, setNpcName] = useState('')
   const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [editingNpcDefId, setEditingNpcDefId] = useState<string | null>(null)
   // Library save flow state: a single name input feeds both save
   // flavours; the buttons differ only in `kind`.
   const [libraryName, setLibraryName] = useState('')
@@ -241,33 +281,65 @@ export function TableToolbar({
     }
   }
 
-  const handleNpcFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
+  const handleAddNpc = async () => {
     if (!npcName.trim()) {
       onNotice?.(t('tabletop.npcLibrary.needName'), 'error')
       return
     }
-    // Read the file as a data URL so the crop dialog can decode it
-    // without further await chain. The dialog crops and hands the
-    // result back via `onConfirm` — at that point we hit `addNpcDef`.
-    const reader = new FileReader()
-    reader.onload = () => setCropSrc(String(reader.result))
-    reader.onerror = () =>
-      onNotice?.(t('tabletop.npcLibrary.unreadable'), 'error')
-    reader.readAsDataURL(file)
-  }
-
-  const handleCropConfirm = async (croppedDataUrl: string) => {
-    setCropSrc(null)
-    const result = await onAddNpcDef(croppedDataUrl, npcName)
+    const result = await onAddNpcDef(npcName)
     if (result === 'ok') {
       onNotice?.(t('tabletop.npcLibrary.added'), 'success')
       setNpcName('')
     } else {
       onNotice?.(t('tabletop.npcLibrary.unreadable'), 'error')
     }
+  }
+
+  const handleNpcImageFile = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !editingNpcDefId) return
+    // Read the file as a data URL so the crop dialog can decode it
+    // without further await chain. The dialog crops and hands the
+    // result back via `onConfirm` — at that point we hit
+    // `onUpdateNpcDef` to attach the cropped portrait to the NPC the
+    // user picked.
+    const reader = new FileReader()
+    reader.onload = () => setCropSrc(String(reader.result))
+    reader.onerror = () => {
+      setEditingNpcDefId(null)
+      onNotice?.(t('tabletop.npcLibrary.unreadable'), 'error')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleCropConfirm = async (croppedDataUrl: string) => {
+    const defId = editingNpcDefId
+    setCropSrc(null)
+    setEditingNpcDefId(null)
+    if (!defId) return
+    // The crop dialog returns the user's framing of the original file
+    // verbatim; run it through the NPC-portrait pipeline so the
+    // downscaled bytes fit inside the inline `npcDefUpsert` broadcast.
+    const processed = await prepareNpcTokenImage(croppedDataUrl)
+    if (!processed) {
+      onNotice?.(t('tabletop.npcLibrary.unreadable'), 'error')
+      return
+    }
+    onUpdateNpcDef(defId, { image: processed })
+    onNotice?.(t('tabletop.npcLibrary.imageUpdated'), 'success')
+  }
+
+  const handleCropCancel = () => {
+    setCropSrc(null)
+    setEditingNpcDefId(null)
+  }
+
+  const handleSetNpcImage = (defId: string) => {
+    setEditingNpcDefId(defId)
+    npcImageInputRef.current?.click()
   }
 
   return (
@@ -499,34 +571,49 @@ export function TableToolbar({
             </p>
           ) : (
             <ul className="tabletop-toolbar-list">
-              {characters.map((char) => (
-                <li key={char.id} className="tabletop-toolbar-list-item">
-                  {char.image ? (
-                    <img
-                      src={char.image}
-                      alt=""
-                      className="tabletop-toolbar-thumb"
-                    />
-                  ) : (
-                    <span className="tabletop-toolbar-thumb placeholder" />
-                  )}
-                  <span
-                    className="tabletop-toolbar-list-label"
-                    title={char.name}
-                  >
-                    {char.name}
-                  </span>
-                  <button
-                    type="button"
-                    className="tabletop-toolbar-list-action"
-                    onClick={() =>
-                      onPlaceMyCharacter(char.id, char.name, char.image || '')
-                    }
-                  >
-                    {t('tabletop.playerToken.place')}
-                  </button>
-                </li>
-              ))}
+              {characters.map((char) => {
+                const placed = placedCharacterIds.has(char.id)
+                return (
+                  <li key={char.id} className="tabletop-toolbar-list-item">
+                    {char.image ? (
+                      <img
+                        src={char.image}
+                        alt=""
+                        className="tabletop-toolbar-thumb"
+                      />
+                    ) : (
+                      <span className="tabletop-toolbar-thumb placeholder" />
+                    )}
+                    <span
+                      className="tabletop-toolbar-list-label"
+                      title={char.name}
+                    >
+                      {char.name}
+                    </span>
+                    <button
+                      type="button"
+                      className="tabletop-toolbar-list-action"
+                      disabled={placed}
+                      title={
+                        placed
+                          ? t('tabletop.playerToken.alreadyPlaced')
+                          : t('tabletop.playerToken.place')
+                      }
+                      onClick={() =>
+                        onPlaceMyCharacter(
+                          char.id,
+                          char.name,
+                          char.image || '',
+                        )
+                      }
+                    >
+                      {placed
+                        ? t('tabletop.playerToken.placed')
+                        : t('tabletop.playerToken.place')}
+                    </button>
+                  </li>
+                )
+              })}
             </ul>
           )}
 
@@ -537,11 +624,11 @@ export function TableToolbar({
                 {t('tabletop.npcLibrary.title')}
               </h3>
               <input
-                ref={npcInputRef}
+                ref={npcImageInputRef}
                 type="file"
                 accept="image/*"
                 style={{ display: 'none' }}
-                onChange={handleNpcFile}
+                onChange={handleNpcImageFile}
               />
               <input
                 type="text"
@@ -554,13 +641,7 @@ export function TableToolbar({
               <button
                 type="button"
                 className="tabletop-toolbar-button"
-                onClick={() => {
-                  if (!npcName.trim()) {
-                    onNotice?.(t('tabletop.npcLibrary.needName'), 'error')
-                    return
-                  }
-                  npcInputRef.current?.click()
-                }}
+                onClick={() => void handleAddNpc()}
               >
                 {t('tabletop.npcLibrary.add')}
               </button>
@@ -575,7 +656,12 @@ export function TableToolbar({
                           className="tabletop-toolbar-thumb"
                         />
                       ) : (
-                        <span className="tabletop-toolbar-thumb placeholder" />
+                        <span
+                          className="tabletop-toolbar-thumb tabletop-toolbar-thumb-initial"
+                          aria-hidden="true"
+                        >
+                          {avatarInitial(def.name)}
+                        </span>
                       )}
                       <span
                         className="tabletop-toolbar-list-label"
@@ -583,6 +669,23 @@ export function TableToolbar({
                       >
                         {def.name}
                       </span>
+                      <button
+                        type="button"
+                        className="icon-btn tabletop-toolbar-list-icon-btn"
+                        aria-label={
+                          def.image
+                            ? t('tabletop.npcLibrary.changeImage')
+                            : t('tabletop.npcLibrary.setImage')
+                        }
+                        title={
+                          def.image
+                            ? t('tabletop.npcLibrary.changeImage')
+                            : t('tabletop.npcLibrary.setImage')
+                        }
+                        onClick={() => handleSetNpcImage(def.id)}
+                      >
+                        <EditIcon />
+                      </button>
                       <button
                         type="button"
                         className="tabletop-toolbar-list-action"
@@ -604,6 +707,62 @@ export function TableToolbar({
                 </ul>
               )}
             </>
+          )}
+
+          <hr className="tabletop-toolbar-divider" />
+          <h3 className="tabletop-toolbar-title">
+            {t('tabletop.placedTokens.title')}
+          </h3>
+          {placedTokens.length === 0 ? (
+            <p className="tabletop-toolbar-meta">
+              {t('tabletop.placedTokens.empty')}
+            </p>
+          ) : (
+            <ul className="tabletop-toolbar-list">
+              {placedTokens.map(({ token, portrait, label }) => {
+                const displayName = label?.trim() || t('tabletop.placedTokens.unnamed')
+                const kindLabel =
+                  token.kind === 'pc'
+                    ? t('tabletop.placedTokens.kindPc')
+                    : t('tabletop.placedTokens.kindGm')
+                return (
+                  <li key={token.id} className="tabletop-toolbar-list-item">
+                    {portrait ? (
+                      <img
+                        src={portrait}
+                        alt=""
+                        className="tabletop-toolbar-thumb"
+                      />
+                    ) : (
+                      <span
+                        className="tabletop-toolbar-thumb tabletop-toolbar-thumb-initial"
+                        aria-hidden="true"
+                      >
+                        {avatarInitial(displayName)}
+                      </span>
+                    )}
+                    <span
+                      className="tabletop-toolbar-list-label"
+                      title={`${displayName} · ${kindLabel}`}
+                    >
+                      {displayName}
+                    </span>
+                    <span className="tabletop-toolbar-list-tag">{kindLabel}</span>
+                    {isHost && (
+                      <button
+                        type="button"
+                        className="icon-btn tabletop-toolbar-list-remove"
+                        aria-label={t('tabletop.placedTokens.remove')}
+                        title={t('tabletop.placedTokens.remove')}
+                        onClick={() => onRemoveToken(token.id)}
+                      >
+                        <TrashIcon />
+                      </button>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
           )}
         </div>
       </details>
@@ -731,7 +890,7 @@ export function TableToolbar({
       {cropSrc && (
         <CharacterImageCropDialog
           src={cropSrc}
-          onCancel={() => setCropSrc(null)}
+          onCancel={handleCropCancel}
           onConfirm={(cropped) => void handleCropConfirm(cropped)}
         />
       )}

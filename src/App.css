@@ -699,6 +699,53 @@
 .tabletop-toolbar-thumb.placeholder {
   background: var(--panel-2);
 }
+/* Initial-letter avatar used when a token / NPC has no image. Matches
+   the canvas-side fallback the renderer paints inside the circle so
+   the user sees the same glyph regardless of where the token is
+   shown. */
+.tabletop-toolbar-thumb-initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--panel-2);
+  text-transform: none;
+  line-height: 1;
+}
+/* Per-row icon button (e.g. "set image" for an NPC). Smaller than the
+   "place" action so the rows do not bloat. */
+.tabletop-toolbar-list-icon-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.tabletop-toolbar-list-icon-btn:hover {
+  background: var(--panel);
+  color: var(--text);
+}
+/* Small "kind" tag (PC / NPC) shown in the placed-tokens list so the
+   row reads at a glance. */
+.tabletop-toolbar-list-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
 .tabletop-toolbar-list-action {
   padding: 4px 10px;
   background: var(--accent-bg, rgba(192, 132, 252, 0.18));
@@ -843,6 +890,35 @@
 }
 .tabletop-tools-row > input {
   width: 100%;
+}
+/* Make the pen / text colour input render as a flat swatch so the
+   currently-selected colour is clearly visible. The browser default
+   varies (Chrome shows a small inset chip, Firefox shows an opaque
+   button), so we strip the chrome with `appearance: none` and use
+   the WebKit `color-swatch` pseudo to fill the box edge-to-edge.
+   Clicking still opens the native picker — only the rendering of
+   the resting state changes. */
+.tabletop-tools-color-input {
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+.tabletop-tools-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.tabletop-tools-color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+.tabletop-tools-color-input::-moz-color-swatch {
+  border: none;
+  border-radius: 5px;
 }
 
 /* --- Tabletop text-draft input ---
@@ -1959,6 +2035,10 @@ label.setting-row {
 }
 .pattern-list-compact .pattern-name {
   font-weight: 600;
+  /* Pattern names are typically short ("攻撃", "回避判定" 等) — drop
+     one size class compared to the surrounding body so the row reads
+     as a tight info block rather than a heading. */
+  font-size: 0.85rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1971,6 +2051,25 @@ label.setting-row {
   font-family: var(--mono);
   white-space: nowrap;
   flex-shrink: 0;
+}
+/* Kind icon column: tinted by the same `--damage` / `--judgment` theme
+   variables that colour the dice-summary headline, so the pattern row
+   reads at a glance — red sword for damage, blue target for judgment.
+   The fixed width keeps the name column aligned across rows of mixed
+   kinds. */
+.pattern-list-compact .pattern-kind {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+}
+.pattern-list-compact .pattern-kind--damage {
+  color: var(--damage);
+}
+.pattern-list-compact .pattern-kind--judgment {
+  color: var(--judgment);
 }
 .pattern-list-compact .pattern-actions {
   display: flex;
@@ -3178,6 +3277,33 @@ button.char-avatar-large:disabled {
   border-color: var(--accent-2);
   color: #fff;
   font-weight: 600;
+}
+/* Dice-kind chips (damage / judgment) — show the kind icon alongside
+   the label and tint the icon with the matching theme variable, even
+   in the un-active state, so the user can read the colour mapping at
+   a glance before they pick a kind. When active, the chip itself
+   keeps the standard `--accent-2` highlight so it does not overpower
+   the page-wide focus colour. */
+.chip-kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.chip-kind-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.chip-kind--damage .chip-kind-icon {
+  color: var(--damage);
+}
+.chip-kind--judgment .chip-kind-icon {
+  color: var(--judgment);
+}
+.chip-kind.active .chip-kind-icon {
+  /* On the active state the chip itself goes solid accent — switch
+     the icon to white so it stays legible against the new bg. */
+  color: #fff;
 }
 
 /* --- modifier stepper --- */

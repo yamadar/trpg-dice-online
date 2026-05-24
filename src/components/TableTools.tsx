@@ -186,8 +186,15 @@ export function TableTools({
         <label className="tabletop-tools-row">
           <span>{t('tabletop.tools.color')}</span>
           <input
+            // The colour input doubles as a visible preview swatch and
+            // the picker trigger. The custom styling (see App.css)
+            // strips the browser chrome so the swatch fills the input
+            // area — on Firefox / Safari the default rendering hides
+            // the current colour behind an opaque button, which made
+            // the selected pen / text colour invisible.
             type="color"
-            value={color}
+            className="tabletop-tools-color-input"
+            value={color || '#000000'}
             onChange={(e) => onColorChange(e.target.value)}
             aria-label={t('tabletop.tools.color')}
           />

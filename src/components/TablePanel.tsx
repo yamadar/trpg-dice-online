@@ -15,6 +15,7 @@ import useImage from 'use-image'
 import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
 import { playerColor } from '../players/colors'
+import { avatarInitial } from '../players/identity'
 import { characterImagesKey } from '../storage/roomLog'
 import { canEditMapText, canEraseStroke, isCellRevealed } from '../tabletop/annotations'
 import { canMoveToken } from '../tabletop/tokens'
@@ -613,6 +614,39 @@ export function TablePanel({
   )
 
   /**
+   * Character ids the local player has already placed on the map. The
+   * toolbar uses this to disable per-character "place" buttons so the
+   * one-token-per-character rule shows up in the UI instead of the
+   * click silently no-op'ing.
+   */
+  const placedCharacterIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const tok of tabletop.tokens) {
+      if (tok.kind === 'pc' && tok.ownerPlayerId === session.playerId) {
+        ids.add(tok.characterId)
+      }
+    }
+    return ids
+  }, [tabletop.tokens, session.playerId])
+
+  /**
+   * Pre-enrich every placed token with the portrait + label the
+   * renderer already computes. The toolbar's "placed tokens" section
+   * uses this so it does not have to duplicate
+   * `portraitForToken` / `labelForToken` (which depend on
+   * `session.sessionCharacters`).
+   */
+  const placedTokens = useMemo(
+    () =>
+      tabletop.tokens.map((token) => ({
+        token,
+        portrait: portraitForToken(token, session),
+        label: labelForToken(token, session),
+      })),
+    [tabletop.tokens, session],
+  )
+
+  /**
    * Find the local player's PC token for their active character so the
    * first paint can centre on it. `null` when none exists (no
    * character set, or no placement yet) — the centring effect
@@ -964,11 +998,18 @@ export function TablePanel({
           onSetMap={session.setMapBackground}
           onClearMap={session.clearMapBackground}
           characters={characters}
+          // One PC token per character — collect the local player's
+          // already-placed characterIds so the toolbar can disable
+          // their "place" button instead of letting the click no-op.
+          placedCharacterIds={placedCharacterIds}
           onPlaceMyCharacter={session.placeMyCharacterToken}
           npcLibrary={tabletop.npcLibrary}
           onAddNpcDef={session.addNpcDef}
+          onUpdateNpcDef={session.updateNpcDef}
           onRemoveNpcDef={session.removeNpcDef}
           onPlaceNpcFromLibrary={session.placeNpcFromLibrary}
+          placedTokens={placedTokens}
+          onRemoveToken={session.removeToken}
           isHost={canEdit}
           tabletopLibrary={session.tabletopLibrary}
           onLoadPresetMap={session.setMapFromPreset}
@@ -1282,6 +1323,13 @@ function TokenView({
   // Reserve a wide box so the centred `align` has room to centre; the
   // box itself has no fill, so an empty side just paints nothing.
   const labelWidth = radius * 4
+  // Fallback "initial" rendered inside the circle when no portrait is
+  // set. Mirrors the feed avatar (FeedList) so the same character has
+  // the same one-character glyph wherever it appears. World-space
+  // diameter sized box so Konva's `verticalAlign='middle'` can centre
+  // the glyph against the disc.
+  const initial = !portrait ? avatarInitial(label) : ''
+  const initialFontSize = radius * 1.05
   return (
     <Group
       x={token.x}
@@ -1296,6 +1344,21 @@ function TokenView({
         <ClippedPortrait src={portrait} radius={radius} fallback={fallback} />
       ) : (
         <Circle radius={radius} fill={fallback} />
+      )}
+      {initial && (
+        <Text
+          text={initial}
+          x={-radius}
+          y={-radius}
+          width={radius * 2}
+          height={radius * 2}
+          align="center"
+          verticalAlign="middle"
+          fontSize={initialFontSize}
+          fontStyle="bold"
+          fill="#fff"
+          listening={false}
+        />
       )}
       <Circle radius={radius} stroke={fallback} strokeWidth={strokeWidth} />
       {label && (

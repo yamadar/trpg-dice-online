@@ -7,7 +7,7 @@ import { formatClock, formatFeedDate, sameDay } from '../feed/datetime'
 import type { ChatFile, ChatMessage } from '../net/protocol'
 import type { RollResult } from '../dice/types'
 import { playerColor } from '../players/colors'
-import { feedName } from '../players/identity'
+import { avatarInitial, feedName } from '../players/identity'
 import { formatDiceSummary, formatRollText } from '../dice/format'
 import type { SessionCharacterDraft } from '../storage/roomLog'
 import { ChatAttachment } from './ChatAttachment'
@@ -61,15 +61,6 @@ const FeedSystemItem = memo(function FeedSystemItem({
  * hidden text inside that AT would never reach. Memoized so a stable
  * image / color does not invalidate the parent item.
  */
-/** First user-perceived character of a name — Unicode-aware so a
- *  surrogate-pair emoji or a combining-mark glyph stays intact. Used
- *  as the fallback avatar label when no portrait has been set. */
-function avatarInitial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return ''
-  return [...trimmed][0] ?? ''
-}
-
 const FeedAvatar = memo(function FeedAvatar({
   image,
   color,

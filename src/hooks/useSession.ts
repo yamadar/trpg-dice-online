@@ -46,6 +46,7 @@ import {
 import type { RoomImport } from '../storage/roomImport'
 import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 import {
+  cellFromWorld,
   EMPTY_TABLETOP_STATE,
   newMapId,
   newNpcDefId,
@@ -69,8 +70,10 @@ import {
   applyMapTextUpsert,
   canEditMapText,
   canEraseStroke,
+  isCellRevealed,
   makeDrawStroke,
   makeMapText,
+  nearestRevealedCellCenter,
 } from '../tabletop/annotations'
 import {
   validateDrawStrokeAddRequest,
@@ -260,11 +263,15 @@ export interface Session {
   ) => void
   /**
    * GM-only: add an NPC to the library (host-side stash that can be
-   * placed on the map repeatedly). The image runs through the
-   * 300-px / ~200 KB pipeline so the broadcast `npcDefUpsert` stays
-   * inline. Returns `'ok'` or `'unreadable'`.
+   * placed on the map repeatedly). The image is optional at add-time
+   * — the GM enters a name first and can attach (or change) the
+   * portrait later via `updateNpcDef`. When supplied, the image
+   * runs through the 300-px / ~200 KB pipeline so the broadcast
+   * `npcDefUpsert` stays inline. Returns `'ok'` or `'unreadable'`
+   * (the latter only when the image was supplied and failed to
+   * decode; a name-only add cannot fail on image grounds).
    */
-  addNpcDef: (input: File | string, name: string) => Promise<'ok' | 'unreadable'>
+  addNpcDef: (name: string, input?: File | string) => Promise<'ok' | 'unreadable'>
   /** GM-only: edit an NPC library entry's name / image. */
   updateNpcDef: (
     defId: string,
@@ -886,15 +893,51 @@ export function useSession(): Session {
    */
   const moveTokenCommit = useCallback(
     (tokenId: string, x: number, y: number) => {
-      const snapped = snapToGrid(x, y, tabletopRef.current.grid)
+      const tabletop = tabletopRef.current
+      // Existing snap behaviour runs first; the rescue below only ever
+      // triggers when the user is a non-GM client (the GM may
+      // deliberately position a token under fog, e.g., a hidden NPC).
+      let snapped = snapToGrid(x, y, tabletop.grid)
+      if (
+        roleRef.current === 'client' &&
+        tabletop.fog.enabled &&
+        tabletop.grid.kind === 'square' &&
+        tabletop.grid.cellSize > 0
+      ) {
+        const cell = cellFromWorld(snapped.x, snapped.y, tabletop.grid)
+        if (!isCellRevealed(tabletop.fog, cell.col, cell.row)) {
+          // The player's drag ended inside a fogged cell. The fog
+          // layer absorbs their clicks, so the token would become
+          // unreachable. Nudge it to the nearest revealed cell so
+          // they can keep playing. The snap setting is still honoured
+          // implicitly: the rescued point is a cell centre, which
+          // matches what `snapToGrid` would produce when snap is on;
+          // with snap off the player retains free placement on every
+          // *other* move and only this emergency case is coerced
+          // (placing them at the cell centre is the minimal safe
+          // landing).
+          const rescued = nearestRevealedCellCenter(
+            snapped.x,
+            snapped.y,
+            tabletop.fog,
+            tabletop.grid,
+          )
+          if (rescued) snapped = rescued
+          // If `rescued` is null the entire table is fogged and there
+          // is nowhere safe to land. Keep the (snapped) position
+          // rather than block the move outright — the GM can always
+          // reveal cells to recover, and silently dropping the move
+          // would leave the token visually frozen mid-drag.
+        }
+      }
       const tokens = applyTokenMoveHelper(
-        tabletopRef.current.tokens,
+        tabletop.tokens,
         tokenId,
         snapped.x,
         snapped.y,
       )
-      if (tokens === tabletopRef.current.tokens) return
-      applyTabletop({ ...tabletopRef.current, tokens })
+      if (tokens === tabletop.tokens) return
+      applyTabletop({ ...tabletop, tokens })
       lastTokenBroadcastRef.current = Date.now()
       sendTokenMove(tokenId, snapped.x, snapped.y)
     },
@@ -1058,11 +1101,11 @@ export function useSession(): Session {
   )
 
   /**
-   * Place ANOTHER PC token for the local player's named character.
-   * Unlike `addPlayerToken` (host-only, "one token if missing"), this
-   * mints a fresh token id every call so the same character can have
-   * multiple placements. Clients send a request; the host validates
-   * the sender's identity then mints.
+   * Place a PC token for the local player's named character. One token
+   * per `(playerId, characterId)` pair is the rule — the call is a
+   * no-op when a token already exists. Clients send a request; the
+   * host validates the sender's identity and applies the same
+   * uniqueness check before broadcasting.
    *
    * `characterName` and `image` are the caller's snapshot of the
    * character at place time — they get stamped onto the token's
@@ -1074,6 +1117,17 @@ export function useSession(): Session {
   const placeMyCharacterToken = useCallback(
     (characterId: string, characterName?: string, image?: string) => {
       if (roleRef.current === 'client') {
+        // Client-side guard: also bail early if the local view already
+        // shows a token for this character. The host re-checks
+        // authoritatively, so this is only a UX optimisation that
+        // avoids a wasted round-trip.
+        const has = tabletopRef.current.tokens.some(
+          (t) =>
+            t.kind === 'pc' &&
+            t.ownerPlayerId === playerId &&
+            t.characterId === characterId,
+        )
+        if (has) return
         roomRef.current?.sendToHost({
           t: 'pcTokenPlaceRequest',
           characterId,
@@ -1082,12 +1136,20 @@ export function useSession(): Session {
         })
         return
       }
-      // Host (or offline) places for themselves. The placement origin
-      // follows the shared "where do new tokens go" rule
+      // Host (or offline) places for themselves. One PC token per
+      // `(playerId, characterId)` — bail when one already exists.
+      const tabletop = tabletopRef.current
+      const has = tabletop.tokens.some(
+        (t) =>
+          t.kind === 'pc' &&
+          t.ownerPlayerId === playerId &&
+          t.characterId === characterId,
+      )
+      if (has) return
+      // The placement origin follows the shared rule
       // (`defaultPlacementOrigin`): pcSpawn → map centre → grid first
       // cell. With a background map present this lands tokens near
       // the middle of the scene rather than the world's top-left.
-      const tabletop = tabletopRef.current
       const cell = tabletop.grid.cellSize
       const index = tabletop.tokens.length
       const origin = defaultPlacementOrigin(tabletop)
@@ -1150,12 +1212,23 @@ export function useSession(): Session {
    * the GM presses "Place" on it (see `placeNpcFromLibrary`).
    */
   const addNpcDef = useCallback(
-    async (input: File | string, name: string): Promise<'ok' | 'unreadable'> => {
+    async (
+      name: string,
+      input?: File | string,
+    ): Promise<'ok' | 'unreadable'> => {
       if (roleRef.current === 'client') return 'unreadable'
       const trimmed = name.trim()
       if (!trimmed) return 'unreadable'
-      const image = await prepareNpcTokenImage(input)
-      if (!image) return 'unreadable'
+      // Image is optional: the new flow is "add by name, attach the
+      // portrait later via `updateNpcDef`". When supplied here, the
+      // pipeline still rejects unreadable bytes so a corrupted image
+      // doesn't smuggle itself onto the wire under the wrong NPC.
+      let image = ''
+      if (input !== undefined) {
+        const prepared = await prepareNpcTokenImage(input)
+        if (!prepared) return 'unreadable'
+        image = prepared
+      }
       const def: NpcDef = { id: newNpcDefId(), name: trimmed, image }
       applyTabletop({
         ...tabletopRef.current,
@@ -1899,6 +1972,17 @@ export function useSession(): Session {
           const sender = peerPlayersRef.current.get(peerId)
           if (!sender) break
           const tabletop = tabletopRef.current
+          // Enforce one PC token per `(playerId, characterId)` — the
+          // client guards against duplicates locally, but the host
+          // re-checks authoritatively so a stale / racy request from
+          // a not-yet-updated client cannot bypass the rule.
+          const has = tabletop.tokens.some(
+            (t) =>
+              t.kind === 'pc' &&
+              t.ownerPlayerId === sender.id &&
+              t.characterId === msg.characterId,
+          )
+          if (has) break
           const cell = tabletop.grid.cellSize
           const index = tabletop.tokens.length
           // Shared default-placement rule (see `defaultPlacementOrigin`):
