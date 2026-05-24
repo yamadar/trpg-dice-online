@@ -92,7 +92,7 @@ export const en: Dict = {
   'tabletop.library.namePlaceholder': 'Tabletop name',
   'tabletop.library.saveAsTemplate': 'Save as template',
   'tabletop.library.saveAsSave': 'Save as snapshot',
-  'tabletop.library.saveHint': 'Templates store the initial layout (PC tokens stripped) and re-spawn PCs at the viewport centre on load. Snapshots store everything as-is.',
+  'tabletop.library.saveHint': 'Templates store the initial layout (PC tokens and pen strokes are stripped; text labels and fog of war are kept as scenario setup) and re-spawn PCs at the viewport centre on load. Snapshots store everything as-is.',
   'tabletop.library.templates': 'Templates',
   'tabletop.library.saves': 'Snapshots',
   'tabletop.library.emptyTemplates': 'No templates yet.',

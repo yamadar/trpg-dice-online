@@ -92,7 +92,7 @@ export const ja: Dict = {
   'tabletop.library.namePlaceholder': 'テーブル名',
   'tabletop.library.saveAsTemplate': 'テンプレートとして保存',
   'tabletop.library.saveAsSave': 'セーブとして保存',
-  'tabletop.library.saveHint': 'テンプレートは PC トークンを除いた初期配置として保存され、ロード時に画面中央へ PC が配置されます。セーブは現在の状態をそのまま保存します。',
+  'tabletop.library.saveHint': 'テンプレートは初期配置として保存されます（PC トークンとペン描画は除外、テキストとフォグはシナリオ設定として保持）。ロード時は画面中央へ PC が配置されます。セーブは現在の状態をそのまま保存します。',
   'tabletop.library.templates': 'テンプレート',
   'tabletop.library.saves': 'セーブ',
   'tabletop.library.emptyTemplates': 'テンプレートはまだありません',

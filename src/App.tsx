@@ -443,12 +443,13 @@ function App() {
         // The tabletop is Konva-heavy and the most likely source of a
         // render-phase crash (bad image data, NaN coords from a broken
         // sync, etc.). Wrap it in an ErrorBoundary so a thrown error
-        // surfaces a recovery card instead of unmounting the whole app
-        // tree — the user can close the tabletop, clear the offending
-        // background map, or just retry. `resetKey={tabletopOpen}`
-        // means closing+reopening the panel also resets the boundary.
+        // surfaces a recovery card instead of unmounting the whole
+        // app tree — the user can close the tabletop, clear the
+        // offending background map, or just retry. The boundary
+        // unmounts whenever `tabletopOpen` is false (see the `&&`
+        // gate above), so any latched error state is discarded
+        // implicitly on close — no `resetKey` needed.
         <ErrorBoundary
-          resetKey={tabletopOpen}
           fallback={({ error, reset }) => (
             <TabletopErrorFallback
               error={error}
