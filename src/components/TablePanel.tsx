@@ -150,6 +150,13 @@ export function TablePanel({
    *  condition guarding the camera write goes false and no further
    *  re-pan happens. */
   const [initialCenterDone, setInitialCenterDone] = useState(false)
+  /** Map id the camera was last re-centered on. Tracked separately
+   *  from `initialCenterDone` so a *new* map (fresh upload, swap, or
+   *  template load) re-centers the view even after the user has
+   *  panned around — the world origin (top-left of the loaded image)
+   *  used to anchor the scene, which pushed every new placement off
+   *  to the corner. */
+  const [centeredMapId, setCenteredMapId] = useState<string | null>(null)
 
   const containerRef = useRef<HTMLDivElement | null>(null)
   const stageRef = useRef<Konva.Stage | null>(null)
@@ -349,22 +356,44 @@ export function TablePanel({
     )
   }, [tabletop.tokens, activeCharacterId, session.playerId])
 
-  // Pan so the active character's token sits at the centre of the
-  // viewport — once, on the first paint where both the stage size
-  // and the token are known. Uses React's "derive state during
-  // render" pattern: the state guard (`initialCenterDone`) flips
-  // synchronously, the next render skips this block, no loop. The
-  // user's later panning is never overridden because the condition
-  // can't be true again.
-  if (
-    !initialCenterDone &&
-    size.width > 0 &&
-    size.height > 0 &&
-    myActiveToken
-  ) {
-    setInitialCenterDone(true)
-    setStageX(size.width / 2 - myActiveToken.x * stageScale)
-    setStageY(size.height / 2 - myActiveToken.y * stageScale)
+  // Pan the camera so the user lands looking at "the right place" —
+  // not at the world's top-left, which is what stageX/Y = 0 means.
+  // React's "derive state during render" pattern: state guards
+  // (`initialCenterDone` / `centeredMapId`) flip synchronously, the
+  // next render skips this block, no loop. The user's later panning
+  // is never overridden once they have a stable view.
+  //
+  // Three triggers, in priority order:
+  //  (a) Map identity changed (fresh upload, swap, template load).
+  //      Always re-center on the new map's middle so it never lands
+  //      partially off-screen, and so a subsequent token placement
+  //      (which also uses the map centre as its default origin)
+  //      appears under the cursor instead of in the corner.
+  //  (b) First paint with an existing active token: center on it.
+  //  (c) First paint with no token but a map present: center on map.
+  // Without any of these the camera stays at (0, 0) (world origin at
+  // the screen's top-left), matching the "blank whiteboard" baseline.
+  if (size.width > 0 && size.height > 0) {
+    const mapId = tabletop.map?.id ?? null
+    if (tabletop.map && mapId !== centeredMapId) {
+      setCenteredMapId(mapId)
+      setInitialCenterDone(true)
+      const cx = tabletop.map.width / 2
+      const cy = tabletop.map.height / 2
+      setStageX(size.width / 2 - cx * stageScale)
+      setStageY(size.height / 2 - cy * stageScale)
+    } else if (!initialCenterDone && myActiveToken) {
+      setInitialCenterDone(true)
+      setCenteredMapId(mapId)
+      setStageX(size.width / 2 - myActiveToken.x * stageScale)
+      setStageY(size.height / 2 - myActiveToken.y * stageScale)
+    } else if (!initialCenterDone) {
+      // No token and no map: mark the first paint as resolved so
+      // future map changes flow through trigger (a). Camera stays
+      // where it is.
+      setInitialCenterDone(true)
+      setCenteredMapId(mapId)
+    }
   }
 
   return (
