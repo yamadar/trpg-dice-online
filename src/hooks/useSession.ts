@@ -48,8 +48,11 @@ import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 import {
   EMPTY_TABLETOP_STATE,
   newMapId,
+  newNpcDefId,
+  newTokenId,
   type Grid,
   type MapBackground,
+  type NpcDef,
   type TabletopState,
   type Token,
 } from '../tabletop/types'
@@ -190,7 +193,12 @@ export interface Session {
    * `'unreadable'` when the image cannot be processed.
    */
   addGmToken: (file: File, label?: string) => Promise<'ok' | 'unreadable'>
-  /** GM-only: remove any token by id (PC or GM). Broadcasts `tokenRemove`. */
+  /**
+   * Remove a token from the map. Hosts remove directly; clients route
+   * through the host (`tokenRemoveRequest`) and the host validates
+   * ownership before applying. Map-only — the NPC library entry (if
+   * any) survives.
+   */
   removeToken: (tokenId: string) => void
   /**
    * GM-only: place a PC token for one of the participants. Auto-add
@@ -200,6 +208,13 @@ export interface Session {
    */
   addPlayerToken: (target: { id: string; characterId: string }) => void
   /**
+   * Place a token for one of THE LOCAL PLAYER's own characters. Hosts
+   * add directly; clients ask the host via `pcTokenPlaceRequest`.
+   * Multiple placements for the same character are allowed (each one
+   * mints a fresh token id).
+   */
+  placeMyCharacterToken: (characterId: string) => void
+  /**
    * GM-only: edit a GM token's label / image. PC tokens are not
    * editable through this API — their label and portrait flow from
    * the character record.
@@ -208,6 +223,29 @@ export interface Session {
     tokenId: string,
     updates: { label?: string; image?: string },
   ) => void
+  /**
+   * GM-only: add an NPC to the library (host-side stash that can be
+   * placed on the map repeatedly). The image runs through the
+   * 300-px / ~200 KB pipeline so the broadcast `npcDefUpsert` stays
+   * inline. Returns `'ok'` or `'unreadable'`.
+   */
+  addNpcDef: (input: File | string, name: string) => Promise<'ok' | 'unreadable'>
+  /** GM-only: edit an NPC library entry's name / image. */
+  updateNpcDef: (
+    defId: string,
+    updates: { name?: string; image?: string },
+  ) => void
+  /**
+   * GM-only: remove an NPC from the library. Placed instances on the
+   * map are left as-is — they carry their image inline.
+   */
+  removeNpcDef: (defId: string) => void
+  /**
+   * GM-only: drop a fresh GmToken on the map sourced from the named
+   * library entry. The image / label are copied so a later library
+   * edit does not retroactively change the placed instance.
+   */
+  placeNpcFromLibrary: (defId: string) => void
 }
 
 /** Keep at most `max` items, dropping the oldest. */
@@ -836,14 +874,17 @@ export function useSession(): Session {
   )
 
   /**
-   * GM-only: remove any token (PC or GM) by id. Broadcast the removal
-   * so every client drops it locally too. PR 4's automatic PC token
-   * re-creation does not re-add it because `ensurePcTokens` only
-   * fires on roster / identity transitions, not on every render.
+   * Remove a token. Hosts apply + broadcast directly; clients route the
+   * request through the host, which validates that the client actually
+   * owns the token (their own PC tokens only) before relaying.
    */
   const removeToken = useCallback(
     (tokenId: string) => {
-      if (roleRef.current === 'client') return
+      if (roleRef.current === 'client') {
+        // Send a request to host; only owner-owned PC tokens are honoured.
+        roomRef.current?.sendToHost({ t: 'tokenRemoveRequest', tokenId })
+        return
+      }
       const tokens = applyTokenRemove(tabletopRef.current.tokens, tokenId)
       if (tokens === tabletopRef.current.tokens) return
       applyTabletop({ ...tabletopRef.current, tokens })
@@ -881,6 +922,40 @@ export function useSession(): Session {
   )
 
   /**
+   * Place ANOTHER PC token for the local player's named character.
+   * Unlike `addPlayerToken` (host-only, "one token if missing"), this
+   * mints a fresh token id every call so the same character can have
+   * multiple placements. Clients send a request; the host validates
+   * the sender's identity then mints.
+   */
+  const placeMyCharacterToken = useCallback(
+    (characterId: string) => {
+      if (roleRef.current === 'client') {
+        roomRef.current?.sendToHost({ t: 'pcTokenPlaceRequest', characterId })
+        return
+      }
+      // Host (or offline) places for themselves.
+      const grid = tabletopRef.current.grid
+      const cell = grid.cellSize
+      const index = tabletopRef.current.tokens.length
+      const token: Token = {
+        id: newTokenId(),
+        kind: 'pc',
+        x: grid.originX + cell / 2 + index * cell,
+        y: grid.originY + cell / 2,
+        ownerPlayerId: playerId,
+        characterId,
+      }
+      applyTabletop({
+        ...tabletopRef.current,
+        tokens: [...tabletopRef.current.tokens, token],
+      })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token })
+    },
+    [applyTabletop, playerId],
+  )
+
+  /**
    * GM-only: update a GM token's label or image (the editable bits).
    * PC tokens are not editable here — their label / portrait come from
    * the character record and are kept in sync with `sessionCharacters`.
@@ -906,6 +981,99 @@ export function useSession(): Session {
       const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
       applyTabletop({ ...tabletopRef.current, tokens })
       roomRef.current?.broadcast({ t: 'tokenUpsert', token: next })
+    },
+    [applyTabletop],
+  )
+
+  /**
+   * GM-only: add an NPC to the library. The image is downscaled via
+   * the same pipeline as in-place NPC tokens. The library entry is
+   * NOT placed on the map — it sits in `tabletop.npcLibrary` until
+   * the GM presses "Place" on it (see `placeNpcFromLibrary`).
+   */
+  const addNpcDef = useCallback(
+    async (input: File | string, name: string): Promise<'ok' | 'unreadable'> => {
+      if (roleRef.current === 'client') return 'unreadable'
+      const trimmed = name.trim()
+      if (!trimmed) return 'unreadable'
+      const image = await prepareNpcTokenImage(input)
+      if (!image) return 'unreadable'
+      const def: NpcDef = { id: newNpcDefId(), name: trimmed, image }
+      applyTabletop({
+        ...tabletopRef.current,
+        npcLibrary: [...tabletopRef.current.npcLibrary, def],
+      })
+      roomRef.current?.broadcast({ t: 'npcDefUpsert', def })
+      return 'ok'
+    },
+    [applyTabletop],
+  )
+
+  /** GM-only: edit a library entry's name or image (does NOT touch
+   *  already-placed instances). */
+  const updateNpcDef = useCallback(
+    (defId: string, updates: { name?: string; image?: string }) => {
+      if (roleRef.current === 'client') return
+      const existing = tabletopRef.current.npcLibrary.find((d) => d.id === defId)
+      if (!existing) return
+      const nextName =
+        updates.name === undefined ? existing.name : updates.name.trim()
+      if (!nextName) return
+      const next: NpcDef = {
+        ...existing,
+        name: nextName,
+        ...(updates.image !== undefined ? { image: updates.image } : {}),
+      }
+      applyTabletop({
+        ...tabletopRef.current,
+        npcLibrary: tabletopRef.current.npcLibrary.map((d) =>
+          d.id === defId ? next : d,
+        ),
+      })
+      roomRef.current?.broadcast({ t: 'npcDefUpsert', def: next })
+    },
+    [applyTabletop],
+  )
+
+  /** GM-only: drop a library entry. Placed instances remain. */
+  const removeNpcDef = useCallback(
+    (defId: string) => {
+      if (roleRef.current === 'client') return
+      const next = tabletopRef.current.npcLibrary.filter((d) => d.id !== defId)
+      if (next.length === tabletopRef.current.npcLibrary.length) return
+      applyTabletop({ ...tabletopRef.current, npcLibrary: next })
+      roomRef.current?.broadcast({ t: 'npcDefRemove', defId })
+    },
+    [applyTabletop],
+  )
+
+  /**
+   * GM-only: mint a fresh GmToken on the map from a library entry.
+   * The image / label are copied so the placed token is independent
+   * of the library — a later library edit / delete leaves the
+   * placement alone (and vice versa).
+   */
+  const placeNpcFromLibrary = useCallback(
+    (defId: string) => {
+      if (roleRef.current === 'client') return
+      const def = tabletopRef.current.npcLibrary.find((d) => d.id === defId)
+      if (!def) return
+      const grid = tabletopRef.current.grid
+      const cell = grid.cellSize
+      const index = tabletopRef.current.tokens.length
+      const token: Token = {
+        id: newTokenId(),
+        kind: 'gm',
+        x: grid.originX + cell / 2 + index * cell,
+        y: grid.originY + cell / 2,
+        image: def.image,
+        label: def.name,
+      }
+      applyTabletop({
+        ...tabletopRef.current,
+        tokens: [...tabletopRef.current.tokens, token],
+      })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token })
     },
     [applyTabletop],
   )
@@ -1165,6 +1333,46 @@ export function useSession(): Session {
           })
           break
         }
+        case 'pcTokenPlaceRequest': {
+          // Host fills in `ownerPlayerId` from the connection's
+          // identity — the client cannot spoof someone else's id.
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const grid = tabletopRef.current.grid
+          const cell = grid.cellSize
+          const index = tabletopRef.current.tokens.length
+          const token: Token = {
+            id: newTokenId(),
+            kind: 'pc',
+            x: grid.originX + cell / 2 + index * cell,
+            y: grid.originY + cell / 2,
+            ownerPlayerId: sender.id,
+            characterId: msg.characterId,
+          }
+          applyTabletop({
+            ...tabletopRef.current,
+            tokens: [...tabletopRef.current.tokens, token],
+          })
+          roomRef.current?.broadcast({ t: 'tokenUpsert', token })
+          break
+        }
+        case 'tokenRemoveRequest': {
+          // Same ownership rule as `tokenMove`: a client may remove
+          // their own PC tokens but nobody else's; GM tokens are
+          // GM-only to remove.
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const token = tabletopRef.current.tokens.find(
+            (t) => t.id === msg.tokenId,
+          )
+          if (!token) break
+          if (token.kind !== 'pc' || token.ownerPlayerId !== sender.id) break
+          const tokens = applyTokenRemove(tabletopRef.current.tokens, msg.tokenId)
+          if (tokens === tabletopRef.current.tokens) break
+          applyTabletop({ ...tabletopRef.current, tokens })
+          roomRef.current?.broadcast({ t: 'tokenRemove', tokenId: msg.tokenId })
+          break
+        }
       }
     },
     [
@@ -1303,8 +1511,15 @@ export function useSession(): Session {
           for (const message of msg.snapshot.chat) void appendLogEntry(target, 'chat', message)
           // Adopt the host's tabletop state. Pre-tabletop hosts omit the
           // field; in that case keep whatever (default / locally-restored)
-          // state we already have rather than wiping it.
-          if (msg.snapshot.tabletop) applyTabletop(msg.snapshot.tabletop)
+          // state we already have rather than wiping it. Pre-PR-10 hosts
+          // may also lack `npcLibrary` — default it so the renderer's
+          // `.map` calls never trip.
+          if (msg.snapshot.tabletop) {
+            applyTabletop({
+              ...msg.snapshot.tabletop,
+              npcLibrary: msg.snapshot.tabletop.npcLibrary ?? [],
+            })
+          }
           break
         }
         case 'roomName':
@@ -1433,6 +1648,24 @@ export function useSession(): Session {
           const next: TabletopState = { ...tabletopRef.current }
           delete next.map
           applyTabletop(next)
+          break
+        }
+        case 'npcDefUpsert': {
+          const existing = tabletopRef.current.npcLibrary
+          const idx = existing.findIndex((d) => d.id === msg.def.id)
+          const npcLibrary =
+            idx < 0
+              ? [...existing, msg.def]
+              : existing.map((d) => (d.id === msg.def.id ? msg.def : d))
+          applyTabletop({ ...tabletopRef.current, npcLibrary })
+          break
+        }
+        case 'npcDefRemove': {
+          const npcLibrary = tabletopRef.current.npcLibrary.filter(
+            (d) => d.id !== msg.defId,
+          )
+          if (npcLibrary.length === tabletopRef.current.npcLibrary.length) break
+          applyTabletop({ ...tabletopRef.current, npcLibrary })
           break
         }
       }
@@ -2294,6 +2527,11 @@ export function useSession(): Session {
     addGmToken,
     removeToken,
     addPlayerToken,
+    placeMyCharacterToken,
     updateGmToken,
+    addNpcDef,
+    updateNpcDef,
+    removeNpcDef,
+    placeNpcFromLibrary,
   }
 }

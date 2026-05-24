@@ -12,14 +12,17 @@ describe('sanitizeStoredTabletop', () => {
     expect(sanitizeStoredTabletop(null)).toEqual({
       grid: { ...DEFAULT_GRID },
       tokens: [],
+      npcLibrary: [],
     })
     expect(sanitizeStoredTabletop(undefined)).toEqual({
       grid: { ...DEFAULT_GRID },
       tokens: [],
+      npcLibrary: [],
     })
     expect(sanitizeStoredTabletop('garbage')).toEqual({
       grid: { ...DEFAULT_GRID },
       tokens: [],
+      npcLibrary: [],
     })
   })
 
@@ -45,8 +48,29 @@ describe('sanitizeStoredTabletop', () => {
         { id: 'tok-1', kind: 'pc', x: 10, y: 20, ownerPlayerId: 'p1', characterId: 'chr-knight' },
         { id: 'tok-2', kind: 'gm', x: 30, y: 40, image: 'data:image/png;base64,YY', label: 'Goblin' },
       ],
+      npcLibrary: [
+        { id: 'npc-1', name: 'Goblin', image: 'data:image/png;base64,ZZ' },
+      ],
     }
     expect(sanitizeStoredTabletop(input)).toEqual(input)
+  })
+
+  it('drops library entries without an id or name', () => {
+    const result = sanitizeStoredTabletop({
+      npcLibrary: [
+        { name: 'no id', image: 'x' },
+        { id: 'npc-1', image: 'x' }, // no name
+        { id: 'npc-2', name: 'OK', image: '' },
+      ],
+    })
+    expect(result.npcLibrary).toEqual([{ id: 'npc-2', name: 'OK', image: '' }])
+  })
+
+  it('defaults an absent npcLibrary to an empty array', () => {
+    // Pre-PR-10 saves omit the field entirely; the loader must still
+    // produce a fully shaped state.
+    const result = sanitizeStoredTabletop({ grid: { kind: 'square' } })
+    expect(result.npcLibrary).toEqual([])
   })
 
   it('drops a map without an id', () => {

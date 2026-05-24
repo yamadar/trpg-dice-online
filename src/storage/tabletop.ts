@@ -22,6 +22,7 @@ import {
   MIN_CELL_SIZE,
   type Grid,
   type MapBackground,
+  type NpcDef,
   type TabletopState,
   type Token,
 } from '../tabletop/types'
@@ -116,17 +117,29 @@ function sanitizeToken(raw: unknown): Token | null {
   return null
 }
 
+function sanitizeNpcDef(raw: unknown): NpcDef | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const r = raw as Record<string, unknown>
+  const id = asString(r.id)
+  if (!id) return null
+  const name = asString(r.name)
+  if (!name) return null
+  return { id, name, image: asString(r.image) }
+}
+
 /**
  * Coerce arbitrary stored data into a valid `TabletopState`. Used at
  * the load boundary because IndexedDB returns `unknown` and older /
  * corrupted records should degrade rather than crash the table view.
  *
  * Always returns a usable state — an unrecoverable input falls back to
- * an empty table with the default grid.
+ * an empty table with the default grid. `npcLibrary` is similarly
+ * normalised so pre-PR-10 saves (no library field) round-trip into the
+ * new shape with an empty list.
  */
 export function sanitizeStoredTabletop(raw: unknown): TabletopState {
   if (typeof raw !== 'object' || raw === null) {
-    return { grid: { ...DEFAULT_GRID }, tokens: [] }
+    return { grid: { ...DEFAULT_GRID }, tokens: [], npcLibrary: [] }
   }
   const r = raw as Record<string, unknown>
   const map = sanitizeMap(r.map)
@@ -137,10 +150,18 @@ export function sanitizeStoredTabletop(raw: unknown): TabletopState {
       if (token) tokens.push(token)
     }
   }
+  const npcLibrary: NpcDef[] = []
+  if (Array.isArray(r.npcLibrary)) {
+    for (const raw of r.npcLibrary) {
+      const def = sanitizeNpcDef(raw)
+      if (def) npcLibrary.push(def)
+    }
+  }
   return {
     ...(map ? { map } : {}),
     grid: sanitizeGrid(r.grid),
     tokens,
+    npcLibrary,
   }
 }
 

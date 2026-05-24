@@ -1,7 +1,7 @@
 import type { RollResult } from '../dice/types'
 import type { Lang } from '../i18n/translations'
 import type { Chunk, ChunkSpec } from '../tabletop/imageChunk'
-import type { Grid, TabletopState, Token } from '../tabletop/types'
+import type { Grid, NpcDef, TabletopState, Token } from '../tabletop/types'
 
 export interface Player {
   id: string
@@ -130,6 +130,18 @@ export type ClientMessage =
    * (existence, ownership, bounds) before applying and broadcasting.
    */
   | { t: 'tokenMove'; tokenId: string; x: number; y: number }
+  /**
+   * The client asks the host to place a PC token for one of their own
+   * characters. The host enforces that the requester actually owns
+   * the character before creating the token.
+   */
+  | { t: 'pcTokenPlaceRequest'; characterId: string }
+  /**
+   * The client asks the host to remove one of THEIR OWN tokens from
+   * the map. The host validates ownership (PC tokens only — GM tokens
+   * are GM-only to remove).
+   */
+  | { t: 'tokenRemoveRequest'; tokenId: string }
 
 /** Messages a host sends to clients. */
 export type HostMessage =
@@ -165,6 +177,10 @@ export type HostMessage =
   | { t: 'mapChunk'; chunk: Chunk }
   /** The GM cleared the background map. */
   | { t: 'mapCleared' }
+  /** GM added or replaced an NPC in the library. */
+  | { t: 'npcDefUpsert'; def: NpcDef }
+  /** GM removed an NPC from the library (placed instances are untouched). */
+  | { t: 'npcDefRemove'; defId: string }
 
 export type NetMessage = ClientMessage | HostMessage
 

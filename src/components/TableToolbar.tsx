@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import {
   MAX_CELL_SIZE,
@@ -6,12 +6,12 @@ import {
   type Grid,
   type GridKind,
   type MapBackground,
-  type Token,
+  type NpcDef,
 } from '../tabletop/types'
 import type { MapImageError } from '../tabletop/imageBackground'
-import type { Player } from '../net/protocol'
-import { composeName } from '../players/identity'
+import type { Character } from '../characters/types'
 import { TrashIcon } from './icons'
+import { CharacterImageCropDialog } from './CharacterImageCropDialog'
 
 interface Props {
   grid: Grid
@@ -19,25 +19,38 @@ interface Props {
   map: MapBackground | undefined
   onSetMap: (file: File) => Promise<'ok' | MapImageError>
   onClearMap: () => void
-  tokens: ReadonlyArray<Token>
-  players: ReadonlyArray<Player>
-  onAddGmToken: (file: File, label?: string) => Promise<'ok' | 'unreadable'>
-  onAddPlayerToken: (target: { id: string; characterId: string }) => void
-  onRemoveToken: (tokenId: string) => void
-  /** Surface a flash message (e.g. "image too large"). Optional — the
-   *  Toolbar still works without it, just without notice feedback. */
+  /** Local player's own characters (from `useCharacters`). The toolbar
+   *  surfaces these as "place token" buttons so a player can add
+   *  themselves to the map — multiple times if they want. */
+  characters: ReadonlyArray<Character>
+  /** Place a fresh PC token for the local player's named character.
+   *  Multi-placement is allowed: each call mints a new token id. */
+  onPlaceMyCharacter: (characterId: string) => void
+  /** GM-only: the NPC library. Empty list hides the library section. */
+  npcLibrary: ReadonlyArray<NpcDef>
+  /** GM-only: add a fresh NPC to the library. Caller is responsible
+   *  for cropping; image arrives as a data URL ready for the
+   *  300-px / 200-KB downscale pipeline. */
+  onAddNpcDef: (input: File | string, name: string) => Promise<'ok' | 'unreadable'>
+  onRemoveNpcDef: (defId: string) => void
+  onPlaceNpcFromLibrary: (defId: string) => void
+  /** When true, render the GM-only NPC library section. */
+  isHost: boolean
+  /** Surface a flash message. Optional. */
   onNotice?: (text: string, kind: 'success' | 'error') => void
 }
 
 /**
- * GM-only floating toolbar. Two collapsible categories — Map & Grid
- * above, Tokens below — each `<details>` so the open / closed state
- * lives in the DOM (no React state to sync, plus native keyboard +
- * AT support).
+ * Tabletop control panel. Two collapsible categories:
  *
- * The whole toolbar is capped at the viewport height and scrolls
- * internally when its content would overflow, so a long list of
- * GM tokens never extends past the bottom of the screen.
+ *   - "Map & grid": background image, grid config, map upload / clear.
+ *   - "Tokens": PC characters owned by the local player (multi-placeable);
+ *     for hosts also the NPC library (add / list / place / remove).
+ *
+ * The panel caps at the viewport height and self-scrolls; the host's
+ * floating popover (`TokenPopover`) handles per-token editing on the
+ * canvas, so this toolbar is for additions and library management
+ * rather than per-instance tweaking.
  */
 export function TableToolbar({
   grid,
@@ -45,49 +58,25 @@ export function TableToolbar({
   map,
   onSetMap,
   onClearMap,
-  tokens,
-  players,
-  onAddGmToken,
-  onAddPlayerToken,
-  onRemoveToken,
+  characters,
+  onPlaceMyCharacter,
+  npcLibrary,
+  onAddNpcDef,
+  onRemoveNpcDef,
+  onPlaceNpcFromLibrary,
+  isHost,
   onNotice,
 }: Props) {
   const { t } = useI18n()
   const mapInputRef = useRef<HTMLInputElement | null>(null)
-  const gmTokenInputRef = useRef<HTMLInputElement | null>(null)
-  // Controlled state for the GM-token label input and the
-  // player-token participant picker.
-  const [gmTokenLabel, setGmTokenLabel] = useState('')
+  const npcInputRef = useRef<HTMLInputElement | null>(null)
+  // NPC add flow state. The name is collected from a text field; the
+  // image is read into `cropSrc` so the CharacterImageCropDialog can
+  // crop it square / circular before save.
+  const [npcName, setNpcName] = useState('')
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
   const set = <K extends keyof Grid>(key: K, value: Grid[K]) =>
     onChange({ ...grid, [key]: value })
-  const gmTokens = tokens.filter((tok) => tok.kind === 'gm')
-
-  // Participants who do not yet have a PC token for their current
-  // `(playerId, characterId)` — the only ones offering a useful
-  // "Add" action. An empty list hides the picker entirely.
-  const addablePlayers = useMemo(() => {
-    return players.filter((p) => {
-      return !tokens.some(
-        (tok) =>
-          tok.kind === 'pc' &&
-          tok.ownerPlayerId === p.id &&
-          tok.characterId === (p.characterId ?? ''),
-      )
-    })
-  }, [players, tokens])
-
-  const [playerPick, setPlayerPick] = useState<string>('')
-  // Keep the picker pointing at a valid option as the roster / tokens
-  // change. A stale value would silently mis-fire when the GM tapped
-  // "Add" without re-selecting.
-  const playerPickIsValid = addablePlayers.some(
-    (p) => playerKey(p) === playerPick,
-  )
-  if (!playerPickIsValid && addablePlayers.length > 0 && playerPick !== '') {
-    // Defer reset — this render shows the old value, the next render
-    // (triggered by the setState below) shows the corrected one.
-    setPlayerPick('')
-  }
 
   const handleMapFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -103,28 +92,41 @@ export function TableToolbar({
     }
   }
 
-  const handleGmTokenFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNpcFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    const result = await onAddGmToken(file, gmTokenLabel)
-    if (result === 'ok') {
-      onNotice?.(t('tabletop.gmToken.added'), 'success')
-      setGmTokenLabel('')
-    } else {
-      onNotice?.(t('tabletop.gmToken.unreadable'), 'error')
+    if (!npcName.trim()) {
+      onNotice?.(t('tabletop.npcLibrary.needName'), 'error')
+      return
     }
+    // Read the file as a data URL so the crop dialog can decode it
+    // without further await chain. The dialog crops and hands the
+    // result back via `onConfirm` — at that point we hit `addNpcDef`.
+    const reader = new FileReader()
+    reader.onload = () => setCropSrc(String(reader.result))
+    reader.onerror = () =>
+      onNotice?.(t('tabletop.npcLibrary.unreadable'), 'error')
+    reader.readAsDataURL(file)
   }
 
-  const handleAddPlayerToken = () => {
-    const target = addablePlayers.find((p) => playerKey(p) === playerPick)
-    if (!target) return
-    onAddPlayerToken({ id: target.id, characterId: target.characterId ?? '' })
-    onNotice?.(t('tabletop.playerToken.added'), 'success')
+  const handleCropConfirm = async (croppedDataUrl: string) => {
+    setCropSrc(null)
+    const result = await onAddNpcDef(croppedDataUrl, npcName)
+    if (result === 'ok') {
+      onNotice?.(t('tabletop.npcLibrary.added'), 'success')
+      setNpcName('')
+    } else {
+      onNotice?.(t('tabletop.npcLibrary.unreadable'), 'error')
+    }
   }
 
   return (
     <aside className="tabletop-toolbar" aria-label={t('tabletop.panel.title')}>
+      {/* The "Map & grid" section is GM-only — it edits the table's
+          authoritative state. Players see only the Tokens section
+          (their own characters' "place" buttons). */}
+      {isHost && (
       <details className="tabletop-toolbar-section" open>
         <summary className="tabletop-toolbar-summary">
           {t('tabletop.panel.mapGrid')}
@@ -250,6 +252,7 @@ export function TableToolbar({
           )}
         </div>
       </details>
+      )}
 
       <details className="tabletop-toolbar-section" open>
         <summary className="tabletop-toolbar-summary">
@@ -259,96 +262,126 @@ export function TableToolbar({
           <h3 className="tabletop-toolbar-title">
             {t('tabletop.playerToken.title')}
           </h3>
-          {addablePlayers.length === 0 ? (
+          {characters.length === 0 ? (
             <p className="tabletop-toolbar-meta">
-              {t('tabletop.playerToken.allPlaced')}
+              {t('tabletop.playerToken.noCharacters')}
             </p>
           ) : (
-            <>
-              <select
-                className="tabletop-toolbar-select"
-                value={playerPick}
-                onChange={(e) => setPlayerPick(e.target.value)}
-              >
-                <option value="">{t('tabletop.playerToken.choose')}</option>
-                {addablePlayers.map((p) => (
-                  <option key={playerKey(p)} value={playerKey(p)}>
-                    {composeName(p.name, p.characterName)}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                className="tabletop-toolbar-button"
-                disabled={!playerPick}
-                onClick={handleAddPlayerToken}
-              >
-                {t('tabletop.playerToken.add')}
-              </button>
-            </>
-          )}
-
-          <hr className="tabletop-toolbar-divider" />
-          <h3 className="tabletop-toolbar-title">
-            {t('tabletop.gmToken.title')}
-          </h3>
-          <input
-            ref={gmTokenInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleGmTokenFile}
-          />
-          <input
-            type="text"
-            className="tabletop-toolbar-input"
-            placeholder={t('tabletop.gmToken.labelPlaceholder')}
-            value={gmTokenLabel}
-            onChange={(e) => setGmTokenLabel(e.target.value)}
-            maxLength={32}
-          />
-          <button
-            type="button"
-            className="tabletop-toolbar-button"
-            onClick={() => gmTokenInputRef.current?.click()}
-          >
-            {t('tabletop.gmToken.add')}
-          </button>
-          {gmTokens.length > 0 && (
             <ul className="tabletop-toolbar-list">
-              {gmTokens.map((token) => (
-                <li key={token.id} className="tabletop-toolbar-list-item">
+              {characters.map((char) => (
+                <li key={char.id} className="tabletop-toolbar-list-item">
+                  {char.image ? (
+                    <img
+                      src={char.image}
+                      alt=""
+                      className="tabletop-toolbar-thumb"
+                    />
+                  ) : (
+                    <span className="tabletop-toolbar-thumb placeholder" />
+                  )}
                   <span
                     className="tabletop-toolbar-list-label"
-                    title={token.kind === 'gm' ? token.label : ''}
+                    title={char.name}
                   >
-                    {token.kind === 'gm' && token.label
-                      ? token.label
-                      : t('tabletop.gmToken.unlabeled')}
+                    {char.name}
                   </span>
                   <button
                     type="button"
-                    className="icon-btn tabletop-toolbar-list-remove"
-                    aria-label={t('tabletop.gmToken.remove')}
-                    title={t('tabletop.gmToken.remove')}
-                    onClick={() => onRemoveToken(token.id)}
+                    className="tabletop-toolbar-list-action"
+                    onClick={() => onPlaceMyCharacter(char.id)}
                   >
-                    <TrashIcon />
+                    {t('tabletop.playerToken.place')}
                   </button>
                 </li>
               ))}
             </ul>
           )}
+
+          {isHost && (
+            <>
+              <hr className="tabletop-toolbar-divider" />
+              <h3 className="tabletop-toolbar-title">
+                {t('tabletop.npcLibrary.title')}
+              </h3>
+              <input
+                ref={npcInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleNpcFile}
+              />
+              <input
+                type="text"
+                className="tabletop-toolbar-input"
+                placeholder={t('tabletop.npcLibrary.namePlaceholder')}
+                value={npcName}
+                onChange={(e) => setNpcName(e.target.value)}
+                maxLength={32}
+              />
+              <button
+                type="button"
+                className="tabletop-toolbar-button"
+                onClick={() => {
+                  if (!npcName.trim()) {
+                    onNotice?.(t('tabletop.npcLibrary.needName'), 'error')
+                    return
+                  }
+                  npcInputRef.current?.click()
+                }}
+              >
+                {t('tabletop.npcLibrary.add')}
+              </button>
+              {npcLibrary.length > 0 && (
+                <ul className="tabletop-toolbar-list">
+                  {npcLibrary.map((def) => (
+                    <li key={def.id} className="tabletop-toolbar-list-item">
+                      {def.image ? (
+                        <img
+                          src={def.image}
+                          alt=""
+                          className="tabletop-toolbar-thumb"
+                        />
+                      ) : (
+                        <span className="tabletop-toolbar-thumb placeholder" />
+                      )}
+                      <span
+                        className="tabletop-toolbar-list-label"
+                        title={def.name}
+                      >
+                        {def.name}
+                      </span>
+                      <button
+                        type="button"
+                        className="tabletop-toolbar-list-action"
+                        onClick={() => onPlaceNpcFromLibrary(def.id)}
+                      >
+                        {t('tabletop.npcLibrary.place')}
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-btn tabletop-toolbar-list-remove"
+                        aria-label={t('tabletop.npcLibrary.remove')}
+                        title={t('tabletop.npcLibrary.remove')}
+                        onClick={() => onRemoveNpcDef(def.id)}
+                      >
+                        <TrashIcon />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
         </div>
       </details>
+
+      {cropSrc && (
+        <CharacterImageCropDialog
+          src={cropSrc}
+          onCancel={() => setCropSrc(null)}
+          onConfirm={(cropped) => void handleCropConfirm(cropped)}
+        />
+      )}
     </aside>
   )
-}
-
-/**
- * Stable option value for a player in the picker: `${playerId}|${characterId}`
- * matches the same composite used elsewhere for per-character lookups.
- */
-function playerKey(p: Player): string {
-  return `${p.id}|${p.characterId ?? ''}`
 }

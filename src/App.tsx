@@ -442,6 +442,9 @@ function App() {
         <TablePanel
           session={session}
           onClose={() => setTabletopOpen(false)}
+          characters={characters.characters}
+          activeCharacterId={activeCharacterId}
+          onNotice={flash}
           chatPanel={
             <ActivityPanel
               session={session}
