@@ -253,4 +253,132 @@ describe('sanitizeStoredTabletop', () => {
       characterId: 'chr',
     })
   })
+
+  // ----- PR 12: annotation layers (text, strokes, fog) ------------------
+
+  it('round-trips a map text label', () => {
+    const result = sanitizeStoredTabletop({
+      texts: [
+        {
+          id: 'txt-1',
+          x: 100,
+          y: 200,
+          text: 'door',
+          color: '#ff0000',
+          fontSize: 24,
+          ownerPlayerId: 'p1',
+        },
+      ],
+    })
+    expect(result.texts).toEqual([
+      {
+        id: 'txt-1',
+        x: 100,
+        y: 200,
+        text: 'door',
+        color: '#ff0000',
+        fontSize: 24,
+        ownerPlayerId: 'p1',
+      },
+    ])
+  })
+
+  it('drops text labels missing id or text', () => {
+    const result = sanitizeStoredTabletop({
+      texts: [
+        { x: 0, y: 0, text: 'no id', ownerPlayerId: 'p1' },
+        { id: 'a', x: 0, y: 0, text: '', ownerPlayerId: 'p1' },
+        { id: 'b', x: 0, y: 0, text: 'ok', ownerPlayerId: 'p1' },
+      ],
+    })
+    expect(result.texts).toHaveLength(1)
+    expect(result.texts[0].id).toBe('b')
+  })
+
+  it('caps overlong text and falls back to defaults for color / size', () => {
+    const long = 'x'.repeat(500)
+    const result = sanitizeStoredTabletop({
+      texts: [{ id: 'a', x: 0, y: 0, text: long, ownerPlayerId: 'p1' }],
+    })
+    expect(result.texts[0].text.length).toBeLessThanOrEqual(200)
+    expect(result.texts[0].color).toBe('#ffffff')
+    expect(result.texts[0].fontSize).toBeGreaterThan(0)
+  })
+
+  it('round-trips a draw stroke', () => {
+    const result = sanitizeStoredTabletop({
+      strokes: [
+        {
+          id: 'str-1',
+          points: [0, 0, 10, 10, 20, 20],
+          color: '#ff0000',
+          width: 6,
+          ownerPlayerId: 'p1',
+        },
+      ],
+    })
+    expect(result.strokes).toEqual([
+      {
+        id: 'str-1',
+        points: [0, 0, 10, 10, 20, 20],
+        color: '#ff0000',
+        width: 6,
+        ownerPlayerId: 'p1',
+      },
+    ])
+  })
+
+  it('drops strokes with fewer than two coordinates', () => {
+    const result = sanitizeStoredTabletop({
+      strokes: [
+        { id: 'a', points: [0], color: '#000', width: 2, ownerPlayerId: 'p' },
+        { id: 'b', points: [], color: '#000', width: 2, ownerPlayerId: 'p' },
+        { id: 'c', points: [0, 0, 1, 1], color: '#000', width: 2, ownerPlayerId: 'p' },
+      ],
+    })
+    expect(result.strokes).toHaveLength(1)
+    expect(result.strokes[0].id).toBe('c')
+  })
+
+  it('filters non-finite points out of strokes', () => {
+    const result = sanitizeStoredTabletop({
+      strokes: [
+        {
+          id: 'a',
+          points: [0, 0, Number.NaN, 'x', 10, 10],
+          color: '#000',
+          width: 2,
+          ownerPlayerId: 'p',
+        },
+      ],
+    })
+    expect(result.strokes[0].points).toEqual([0, 0, 10, 10])
+  })
+
+  it('round-trips a fog state with revealed cells', () => {
+    const result = sanitizeStoredTabletop({
+      fog: { enabled: true, revealed: ['0,0', '1,1', '-3,4'] },
+    })
+    expect(result.fog.enabled).toBe(true)
+    expect([...result.fog.revealed].sort()).toEqual(['-3,4', '0,0', '1,1'])
+  })
+
+  it('drops fog cells that are not formatted as "col,row"', () => {
+    const result = sanitizeStoredTabletop({
+      fog: { enabled: true, revealed: ['0,0', 'bogus', '1,2,3', '4,'] },
+    })
+    expect(result.fog.revealed).toEqual(['0,0'])
+  })
+
+  it('de-duplicates fog cells', () => {
+    const result = sanitizeStoredTabletop({
+      fog: { enabled: true, revealed: ['1,1', '1,1', '2,2'] },
+    })
+    expect([...result.fog.revealed].sort()).toEqual(['1,1', '2,2'])
+  })
+
+  it('defaults fog to disabled with no revealed cells', () => {
+    const result = sanitizeStoredTabletop({})
+    expect(result.fog).toEqual({ enabled: false, revealed: [] })
+  })
 })

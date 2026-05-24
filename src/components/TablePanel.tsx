@@ -127,6 +127,7 @@ export function TablePanel({
     addDrawStroke,
     removeDrawStroke,
     paintFog,
+    commitFog,
   } = session
   // Grid editing is GM-only when in a room, but always available when
   // offline so a player can experiment with the table on their own —
@@ -349,7 +350,9 @@ export function TablePanel({
       const key = `${cell.col},${cell.row}`
       if (fogGestureCellsRef.current.has(key)) return
       fogGestureCellsRef.current.add(key)
-      paintFog([cell], reveal)
+      // Live path: throttled broadcast + no IDB save. `commitFog` at
+      // drag-end flushes the final state to the wire and disk.
+      paintFog([cell], reveal, { live: true })
     },
     [paintFog, tabletop.grid],
   )
@@ -421,9 +424,13 @@ export function TablePanel({
   const handleMouseUp = useCallback(() => {
     panStateRef.current = null
     if (drawingRef.current) finishDrawing()
+    if (fogPaintingRef.current) {
+      // Flush the throttled fog drag to the wire / disk.
+      commitFog()
+    }
     fogPaintingRef.current = null
     fogGestureCellsRef.current.clear()
-  }, [finishDrawing])
+  }, [finishDrawing, commitFog])
 
   // Two-finger pinch + pan. A single touch is the active tool's
   // gesture: token drag for 'select', stroke / text / fog for the
@@ -531,11 +538,12 @@ export function TablePanel({
       // The tool drag is also over when the last finger lifts.
       if (e.evt.touches.length === 0) {
         if (drawingRef.current) finishDrawing()
+        if (fogPaintingRef.current) commitFog()
         fogPaintingRef.current = null
         fogGestureCellsRef.current.clear()
       }
     },
-    [finishDrawing],
+    [finishDrawing, commitFog],
   )
 
   // Compute the visible world rectangle so the grid renderer only draws
@@ -777,7 +785,13 @@ export function TablePanel({
                 />
               )}
             </Layer>
-            <Layer>
+            {/* Tokens. Listen for events only when 'select' (or any
+                non-eraser tool that the user might want to drag
+                tokens with) is active. In eraser mode the layer is
+                listening-free so a click reaches the stroke layer
+                directly underneath a token, otherwise a stroke
+                hidden under a token would be impossible to erase. */}
+            <Layer listening={tool !== 'eraser'}>
               {tabletop.tokens.map((token) => (
                 <TokenView
                   key={token.id}
@@ -818,11 +832,15 @@ export function TablePanel({
                 />
               ))}
             </Layer>
-            {/* Fog of war — top layer. listening=false so the GM can
-                paint with the fog tool: clicks pass straight through
-                to the stage's tool-aware mousedown handler. */}
+            {/* Fog of war — top layer. For the GM (or offline
+                sandbox), listening=false so the fog tools can paint
+                straight through to the stage's mousedown handler.
+                For non-GM, listening=true so the opaque fog also
+                blocks hit-testing on the layers beneath — a token
+                hidden under fog stays uninteractable, matching the
+                "players cannot see fogged areas" requirement. */}
             {tabletop.fog.enabled && (
-              <Layer listening={false}>
+              <Layer listening={!canEdit}>
                 <FogLayer
                   fog={tabletop.fog}
                   grid={tabletop.grid}
@@ -896,6 +914,7 @@ export function TablePanel({
         textSize={textSize}
         onTextSizeChange={setTextSize}
         canEditFog={canEdit}
+        fogPaintReady={tabletop.grid.kind === 'square'}
       />
       {showMapOps && (
         <TableToolbar
@@ -1522,10 +1541,28 @@ function TextDraftInput({
   onCancel,
 }: TextDraftInputProps) {
   const { t } = useI18n()
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
   const screenX = worldX * stageScale + stageX
   const screenY = worldY * stageScale + stageY
+  // Outside-click commits the draft so the user does not have to hit
+  // the explicit "place" button (or Enter) after typing. An empty
+  // draft is cancelled instead so a stray click on the canvas does
+  // not leave an empty label behind.
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      const el = wrapperRef.current
+      if (!el) return
+      if (e.target instanceof Node && el.contains(e.target)) return
+      // Defer to onCommit which itself decides commit vs cancel based
+      // on whether the draft is non-empty.
+      onCommit()
+    }
+    document.addEventListener('pointerdown', onDown, true)
+    return () => document.removeEventListener('pointerdown', onDown, true)
+  }, [onCommit])
   return (
     <div
+      ref={wrapperRef}
       className="tabletop-text-draft"
       style={{
         left: `${Math.round(screenX)}px`,

@@ -338,15 +338,28 @@ export interface Session {
   setFogEnabled: (enabled: boolean) => void
   /**
    * GM-only: reveal or conceal a batch of fog cells (grid coordinates).
-   * Sends the whole fog state for simplicity — payload is small (a
-   * list of "col,row" strings).
+   * Two modes:
+   *
+   *  - default (no options): one-shot. Applies locally, broadcasts the
+   *    full fog state and persists to IndexedDB. Used by the toolbar's
+   *    "cover all" / "reveal all" buttons.
+   *  - `{ live: true }`: in-drag path. Applies locally, broadcasts at
+   *    a 150 ms throttle so clients see the painting progress, and
+   *    *skips* the IndexedDB save. The follow-up `commitFog()` flushes
+   *    the final state at drag-end so the wire and the durable record
+   *    converge on the same value.
    */
   paintFog: (
     cells: ReadonlyArray<{ col: number; row: number }>,
     reveal: boolean,
+    options?: { live?: boolean },
   ) => void
-  /** GM-only: replace the entire fog state (used by "reveal all" /
-   *  "fill all" toolbar buttons). */
+  /** GM-only: flush a live fog drag (force broadcast + IndexedDB save
+   *  of the current fog state). Called from the canvas on mouseup /
+   *  touchend so the wire and disk converge on the final value. */
+  commitFog: () => void
+  /** GM-only: replace the entire fog state (used by reveal-all /
+   *  cover-all). */
   setFog: (fog: FogState) => void
   /**
    * GM-only: pick a bundled preset map from `public/maps/` and load it
@@ -1254,10 +1267,16 @@ export function useSession(): Session {
       if (kind === 'template') {
         // Strip PC tokens — templates describe the *initial* layout
         // and PCs re-place themselves at the spawn point on load.
+        // Also drop pen strokes (typically session-specific GM /
+        // player markings) so a saved scenario starts with a clean
+        // sketch surface. Text labels and fog are kept on purpose:
+        // labels often carry GM hints ("door here") and fog is
+        // frequently part of the scenario setup (unexplored rooms).
         const tokens = source.tokens.filter((t) => t.kind !== 'pc')
         state = {
           ...source,
           tokens,
+          strokes: [],
           ...(viewportCenter ? { pcSpawn: viewportCenter } : {}),
         }
       } else {
@@ -1564,9 +1583,21 @@ export function useSession(): Session {
     [setFog],
   )
 
+  /**
+   * Last time we broadcast a `fogSet` from inside a live drag. Drives
+   * the throttle that keeps clients updated without flooding the data
+   * channel with one message per painted cell.
+   */
+  const fogBroadcastThrottleRef = useRef(0)
+
   const paintFog = useCallback(
-    (cells: ReadonlyArray<{ col: number; row: number }>, reveal: boolean) => {
+    (
+      cells: ReadonlyArray<{ col: number; row: number }>,
+      reveal: boolean,
+      options?: { live?: boolean },
+    ) => {
       if (cells.length === 0) return
+      if (roleRef.current === 'client') return
       const fog = tabletopRef.current.fog
       const set = new Set(fog.revealed)
       if (reveal) {
@@ -1575,10 +1606,33 @@ export function useSession(): Session {
         for (const c of cells) set.delete(`${c.col},${c.row}`)
       }
       const next: FogState = { ...fog, revealed: [...set] }
-      setFog(next)
+      if (options?.live) {
+        // In-drag fast path: mutate the in-memory state and notify
+        // React, but skip IndexedDB (every cell paint would otherwise
+        // queue a write) and throttle the broadcast to ~6 Hz. The
+        // `commitFog` call at drag-end forces the final state to the
+        // wire and the disk.
+        const updated: TabletopState = { ...tabletopRef.current, fog: next }
+        tabletopRef.current = updated
+        setTabletop(updated)
+        const now = Date.now()
+        if (now - fogBroadcastThrottleRef.current >= 150) {
+          fogBroadcastThrottleRef.current = now
+          roomRef.current?.broadcast({ t: 'fogSet', fog: next })
+        }
+      } else {
+        setFog(next)
+      }
     },
     [setFog],
   )
+
+  const commitFog = useCallback(() => {
+    if (roleRef.current === 'client') return
+    // Force the next broadcast to fire regardless of the throttle.
+    fogBroadcastThrottleRef.current = 0
+    setFog(tabletopRef.current.fog)
+  }, [setFog])
 
   const setMapFromPreset = useCallback(
     async (preset: PresetMap): Promise<'ok' | 'tooLarge' | 'unreadable'> => {
@@ -3203,6 +3257,7 @@ export function useSession(): Session {
     removeDrawStroke,
     setFogEnabled,
     paintFog,
+    commitFog,
     setFog,
     setMapFromPreset,
   }

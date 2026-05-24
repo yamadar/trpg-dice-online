@@ -776,6 +776,26 @@
   font-size: 0.78rem;
   max-width: 132px;
 }
+.tabletop-tools-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+/* Narrow screens (mobile portrait): collapse the palette to a single
+   column of icon-only buttons so it does not overlap with the right-
+   side map-ops toolbar. Pen / text settings still appear but with
+   their text labels hidden. */
+@media (max-width: 720px) {
+  .tabletop-tools {
+    max-width: 56px;
+    padding: 6px 4px;
+  }
+  .tabletop-tools-label {
+    display: none;
+  }
+  .tabletop-tools-row > span {
+    display: none;
+  }
+}
 .tabletop-tools-btn {
   display: flex;
   flex-direction: column;
