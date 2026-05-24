@@ -11,6 +11,7 @@ import {
 import {
   DEFAULT_GRID,
   type GmToken,
+  type Grid,
   type MapBackground,
   type PcToken,
   type Token,
@@ -116,6 +117,26 @@ describe('planPcTokenAdds', () => {
     const players = [{ id: 'p2', characterId: 'chr-2' }]
     const plans = planPcTokenAdds(players, [pc()], grid)
     expect(plans[0].x).toBe(75)
+  })
+
+  it('snaps new tokens to hex cell centres on hex grids', () => {
+    // On a hex grid the raw stagger position lands between rows; the
+    // implementation force-snaps placements to a hex cell so the
+    // token never visually floats off-grid (regardless of the user's
+    // `snap` toggle, which only controls drag behaviour).
+    const hexGrid: Grid = {
+      ...grid,
+      kind: 'hex',
+      cellSize: 100,
+      // Snap toggle is intentionally OFF here — placement should
+      // still snap, only drag respects the flag.
+      snap: false,
+    }
+    const players = [{ id: 'p1', characterId: 'chr-1' }]
+    const plans = planPcTokenAdds(players, [], hexGrid)
+    // First hex cell centre = (cellSize/2, height/2) = (50, 50*√3/2).
+    expect(plans[0].x).toBeCloseTo(50, 4)
+    expect(plans[0].y).toBeCloseTo((100 * Math.sqrt(3)) / 4, 4)
   })
 })
 

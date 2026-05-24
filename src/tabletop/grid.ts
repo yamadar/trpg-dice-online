@@ -5,10 +5,20 @@
  * When snap is on, the center lands on the center of the nearest grid
  * cell; when snap is off, the position is left as-is. Cell coordinates
  * (col, row) are integer indices, where (0, 0) is the cell whose
- * top-left corner sits at the grid origin.
+ * top-left corner sits at the grid origin (square) or whose centre is
+ * at `(originX + cellSize/2, originY + height/2)` (flat-top hex with
+ * odd-q offset).
+ *
+ * Hex math lives in `./hexGrid.ts`; this file dispatches based on
+ * `grid.kind` so callers can stay grid-agnostic.
  */
 
 import type { Grid } from './types'
+import {
+  hexCellCenter,
+  hexCellFromWorld,
+  snapToHexCell,
+} from './hexGrid'
 
 export interface Vec2 {
   x: number
@@ -27,6 +37,7 @@ export interface Cell {
  */
 export function snapToGrid(x: number, y: number, grid: Grid): Vec2 {
   if (grid.kind === 'none' || !grid.snap) return { x, y }
+  if (grid.kind === 'hex') return snapToHexCell(x, y, grid)
   const half = grid.cellSize / 2
   return {
     x:
@@ -47,14 +58,25 @@ export function snapToGrid(x: number, y: number, grid: Grid): Vec2 {
  */
 export function worldToCell(x: number, y: number, grid: Grid): Cell | null {
   if (grid.kind === 'none') return null
+  if (grid.kind === 'hex') return hexCellFromWorld(x, y, grid)
   return {
     col: Math.floor((x - grid.originX) / grid.cellSize),
     row: Math.floor((y - grid.originY) / grid.cellSize),
   }
 }
 
-/** Convert a cell (col, row) to the top-left world coordinate of that cell. */
+/**
+ * Convert a cell (col, row) to the top-left world coordinate of that
+ * cell's axis-aligned bounding box. Hex cells reuse the same
+ * convention so that `cellToWorld(0, 0, grid) === (originX, originY)`
+ * for both kinds. Useful for placing background imagery aligned to a
+ * grid corner.
+ */
 export function cellToWorld(col: number, row: number, grid: Grid): Vec2 {
+  if (grid.kind === 'hex') {
+    const c = hexCellCenter(col, row, grid)
+    return { x: c.x - grid.cellSize / 2, y: c.y - hexCellHeight(grid) / 2 }
+  }
   return {
     x: grid.originX + col * grid.cellSize,
     y: grid.originY + row * grid.cellSize,
@@ -63,9 +85,38 @@ export function cellToWorld(col: number, row: number, grid: Grid): Vec2 {
 
 /** Convert a cell (col, row) to the center world coordinate of that cell. */
 export function cellCenterToWorld(col: number, row: number, grid: Grid): Vec2 {
+  if (grid.kind === 'hex') return hexCellCenter(col, row, grid)
   const half = grid.cellSize / 2
   return {
     x: grid.originX + col * grid.cellSize + half,
     y: grid.originY + row * grid.cellSize + half,
   }
+}
+
+function hexCellHeight(grid: Grid): number {
+  return (grid.cellSize * Math.sqrt(3)) / 2
+}
+
+/**
+ * Snap a brand-new token position to the nearest hex cell centre.
+ * Square placements are returned verbatim because the raw "map
+ * centre + horizontal stagger" math is what users have always seen,
+ * and snapping it shifts tokens away from "exactly where the GM was
+ * looking" by up to half a cell. Hex grids are different: the raw
+ * stagger lands BETWEEN rows because odd columns are vertically
+ * offset, so a snap is required to keep new tokens on-grid even
+ * before the user drags them.
+ *
+ * The user's `snap` toggle is intentionally ignored here — that
+ * toggle controls drag behaviour, not initial placement. A "snap
+ * off" hex grid still spawns tokens on cell centres so they do not
+ * visually float; the user can then drag them freely.
+ */
+export function snapPlacementToGrid(
+  x: number,
+  y: number,
+  grid: Grid,
+): Vec2 {
+  if (grid.kind !== 'hex') return { x, y }
+  return snapToHexCell(x, y, grid)
 }

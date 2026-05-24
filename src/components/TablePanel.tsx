@@ -6,6 +6,7 @@ import {
   Layer,
   Line,
   Rect,
+  Shape,
   Stage,
   Text,
 } from 'react-konva'
@@ -31,6 +32,12 @@ import {
   type TabletopLibraryKind,
   type Token,
 } from '../tabletop/types'
+import {
+  hexCellCenter,
+  hexCellPolygon,
+  hexHeight,
+  iterHexCellsInViewport,
+} from '../tabletop/hexGrid'
 import type { Character } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
 import {
@@ -1533,11 +1540,12 @@ interface FogLayerProps {
 }
 
 /**
- * Grid-cell fog of war. Renders one Rect per un-revealed cell within
- * the bounding box (map dimensions if present, else viewport). The
- * grid is square-only — when it is 'none' the fog cannot be edited and
- * this layer renders a single rect covering the bounding box as a
- * fallback.
+ * Grid-cell fog of war. Renders one shape per un-revealed cell within
+ * the bounding box (map dimensions if present, else viewport):
+ *   - square grid → axis-aligned `<Rect>` per cell.
+ *   - hex grid    → flat-top hex `<Line closed />` per cell.
+ *   - no grid     → single full-bounds `<Rect>` as a "hide everything"
+ *                   panic-button fallback (no cell paint possible).
  */
 function FogLayer({
   fog,
@@ -1556,7 +1564,7 @@ function FogLayer({
   const boundsY = mapHeight !== undefined ? 0 : viewport.y
   const boundsW = mapWidth ?? viewport.width
   const boundsH = mapHeight ?? viewport.height
-  if (grid.kind !== 'square' || grid.cellSize <= 0) {
+  if (grid.kind === 'none' || grid.cellSize <= 0) {
     // No grid — fall back to a single rect covering the bounds.
     // The GM cannot paint cells in this mode but the toggle still
     // makes "hide everything" possible as a panic button.
@@ -1572,20 +1580,65 @@ function FogLayer({
       />
     )
   }
-  const cell = grid.cellSize
   // Intersect bounds with viewport to cap the cell-render count when
   // zoomed in. Without this, an off-screen 30×30 map would still
-  // render 900 rects every frame.
+  // render hundreds of shapes every frame.
   const visX0 = Math.max(boundsX, viewport.x)
   const visY0 = Math.max(boundsY, viewport.y)
   const visX1 = Math.min(boundsX + boundsW, viewport.x + viewport.width)
   const visY1 = Math.min(boundsY + boundsH, viewport.y + viewport.height)
   if (visX1 <= visX0 || visY1 <= visY0) return null
+  const visViewport = {
+    x: visX0,
+    y: visY0,
+    width: visX1 - visX0,
+    height: visY1 - visY0,
+  }
+  const revealedSet = new Set(fog.revealed)
+  if (grid.kind === 'hex') {
+    // Gather every unrevealed hex inside the visible portion of the
+    // fog bounds. The list is then drawn as a SINGLE filled path so
+    // adjacent cells share an edge instead of double-painting it
+    // (drawing each hex as its own polygon would composite the
+    // shared edge twice, producing visible "scars" at GM opacity).
+    const h = hexHeight(grid.cellSize)
+    const cells: Array<{ col: number; row: number }> = []
+    for (const { col, row } of iterHexCellsInViewport(visViewport, grid)) {
+      const key = `${col},${row}`
+      if (revealedSet.has(key)) continue
+      const center = hexCellCenter(col, row, grid)
+      if (mapWidth !== undefined) {
+        if (center.x + grid.cellSize / 2 <= 0 || center.x - grid.cellSize / 2 >= mapWidth) continue
+        if (center.y + h / 2 <= 0 || center.y - h / 2 >= mapHeight!) continue
+      }
+      cells.push({ col, row })
+    }
+    if (cells.length === 0) return null
+    return (
+      <Shape
+        sceneFunc={(ctx, shape) => {
+          ctx.beginPath()
+          for (const { col, row } of cells) {
+            const poly = hexCellPolygon(col, row, grid)
+            ctx.moveTo(poly[0], poly[1])
+            for (let i = 2; i < poly.length; i += 2) {
+              ctx.lineTo(poly[i], poly[i + 1])
+            }
+            ctx.closePath()
+          }
+          ctx.fillStrokeShape(shape)
+        }}
+        fill={color}
+        opacity={opacity}
+        listening={false}
+      />
+    )
+  }
+  const cell = grid.cellSize
   const startCol = Math.floor((visX0 - grid.originX) / cell)
   const endCol = Math.ceil((visX1 - grid.originX) / cell) - 1
   const startRow = Math.floor((visY0 - grid.originY) / cell)
   const endRow = Math.ceil((visY1 - grid.originY) / cell) - 1
-  const revealedSet = new Set(fog.revealed)
   const rects: ReactNode[] = []
   for (let row = startRow; row <= endRow; row++) {
     for (let col = startCol; col <= endCol; col++) {
@@ -1730,12 +1783,33 @@ function TextDraftInput({
  * outside the viewport — important when the user zooms far in.
  */
 function GridLines({ grid, viewport, scale }: GridLinesProps) {
-  if (grid.kind !== 'square') return null
+  if (grid.kind === 'none') return null
   const cell = grid.cellSize
   if (cell <= 0) return null
   // Stroke width is given in world coordinates, so scale it down so it
   // always renders ~1 device pixel regardless of zoom.
   const strokeWidth = 1 / scale
+  if (grid.kind === 'hex') {
+    // Draw an outlined polygon per visible hex. Shared edges get
+    // painted twice (each hex paints its own outline) which is
+    // visually fine and keeps the loop trivial.
+    const lines: ReactNode[] = []
+    for (const { col, row } of iterHexCellsInViewport(viewport, grid)) {
+      lines.push(
+        <Line
+          key={`h-${col},${row}`}
+          points={hexCellPolygon(col, row, grid)}
+          stroke={grid.strokeColor}
+          strokeWidth={strokeWidth}
+          opacity={grid.strokeOpacity}
+          closed
+          listening={false}
+        />,
+      )
+    }
+    return <>{lines}</>
+  }
+  // Square grid: vertical + horizontal scan lines.
   const startCol = Math.floor((viewport.x - grid.originX) / cell) - 1
   const endCol = Math.ceil((viewport.x + viewport.width - grid.originX) / cell) + 1
   const startRow = Math.floor((viewport.y - grid.originY) / cell) - 1
@@ -1744,7 +1818,6 @@ function GridLines({ grid, viewport, scale }: GridLinesProps) {
   const maxX = grid.originX + endCol * cell
   const minY = grid.originY + startRow * cell
   const maxY = grid.originY + endRow * cell
-
   const verticals: number[][] = []
   const horizontals: number[][] = []
   for (let col = startCol; col <= endCol; col++) {
@@ -1755,7 +1828,6 @@ function GridLines({ grid, viewport, scale }: GridLinesProps) {
     const y = grid.originY + row * cell
     horizontals.push([minX, y, maxX, y])
   }
-
   return (
     <>
       {verticals.map((points, i) => (

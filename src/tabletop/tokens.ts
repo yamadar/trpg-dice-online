@@ -7,6 +7,7 @@
  */
 
 import type { Player } from '../net/protocol'
+import { snapPlacementToGrid } from './grid'
 import type { GmToken, Grid, MapBackground, PcToken, TabletopState, Token } from './types'
 import { newTokenId } from './types'
 
@@ -80,11 +81,21 @@ export function planPcTokenAdds(
     if (has) continue
     const cell = grid.cellSize
     const index = existing.length + out.length
+    // Raw stagger position assumes a square layout. For a hex grid
+    // that lands between cells, so we run the result through
+    // `snapPlacementToGrid` which forces a cell-centre snap
+    // regardless of the user's `snap` toggle (the toggle controls
+    // drag behaviour, not new-spawn placement).
+    const raw = {
+      x: grid.originX + cell / 2 + index * cell,
+      y: grid.originY + cell / 2,
+    }
+    const pos = snapPlacementToGrid(raw.x, raw.y, grid)
     out.push({
       id: newTokenId(),
       kind: 'pc',
-      x: grid.originX + cell / 2 + index * cell,
-      y: grid.originY + cell / 2,
+      x: pos.x,
+      y: pos.y,
       ownerPlayerId: player.id,
       characterId: player.characterId,
     })
@@ -128,11 +139,18 @@ export function makeGmToken(
   const index = existing.length
   const origin = defaultPlacementOrigin(state)
   const label = (options.label ?? '').trim()
+  // See `planPcTokenAdds` — raw stagger then force-snap so hex grids
+  // land on a cell centre rather than between rows.
+  const pos = snapPlacementToGrid(
+    origin.x + index * cell,
+    origin.y,
+    state.grid,
+  )
   return {
     id: newTokenId(),
     kind: 'gm',
-    x: origin.x + index * cell,
-    y: origin.y,
+    x: pos.x,
+    y: pos.y,
     image: options.image,
     ...(label ? { label } : {}),
   }

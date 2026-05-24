@@ -42,6 +42,7 @@ export const ja: Dict = {
   'tabletop.grid.kind': '種類',
   'tabletop.grid.kindNone': 'なし',
   'tabletop.grid.kindSquare': 'スクエア',
+  'tabletop.grid.kindHex': 'ヘックス',
   'tabletop.grid.cellSize': 'セルサイズ',
   'tabletop.grid.originX': '原点 X',
   'tabletop.grid.originY': '原点 Y',

@@ -192,6 +192,8 @@ export function setFogCells(
   return { ...fog, revealed: [...set] }
 }
 
+import { hexCellCenter } from './hexGrid'
+
 /** Build a fully-fogged (empty revealed list) FogState. */
 export function emptyFog(enabled = true): FogState {
   return { ...DEFAULT_FOG, enabled, revealed: [] }
@@ -220,11 +222,26 @@ export function nearestRevealedCellCenter(
   worldX: number,
   worldY: number,
   fog: FogState,
-  grid: { cellSize: number; originX: number; originY: number },
+  grid: {
+    kind?: 'none' | 'square' | 'hex'
+    cellSize: number
+    originX: number
+    originY: number
+  },
 ): { x: number; y: number } | null {
   if (!fog.enabled) return null
   if (fog.revealed.length === 0) return null
   if (grid.cellSize <= 0) return null
+  // Square / hex differ in how (col, row) maps to a world centre; the
+  // closure picks the right formula once so the per-cell loop stays
+  // tight.
+  const centreFor =
+    grid.kind === 'hex'
+      ? (col: number, row: number) => hexCellCenter(col, row, grid)
+      : (col: number, row: number) => ({
+          x: grid.originX + col * grid.cellSize + grid.cellSize / 2,
+          y: grid.originY + row * grid.cellSize + grid.cellSize / 2,
+        })
   let bestDist = Infinity
   let bestX = 0
   let bestY = 0
@@ -233,8 +250,7 @@ export function nearestRevealedCellCenter(
     if (!m) continue
     const col = Number(m[1])
     const row = Number(m[2])
-    const cx = grid.originX + col * grid.cellSize + grid.cellSize / 2
-    const cy = grid.originY + row * grid.cellSize + grid.cellSize / 2
+    const { x: cx, y: cy } = centreFor(col, row)
     const dx = cx - worldX
     const dy = cy - worldY
     const d = dx * dx + dy * dy

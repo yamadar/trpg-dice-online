@@ -71,7 +71,12 @@ function sanitizeGrid(raw: unknown): Grid {
   if (typeof raw !== 'object' || raw === null) return { ...DEFAULT_GRID }
   const r = raw as Record<string, unknown>
   return {
-    kind: r.kind === 'square' ? 'square' : 'none',
+    kind:
+      r.kind === 'square'
+        ? 'square'
+        : r.kind === 'hex'
+          ? 'hex'
+          : 'none',
     cellSize: clamp(
       asNumber(r.cellSize, DEFAULT_GRID.cellSize),
       MIN_CELL_SIZE,

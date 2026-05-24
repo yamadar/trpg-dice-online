@@ -77,8 +77,10 @@ export interface PresetMap {
   description?: string
 }
 
-/** Square is the only grid kind in Phase 1; hex is reserved for later. */
-export type GridKind = 'none' | 'square'
+/** Square or flat-top hex; `'none'` disables the grid entirely. The
+ *  hex layout is "odd-q" offset (odd columns shifted down by half a
+ *  cell height). See `tabletop/hexGrid.ts` for the math. */
+export type GridKind = 'none' | 'square' | 'hex'
 
 export interface Grid {
   kind: GridKind
@@ -317,18 +319,50 @@ export function fogCellKey(col: number, row: number): string {
 
 /**
  * Map a world-space pixel coordinate to the (col, row) cell it falls
- * into, relative to the grid origin. Used by the fog of war brush to
- * pick which cell the cursor is over. When the grid has no positive
- * cell size, returns (0, 0) so the caller can still treat the result
- * as a key — a degenerate grid carries no fog cells in practice.
+ * into, relative to the grid origin. Used by the fog-of-war brush to
+ * pick which cell the cursor is over.
+ *
+ * Dispatches on `grid.kind`:
+ *   - `'hex'`  → flat-top hex math (see `tabletop/hexGrid.ts`)
+ *   - else     → square grid (floor on x/y).
+ *
+ * When the grid has no positive cell size, returns (0, 0) so the
+ * caller can still treat the result as a key — a degenerate grid
+ * carries no fog cells in practice.
+ *
+ * `grid.kind` is optional so the helper still accepts a bare
+ * `{ cellSize, originX, originY }` triple — important for the tests
+ * that pre-date the kind field.
  */
 export function cellFromWorld(
   worldX: number,
   worldY: number,
-  grid: { cellSize: number; originX: number; originY: number },
+  grid: {
+    kind?: GridKind
+    cellSize: number
+    originX: number
+    originY: number
+  },
 ): { col: number; row: number } {
   if (grid.cellSize <= 0) return { col: 0, row: 0 }
+  if (grid.kind === 'hex') {
+    // Pull in the hex pipeline lazily-via-import to keep the type
+    // file self-contained without cyclic-import risk.
+    return hexCellFromWorldRouted(worldX, worldY, grid)
+  }
   const col = Math.floor((worldX - grid.originX) / grid.cellSize)
   const row = Math.floor((worldY - grid.originY) / grid.cellSize)
   return { col, row }
+}
+
+// Indirection so that `hexCellFromWorld` is the canonical
+// implementation living in `hexGrid.ts` while `types.ts` does not
+// reach into rendering specifics.
+import { hexCellFromWorld } from './hexGrid'
+function hexCellFromWorldRouted(
+  worldX: number,
+  worldY: number,
+  grid: { cellSize: number; originX: number; originY: number },
+) {
+  return hexCellFromWorld(worldX, worldY, grid)
 }
