@@ -46,19 +46,35 @@ import {
 import type { RoomImport } from '../storage/roomImport'
 import { MAX_RECONNECT_ATTEMPTS, reconnectDelay } from '../net/reconnect'
 import {
+  DEFAULT_FOG,
   EMPTY_TABLETOP_STATE,
   newMapId,
   newNpcDefId,
   newSavedTabletopId,
   newTokenId,
+  type DrawStroke,
+  type FogState,
   type Grid,
   type MapBackground,
+  type MapText,
   type NpcDef,
+  type PresetMap,
   type SavedTabletop,
   type TabletopLibraryKind,
   type TabletopState,
   type Token,
 } from '../tabletop/types'
+import {
+  applyDrawStrokeRemove,
+  applyDrawStrokeUpsert,
+  applyMapTextRemove,
+  applyMapTextUpsert,
+  canEditMapText,
+  canEraseStroke,
+  makeDrawStroke,
+  makeMapText,
+} from '../tabletop/annotations'
+import { loadPresetMap } from '../tabletop/presetMaps'
 import { loadTabletop, saveTabletop } from '../storage/tabletop'
 import {
   deleteLibraryEntry as deleteLibraryEntryStorage,
@@ -284,11 +300,82 @@ export interface Session {
   loadTabletopFromLibrary: (id: string) => Promise<'ok' | 'missing'>
   /** GM-only: drop an entry from the library. */
   deleteTabletopFromLibrary: (id: string) => Promise<void>
+  /**
+   * Add a free-text label on the map. Any participant may add one;
+   * `ownerPlayerId` is stamped onto the label so the owner (and the
+   * GM) can later remove it. Clients route through the host which
+   * mints the canonical id.
+   */
+  addMapText: (
+    text: string,
+    x: number,
+    y: number,
+    options?: { color?: string; fontSize?: number },
+  ) => void
+  /**
+   * Update an existing map text label. Permission follows
+   * `canEditMapText` (owner or host). A no-op for other people's
+   * labels.
+   */
+  updateMapText: (
+    id: string,
+    updates: { text?: string; x?: number; y?: number; color?: string; fontSize?: number },
+  ) => void
+  /** Remove a map text label (owner or host). */
+  removeMapText: (id: string) => void
+  /**
+   * Add a pen stroke (commit on drag end). `ownerPlayerId` is the
+   * local player; clients send through the host which validates and
+   * broadcasts as the canonical record.
+   */
+  addDrawStroke: (
+    points: number[],
+    options?: { color?: string; width?: number },
+  ) => void
+  /** Erase one pen stroke (owner or host). */
+  removeDrawStroke: (id: string) => void
+  /** GM-only: turn the fog of war layer on or off. */
+  setFogEnabled: (enabled: boolean) => void
+  /**
+   * GM-only: reveal or conceal a batch of fog cells (grid coordinates).
+   * Sends the whole fog state for simplicity — payload is small (a
+   * list of "col,row" strings).
+   */
+  paintFog: (
+    cells: ReadonlyArray<{ col: number; row: number }>,
+    reveal: boolean,
+  ) => void
+  /** GM-only: replace the entire fog state (used by "reveal all" /
+   *  "fill all" toolbar buttons). */
+  setFog: (fog: FogState) => void
+  /**
+   * GM-only: pick a bundled preset map from `public/maps/` and load it
+   * as the background. Resolves to the same tag set as `setMapBackground`
+   * so the toolbar can surface one error message.
+   */
+  setMapFromPreset: (preset: PresetMap) => Promise<'ok' | 'tooLarge' | 'unreadable'>
 }
 
 /** Keep at most `max` items, dropping the oldest. */
 function capEnd<T>(list: T[], max: number): T[] {
   return list.length > max ? list.slice(list.length - max) : list
+}
+
+/**
+ * Defence-in-depth normaliser for `TabletopState` shapes arriving over
+ * the wire. A pre-PR-12 host may not include the new annotation fields,
+ * in which case we default them so the renderer's `.map` calls never
+ * trip on `undefined`. Used by the welcome-snapshot and `tabletopState`
+ * adoption paths.
+ */
+function fillTabletopDefaults(state: TabletopState): TabletopState {
+  return {
+    ...state,
+    npcLibrary: state.npcLibrary ?? [],
+    texts: state.texts ?? [],
+    strokes: state.strokes ?? [],
+    fog: state.fog ?? { ...DEFAULT_FOG },
+  }
 }
 
 /** Merge two id-keyed, timestamped lists, de-duplicating and sorting oldest-first. */
@@ -1283,6 +1370,235 @@ export function useSession(): Session {
     [applyTabletop],
   )
 
+  // --- Map annotations (text / pen / fog) --------------------------------
+
+  const addMapText = useCallback(
+    (
+      text: string,
+      x: number,
+      y: number,
+      options?: { color?: string; fontSize?: number },
+    ) => {
+      const trimmed = text.trim()
+      if (!trimmed) return
+      const role = roleRef.current
+      const draft = makeMapText({
+        text: trimmed,
+        x,
+        y,
+        ownerPlayerId: playerId,
+        color: options?.color,
+        fontSize: options?.fontSize,
+      })
+      if (role === 'host' || role === 'offline') {
+        applyTabletop({
+          ...tabletopRef.current,
+          texts: applyMapTextUpsert(tabletopRef.current.texts, draft),
+        })
+        roomRef.current?.broadcast({ t: 'mapTextUpsert', text: draft })
+      } else if (role === 'client') {
+        // Optimistic local insert so the typing user sees their label
+        // immediately; the host's echo (with the same id) is a no-op
+        // upsert. The host re-validates ownerPlayerId from the
+        // connection identity before re-broadcasting.
+        applyTabletop({
+          ...tabletopRef.current,
+          texts: applyMapTextUpsert(tabletopRef.current.texts, draft),
+        })
+        roomRef.current?.sendToHost({ t: 'mapTextAddRequest', text: draft })
+      }
+    },
+    [applyTabletop, playerId],
+  )
+
+  const updateMapText = useCallback(
+    (
+      id: string,
+      updates: {
+        text?: string
+        x?: number
+        y?: number
+        color?: string
+        fontSize?: number
+      },
+    ) => {
+      const existing = tabletopRef.current.texts.find((t) => t.id === id)
+      if (!existing) return
+      const actor = { playerId, isHost: roleRef.current !== 'client' }
+      if (!canEditMapText(existing, actor)) return
+      const next: MapText = {
+        ...existing,
+        ...(updates.text !== undefined ? { text: updates.text.slice(0, 200) } : {}),
+        ...(updates.x !== undefined ? { x: updates.x } : {}),
+        ...(updates.y !== undefined ? { y: updates.y } : {}),
+        ...(updates.color !== undefined ? { color: updates.color } : {}),
+        ...(updates.fontSize !== undefined ? { fontSize: updates.fontSize } : {}),
+      }
+      if (!next.text.trim()) return
+      const role = roleRef.current
+      if (role === 'host' || role === 'offline') {
+        applyTabletop({
+          ...tabletopRef.current,
+          texts: applyMapTextUpsert(tabletopRef.current.texts, next),
+        })
+        roomRef.current?.broadcast({ t: 'mapTextUpsert', text: next })
+      } else if (role === 'client') {
+        applyTabletop({
+          ...tabletopRef.current,
+          texts: applyMapTextUpsert(tabletopRef.current.texts, next),
+        })
+        roomRef.current?.sendToHost({
+          t: 'mapTextUpdateRequest',
+          id,
+          ...(updates.text !== undefined ? { text: next.text } : {}),
+          ...(updates.x !== undefined ? { x: next.x } : {}),
+          ...(updates.y !== undefined ? { y: next.y } : {}),
+          ...(updates.color !== undefined ? { color: next.color } : {}),
+          ...(updates.fontSize !== undefined ? { fontSize: next.fontSize } : {}),
+        })
+      }
+    },
+    [applyTabletop, playerId],
+  )
+
+  const removeMapText = useCallback(
+    (id: string) => {
+      const existing = tabletopRef.current.texts.find((t) => t.id === id)
+      if (!existing) return
+      const actor = { playerId, isHost: roleRef.current !== 'client' }
+      if (!canEditMapText(existing, actor)) return
+      const role = roleRef.current
+      if (role === 'host' || role === 'offline') {
+        applyTabletop({
+          ...tabletopRef.current,
+          texts: applyMapTextRemove(tabletopRef.current.texts, id),
+        })
+        roomRef.current?.broadcast({ t: 'mapTextRemove', id })
+      } else if (role === 'client') {
+        applyTabletop({
+          ...tabletopRef.current,
+          texts: applyMapTextRemove(tabletopRef.current.texts, id),
+        })
+        roomRef.current?.sendToHost({ t: 'mapTextRemoveRequest', id })
+      }
+    },
+    [applyTabletop, playerId],
+  )
+
+  const addDrawStroke = useCallback(
+    (points: number[], options?: { color?: string; width?: number }) => {
+      if (points.length < 2) return
+      const role = roleRef.current
+      const draft = makeDrawStroke({
+        points,
+        ownerPlayerId: playerId,
+        color: options?.color,
+        width: options?.width,
+      })
+      if (role === 'host' || role === 'offline') {
+        applyTabletop({
+          ...tabletopRef.current,
+          strokes: applyDrawStrokeUpsert(tabletopRef.current.strokes, draft),
+        })
+        roomRef.current?.broadcast({ t: 'drawStrokeAdd', stroke: draft })
+      } else if (role === 'client') {
+        applyTabletop({
+          ...tabletopRef.current,
+          strokes: applyDrawStrokeUpsert(tabletopRef.current.strokes, draft),
+        })
+        roomRef.current?.sendToHost({ t: 'drawStrokeAddRequest', stroke: draft })
+      }
+    },
+    [applyTabletop, playerId],
+  )
+
+  const removeDrawStroke = useCallback(
+    (id: string) => {
+      const existing = tabletopRef.current.strokes.find((s) => s.id === id)
+      if (!existing) return
+      const actor = { playerId, isHost: roleRef.current !== 'client' }
+      if (!canEraseStroke(existing, actor)) return
+      const role = roleRef.current
+      if (role === 'host' || role === 'offline') {
+        applyTabletop({
+          ...tabletopRef.current,
+          strokes: applyDrawStrokeRemove(tabletopRef.current.strokes, id),
+        })
+        roomRef.current?.broadcast({ t: 'drawStrokeRemove', id })
+      } else if (role === 'client') {
+        applyTabletop({
+          ...tabletopRef.current,
+          strokes: applyDrawStrokeRemove(tabletopRef.current.strokes, id),
+        })
+        roomRef.current?.sendToHost({ t: 'drawStrokeRemoveRequest', id })
+      }
+    },
+    [applyTabletop, playerId],
+  )
+
+  const setFog = useCallback(
+    (fog: FogState) => {
+      if (roleRef.current === 'client') return
+      // De-duplicate the revealed list defensively in case the caller
+      // forgot to do it themselves; the renderer relies on uniqueness
+      // for the cell-count math.
+      const seen = new Set<string>()
+      const revealed: string[] = []
+      for (const key of fog.revealed) {
+        if (seen.has(key)) continue
+        seen.add(key)
+        revealed.push(key)
+      }
+      const next: FogState = { enabled: !!fog.enabled, revealed }
+      applyTabletop({ ...tabletopRef.current, fog: next })
+      roomRef.current?.broadcast({ t: 'fogSet', fog: next })
+    },
+    [applyTabletop],
+  )
+
+  const setFogEnabled = useCallback(
+    (enabled: boolean) => {
+      const fog = tabletopRef.current.fog
+      setFog({ ...fog, enabled })
+    },
+    [setFog],
+  )
+
+  const paintFog = useCallback(
+    (cells: ReadonlyArray<{ col: number; row: number }>, reveal: boolean) => {
+      if (cells.length === 0) return
+      const fog = tabletopRef.current.fog
+      const set = new Set(fog.revealed)
+      if (reveal) {
+        for (const c of cells) set.add(`${c.col},${c.row}`)
+      } else {
+        for (const c of cells) set.delete(`${c.col},${c.row}`)
+      }
+      const next: FogState = { ...fog, revealed: [...set] }
+      setFog(next)
+    },
+    [setFog],
+  )
+
+  const setMapFromPreset = useCallback(
+    async (preset: PresetMap): Promise<'ok' | 'tooLarge' | 'unreadable'> => {
+      if (roleRef.current === 'client') return 'unreadable'
+      const result = await loadPresetMap(preset)
+      if (!result.ok) return result.error
+      const map: MapBackground = {
+        id: newMapId(),
+        name: result.name,
+        width: result.width,
+        height: result.height,
+        dataUrl: result.dataUrl,
+      }
+      applyTabletop({ ...tabletopRef.current, map })
+      broadcastMapAsChunks(map)
+      return 'ok'
+    },
+    [applyTabletop, broadcastMapAsChunks],
+  )
+
   /**
    * Load any saved tabletop state for this session id and adopt it.
    * Called from the host's create / resume paths so re-opening a room
@@ -1573,6 +1889,109 @@ export function useSession(): Session {
           roomRef.current?.broadcast({ t: 'tokenUpsert', token })
           break
         }
+        case 'mapTextAddRequest': {
+          // Host stamps the canonical ownerPlayerId from the connection
+          // so a client cannot impersonate another player. Anything
+          // else on the label is taken as-is after a length cap.
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const raw = msg.text
+          if (!raw || typeof raw.text !== 'string') break
+          const cleaned = raw.text.trim().slice(0, 200)
+          if (!cleaned) break
+          const next: MapText = {
+            id: raw.id,
+            x: typeof raw.x === 'number' ? raw.x : 0,
+            y: typeof raw.y === 'number' ? raw.y : 0,
+            text: cleaned,
+            color: typeof raw.color === 'string' ? raw.color : '#ffffff',
+            fontSize: typeof raw.fontSize === 'number' ? raw.fontSize : 20,
+            ownerPlayerId: sender.id,
+          }
+          applyTabletop({
+            ...tabletopRef.current,
+            texts: applyMapTextUpsert(tabletopRef.current.texts, next),
+          })
+          roomRef.current?.broadcast({ t: 'mapTextUpsert', text: next })
+          break
+        }
+        case 'mapTextUpdateRequest': {
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const existing = tabletopRef.current.texts.find((t) => t.id === msg.id)
+          if (!existing) break
+          if (!canEditMapText(existing, { playerId: sender.id, isHost: false })) break
+          const next: MapText = {
+            ...existing,
+            ...(typeof msg.text === 'string'
+              ? { text: msg.text.slice(0, 200) }
+              : {}),
+            ...(typeof msg.x === 'number' ? { x: msg.x } : {}),
+            ...(typeof msg.y === 'number' ? { y: msg.y } : {}),
+            ...(typeof msg.color === 'string' ? { color: msg.color } : {}),
+            ...(typeof msg.fontSize === 'number'
+              ? { fontSize: msg.fontSize }
+              : {}),
+          }
+          if (!next.text.trim()) break
+          applyTabletop({
+            ...tabletopRef.current,
+            texts: applyMapTextUpsert(tabletopRef.current.texts, next),
+          })
+          roomRef.current?.broadcast({ t: 'mapTextUpsert', text: next })
+          break
+        }
+        case 'mapTextRemoveRequest': {
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const existing = tabletopRef.current.texts.find((t) => t.id === msg.id)
+          if (!existing) break
+          if (!canEditMapText(existing, { playerId: sender.id, isHost: false })) break
+          applyTabletop({
+            ...tabletopRef.current,
+            texts: applyMapTextRemove(tabletopRef.current.texts, msg.id),
+          })
+          roomRef.current?.broadcast({ t: 'mapTextRemove', id: msg.id })
+          break
+        }
+        case 'drawStrokeAddRequest': {
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const raw = msg.stroke
+          if (!raw || !Array.isArray(raw.points) || raw.points.length < 2) break
+          // Re-stamp ownerPlayerId from the connection so the eraser
+          // permission check on every peer sees the real owner.
+          const next: DrawStroke = {
+            id: raw.id,
+            points: raw.points.filter(
+              (p: unknown): p is number =>
+                typeof p === 'number' && Number.isFinite(p),
+            ),
+            color: typeof raw.color === 'string' ? raw.color : '#ff0000',
+            width: typeof raw.width === 'number' ? raw.width : 4,
+            ownerPlayerId: sender.id,
+          }
+          if (next.points.length < 2) break
+          applyTabletop({
+            ...tabletopRef.current,
+            strokes: applyDrawStrokeUpsert(tabletopRef.current.strokes, next),
+          })
+          roomRef.current?.broadcast({ t: 'drawStrokeAdd', stroke: next })
+          break
+        }
+        case 'drawStrokeRemoveRequest': {
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const existing = tabletopRef.current.strokes.find((s) => s.id === msg.id)
+          if (!existing) break
+          if (!canEraseStroke(existing, { playerId: sender.id, isHost: false })) break
+          applyTabletop({
+            ...tabletopRef.current,
+            strokes: applyDrawStrokeRemove(tabletopRef.current.strokes, msg.id),
+          })
+          roomRef.current?.broadcast({ t: 'drawStrokeRemove', id: msg.id })
+          break
+        }
       }
     },
     [
@@ -1715,10 +2134,7 @@ export function useSession(): Session {
           // may also lack `npcLibrary` — default it so the renderer's
           // `.map` calls never trip.
           if (msg.snapshot.tabletop) {
-            applyTabletop({
-              ...msg.snapshot.tabletop,
-              npcLibrary: msg.snapshot.tabletop.npcLibrary ?? [],
-            })
+            applyTabletop(fillTabletopDefaults(msg.snapshot.tabletop))
           }
           break
         }
@@ -1875,9 +2291,39 @@ export function useSession(): Session {
           // welcome snapshot uses.
           pendingMapBufferRef.current = null
           pendingMapMetaRef.current = null
+          applyTabletop(fillTabletopDefaults(msg.state))
+          break
+        }
+        case 'mapTextUpsert': {
           applyTabletop({
-            ...msg.state,
-            npcLibrary: msg.state.npcLibrary ?? [],
+            ...tabletopRef.current,
+            texts: applyMapTextUpsert(tabletopRef.current.texts, msg.text),
+          })
+          break
+        }
+        case 'mapTextRemove': {
+          const texts = applyMapTextRemove(tabletopRef.current.texts, msg.id)
+          if (texts === tabletopRef.current.texts) break
+          applyTabletop({ ...tabletopRef.current, texts })
+          break
+        }
+        case 'drawStrokeAdd': {
+          applyTabletop({
+            ...tabletopRef.current,
+            strokes: applyDrawStrokeUpsert(tabletopRef.current.strokes, msg.stroke),
+          })
+          break
+        }
+        case 'drawStrokeRemove': {
+          const strokes = applyDrawStrokeRemove(tabletopRef.current.strokes, msg.id)
+          if (strokes === tabletopRef.current.strokes) break
+          applyTabletop({ ...tabletopRef.current, strokes })
+          break
+        }
+        case 'fogSet': {
+          applyTabletop({
+            ...tabletopRef.current,
+            fog: { ...msg.fog, revealed: msg.fog.revealed.slice() },
           })
           break
         }
@@ -2750,5 +3196,14 @@ export function useSession(): Session {
     saveTabletopAs,
     loadTabletopFromLibrary,
     deleteTabletopFromLibrary,
+    addMapText,
+    updateMapText,
+    removeMapText,
+    addDrawStroke,
+    removeDrawStroke,
+    setFogEnabled,
+    paintFog,
+    setFog,
+    setMapFromPreset,
   }
 }

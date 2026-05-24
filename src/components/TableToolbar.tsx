@@ -1,16 +1,19 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import {
   MAX_CELL_SIZE,
   MIN_CELL_SIZE,
+  type FogState,
   type Grid,
   type GridKind,
   type MapBackground,
   type NpcDef,
+  type PresetMap,
   type SavedTabletop,
   type TabletopLibraryKind,
 } from '../tabletop/types'
 import type { MapImageError } from '../tabletop/imageBackground'
+import { loadPresetMapManifest } from '../tabletop/presetMaps'
 import type { Character } from '../characters/types'
 import { TrashIcon } from './icons'
 import { CharacterImageCropDialog } from './CharacterImageCropDialog'
@@ -60,6 +63,14 @@ interface Props {
   onLoadTabletopFromLibrary: (id: string) => Promise<'ok' | 'missing'>
   /** GM-only: drop one entry from the library. */
   onDeleteTabletopFromLibrary: (id: string) => Promise<void>
+  /** GM-only: load a bundled preset map from `public/maps/`. */
+  onLoadPresetMap: (preset: PresetMap) => Promise<'ok' | MapImageError>
+  /** Current fog of war state (GM section only). */
+  fog: FogState
+  /** GM-only: turn the fog layer on or off. */
+  onFogEnabledChange: (enabled: boolean) => void
+  /** GM-only: replace the fog state (used by reveal-all / cover-all). */
+  onFogReplace: (fog: FogState) => void
   /** Surface a flash message. Optional. */
   onNotice?: (text: string, kind: 'success' | 'error') => void
 }
@@ -93,6 +104,10 @@ export function TableToolbar({
   onSaveTabletopAs,
   onLoadTabletopFromLibrary,
   onDeleteTabletopFromLibrary,
+  onLoadPresetMap,
+  fog,
+  onFogEnabledChange,
+  onFogReplace,
   onNotice,
 }: Props) {
   const { t } = useI18n()
@@ -106,8 +121,56 @@ export function TableToolbar({
   // Library save flow state: a single name input feeds both save
   // flavours; the buttons differ only in `kind`.
   const [libraryName, setLibraryName] = useState('')
+  const [presets, setPresets] = useState<ReadonlyArray<PresetMap>>([])
+  const [selectedPreset, setSelectedPreset] = useState('')
+  const [loadingPreset, setLoadingPreset] = useState(false)
   const templates = tabletopLibrary.filter((e) => e.kind === 'template')
   const saves = tabletopLibrary.filter((e) => e.kind === 'save')
+
+  // Fetch the preset-map manifest once per mount. Errors degrade to an
+  // empty list — the toolbar still shows the hand-pick path.
+  useEffect(() => {
+    let cancelled = false
+    loadPresetMapManifest().then((list) => {
+      if (cancelled) return
+      setPresets(list)
+      if (list.length > 0) setSelectedPreset(list[0].id)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleLoadPreset = async () => {
+    const preset = presets.find((p) => p.id === selectedPreset)
+    if (!preset) return
+    setLoadingPreset(true)
+    try {
+      const result = await onLoadPresetMap(preset)
+      if (result === 'ok') {
+        onNotice?.(t('tabletop.preset.loaded'), 'success')
+      } else if (result === 'tooLarge') {
+        onNotice?.(t('tabletop.map.tooLarge'), 'error')
+      } else {
+        onNotice?.(t('tabletop.preset.unreadable'), 'error')
+      }
+    } finally {
+      setLoadingPreset(false)
+    }
+  }
+
+  const handleFogFillAll = () => {
+    if (!confirm(t('tabletop.fog.confirmFillAll'))) return
+    // "Cover all" = revealed list empty + fog on.
+    onFogReplace({ enabled: true, revealed: [] })
+  }
+
+  const handleFogClearAll = () => {
+    if (!confirm(t('tabletop.fog.confirmClearAll'))) return
+    // "Reveal all" = fog off (the revealed list itself stays put so a
+    // future re-enable picks up where the GM left off).
+    onFogReplace({ ...fog, enabled: false })
+  }
 
   const handleSaveAs = async (kind: TabletopLibraryKind) => {
     if (!libraryName.trim()) {
@@ -319,8 +382,90 @@ export function TableToolbar({
               </button>
             </>
           )}
+
+          <hr className="tabletop-toolbar-divider" />
+          <h3 className="tabletop-toolbar-title">
+            {t('tabletop.preset.title')}
+          </h3>
+          {presets.length === 0 ? (
+            <p className="tabletop-toolbar-meta">
+              {t('tabletop.preset.empty')}
+            </p>
+          ) : (
+            <>
+              <select
+                className="tabletop-toolbar-input"
+                value={selectedPreset}
+                onChange={(e) => setSelectedPreset(e.target.value)}
+                aria-label={t('tabletop.preset.choose')}
+              >
+                {presets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              {(() => {
+                const desc = presets.find((p) => p.id === selectedPreset)
+                  ?.description
+                return desc ? (
+                  <p className="tabletop-toolbar-meta wrap">{desc}</p>
+                ) : null
+              })()}
+              <button
+                type="button"
+                className="tabletop-toolbar-button"
+                onClick={() => void handleLoadPreset()}
+                disabled={loadingPreset || !selectedPreset}
+              >
+                {t('tabletop.preset.load')}
+              </button>
+            </>
+          )}
         </div>
       </details>
+      )}
+
+      {isHost && (
+        <details className="tabletop-toolbar-section">
+          <summary className="tabletop-toolbar-summary">
+            {t('tabletop.fog.title')}
+          </summary>
+          <div className="tabletop-toolbar-section-body">
+            <label className="tabletop-toolbar-row">
+              <span>{t('tabletop.fog.title')}</span>
+              <input
+                type="checkbox"
+                checked={fog.enabled}
+                onChange={(e) => onFogEnabledChange(e.target.checked)}
+                aria-label={
+                  fog.enabled
+                    ? t('tabletop.fog.disable')
+                    : t('tabletop.fog.enable')
+                }
+              />
+            </label>
+            <button
+              type="button"
+              className="tabletop-toolbar-button"
+              onClick={handleFogFillAll}
+            >
+              {t('tabletop.fog.fillAll')}
+            </button>
+            <button
+              type="button"
+              className="tabletop-toolbar-button outline"
+              onClick={handleFogClearAll}
+            >
+              {t('tabletop.fog.clearAll')}
+            </button>
+            {grid.kind !== 'square' && (
+              <p className="tabletop-toolbar-meta wrap">
+                {t('tabletop.fog.needGrid')}
+              </p>
+            )}
+          </div>
+        </details>
       )}
 
       <details className="tabletop-toolbar-section" open>

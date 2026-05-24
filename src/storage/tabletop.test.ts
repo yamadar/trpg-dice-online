@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { sanitizeStoredTabletop } from './tabletop'
 import {
+  DEFAULT_FOG,
   DEFAULT_GRID,
   MAX_CELL_SIZE,
   MIN_CELL_SIZE,
   type TabletopState,
 } from '../tabletop/types'
+
+const EMPTY_EXTRAS = { texts: [], strokes: [], fog: { ...DEFAULT_FOG } }
 
 describe('sanitizeStoredTabletop', () => {
   it('falls back to an empty table for non-object input', () => {
@@ -13,16 +16,19 @@ describe('sanitizeStoredTabletop', () => {
       grid: { ...DEFAULT_GRID },
       tokens: [],
       npcLibrary: [],
+      ...EMPTY_EXTRAS,
     })
     expect(sanitizeStoredTabletop(undefined)).toEqual({
       grid: { ...DEFAULT_GRID },
       tokens: [],
       npcLibrary: [],
+      ...EMPTY_EXTRAS,
     })
     expect(sanitizeStoredTabletop('garbage')).toEqual({
       grid: { ...DEFAULT_GRID },
       tokens: [],
       npcLibrary: [],
+      ...EMPTY_EXTRAS,
     })
   })
 
@@ -51,6 +57,9 @@ describe('sanitizeStoredTabletop', () => {
       npcLibrary: [
         { id: 'npc-1', name: 'Goblin', image: 'data:image/png;base64,ZZ' },
       ],
+      texts: [],
+      strokes: [],
+      fog: { ...DEFAULT_FOG },
     }
     expect(sanitizeStoredTabletop(input)).toEqual(input)
   })

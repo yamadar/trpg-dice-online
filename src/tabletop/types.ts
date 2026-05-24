@@ -59,6 +59,24 @@ export interface GmToken {
 
 export type Token = PcToken | GmToken
 
+/**
+ * A bundled preset map served from `public/maps/`. The manifest at
+ * `public/maps/manifest.json` is a `PresetMap[]`; the GM picks one
+ * from a dropdown and the app fetches the file, downscales it through
+ * the same pipeline as a hand-picked file and broadcasts it as the
+ * background. `file` is a path relative to `public/maps/` (so e.g.
+ * `test-grid.svg` resolves to `<base>/maps/test-grid.svg`).
+ */
+export interface PresetMap {
+  id: string
+  /** Display name shown in the picker. */
+  name: string
+  /** File name (relative to `public/maps/`), e.g. "test-grid.png". */
+  file: string
+  /** Optional short description shown beneath the name. */
+  description?: string
+}
+
 /** Square is the only grid kind in Phase 1; hex is reserved for later. */
 export type GridKind = 'none' | 'square'
 
@@ -109,6 +127,66 @@ export interface NpcDef {
 }
 
 /**
+ * A free-text label dropped on the map. Position is in pixel (world)
+ * coordinates so it pans / zooms with the rest of the tabletop. Any
+ * participant may add one; deletion is restricted to the owner and the
+ * GM. `ownerPlayerId` is the player who placed it (used by the delete
+ * permission check); empty string means an anonymous / imported label
+ * which only the GM can remove.
+ */
+export interface MapText {
+  id: string
+  /** World-space pixel position of the text's anchor (top-left). */
+  x: number
+  y: number
+  /** The text content; up to ~200 chars. Plain text only — newlines OK. */
+  text: string
+  /** Hex color string for the fill, e.g. "#ffffff". */
+  color: string
+  /** Font size in world-space pixels (renderer scales for zoom). */
+  fontSize: number
+  /** PlayerId that placed the text. Used by the delete permission check. */
+  ownerPlayerId: string
+}
+
+/**
+ * A free-hand pen stroke. Points are in world (pixel) coordinates and
+ * arrive as a flat number array (Konva Line's expected shape:
+ * [x0, y0, x1, y1, ...]). Strokes are drawn on a layer between the
+ * background and the tokens, so a token always wins on the z-order.
+ */
+export interface DrawStroke {
+  id: string
+  /** Flattened world-space points: [x0, y0, x1, y1, ...]. */
+  points: number[]
+  /** Hex color string for the stroke, e.g. "#ff0000". */
+  color: string
+  /** Stroke width in world-space pixels (renderer scales for zoom). */
+  width: number
+  /** PlayerId that drew it. Used by the eraser permission check. */
+  ownerPlayerId: string
+}
+
+/**
+ * Grid-cell-based fog of war. The data stores the *revealed* cells
+ * (everything else is fog), encoded as `${col},${row}` strings so the
+ * sync payload is compact. `enabled` toggles the entire layer on or
+ * off — when false the fog is hidden for everyone regardless of the
+ * revealed set.
+ *
+ * Rendering:
+ *   - GM sees a semi-transparent fog over un-revealed cells, with a
+ *     "reveal" / "conceal" brush.
+ *   - Non-GM sees opaque fog over un-revealed cells (which hides
+ *     everything beneath: map, tokens, text).
+ */
+export interface FogState {
+  enabled: boolean
+  /** Revealed cells as "col,row" strings (the rest is fogged). */
+  revealed: string[]
+}
+
+/**
  * Everything the table renders. `map` is optional: a tabletop with only
  * a grid and tokens (whiteboard mode) is valid. `npcLibrary` is the
  * GM's NPC stash — separate from `tokens` so adding to the library
@@ -116,6 +194,9 @@ export interface NpcDef {
  * library entry. `pcSpawn` (set by templates) tells new PC token
  * placements where to land — useful so a "load template" call brings
  * PCs to a known starting cluster rather than the world origin.
+ * `texts` / `strokes` / `fog` are the PR-12 annotation layers (text
+ * labels, pen drawings and fog of war); all three sync host-authoritative
+ * like the rest of the table state.
  */
 export interface TabletopState {
   map?: MapBackground
@@ -123,6 +204,12 @@ export interface TabletopState {
   tokens: Token[]
   npcLibrary: NpcDef[]
   pcSpawn?: { x: number; y: number }
+  /** Free-text labels placed on the map (anyone can add). */
+  texts: MapText[]
+  /** Free-hand pen strokes drawn on the map (anyone can add). */
+  strokes: DrawStroke[]
+  /** Grid-cell fog of war (GM-only edits). */
+  fog: FogState
 }
 
 /**
@@ -161,11 +248,38 @@ export const DEFAULT_GRID: Grid = {
   snap: true,
 }
 
+export const DEFAULT_FOG: FogState = {
+  enabled: false,
+  revealed: [],
+}
+
 export const EMPTY_TABLETOP_STATE: TabletopState = {
   grid: { ...DEFAULT_GRID },
   tokens: [],
   npcLibrary: [],
+  texts: [],
+  strokes: [],
+  fog: { ...DEFAULT_FOG },
 }
+
+/** Default font size for newly-placed map text labels (world px). */
+export const DEFAULT_TEXT_FONT_SIZE = 20
+/** Default text color (high-contrast on most map images). */
+export const DEFAULT_TEXT_COLOR = '#ffffff'
+/** Default pen color. */
+export const DEFAULT_PEN_COLOR = '#ff0000'
+/** Default pen width in world-space pixels. */
+export const DEFAULT_PEN_WIDTH = 4
+/** Maximum characters per map text label. */
+export const MAX_TEXT_LENGTH = 200
+/** Smallest legible text size (world px). */
+export const MIN_TEXT_FONT_SIZE = 8
+/** Largest acceptable text size (world px). */
+export const MAX_TEXT_FONT_SIZE = 200
+/** Smallest pen stroke width (world px). */
+export const MIN_PEN_WIDTH = 1
+/** Largest acceptable pen stroke width (world px). */
+export const MAX_PEN_WIDTH = 64
 
 /** Largest cell size we accept from the UI / network (px). */
 export const MAX_CELL_SIZE = 400
@@ -186,4 +300,35 @@ export function newNpcDefId(): string {
 
 export function newSavedTabletopId(): string {
   return `tbl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+export function newMapTextId(): string {
+  return `txt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+export function newDrawStrokeId(): string {
+  return `str-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+/** Encode a fog cell pair as the canonical "col,row" string. */
+export function fogCellKey(col: number, row: number): string {
+  return `${col},${row}`
+}
+
+/**
+ * Map a world-space pixel coordinate to the (col, row) cell it falls
+ * into, relative to the grid origin. Used by the fog of war brush to
+ * pick which cell the cursor is over. When the grid has no positive
+ * cell size, returns (0, 0) so the caller can still treat the result
+ * as a key — a degenerate grid carries no fog cells in practice.
+ */
+export function cellFromWorld(
+  worldX: number,
+  worldY: number,
+  grid: { cellSize: number; originX: number; originY: number },
+): { col: number; row: number } {
+  if (grid.cellSize <= 0) return { col: 0, row: 0 }
+  const col = Math.floor((worldX - grid.originX) / grid.cellSize)
+  const row = Math.floor((worldY - grid.originY) / grid.cellSize)
+  return { col, row }
 }

@@ -5,6 +5,7 @@ import {
   Image as KonvaImage,
   Layer,
   Line,
+  Rect,
   Stage,
   Text,
 } from 'react-konva'
@@ -15,8 +16,20 @@ import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
 import { playerColor } from '../players/colors'
 import { characterImagesKey } from '../storage/roomLog'
+import { canEditMapText, canEraseStroke } from '../tabletop/annotations'
 import { canMoveToken } from '../tabletop/tokens'
-import type { Grid, TabletopLibraryKind, Token } from '../tabletop/types'
+import {
+  DEFAULT_PEN_COLOR,
+  DEFAULT_PEN_WIDTH,
+  DEFAULT_TEXT_FONT_SIZE,
+  cellFromWorld,
+  type DrawStroke,
+  type FogState,
+  type Grid,
+  type MapText,
+  type TabletopLibraryKind,
+  type Token,
+} from '../tabletop/types'
 import type { Character } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
 import {
@@ -28,6 +41,7 @@ import {
   TrashIcon,
 } from './icons'
 import { TableToolbar } from './TableToolbar'
+import { TableTools, type TableTool } from './TableTools'
 
 interface Props {
   session: Session
@@ -103,7 +117,17 @@ export function TablePanel({
   onNotice,
 }: Props) {
   const { t } = useI18n()
-  const { tabletop, updateGrid, moveTokenLive, moveTokenCommit } = session
+  const {
+    tabletop,
+    updateGrid,
+    moveTokenLive,
+    moveTokenCommit,
+    addMapText,
+    removeMapText,
+    addDrawStroke,
+    removeDrawStroke,
+    paintFog,
+  } = session
   // Grid editing is GM-only when in a room, but always available when
   // offline so a player can experiment with the table on their own —
   // the saved state is harmless when there is no session id.
@@ -167,6 +191,35 @@ export function TablePanel({
   const spaceDownRef = useRef(false)
   const panStateRef = useRef<PanState | null>(null)
   const pinchStateRef = useRef<PinchState | null>(null)
+
+  // --- Tool state -------------------------------------------------------
+  /**
+   * The active "tool" for left-mouse / single-touch input on the
+   * stage. `select` keeps the existing token-drag behaviour; other
+   * tools take over the gesture (see TableTools comment for the menu).
+   * The default is `select` so a freshly-opened tabletop feels the
+   * same as before this PR.
+   */
+  const [tool, setTool] = useState<TableTool>('select')
+  /** Sticky pen / text color (hex). Re-used across mode switches. */
+  const [toolColor, setToolColor] = useState(DEFAULT_PEN_COLOR)
+  /** Sticky pen stroke width (world px). */
+  const [penWidth, setPenWidth] = useState(DEFAULT_PEN_WIDTH)
+  /** Sticky text font size (world px). */
+  const [textSize, setTextSize] = useState(DEFAULT_TEXT_FONT_SIZE)
+
+  /** In-progress pen stroke. `null` between strokes. */
+  const [drawingPoints, setDrawingPoints] = useState<number[] | null>(null)
+  // Refs for in-flight drawing / fog painting; the gesture lives across
+  // multiple events so we cannot rely on closure state alone.
+  const drawingRef = useRef<number[] | null>(null)
+  const fogPaintingRef = useRef<'reveal' | 'conceal' | null>(null)
+  /** Pending text input: world coords where the user clicked. */
+  const [textDraft, setTextDraft] = useState<{
+    x: number
+    y: number
+    value: string
+  } | null>(null)
 
   // Track the container's pixel size so the Stage matches the
   // available viewport. ResizeObserver covers window resizes plus the
@@ -237,12 +290,76 @@ export function TablePanel({
     [stageScale, stageX, stageY],
   )
 
+  // ----- Tool gesture helpers ------------------------------------------------
+  /**
+   * Compute the world-space coordinates of the current pointer. Used by
+   * every tool-aware event handler so that pan / zoom is automatically
+   * compensated — the result lives in the same coordinate space as
+   * tokens, strokes and text labels.
+   */
+  const worldFromPointer = useCallback((): { x: number; y: number } | null => {
+    const stage = stageRef.current
+    if (!stage) return null
+    const ptr = stage.getPointerPosition()
+    if (!ptr) return null
+    return {
+      x: (ptr.x - stageX) / stageScale,
+      y: (ptr.y - stageY) / stageScale,
+    }
+  }, [stageX, stageY, stageScale])
+
+  // Cells painted during the current fog-paint drag. Used to skip
+  // duplicate paints when the cursor stays inside a cell across many
+  // mousemove events — keeps the broadcast count proportional to the
+  // number of unique cells the gesture actually touches.
+  const fogGestureCellsRef = useRef<Set<string>>(new Set())
+
+  const startDrawing = useCallback((w: { x: number; y: number }) => {
+    drawingRef.current = [w.x, w.y]
+    setDrawingPoints([w.x, w.y])
+  }, [])
+
+  const continueDrawing = useCallback((w: { x: number; y: number }) => {
+    const pts = drawingRef.current
+    if (!pts) return
+    const lastX = pts[pts.length - 2]
+    const lastY = pts[pts.length - 1]
+    // Skip points that have barely moved — keeps the stroke array
+    // bounded for fast brushwork. The 1-world-px threshold renders
+    // close enough to the cursor at any zoom level.
+    if (Math.abs(lastX - w.x) < 1 && Math.abs(lastY - w.y) < 1) return
+    pts.push(w.x, w.y)
+    // Trigger a re-render with a fresh slice so React notices the
+    // change (the ref array itself is mutated in place).
+    setDrawingPoints(pts.slice())
+  }, [])
+
+  const finishDrawing = useCallback(() => {
+    const pts = drawingRef.current
+    drawingRef.current = null
+    setDrawingPoints(null)
+    if (!pts || pts.length < 4) return
+    addDrawStroke(pts, { color: toolColor, width: penWidth })
+  }, [addDrawStroke, toolColor, penWidth])
+
+  const paintFogAt = useCallback(
+    (w: { x: number; y: number }, reveal: boolean) => {
+      if (tabletop.grid.kind !== 'square') return
+      const cell = cellFromWorld(w.x, w.y, tabletop.grid)
+      const key = `${cell.col},${cell.row}`
+      if (fogGestureCellsRef.current.has(key)) return
+      fogGestureCellsRef.current.add(key)
+      paintFog([cell], reveal)
+    },
+    [paintFog, tabletop.grid],
+  )
+
   const handleMouseDown = useCallback(
     (e: KonvaEventObject<MouseEvent>) => {
       const ev = e.evt
       // Pan when the user presses the right button, or holds Space.
-      // Left-click is reserved for PR 4's token drag, so it must not
-      // start a pan here.
+      // Always wins regardless of the current tool so the user can
+      // adjust their viewport in any mode.
       if (ev.button === 2 || (ev.button === 0 && spaceDownRef.current)) {
         ev.preventDefault()
         panStateRef.current = {
@@ -251,79 +368,175 @@ export function TablePanel({
           startStageX: stageX,
           startStageY: stageY,
         }
+        return
+      }
+      if (ev.button !== 0) return
+      // Left-click. Tool-specific behaviour for everything except
+      // 'select' (which lets Konva handle token-drag natively) and
+      // 'eraser' (per-shape onClick handlers do the work).
+      if (tool === 'select' || tool === 'eraser') return
+      const w = worldFromPointer()
+      if (!w) return
+      if (tool === 'pen') {
+        startDrawing(w)
+      } else if (tool === 'text') {
+        setTextDraft({ x: w.x, y: w.y, value: '' })
+      } else if (tool === 'fog-reveal' || tool === 'fog-conceal') {
+        if (!canEdit) return
+        fogPaintingRef.current = tool === 'fog-reveal' ? 'reveal' : 'conceal'
+        fogGestureCellsRef.current = new Set()
+        paintFogAt(w, tool === 'fog-reveal')
       }
     },
-    [stageX, stageY],
+    [
+      stageX,
+      stageY,
+      tool,
+      canEdit,
+      worldFromPointer,
+      startDrawing,
+      paintFogAt,
+    ],
   )
 
-  const handleMouseMove = useCallback((e: KonvaEventObject<MouseEvent>) => {
-    const ps = panStateRef.current
-    if (!ps) return
-    setStageX(ps.startStageX + (e.evt.clientX - ps.startClientX))
-    setStageY(ps.startStageY + (e.evt.clientY - ps.startClientY))
-  }, [])
+  const handleMouseMove = useCallback(
+    (e: KonvaEventObject<MouseEvent>) => {
+      // Pan in progress.
+      const ps = panStateRef.current
+      if (ps) {
+        setStageX(ps.startStageX + (e.evt.clientX - ps.startClientX))
+        setStageY(ps.startStageY + (e.evt.clientY - ps.startClientY))
+        return
+      }
+      // Drawing or fog-painting in progress.
+      if (!drawingRef.current && !fogPaintingRef.current) return
+      const w = worldFromPointer()
+      if (!w) return
+      if (drawingRef.current) continueDrawing(w)
+      if (fogPaintingRef.current) paintFogAt(w, fogPaintingRef.current === 'reveal')
+    },
+    [worldFromPointer, continueDrawing, paintFogAt],
+  )
 
   const handleMouseUp = useCallback(() => {
     panStateRef.current = null
-  }, [])
+    if (drawingRef.current) finishDrawing()
+    fogPaintingRef.current = null
+    fogGestureCellsRef.current.clear()
+  }, [finishDrawing])
 
-  // Two-finger pinch + pan. A single touch is intentionally a no-op
-  // here — that gesture will become "drag the token under the finger"
-  // in PR 4. Konva passes the same event for the two-finger case as a
-  // `KonvaEventObject<TouchEvent>` whose `evt.touches` has length 2.
+  // Two-finger pinch + pan. A single touch is the active tool's
+  // gesture: token drag for 'select', stroke / text / fog for the
+  // others. The pinch handler aborts any in-flight stroke / fog
+  // paint so the gesture cannot bleed into the zoom.
   const handleTouchStart = useCallback(
     (e: KonvaEventObject<TouchEvent>) => {
       const touches = e.evt.touches
-      if (touches.length !== 2) return
+      if (touches.length === 2) {
+        e.evt.preventDefault()
+        // A pinch arriving mid-stroke would otherwise commit a broken
+        // line where the user accidentally added a second finger.
+        // Drop the in-flight gesture cleanly.
+        if (drawingRef.current) {
+          drawingRef.current = null
+          setDrawingPoints(null)
+        }
+        fogPaintingRef.current = null
+        fogGestureCellsRef.current.clear()
+        const t1 = touches[0]
+        const t2 = touches[1]
+        const dx = t1.clientX - t2.clientX
+        const dy = t1.clientY - t2.clientY
+        pinchStateRef.current = {
+          initialDistance: Math.hypot(dx, dy),
+          initialScale: stageScale,
+          initialCenterX: (t1.clientX + t2.clientX) / 2,
+          initialCenterY: (t1.clientY + t2.clientY) / 2,
+          initialStageX: stageX,
+          initialStageY: stageY,
+        }
+        return
+      }
+      if (touches.length !== 1) return
+      if (tool === 'select' || tool === 'eraser') return
+      const w = worldFromPointer()
+      if (!w) return
       e.evt.preventDefault()
-      const t1 = touches[0]
-      const t2 = touches[1]
-      const dx = t1.clientX - t2.clientX
-      const dy = t1.clientY - t2.clientY
-      pinchStateRef.current = {
-        initialDistance: Math.hypot(dx, dy),
-        initialScale: stageScale,
-        initialCenterX: (t1.clientX + t2.clientX) / 2,
-        initialCenterY: (t1.clientY + t2.clientY) / 2,
-        initialStageX: stageX,
-        initialStageY: stageY,
+      if (tool === 'pen') {
+        startDrawing(w)
+      } else if (tool === 'text') {
+        setTextDraft({ x: w.x, y: w.y, value: '' })
+      } else if (tool === 'fog-reveal' || tool === 'fog-conceal') {
+        if (!canEdit) return
+        fogPaintingRef.current = tool === 'fog-reveal' ? 'reveal' : 'conceal'
+        fogGestureCellsRef.current = new Set()
+        paintFogAt(w, tool === 'fog-reveal')
       }
     },
-    [stageScale, stageX, stageY],
+    [
+      stageScale,
+      stageX,
+      stageY,
+      tool,
+      canEdit,
+      worldFromPointer,
+      startDrawing,
+      paintFogAt,
+    ],
   )
 
-  const handleTouchMove = useCallback((e: KonvaEventObject<TouchEvent>) => {
-    const ps = pinchStateRef.current
-    if (!ps) return
-    const touches = e.evt.touches
-    if (touches.length !== 2) return
-    e.evt.preventDefault()
-    const t1 = touches[0]
-    const t2 = touches[1]
-    const dx = t1.clientX - t2.clientX
-    const dy = t1.clientY - t2.clientY
-    const distance = Math.hypot(dx, dy)
-    const cx = (t1.clientX + t2.clientX) / 2
-    const cy = (t1.clientY + t2.clientY) / 2
-    const ratio = distance / (ps.initialDistance || 1)
-    const newScale = Math.max(
-      MIN_SCALE,
-      Math.min(MAX_SCALE, ps.initialScale * ratio),
-    )
-    // Pan by the centre delta; the scale change is "centred on the
-    // initial midpoint" by virtue of starting from the original stage
-    // offset (the user can then zoom + pan together without the world
-    // point under the midpoint drifting too far).
-    setStageScale(newScale)
-    setStageX(ps.initialStageX + (cx - ps.initialCenterX))
-    setStageY(ps.initialStageY + (cy - ps.initialCenterY))
-  }, [])
+  const handleTouchMove = useCallback(
+    (e: KonvaEventObject<TouchEvent>) => {
+      const ps = pinchStateRef.current
+      if (ps) {
+        const touches = e.evt.touches
+        if (touches.length !== 2) return
+        e.evt.preventDefault()
+        const t1 = touches[0]
+        const t2 = touches[1]
+        const dx = t1.clientX - t2.clientX
+        const dy = t1.clientY - t2.clientY
+        const distance = Math.hypot(dx, dy)
+        const cx = (t1.clientX + t2.clientX) / 2
+        const cy = (t1.clientY + t2.clientY) / 2
+        const ratio = distance / (ps.initialDistance || 1)
+        const newScale = Math.max(
+          MIN_SCALE,
+          Math.min(MAX_SCALE, ps.initialScale * ratio),
+        )
+        // Pan by the centre delta; the scale change is "centred on the
+        // initial midpoint" by virtue of starting from the original
+        // stage offset.
+        setStageScale(newScale)
+        setStageX(ps.initialStageX + (cx - ps.initialCenterX))
+        setStageY(ps.initialStageY + (cy - ps.initialCenterY))
+        return
+      }
+      // Tool drag in progress.
+      if (!drawingRef.current && !fogPaintingRef.current) return
+      e.evt.preventDefault()
+      const w = worldFromPointer()
+      if (!w) return
+      if (drawingRef.current) continueDrawing(w)
+      if (fogPaintingRef.current) paintFogAt(w, fogPaintingRef.current === 'reveal')
+    },
+    [worldFromPointer, continueDrawing, paintFogAt],
+  )
 
-  const handleTouchEnd = useCallback((e: KonvaEventObject<TouchEvent>) => {
-    // Drop the pinch state once any finger lifts — the remaining touch
-    // (if any) should not keep moving the stage.
-    if (e.evt.touches.length < 2) pinchStateRef.current = null
-  }, [])
+  const handleTouchEnd = useCallback(
+    (e: KonvaEventObject<TouchEvent>) => {
+      // Drop the pinch state once any finger lifts — the remaining
+      // touch (if any) should not keep moving the stage.
+      if (e.evt.touches.length < 2) pinchStateRef.current = null
+      // The tool drag is also over when the last finger lifts.
+      if (e.evt.touches.length === 0) {
+        if (drawingRef.current) finishDrawing()
+        fogPaintingRef.current = null
+        fogGestureCellsRef.current.clear()
+      }
+    },
+    [finishDrawing],
+  )
 
   // Compute the visible world rectangle so the grid renderer only draws
   // lines that intersect it (vs. drawing an infinite grid which would
@@ -530,6 +743,40 @@ export function TablePanel({
                 scale={stageScale}
               />
             </Layer>
+            {/* Pen strokes — above background / grid, below tokens. The
+                layer listens for events only in eraser mode so other
+                tools can pass clicks through to the stage. */}
+            <Layer listening={tool === 'eraser'}>
+              {tabletop.strokes.map((stroke) => (
+                <StrokeView
+                  key={stroke.id}
+                  stroke={stroke}
+                  scale={stageScale}
+                  erasable={
+                    tool === 'eraser' &&
+                    canEraseStroke(stroke, {
+                      playerId: session.playerId,
+                      isHost: canEdit,
+                    })
+                  }
+                  onErase={() => removeDrawStroke(stroke.id)}
+                />
+              ))}
+              {drawingPoints && drawingPoints.length >= 4 && (
+                // Live preview of the in-progress stroke. Only on the
+                // local screen — the committed stroke lands in
+                // `tabletop.strokes` on mouseup via `addDrawStroke`.
+                <Line
+                  points={drawingPoints}
+                  stroke={toolColor}
+                  strokeWidth={penWidth}
+                  tension={0.4}
+                  lineCap="round"
+                  lineJoin="round"
+                  listening={false}
+                />
+              )}
+            </Layer>
             <Layer>
               {tabletop.tokens.map((token) => (
                 <TokenView
@@ -537,15 +784,55 @@ export function TablePanel({
                   token={token}
                   grid={tabletop.grid}
                   scale={stageScale}
-                  draggable={canMoveToken(token, tokenActor)}
+                  draggable={
+                    tool === 'select' && canMoveToken(token, tokenActor)
+                  }
                   portrait={portraitForToken(token, session)}
                   label={labelForToken(token, session)}
                   onDragMove={moveTokenLive}
                   onDragEnd={moveTokenCommit}
-                  onSelect={canEdit ? setSelectedTokenId : undefined}
+                  onSelect={
+                    tool === 'select' && canEdit
+                      ? setSelectedTokenId
+                      : undefined
+                  }
                 />
               ))}
             </Layer>
+            {/* Text labels — above tokens. Listens for clicks in
+                eraser mode so the owner / GM can remove their own. */}
+            <Layer listening={tool === 'eraser'}>
+              {tabletop.texts.map((label) => (
+                <MapTextView
+                  key={label.id}
+                  label={label}
+                  scale={stageScale}
+                  erasable={
+                    tool === 'eraser' &&
+                    canEditMapText(label, {
+                      playerId: session.playerId,
+                      isHost: canEdit,
+                    })
+                  }
+                  onErase={() => removeMapText(label.id)}
+                />
+              ))}
+            </Layer>
+            {/* Fog of war — top layer. listening=false so the GM can
+                paint with the fog tool: clicks pass straight through
+                to the stage's tool-aware mousedown handler. */}
+            {tabletop.fog.enabled && (
+              <Layer listening={false}>
+                <FogLayer
+                  fog={tabletop.fog}
+                  grid={tabletop.grid}
+                  mapWidth={tabletop.map?.width}
+                  mapHeight={tabletop.map?.height}
+                  viewport={viewport}
+                  isGM={canEdit}
+                />
+              </Layer>
+            )}
           </Stage>
         )}
         {canEdit && selectedToken && (
@@ -572,7 +859,44 @@ export function TablePanel({
             }}
           />
         )}
+        {textDraft && (
+          <TextDraftInput
+            stageX={stageX}
+            stageY={stageY}
+            stageScale={stageScale}
+            worldX={textDraft.x}
+            worldY={textDraft.y}
+            color={toolColor}
+            fontSize={textSize}
+            value={textDraft.value}
+            onChange={(value) =>
+              setTextDraft((prev) => (prev ? { ...prev, value } : prev))
+            }
+            onCommit={() => {
+              const trimmed = textDraft.value.trim()
+              if (trimmed) {
+                addMapText(trimmed, textDraft.x, textDraft.y, {
+                  color: toolColor,
+                  fontSize: textSize,
+                })
+              }
+              setTextDraft(null)
+            }}
+            onCancel={() => setTextDraft(null)}
+          />
+        )}
       </div>
+      <TableTools
+        tool={tool}
+        onToolChange={setTool}
+        color={toolColor}
+        onColorChange={setToolColor}
+        penWidth={penWidth}
+        onPenWidthChange={setPenWidth}
+        textSize={textSize}
+        onTextSizeChange={setTextSize}
+        canEditFog={canEdit}
+      />
       {showMapOps && (
         <TableToolbar
           grid={tabletop.grid}
@@ -588,6 +912,10 @@ export function TablePanel({
           onPlaceNpcFromLibrary={session.placeNpcFromLibrary}
           isHost={canEdit}
           tabletopLibrary={session.tabletopLibrary}
+          onLoadPresetMap={session.setMapFromPreset}
+          fog={tabletop.fog}
+          onFogEnabledChange={session.setFogEnabled}
+          onFogReplace={session.setFog}
           onSaveTabletopAs={(name, kind: TabletopLibraryKind) => {
             // Templates need a PC spawn point — pass the world-space
             // centre of the current viewport so a load drops PCs where
@@ -989,6 +1317,256 @@ interface GridLinesProps {
   grid: Grid
   viewport: { x: number; y: number; width: number; height: number }
   scale: number
+}
+
+interface StrokeViewProps {
+  stroke: DrawStroke
+  scale: number
+  /** True when the local actor is allowed to delete the stroke and the
+   *  eraser tool is active. Click to remove; the underlying shape is
+   *  otherwise listening-free so other tools pass clicks through. */
+  erasable: boolean
+  onErase: () => void
+}
+
+/**
+ * One pen stroke on the canvas. Renders the world-space points as a
+ * Konva Line; in eraser mode the parent layer turns `listening` on and
+ * this shape exposes a click handler that removes it. `hitStrokeWidth`
+ * is widened to a comfortable minimum so a thin stroke is still easy
+ * to tap on touch.
+ */
+function StrokeView({ stroke, scale, erasable, onErase }: StrokeViewProps) {
+  const hit = Math.max(stroke.width, 14 / scale)
+  return (
+    <Line
+      points={stroke.points}
+      stroke={stroke.color}
+      strokeWidth={stroke.width}
+      tension={0.4}
+      lineCap="round"
+      lineJoin="round"
+      hitStrokeWidth={hit}
+      listening={erasable}
+      onClick={erasable ? onErase : undefined}
+      onTap={erasable ? onErase : undefined}
+    />
+  )
+}
+
+interface MapTextViewProps {
+  label: MapText
+  scale: number
+  erasable: boolean
+  onErase: () => void
+}
+
+/**
+ * One map text label. Stroke + fill so the text reads on light and
+ * dark backgrounds alike. Eraser mode exposes the click handler;
+ * otherwise the label is listening-free.
+ */
+function MapTextView({ label, scale, erasable, onErase }: MapTextViewProps) {
+  const stroke = Math.max(1, label.fontSize * 0.08)
+  return (
+    <Text
+      x={label.x}
+      y={label.y}
+      text={label.text}
+      fontSize={label.fontSize}
+      fontStyle="bold"
+      fill={label.color}
+      stroke="#000"
+      strokeWidth={stroke}
+      fillAfterStrokeEnabled
+      // `hitStrokeWidth` widens the hit area beyond the visible glyph
+      // edge so a thin font is still tap-friendly.
+      hitStrokeWidth={Math.max(6 / scale, stroke)}
+      listening={erasable}
+      onClick={erasable ? onErase : undefined}
+      onTap={erasable ? onErase : undefined}
+    />
+  )
+}
+
+interface FogLayerProps {
+  fog: FogState
+  grid: Grid
+  /** Map width / height when a background is set — fog covers the map
+   *  bounding box rather than the entire viewport so it does not
+   *  bleed off the edge of the scene. `undefined` when whiteboard
+   *  mode is in use; the fog then covers the visible viewport. */
+  mapWidth: number | undefined
+  mapHeight: number | undefined
+  viewport: { x: number; y: number; width: number; height: number }
+  /** GM sees semi-transparent fog (so they can paint through it);
+   *  everyone else sees fully opaque fog (which hides what's
+   *  beneath). */
+  isGM: boolean
+}
+
+/**
+ * Grid-cell fog of war. Renders one Rect per un-revealed cell within
+ * the bounding box (map dimensions if present, else viewport). The
+ * grid is square-only — when it is 'none' the fog cannot be edited and
+ * this layer renders a single rect covering the bounding box as a
+ * fallback.
+ */
+function FogLayer({
+  fog,
+  grid,
+  mapWidth,
+  mapHeight,
+  viewport,
+  isGM,
+}: FogLayerProps) {
+  const opacity = isGM ? 0.5 : 1
+  const color = '#202028'
+  // Bounding box of where the fog can land. With a map, cover the map
+  // area only; without one, cover the visible viewport so the GM still
+  // sees the fog effect on a whiteboard scene.
+  const boundsX = mapWidth !== undefined ? 0 : viewport.x
+  const boundsY = mapHeight !== undefined ? 0 : viewport.y
+  const boundsW = mapWidth ?? viewport.width
+  const boundsH = mapHeight ?? viewport.height
+  if (grid.kind !== 'square' || grid.cellSize <= 0) {
+    // No grid — fall back to a single rect covering the bounds.
+    // The GM cannot paint cells in this mode but the toggle still
+    // makes "hide everything" possible as a panic button.
+    if (fog.revealed.length > 0) return null
+    return (
+      <Rect
+        x={boundsX}
+        y={boundsY}
+        width={boundsW}
+        height={boundsH}
+        fill={color}
+        opacity={opacity}
+      />
+    )
+  }
+  const cell = grid.cellSize
+  // Intersect bounds with viewport to cap the cell-render count when
+  // zoomed in. Without this, an off-screen 30×30 map would still
+  // render 900 rects every frame.
+  const visX0 = Math.max(boundsX, viewport.x)
+  const visY0 = Math.max(boundsY, viewport.y)
+  const visX1 = Math.min(boundsX + boundsW, viewport.x + viewport.width)
+  const visY1 = Math.min(boundsY + boundsH, viewport.y + viewport.height)
+  if (visX1 <= visX0 || visY1 <= visY0) return null
+  const startCol = Math.floor((visX0 - grid.originX) / cell)
+  const endCol = Math.ceil((visX1 - grid.originX) / cell) - 1
+  const startRow = Math.floor((visY0 - grid.originY) / cell)
+  const endRow = Math.ceil((visY1 - grid.originY) / cell) - 1
+  const revealedSet = new Set(fog.revealed)
+  const rects: ReactNode[] = []
+  for (let row = startRow; row <= endRow; row++) {
+    for (let col = startCol; col <= endCol; col++) {
+      const key = `${col},${row}`
+      if (revealedSet.has(key)) continue
+      const x = grid.originX + col * cell
+      const y = grid.originY + row * cell
+      // Skip cells outside the map's bounding box so fog never bleeds
+      // past the edge of the scene.
+      if (mapWidth !== undefined) {
+        if (x + cell <= 0 || x >= mapWidth) continue
+        if (y + cell <= 0 || y >= mapHeight!) continue
+      }
+      rects.push(
+        <Rect
+          key={key}
+          x={x}
+          y={y}
+          width={cell}
+          height={cell}
+          fill={color}
+          opacity={opacity}
+        />,
+      )
+    }
+  }
+  return <>{rects}</>
+}
+
+interface TextDraftInputProps {
+  stageX: number
+  stageY: number
+  stageScale: number
+  worldX: number
+  worldY: number
+  color: string
+  fontSize: number
+  value: string
+  onChange: (value: string) => void
+  onCommit: () => void
+  onCancel: () => void
+}
+
+/**
+ * Floating HTML text input shown while the user is typing a new map
+ * label. Positioned in screen coords matching the world-space click
+ * point so the input visually replaces the label that will be
+ * committed. Enter places it; Escape cancels.
+ */
+function TextDraftInput({
+  stageX,
+  stageY,
+  stageScale,
+  worldX,
+  worldY,
+  color,
+  fontSize,
+  value,
+  onChange,
+  onCommit,
+  onCancel,
+}: TextDraftInputProps) {
+  const { t } = useI18n()
+  const screenX = worldX * stageScale + stageX
+  const screenY = worldY * stageScale + stageY
+  return (
+    <div
+      className="tabletop-text-draft"
+      style={{
+        left: `${Math.round(screenX)}px`,
+        top: `${Math.round(screenY)}px`,
+      }}
+    >
+      <input
+        autoFocus
+        type="text"
+        maxLength={200}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            onCommit()
+          } else if (e.key === 'Escape') {
+            e.preventDefault()
+            onCancel()
+          }
+        }}
+        placeholder={t('tabletop.tools.textPlaceholder')}
+        style={{
+          color,
+          fontSize: `${Math.max(12, fontSize * stageScale)}px`,
+        }}
+      />
+      <div className="tabletop-text-draft-actions">
+        <button type="button" className="tabletop-toolbar-button" onClick={onCommit}>
+          {t('tabletop.tools.textOk')}
+        </button>
+        <button
+          type="button"
+          className="tabletop-toolbar-button outline"
+          onClick={onCancel}
+        >
+          {t('tabletop.tools.textCancel')}
+        </button>
+      </div>
+    </div>
+  )
 }
 
 /**

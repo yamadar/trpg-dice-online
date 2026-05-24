@@ -1,0 +1,14 @@
+[
+  {
+    "id": "test-grid",
+    "name": "テスト：グリッド",
+    "file": "test-grid.svg",
+    "description": "30×30 のテスト用マップ。差し替え対象のプレースホルダー。"
+  },
+  {
+    "id": "test-dungeon",
+    "name": "テスト：石床ダンジョン",
+    "file": "test-dungeon.svg",
+    "description": "薄暗い石床のテストマップ。差し替え対象のプレースホルダー。"
+  }
+]

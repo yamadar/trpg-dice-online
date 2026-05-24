@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1500" viewBox="0 0 1500 1500">
+  <defs>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+      <rect width="50" height="50" fill="#f4ead5"/>
+      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#a98b5f" stroke-width="1"/>
+    </pattern>
+    <pattern id="majorGrid" width="250" height="250" patternUnits="userSpaceOnUse">
+      <rect width="250" height="250" fill="url(#grid)"/>
+      <path d="M 250 0 L 0 0 0 250" fill="none" stroke="#7a5a30" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="1500" height="1500" fill="url(#majorGrid)"/>
+  <g font-family="serif" fill="#7a5a30" text-anchor="middle">
+    <text x="750" y="100" font-size="48" font-weight="bold">Test Grid Map</text>
+    <text x="750" y="150" font-size="24">30 × 30 cells (1 cell = 50px)</text>
+    <text x="750" y="1450" font-size="20">placeholder — replace with the real preset image</text>
+  </g>
+</svg>
