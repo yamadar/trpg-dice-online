@@ -510,10 +510,13 @@
   flex-direction: row;
   align-items: flex-start;
   gap: 8px;
-  /* Cap the total horizontal footprint so the panel never extends
-     past the viewport. The left tools palette eats 56–132 px on the
-     left side; reserve ~80 px for it plus the gap. */
-  max-width: calc(100vw - 92px);
+  /* Cap the total horizontal footprint so the panel never collides
+     with the left-side tools palette. The left palette can be up
+     to 132 px wide (desktop always, mobile when focused), plus 12
+     px right of it as breathing room and 12 px from the screen
+     edge on each side: 12 + 132 + 12 + 12 = 168. The flex
+     container then shrinks the panel as needed to fit. */
+  max-width: calc(100vw - 168px);
 }
 .tabletop-toolbar-panel {
   width: min(280px, calc(100vw - 100px));
@@ -558,6 +561,11 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  /* Stay inside the viewport even if the category list grows so a
+     future 5th / 6th icon does not push the strip off-screen. */
+  max-height: calc(100vh - 96px);
+  max-height: calc(100svh - 96px);
+  overflow-y: auto;
 }
 .tabletop-toolbar-icon-btn {
   display: flex;

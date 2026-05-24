@@ -384,25 +384,21 @@ export function TableToolbar({
 
   // Available categories: GM gets everything; non-GM only sees
   // tokens (their own PC list). Re-derived each render so a mid-
-  // session role change immediately re-shows/hides icons.
-  const categories: Array<{
+  // session role change immediately re-shows / hides icons.
+  type CategoryDef = {
     id: CategoryId
     Icon: ComponentType<IconProps>
     labelKey: string
-  }> = [
-    ...(isHost
-      ? ([
-          { id: 'mapGrid' as const, Icon: TabletopIcon, labelKey: 'tabletop.panel.mapGrid' },
-          { id: 'fog' as const, Icon: FogIcon, labelKey: 'tabletop.fog.title' },
-        ])
-      : []),
-    { id: 'tokens', Icon: CharacterIcon, labelKey: 'tabletop.panel.tokens' },
-    ...(isHost
-      ? ([
-          { id: 'library' as const, Icon: LibraryIcon, labelKey: 'tabletop.library.title' },
-        ])
-      : []),
-  ]
+  }
+  const categories: CategoryDef[] = []
+  if (isHost) {
+    categories.push({ id: 'mapGrid', Icon: TabletopIcon, labelKey: 'tabletop.panel.mapGrid' })
+    categories.push({ id: 'fog', Icon: FogIcon, labelKey: 'tabletop.fog.title' })
+  }
+  categories.push({ id: 'tokens', Icon: CharacterIcon, labelKey: 'tabletop.panel.tokens' })
+  if (isHost) {
+    categories.push({ id: 'library', Icon: LibraryIcon, labelKey: 'tabletop.library.title' })
+  }
   // If the user just lost the GM bit while a host-only category was
   // open, auto-collapse so the panel never references a category that
   // is no longer in the icon strip. "Adjust state during render" is
@@ -984,7 +980,11 @@ export function TableToolbar({
               key={id}
               type="button"
               className={`tabletop-toolbar-icon-btn${active ? ' active' : ''}`}
-              aria-pressed={active}
+              // The button is a "disclosure" — it shows / hides the
+              // side panel — so `aria-expanded` describes its state
+              // correctly. `aria-pressed` would be redundant and
+              // some screen readers announce both, doubling the
+              // verbosity.
               aria-expanded={active}
               title={t(labelKey)}
               onClick={() =>
