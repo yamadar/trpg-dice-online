@@ -77,6 +77,10 @@ export const ja: Dict = {
   'tabletop.tokenEdit.changeImage': '画像を変更…',
   'tabletop.tokenEdit.remove': '削除',
   'tabletop.tokenEdit.close': '閉じる',
+  'tabletop.toggle.nav': 'テーブルパネル',
+  'tabletop.toggle.mapOps': 'マップ操作',
+  'tabletop.toggle.chat': 'チャット',
+  'tabletop.toggle.dice': 'ダイス',
 
 
   'status.offline': 'オフライン',

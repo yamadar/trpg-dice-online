@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   Circle,
   Group,
@@ -18,12 +18,25 @@ import { characterImagesKey } from '../storage/roomLog'
 import { canMoveToken } from '../tabletop/tokens'
 import type { Grid, Token } from '../tabletop/types'
 import { prepareNpcTokenImage } from '../characters/image'
-import { CloseIcon, TabletopIcon, TrashIcon } from './icons'
+import { ChatIcon, CloseIcon, DiceIcon, TabletopIcon, TrashIcon } from './icons'
 import { TableToolbar } from './TableToolbar'
 
 interface Props {
   session: Session
   onClose: () => void
+  /**
+   * The feed + chat composer to render as a floating overlay when the
+   * "chat" toggle is on. Owned by the parent so it shares one
+   * `session` / `characters` / `flash` set with the rest of the app —
+   * the tabletop is just a viewport for it here.
+   */
+  chatPanel?: ReactNode
+  /**
+   * The dice roller (and pattern list) to render as a floating overlay
+   * when the "dice" toggle is on. Composed by the parent so it can
+   * reuse the same draft state as the Dock-launched dice Sheet.
+   */
+  dicePanel?: ReactNode
 }
 
 interface PanState {
@@ -54,13 +67,22 @@ const WHEEL_ZOOM_FACTOR = 1.1
  * pan / zoom for every layer at once. Pan is deliberately *not* a
  * single-finger drag so PR 4's token drag does not collide with it.
  */
-export function TablePanel({ session, onClose }: Props) {
+export function TablePanel({ session, onClose, chatPanel, dicePanel }: Props) {
   const { t } = useI18n()
   const { tabletop, updateGrid, moveTokenLive, moveTokenCommit } = session
   // Grid editing is GM-only when in a room, but always available when
   // offline so a player can experiment with the table on their own —
   // the saved state is harmless when there is no session id.
   const canEdit = session.role !== 'client'
+  /**
+   * Independent show/hide toggles for the three overlays. Map ops
+   * defaults ON for editable users (matches the prior always-on
+   * toolbar). Chat / dice default OFF — they belong to the rest of
+   * the app and should not block the canvas on a first look.
+   */
+  const [showMapOps, setShowMapOps] = useState(true)
+  const [showChat, setShowChat] = useState(false)
+  const [showDice, setShowDice] = useState(false)
   // Mirrors the wire-level permission: a non-host can drag their own
   // PC tokens; a host (or offline sandbox) can drag anything. Wrapped
   // here so the `draggable` prop on each `TokenView` reads it
@@ -281,6 +303,53 @@ export function TablePanel({ session, onClose }: Props) {
           </span>
           {t('tabletop.title')}
         </h2>
+        <nav
+          className="tabletop-toggles"
+          aria-label={t('tabletop.toggle.nav')}
+        >
+          {canEdit && (
+            <button
+              type="button"
+              className={`tabletop-toggle-btn${showMapOps ? ' active' : ''}`}
+              aria-pressed={showMapOps}
+              title={t('tabletop.toggle.mapOps')}
+              onClick={() => setShowMapOps((v) => !v)}
+            >
+              <TabletopIcon size={18} />
+              <span className="tabletop-toggle-label">
+                {t('tabletop.toggle.mapOps')}
+              </span>
+            </button>
+          )}
+          {chatPanel && (
+            <button
+              type="button"
+              className={`tabletop-toggle-btn${showChat ? ' active' : ''}`}
+              aria-pressed={showChat}
+              title={t('tabletop.toggle.chat')}
+              onClick={() => setShowChat((v) => !v)}
+            >
+              <ChatIcon size={18} />
+              <span className="tabletop-toggle-label">
+                {t('tabletop.toggle.chat')}
+              </span>
+            </button>
+          )}
+          {dicePanel && (
+            <button
+              type="button"
+              className={`tabletop-toggle-btn${showDice ? ' active' : ''}`}
+              aria-pressed={showDice}
+              title={t('tabletop.toggle.dice')}
+              onClick={() => setShowDice((v) => !v)}
+            >
+              <DiceIcon size={18} />
+              <span className="tabletop-toggle-label">
+                {t('tabletop.toggle.dice')}
+              </span>
+            </button>
+          )}
+        </nav>
         <button
           type="button"
           className="sheet-close icon-btn"
@@ -383,7 +452,7 @@ export function TablePanel({ session, onClose }: Props) {
           />
         )}
       </div>
-      {canEdit && (
+      {canEdit && showMapOps && (
         <TableToolbar
           grid={tabletop.grid}
           onChange={updateGrid}
@@ -396,6 +465,22 @@ export function TablePanel({ session, onClose }: Props) {
           onAddPlayerToken={session.addPlayerToken}
           onRemoveToken={session.removeToken}
         />
+      )}
+      {chatPanel && showChat && (
+        <aside
+          className="tabletop-overlay tabletop-overlay-chat"
+          aria-label={t('tabletop.toggle.chat')}
+        >
+          {chatPanel}
+        </aside>
+      )}
+      {dicePanel && showDice && (
+        <aside
+          className="tabletop-overlay tabletop-overlay-dice"
+          aria-label={t('tabletop.toggle.dice')}
+        >
+          {dicePanel}
+        </aside>
       )}
     </div>
   )

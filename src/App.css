@@ -420,16 +420,60 @@
 }
 .tabletop-header {
   position: relative;
+  /* Wide right padding reserves room for the close button at top:8/right:8.
+     The toggle nav lives between the title and the close — using flex to
+     keep them on one line. */
   padding: 14px 56px 12px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--panel);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 .tabletop-title {
   display: flex;
   align-items: center;
   font-size: 1.05rem;
   margin: 0;
+  flex-shrink: 0;
+}
+.tabletop-toggles {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.tabletop-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.tabletop-toggle-btn:hover {
+  background: var(--panel-2);
+  color: var(--text);
+}
+.tabletop-toggle-btn.active {
+  background: var(--accent-bg, rgba(192, 132, 252, 0.18));
+  color: var(--accent, var(--text));
+  border-color: var(--accent, var(--border));
+}
+.tabletop-toggle-label {
+  /* Hide label text below the breakpoint where the icon alone reads. */
+}
+@media (max-width: 540px) {
+  .tabletop-toggle-label {
+    display: none;
+  }
 }
 .tabletop-canvas {
   flex: 1;
@@ -674,6 +718,49 @@
   border-radius: 6px;
   color: var(--text);
   font: inherit;
+}
+
+/* --- Tabletop floating overlays (chat / dice) ---
+   The map ops toolbar already lives at top-right. The other two
+   overlays park in the unused corners so they do not collide. Each
+   self-scrolls when its content exceeds the screen — the canvas
+   stays usable underneath either way. */
+.tabletop-overlay {
+  position: absolute;
+  z-index: 1;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.tabletop-overlay-chat {
+  left: 12px;
+  bottom: 12px;
+  width: min(360px, calc(100vw - 24px));
+  height: min(60svh, 480px);
+}
+.tabletop-overlay-dice {
+  left: 12px;
+  top: 64px;
+  width: min(320px, calc(100vw - 24px));
+  max-height: calc(100svh - 96px);
+  overflow-y: auto;
+  padding: 12px;
+}
+.tabletop-overlay-chat > * {
+  /* The embedded ActivityPanel uses its own internal layout; tell its
+     scroll container to fill our floating box rather than the
+     viewport. */
+  flex: 1;
+  min-height: 0;
+}
+.tabletop-dice-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* Buttons whose only content is an inline SVG icon (close, trash, etc.) —

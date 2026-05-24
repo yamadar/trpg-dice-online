@@ -77,6 +77,10 @@ export const it: Dict = {
   'tabletop.tokenEdit.changeImage': 'Change image…',
   'tabletop.tokenEdit.remove': 'Remove',
   'tabletop.tokenEdit.close': 'Close',
+  'tabletop.toggle.nav': 'Tabletop panels',
+  'tabletop.toggle.mapOps': 'Map ops',
+  'tabletop.toggle.chat': 'Chat',
+  'tabletop.toggle.dice': 'Dice',
 
 
   'status.offline': 'Offline',
