@@ -198,6 +198,10 @@ export function RoomPanel({
       entries,
       translations,
       characters,
+      // No exportedAt override — let the function stamp `Date.now()`
+      // so the manifest reflects the actual export moment.
+      undefined,
+      session.tabletop,
     )
     const blob = new Blob([zip], { type: 'application/zip' })
     const url = URL.createObjectURL(blob)
