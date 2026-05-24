@@ -263,16 +263,16 @@ export function TablePanel({
   }, [onClose])
 
   // Auto-revert the active tool to 'select' during render whenever
-  // the underlying pre-conditions disappear — a fog tool with no
-  // square grid or a non-GM viewer can't actually do anything, so
-  // leaving it selected gives the user a "stuck" palette button until
-  // they manually pick another tool. Using the "adjust state during
+  // the fog brush's pre-conditions disappear — a non-GM viewer or
+  // fog turned off means the brush cannot paint, so leaving it
+  // selected gives the user a "stuck" palette button until they
+  // manually pick another tool. Using the "adjust state during
   // render" pattern (rather than an effect) because the React 19
   // `set-state-in-effect` lint rule disallows the effect form, and
   // this is the documented escape hatch for derived state.
   const fogToolInvalid =
     (tool === 'fog-reveal' || tool === 'fog-conceal') &&
-    (!canEdit || tabletop.grid.kind !== 'square')
+    (!canEdit || !tabletop.fog.enabled)
   if (fogToolInvalid) {
     setTool('select')
   }
@@ -988,7 +988,11 @@ export function TablePanel({
         textSize={textSize}
         onTextSizeChange={setTextSize}
         canEditFog={canEdit}
-        fogPaintReady={tabletop.grid.kind === 'square'}
+        // Brush is gated on fog enabled (not on grid kind) per UX
+        // request: "control by fog ON/OFF". The toolbar's fog section
+        // already locks `fog.enabled` to false while the grid is
+        // 'none', so this single flag covers both cases in practice.
+        fogPaintReady={tabletop.fog.enabled}
       />
       {showMapOps && (
         <TableToolbar

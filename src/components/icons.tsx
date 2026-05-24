@@ -19,6 +19,7 @@ import {
   Palette,
   Pencil,
   Rows3,
+  Ruler,
   Send,
   Settings,
   Star,
@@ -420,6 +421,19 @@ export function PenIcon({ size = 16 }: IconProps) {
 export function EraserIcon({ size = 16 }: IconProps) {
   return (
     <Eraser
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Ruler — pen width "open the size slider" affordance. */
+export function RulerIcon({ size = 16 }: IconProps) {
+  return (
+    <Ruler
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}
