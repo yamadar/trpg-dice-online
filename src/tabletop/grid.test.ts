@@ -92,3 +92,55 @@ describe('cellToWorld / cellCenterToWorld', () => {
     expect(snapToGrid(center.x, center.y, grid)).toEqual(center)
   })
 })
+
+describe('grid helpers — hex dispatch', () => {
+  // Mirror of `makeGrid` but flipped to hex. The default cellSize 100
+  // gives integer-friendly geometry: side 50, height 50*sqrt(3).
+  function makeHex(): Grid {
+    return {
+      kind: 'hex',
+      cellSize: 100,
+      originX: 0,
+      originY: 0,
+      strokeColor: '#888888',
+      strokeOpacity: 0.5,
+      snap: true,
+    }
+  }
+
+  it('snapToGrid returns the input unchanged when snap is off', () => {
+    const grid = { ...makeHex(), snap: false }
+    expect(snapToGrid(12.3, 45.6, grid)).toEqual({ x: 12.3, y: 45.6 })
+  })
+
+  it('snapToGrid lands a hex point on the closest hex centre', () => {
+    const grid = makeHex()
+    // (0, 0)'s hex centre is (50, height/2).
+    const expected = cellCenterToWorld(0, 0, grid)
+    const near = snapToGrid(expected.x + 3, expected.y - 4, grid)
+    expect(near.x).toBeCloseTo(expected.x, 6)
+    expect(near.y).toBeCloseTo(expected.y, 6)
+  })
+
+  it('worldToCell maps hex points through the flat-top algorithm', () => {
+    const grid = makeHex()
+    const c = cellCenterToWorld(2, 1, grid)
+    expect(worldToCell(c.x, c.y, grid)).toEqual({ col: 2, row: 1 })
+  })
+
+  it('cellCenterToWorld matches hexCellCenter for hex grids', () => {
+    const grid = makeHex()
+    const expected = { x: 50, y: (100 * Math.sqrt(3)) / 4 } // (0, 0) centre
+    const actual = cellCenterToWorld(0, 0, grid)
+    expect(actual.x).toBeCloseTo(expected.x, 6)
+    expect(actual.y).toBeCloseTo(expected.y, 6)
+  })
+
+  it('cellToWorld returns the bounding-box top-left for hex cells', () => {
+    const grid = makeHex()
+    const tl = cellToWorld(0, 0, grid)
+    // Hex (0, 0)'s axis-aligned bbox starts at (0, 0).
+    expect(tl.x).toBeCloseTo(0, 6)
+    expect(tl.y).toBeCloseTo(0, 6)
+  })
+})

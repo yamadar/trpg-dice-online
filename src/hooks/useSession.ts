@@ -901,7 +901,7 @@ export function useSession(): Session {
       if (
         roleRef.current === 'client' &&
         tabletop.fog.enabled &&
-        tabletop.grid.kind === 'square' &&
+        tabletop.grid.kind !== 'none' &&
         tabletop.grid.cellSize > 0
       ) {
         const cell = cellFromWorld(snapped.x, snapped.y, tabletop.grid)

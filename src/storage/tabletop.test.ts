@@ -108,6 +108,14 @@ describe('sanitizeStoredTabletop', () => {
     expect(result.grid.kind).toBe('none')
   })
 
+  it('round-trips a hex grid kind', () => {
+    const result = sanitizeStoredTabletop({
+      grid: { kind: 'hex', cellSize: 80 },
+    })
+    expect(result.grid.kind).toBe('hex')
+    expect(result.grid.cellSize).toBe(80)
+  })
+
   it('drops tokens missing required fields', () => {
     const result = sanitizeStoredTabletop({
       tokens: [

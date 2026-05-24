@@ -42,6 +42,7 @@ export const en: Dict = {
   'tabletop.grid.kind': 'Type',
   'tabletop.grid.kindNone': 'None',
   'tabletop.grid.kindSquare': 'Square',
+  'tabletop.grid.kindHex': 'Hex',
   'tabletop.grid.cellSize': 'Cell size',
   'tabletop.grid.originX': 'Origin X',
   'tabletop.grid.originY': 'Origin Y',

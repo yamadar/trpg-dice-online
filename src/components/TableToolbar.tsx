@@ -379,6 +379,7 @@ export function TableToolbar({
             >
               <option value="none">{t('tabletop.grid.kindNone')}</option>
               <option value="square">{t('tabletop.grid.kindSquare')}</option>
+              <option value="hex">{t('tabletop.grid.kindHex')}</option>
             </select>
           </label>
           <label className="tabletop-toolbar-row">

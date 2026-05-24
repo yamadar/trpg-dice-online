@@ -356,4 +356,20 @@ describe('nearestRevealedCellCenter', () => {
     // Cell (-1, -1) centre = (-50 + 25, -50 + 25) = (-25, -25).
     expect(result).toEqual({ x: -25, y: -25 })
   })
+
+  it('uses the hex cell centre formula when kind is "hex"', () => {
+    // With cellSize 100 the (0, 0) hex centre lands at (50, 50√3/2)
+    // — see `hexGrid.ts`. Use a single revealed cell so the result
+    // must be that centre.
+    const hexGrid = {
+      kind: 'hex' as const,
+      cellSize: 100,
+      originX: 0,
+      originY: 0,
+    }
+    const fog = { enabled: true, revealed: ['0,0'] }
+    const result = nearestRevealedCellCenter(99, 99, fog, hexGrid)
+    expect(result?.x).toBeCloseTo(50, 6)
+    expect(result?.y).toBeCloseTo((100 * Math.sqrt(3)) / 4, 6)
+  })
 })
