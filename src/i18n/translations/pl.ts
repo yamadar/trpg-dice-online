@@ -111,6 +111,7 @@ export const pl: Dict = {
   'tabletop.toggle.mapOps': 'Map ops',
   'tabletop.toggle.chat': 'Chat',
   'tabletop.toggle.dice': 'Dice',
+  'tabletop.toggle.patterns': 'Patterns',
 
 
   'status.offline': 'Offline',

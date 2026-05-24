@@ -19,7 +19,14 @@ import { canMoveToken } from '../tabletop/tokens'
 import type { Grid, TabletopLibraryKind, Token } from '../tabletop/types'
 import type { Character } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
-import { ChatIcon, CloseIcon, DiceIcon, TabletopIcon, TrashIcon } from './icons'
+import {
+  ChatIcon,
+  CloseIcon,
+  DiceIcon,
+  PatternsIcon,
+  TabletopIcon,
+  TrashIcon,
+} from './icons'
 import { TableToolbar } from './TableToolbar'
 
 interface Props {
@@ -41,11 +48,18 @@ interface Props {
    */
   chatPanel?: ReactNode
   /**
-   * The dice roller (and pattern list) to render as a floating overlay
-   * when the "dice" toggle is on. Composed by the parent so it can
-   * reuse the same draft state as the Dock-launched dice Sheet.
+   * The dice roller as a floating overlay when the "dice" toggle is
+   * on. Composed by the parent so it can reuse the same draft state
+   * as the Dock-launched dice Sheet.
    */
   dicePanel?: ReactNode
+  /**
+   * The pattern list as a separate floating overlay when the
+   * "patterns" toggle is on. Split from the dice panel (PR fix)
+   * because cramming both into one ~320px overlay made the formula
+   * row overflow and the pattern chips unreadable.
+   */
+  patternsPanel?: ReactNode
   /** Surface a flash message (forwarded to the toolbar). */
   onNotice?: (text: string, kind: 'success' | 'error') => void
 }
@@ -85,6 +99,7 @@ export function TablePanel({
   activeCharacterId,
   chatPanel,
   dicePanel,
+  patternsPanel,
   onNotice,
 }: Props) {
   const { t } = useI18n()
@@ -102,6 +117,7 @@ export function TablePanel({
   const [showMapOps, setShowMapOps] = useState(true)
   const [showChat, setShowChat] = useState(false)
   const [showDice, setShowDice] = useState(false)
+  const [showPatterns, setShowPatterns] = useState(false)
   // Mirrors the wire-level permission: a non-host can drag their own
   // PC tokens; a host (or offline sandbox) can drag anything. Wrapped
   // here so the `draggable` prop on each `TokenView` reads it
@@ -411,6 +427,20 @@ export function TablePanel({
               </span>
             </button>
           )}
+          {patternsPanel && (
+            <button
+              type="button"
+              className={`tabletop-toggle-btn${showPatterns ? ' active' : ''}`}
+              aria-pressed={showPatterns}
+              title={t('tabletop.toggle.patterns')}
+              onClick={() => setShowPatterns((v) => !v)}
+            >
+              <PatternsIcon size={18} />
+              <span className="tabletop-toggle-label">
+                {t('tabletop.toggle.patterns')}
+              </span>
+            </button>
+          )}
         </nav>
         <button
           type="button"
@@ -561,6 +591,14 @@ export function TablePanel({
           aria-label={t('tabletop.toggle.dice')}
         >
           {dicePanel}
+        </aside>
+      )}
+      {patternsPanel && showPatterns && (
+        <aside
+          className="tabletop-overlay tabletop-overlay-patterns"
+          aria-label={t('tabletop.toggle.patterns')}
+        >
+          {patternsPanel}
         </aside>
       )}
     </div>
@@ -719,7 +757,16 @@ function MapImage({
 function portraitForToken(token: Token, session: Session): string | undefined {
   if (token.kind === 'pc') {
     const key = characterImagesKey(token.ownerPlayerId, token.characterId)
-    return session.sessionCharacters[key]?.image || undefined
+    // Prefer the live record so a portrait edit on the active character
+    // propagates instantly; fall back to the token's place-time
+    // snapshot for non-active characters (which never land in
+    // sessionCharacters), keeping the second-and-onwards-character
+    // tokens visible.
+    return (
+      session.sessionCharacters[key]?.image ||
+      token.snapshot?.image ||
+      undefined
+    )
   }
   // GM tokens carry their own image inline (set by the GM upload UI in PR 6).
   return token.image || undefined
@@ -729,19 +776,26 @@ function portraitForToken(token: Token, session: Session): string | undefined {
  * Resolve the display label for a token. GM tokens carry their own
  * label; PC tokens read the character name (or, when the player is
  * acting directly, the composed player display name) from the live
- * `sessionCharacters` record. Returns `undefined` for tokens with no
- * usable label so the renderer can skip drawing it.
+ * `sessionCharacters` record, with the token's place-time snapshot as
+ * a fallback for non-active characters. Returns `undefined` for tokens
+ * with no usable label so the renderer can skip drawing it.
  */
 function labelForToken(token: Token, session: Session): string | undefined {
   if (token.kind === 'gm') return token.label || undefined
   const key = characterImagesKey(token.ownerPlayerId, token.characterId)
   const record = session.sessionCharacters[key]
-  if (!record) return undefined
-  // For a character-bound PC token, prefer the character name itself —
-  // the GM-displayed "name" is the character, not the player.
-  // For a player acting directly (no characterId), fall back to the
-  // composed player display name.
-  return (token.characterId ? record.characterName : record.playerName) || undefined
+  if (record) {
+    // For a character-bound PC token, prefer the character name itself —
+    // the GM-displayed "name" is the character, not the player.
+    // For a player acting directly (no characterId), fall back to the
+    // composed player display name.
+    const live = token.characterId ? record.characterName : record.playerName
+    if (live) return live
+  }
+  // No live record (or it has no usable name): fall back to the
+  // snapshot captured at place time. This is how a non-active
+  // character of the same player gets a label rendered.
+  return token.snapshot?.name || undefined
 }
 
 interface TokenViewProps {
@@ -857,6 +911,13 @@ interface ClippedPortraitProps {
  * Render a data URL portrait inside a circular clip. Falls back to a
  * coloured disc while the image is loading or unavailable.
  *
+ * The image is sized with a CSS-`object-fit: cover` analogue — scale
+ * so the shorter side fills the circle, then center the overflow —
+ * which is then cropped by the circular `clipFunc`. The pre-fix code
+ * hard-set width = height = 2r and stretched non-square sources;
+ * users reported "potrait gets squashed" for landscape / portrait
+ * uploads (NPC images and PC portraits that were not 1:1).
+ *
  * `use-image` is the canonical Konva image loader (and what their
  * docs recommend) — it bridges the async load to React state without
  * tripping React 19's "no setState inside useEffect" lint rule that
@@ -865,6 +926,17 @@ interface ClippedPortraitProps {
 function ClippedPortrait({ src, radius, fallback }: ClippedPortraitProps) {
   const [image] = useImage(src)
   if (!image) return <Circle radius={radius} fill={fallback} />
+  const diameter = radius * 2
+  // Source pixel size. `naturalWidth` / `naturalHeight` are not on
+  // `HTMLImageElement`'s Konva-typed view; `width` / `height` are the
+  // intrinsic size of the loaded resource here.
+  const sw = image.width || diameter
+  const sh = image.height || diameter
+  // "cover" scale: shorter side fills the circle, longer side
+  // overflows symmetrically and gets cropped by the clipFunc.
+  const scale = Math.max(diameter / sw, diameter / sh)
+  const renderW = sw * scale
+  const renderH = sh * scale
   return (
     <Group
       clipFunc={(ctx) => {
@@ -875,10 +947,10 @@ function ClippedPortrait({ src, radius, fallback }: ClippedPortraitProps) {
     >
       <KonvaImage
         image={image}
-        x={-radius}
-        y={-radius}
-        width={radius * 2}
-        height={radius * 2}
+        x={-renderW / 2}
+        y={-renderH / 2}
+        width={renderW}
+        height={renderH}
       />
     </Group>
   )

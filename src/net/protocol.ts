@@ -133,9 +133,20 @@ export type ClientMessage =
   /**
    * The client asks the host to place a PC token for one of their own
    * characters. The host enforces that the requester actually owns
-   * the character before creating the token.
+   * the character before creating the token. `characterName` and
+   * `image` ride along as a snapshot so the host can stamp them onto
+   * the token — `sessionCharacters` only tracks the player's *active*
+   * character, so without this a non-active-character placement
+   * would render with no portrait or label. Both fields are optional
+   * for backward compatibility with clients predating the snapshot
+   * field; the host falls back to empty strings.
    */
-  | { t: 'pcTokenPlaceRequest'; characterId: string }
+  | {
+      t: 'pcTokenPlaceRequest'
+      characterId: string
+      characterName?: string
+      image?: string
+    }
 
 /** Messages a host sends to clients. */
 export type HostMessage =

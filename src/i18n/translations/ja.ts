@@ -111,6 +111,7 @@ export const ja: Dict = {
   'tabletop.toggle.mapOps': 'マップ操作',
   'tabletop.toggle.chat': 'チャット',
   'tabletop.toggle.dice': 'ダイス',
+  'tabletop.toggle.patterns': 'パターン',
 
 
   'status.offline': 'オフライン',

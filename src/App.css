@@ -780,7 +780,22 @@
 .tabletop-overlay-dice {
   left: 12px;
   top: 64px;
-  width: min(320px, calc(100vw - 24px));
+  /* Widened from 320px so the dice formula row (count / type / modifier
+     steppers, each minimum ~110px) fits without horizontal overflow.
+     Patterns moved to their own overlay (`.tabletop-overlay-patterns`)
+     so they no longer compete with dice for vertical space. */
+  width: min(400px, calc(100vw - 24px));
+  max-height: calc(100svh - 96px);
+  overflow-y: auto;
+  padding: 12px;
+}
+.tabletop-overlay-patterns {
+  /* Sits to the right of the dice overlay (or alone on narrow screens
+     when only patterns is on). Independent width so the chip grid has
+     room to render without wrapping awkwardly. */
+  right: 12px;
+  top: 64px;
+  width: min(360px, calc(100vw - 24px));
   max-height: calc(100svh - 96px);
   overflow-y: auto;
   padding: 12px;
@@ -792,10 +807,29 @@
   flex: 1;
   min-height: 0;
 }
-.tabletop-dice-stack {
+/* The ActivityPanel inside the chat overlay needs the same column-flex
+   layout the main app gives it (`.app-main .activity`). Without these
+   rules the panel's `.panel` padding becomes the only layout, the
+   `.feed-wrap` collapses to its content, and the feed grows past the
+   overlay rather than scrolling internally — which also pushes the
+   ChatComposer off-screen instead of pinning it to the bottom. */
+.tabletop-overlay-chat .activity {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+}
+.tabletop-overlay-chat .feed-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.tabletop-overlay-chat .feed {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Buttons whose only content is an inline SVG icon (close, trash, etc.) —

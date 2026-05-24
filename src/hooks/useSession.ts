@@ -221,7 +221,11 @@ export interface Session {
    * Multiple placements for the same character are allowed (each one
    * mints a fresh token id).
    */
-  placeMyCharacterToken: (characterId: string) => void
+  placeMyCharacterToken: (
+    characterId: string,
+    characterName?: string,
+    image?: string,
+  ) => void
   /**
    * GM-only: edit a GM token's label / image. PC tokens are not
    * editable through this API — their label and portrait flow from
@@ -969,11 +973,23 @@ export function useSession(): Session {
    * mints a fresh token id every call so the same character can have
    * multiple placements. Clients send a request; the host validates
    * the sender's identity then mints.
+   *
+   * `characterName` and `image` are the caller's snapshot of the
+   * character at place time — they get stamped onto the token's
+   * `snapshot` so the renderer can show a portrait and label even when
+   * the character is not currently the player's active one (so it
+   * never lands in `sessionCharacters`). When omitted, the token still
+   * works but only renders correctly for the active character.
    */
   const placeMyCharacterToken = useCallback(
-    (characterId: string) => {
+    (characterId: string, characterName?: string, image?: string) => {
       if (roleRef.current === 'client') {
-        roomRef.current?.sendToHost({ t: 'pcTokenPlaceRequest', characterId })
+        roomRef.current?.sendToHost({
+          t: 'pcTokenPlaceRequest',
+          characterId,
+          characterName: characterName ?? '',
+          image: image ?? '',
+        })
         return
       }
       // Host (or offline) places for themselves. With `pcSpawn` set
@@ -988,6 +1004,10 @@ export function useSession(): Session {
         x: grid.originX + cell / 2,
         y: grid.originY + cell / 2,
       }
+      const snapshot =
+        characterName || image
+          ? { name: characterName ?? '', image: image ?? '' }
+          : undefined
       const token: Token = {
         id: newTokenId(),
         kind: 'pc',
@@ -995,6 +1015,7 @@ export function useSession(): Session {
         y: origin.y,
         ownerPlayerId: playerId,
         characterId,
+        ...(snapshot ? { snapshot } : {}),
       }
       applyTabletop({
         ...tabletop,
@@ -1520,20 +1541,35 @@ export function useSession(): Session {
           // identity — the client cannot spoof someone else's id.
           const sender = peerPlayersRef.current.get(peerId)
           if (!sender) break
-          const grid = tabletopRef.current.grid
+          const tabletop = tabletopRef.current
+          const grid = tabletop.grid
           const cell = grid.cellSize
-          const index = tabletopRef.current.tokens.length
+          const index = tabletop.tokens.length
+          // Honour `pcSpawn` (set by templates) so loaded templates put
+          // requested PCs near the GM's intended start point too —
+          // the local placement path already does this; mirror it here.
+          const origin = tabletop.pcSpawn ?? {
+            x: grid.originX + cell / 2,
+            y: grid.originY + cell / 2,
+          }
+          // The client may send a snapshot of the character (name +
+          // image) so the host can stamp it onto the token; pre-fix
+          // clients omit it and the token simply has no snapshot.
+          const name = typeof msg.characterName === 'string' ? msg.characterName : ''
+          const image = typeof msg.image === 'string' ? msg.image : ''
+          const snapshot = name || image ? { name, image } : undefined
           const token: Token = {
             id: newTokenId(),
             kind: 'pc',
-            x: grid.originX + cell / 2 + index * cell,
-            y: grid.originY + cell / 2,
+            x: origin.x + index * cell,
+            y: origin.y,
             ownerPlayerId: sender.id,
             characterId: msg.characterId,
+            ...(snapshot ? { snapshot } : {}),
           }
           applyTabletop({
-            ...tabletopRef.current,
-            tokens: [...tabletopRef.current.tokens, token],
+            ...tabletop,
+            tokens: [...tabletop.tokens, token],
           })
           roomRef.current?.broadcast({ t: 'tokenUpsert', token })
           break
