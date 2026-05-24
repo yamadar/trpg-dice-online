@@ -7,6 +7,8 @@ import {
   type GridKind,
   type MapBackground,
   type NpcDef,
+  type SavedTabletop,
+  type TabletopLibraryKind,
 } from '../tabletop/types'
 import type { MapImageError } from '../tabletop/imageBackground'
 import type { Character } from '../characters/types'
@@ -36,6 +38,21 @@ interface Props {
   onPlaceNpcFromLibrary: (defId: string) => void
   /** When true, render the GM-only NPC library section. */
   isHost: boolean
+  /** GM-only: named templates and saves persisted globally in
+   *  IndexedDB. Empty when nothing has been saved or storage is
+   *  unavailable. */
+  tabletopLibrary: ReadonlyArray<SavedTabletop>
+  /** GM-only: snapshot the current tabletop under the given name.
+   *  Templates strip PC tokens and stash a viewport centre as the PC
+   *  spawn point; saves keep everything. */
+  onSaveTabletopAs: (
+    name: string,
+    kind: TabletopLibraryKind,
+  ) => Promise<'ok' | 'invalid'>
+  /** GM-only: replace the current tabletop with a saved one. */
+  onLoadTabletopFromLibrary: (id: string) => Promise<'ok' | 'missing'>
+  /** GM-only: drop one entry from the library. */
+  onDeleteTabletopFromLibrary: (id: string) => Promise<void>
   /** Surface a flash message. Optional. */
   onNotice?: (text: string, kind: 'success' | 'error') => void
 }
@@ -65,6 +82,10 @@ export function TableToolbar({
   onRemoveNpcDef,
   onPlaceNpcFromLibrary,
   isHost,
+  tabletopLibrary,
+  onSaveTabletopAs,
+  onLoadTabletopFromLibrary,
+  onDeleteTabletopFromLibrary,
   onNotice,
 }: Props) {
   const { t } = useI18n()
@@ -75,6 +96,47 @@ export function TableToolbar({
   // crop it square / circular before save.
   const [npcName, setNpcName] = useState('')
   const [cropSrc, setCropSrc] = useState<string | null>(null)
+  // Library save flow state: a single name input feeds both save
+  // flavours; the buttons differ only in `kind`.
+  const [libraryName, setLibraryName] = useState('')
+  const templates = tabletopLibrary.filter((e) => e.kind === 'template')
+  const saves = tabletopLibrary.filter((e) => e.kind === 'save')
+
+  const handleSaveAs = async (kind: TabletopLibraryKind) => {
+    if (!libraryName.trim()) {
+      onNotice?.(t('tabletop.library.needName'), 'error')
+      return
+    }
+    const result = await onSaveTabletopAs(libraryName, kind)
+    if (result === 'ok') {
+      onNotice?.(
+        t(
+          kind === 'template'
+            ? 'tabletop.library.savedTemplate'
+            : 'tabletop.library.savedSave',
+        ),
+        'success',
+      )
+      setLibraryName('')
+    } else {
+      onNotice?.(t('tabletop.library.saveFailed'), 'error')
+    }
+  }
+
+  const handleLoad = async (id: string) => {
+    const result = await onLoadTabletopFromLibrary(id)
+    if (result === 'ok') {
+      onNotice?.(t('tabletop.library.loaded'), 'success')
+    } else {
+      onNotice?.(t('tabletop.library.loadFailed'), 'error')
+    }
+  }
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(t('tabletop.library.confirmDelete', { name }))) return
+    await onDeleteTabletopFromLibrary(id)
+    onNotice?.(t('tabletop.library.deleted'), 'success')
+  }
   const set = <K extends keyof Grid>(key: K, value: Grid[K]) =>
     onChange({ ...grid, [key]: value })
 
@@ -374,6 +436,126 @@ export function TableToolbar({
           )}
         </div>
       </details>
+
+      {/* GM-only テーブルマップ ライブラリ. Lets a GM save the current
+          table as a named "template" (initial layout, PC tokens
+          stripped, viewport centre stashed as the PC spawn point) or
+          "save" (full snapshot), and load / delete saved entries. */}
+      {isHost && (
+        <details className="tabletop-toolbar-section">
+          <summary className="tabletop-toolbar-summary">
+            {t('tabletop.library.title')}
+          </summary>
+          <div className="tabletop-toolbar-section-body">
+            <h3 className="tabletop-toolbar-title">
+              {t('tabletop.library.saveCurrent')}
+            </h3>
+            <input
+              type="text"
+              className="tabletop-toolbar-input"
+              placeholder={t('tabletop.library.namePlaceholder')}
+              value={libraryName}
+              onChange={(e) => setLibraryName(e.target.value)}
+              maxLength={48}
+            />
+            <button
+              type="button"
+              className="tabletop-toolbar-button"
+              onClick={() => void handleSaveAs('template')}
+            >
+              {t('tabletop.library.saveAsTemplate')}
+            </button>
+            <button
+              type="button"
+              className="tabletop-toolbar-button outline"
+              onClick={() => void handleSaveAs('save')}
+            >
+              {t('tabletop.library.saveAsSave')}
+            </button>
+            <p className="tabletop-toolbar-meta wrap">
+              {t('tabletop.library.saveHint')}
+            </p>
+
+            <hr className="tabletop-toolbar-divider" />
+            <h3 className="tabletop-toolbar-title">
+              {t('tabletop.library.templates')}
+            </h3>
+            {templates.length === 0 ? (
+              <p className="tabletop-toolbar-meta">
+                {t('tabletop.library.emptyTemplates')}
+              </p>
+            ) : (
+              <ul className="tabletop-toolbar-list">
+                {templates.map((entry) => (
+                  <li key={entry.id} className="tabletop-toolbar-list-item">
+                    <span
+                      className="tabletop-toolbar-list-label"
+                      title={entry.name}
+                    >
+                      {entry.name}
+                    </span>
+                    <button
+                      type="button"
+                      className="tabletop-toolbar-list-action"
+                      onClick={() => void handleLoad(entry.id)}
+                    >
+                      {t('tabletop.library.load')}
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn tabletop-toolbar-list-remove"
+                      aria-label={t('tabletop.library.delete')}
+                      title={t('tabletop.library.delete')}
+                      onClick={() => void handleDelete(entry.id, entry.name)}
+                    >
+                      <TrashIcon />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <hr className="tabletop-toolbar-divider" />
+            <h3 className="tabletop-toolbar-title">
+              {t('tabletop.library.saves')}
+            </h3>
+            {saves.length === 0 ? (
+              <p className="tabletop-toolbar-meta">
+                {t('tabletop.library.emptySaves')}
+              </p>
+            ) : (
+              <ul className="tabletop-toolbar-list">
+                {saves.map((entry) => (
+                  <li key={entry.id} className="tabletop-toolbar-list-item">
+                    <span
+                      className="tabletop-toolbar-list-label"
+                      title={entry.name}
+                    >
+                      {entry.name}
+                    </span>
+                    <button
+                      type="button"
+                      className="tabletop-toolbar-list-action"
+                      onClick={() => void handleLoad(entry.id)}
+                    >
+                      {t('tabletop.library.load')}
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn tabletop-toolbar-list-remove"
+                      aria-label={t('tabletop.library.delete')}
+                      title={t('tabletop.library.delete')}
+                      onClick={() => void handleDelete(entry.id, entry.name)}
+                    >
+                      <TrashIcon />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </details>
+      )}
 
       {cropSrc && (
         <CharacterImageCropDialog

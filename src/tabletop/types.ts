@@ -103,13 +103,41 @@ export interface NpcDef {
  * a grid and tokens (whiteboard mode) is valid. `npcLibrary` is the
  * GM's NPC stash — separate from `tokens` so adding to the library
  * does not auto-place, and placing on the map does not consume the
- * library entry.
+ * library entry. `pcSpawn` (set by templates) tells new PC token
+ * placements where to land — useful so a "load template" call brings
+ * PCs to a known starting cluster rather than the world origin.
  */
 export interface TabletopState {
   map?: MapBackground
   grid: Grid
   tokens: Token[]
   npcLibrary: NpcDef[]
+  pcSpawn?: { x: number; y: number }
+}
+
+/**
+ * A named GM-curated tabletop preset.
+ *
+ * Two flavours:
+ *   - 'template': the *initial* layout — map, grid, NPC library and
+ *     positions, with PC tokens stripped and `pcSpawn` set. Loading
+ *     it resets the table while keeping current PCs only via
+ *     re-placement at the spawn point.
+ *   - 'save': a full mid-session snapshot. Loading it restores
+ *     everything as it was, including PC token positions.
+ *
+ * Stored globally (not per-session) so a GM can prepare scenes ahead
+ * of time and load them into any room.
+ */
+export type TabletopLibraryKind = 'template' | 'save'
+
+export interface SavedTabletop {
+  id: string
+  name: string
+  kind: TabletopLibraryKind
+  state: TabletopState
+  createdAt: number
+  updatedAt: number
 }
 
 /** Sensible defaults for a fresh tabletop: no map, no grid, no tokens. */
@@ -144,4 +172,8 @@ export function newMapId(): string {
 
 export function newNpcDefId(): string {
   return `npc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+export function newSavedTabletopId(): string {
+  return `tbl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }

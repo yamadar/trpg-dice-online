@@ -175,6 +175,13 @@ export type HostMessage =
   | { t: 'npcDefUpsert'; def: NpcDef }
   /** GM removed an NPC from the library (placed instances are untouched). */
   | { t: 'npcDefRemove'; defId: string }
+  /**
+   * Wholesale replace of every clients' tabletop state — used when the
+   * GM loads a saved tabletop / template. `map.dataUrl` is stripped
+   * (the chunked `mapMeta` / `mapChunk` follows separately, matching
+   * the welcome-snapshot pattern).
+   */
+  | { t: 'tabletopState'; state: TabletopState }
 
 export type NetMessage = ClientMessage | HostMessage
 

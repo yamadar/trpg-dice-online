@@ -127,6 +127,15 @@ function sanitizeNpcDef(raw: unknown): NpcDef | null {
   return { id, name, image: asString(r.image) }
 }
 
+function sanitizePcSpawn(raw: unknown): { x: number; y: number } | undefined {
+  if (typeof raw !== 'object' || raw === null) return undefined
+  const r = raw as Record<string, unknown>
+  const x = asNumber(r.x, NaN)
+  const y = asNumber(r.y, NaN)
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return undefined
+  return { x, y }
+}
+
 /**
  * Coerce arbitrary stored data into a valid `TabletopState`. Used at
  * the load boundary because IndexedDB returns `unknown` and older /
@@ -135,7 +144,8 @@ function sanitizeNpcDef(raw: unknown): NpcDef | null {
  * Always returns a usable state — an unrecoverable input falls back to
  * an empty table with the default grid. `npcLibrary` is similarly
  * normalised so pre-PR-10 saves (no library field) round-trip into the
- * new shape with an empty list.
+ * new shape with an empty list; `pcSpawn` (PR 11) is dropped when
+ * malformed so templates without it keep working.
  */
 export function sanitizeStoredTabletop(raw: unknown): TabletopState {
   if (typeof raw !== 'object' || raw === null) {
@@ -157,11 +167,13 @@ export function sanitizeStoredTabletop(raw: unknown): TabletopState {
       if (def) npcLibrary.push(def)
     }
   }
+  const pcSpawn = sanitizePcSpawn(r.pcSpawn)
   return {
     ...(map ? { map } : {}),
     grid: sanitizeGrid(r.grid),
     tokens,
     npcLibrary,
+    ...(pcSpawn ? { pcSpawn } : {}),
   }
 }
 
