@@ -175,30 +175,31 @@ export function TablePanel({
     })
   }, [isMobile])
   // When the local player commits a roll while the dice overlay is
-  // open on mobile, swap to chat so the result is visible.
-  // Watching `session.history` lets us react without entangling the
-  // App-owned roll dispatch with TablePanel-owned state. Implemented
-  // as render-phase "derived state" (the React-recommended escape
-  // hatch — see https://react.dev/reference/react/useState#storing-
+  // open on mobile, swap to chat so the result is visible. Watching
+  // `session.history` lets us react without entangling the App-owned
+  // roll dispatch with TablePanel-owned state. Implemented as
+  // render-phase "derived state" (the React-recommended escape hatch
+  // — see https://react.dev/reference/react/useState#storing-
   // information-from-previous-renders) rather than an effect because
   // React 19's `set-state-in-effect` lint disallows the effect form.
-  const [lastSeenRollId, setLastSeenRollId] = useState<string | null>(null)
+  //
+  // The initial value is the last roll already in history at mount so
+  // re-opening the tabletop later does NOT see a stale roll as "new"
+  // and immediately swap to chat. With this baseline the swap fires
+  // on every genuinely new roll, including the very first one after
+  // mounting with empty history.
+  const [lastSeenRollId, setLastSeenRollId] = useState<string | null>(() =>
+    session.history.length > 0
+      ? session.history[session.history.length - 1].id
+      : null,
+  )
   const lastRoll =
     session.history.length > 0
       ? session.history[session.history.length - 1]
       : null
   if (lastRoll && lastSeenRollId !== lastRoll.id) {
     setLastSeenRollId(lastRoll.id)
-    // Skip the very first observation (initial mount with existing
-    // history) so re-opening the panel later does not flicker; only
-    // genuinely new rolls authored by the local player flip the
-    // overlay.
-    if (
-      lastSeenRollId !== null &&
-      isMobile &&
-      showRolls &&
-      lastRoll.playerId === session.playerId
-    ) {
+    if (isMobile && showRolls && lastRoll.playerId === session.playerId) {
       setShowRolls(false)
       setShowChat(true)
     }
