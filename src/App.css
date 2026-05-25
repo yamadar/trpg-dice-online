@@ -3484,34 +3484,19 @@ button.char-avatar-large:disabled {
    a glance before they pick a kind. When active, the chip itself
    keeps the standard `--accent-2` highlight so it does not overpower
    the page-wide focus colour. */
+/* Dice-kind chips (damage / judgment) — show the kind icon alongside
+   the label. Colour / weight / padding are deliberately NOT overridden
+   here: the un-selected chip should look exactly like the secondary
+   "Join room" button, and the selected one exactly like the primary
+   "Create room" / "Roll dice" button. The base `.chip` rule already
+   matches the secondary button style, and `.chip.active` matches the
+   primary style, so this block only adds the icon-and-label layout
+   plus the kind tint on the icon. */
 .chip-kind {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* Padding + gap give the icon and text room to breathe. Without
-     this the icon sits flush against the label and squeezes the
-     chip's usable area. */
   gap: 8px;
-  padding: 10px 14px;
-  /* `.chip` defaults to `font-size: 0.9rem` with no explicit colour;
-     the kind chip bumps both so the LABEL — not the colourful icon
-     — anchors the chip visually. `--text-h` is the highest-contrast
-     text colour in every theme (vs. the standard `--text` which is
-     slightly dimmer), and `font-weight: 700` matches the heading
-     weight used elsewhere in the dice roller for primary controls. */
-  color: var(--text-h);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-.chip-kind.active {
-  /* Active state already gets `color: #fff` from `.chip.active`.
-     Add a soft text shadow so the white label keeps its outline
-     against any of the accent colours (some themes — Ember orange,
-     Forest green — have lower contrast with white than midnight
-     purple). The shadow is too small to read as a glow but reliably
-     separates each glyph from the accent fill. */
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
 }
 .chip-kind-icon {
   display: inline-flex;
