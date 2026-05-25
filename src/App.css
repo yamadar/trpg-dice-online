@@ -352,7 +352,9 @@
 .sheet-layer {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  /* Sheet sits above the tabletop layer (z-index 35) so the
+     character sheet etc. can open over the tabletop. */
+  z-index: 36;
 }
 .sheet-backdrop {
   position: absolute;
@@ -425,63 +427,6 @@
      pinch-zoom of the page) from competing with Konva's pan / zoom. */
   touch-action: none;
 }
-.tabletop-header {
-  position: relative;
-  /* Wide right padding reserves room for the close button at top:8/right:8.
-     The toggle nav lives between the title and the close — using flex to
-     keep them on one line. */
-  padding: 14px 56px 12px 16px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.tabletop-title {
-  display: flex;
-  align-items: center;
-  font-size: 1.05rem;
-  margin: 0;
-  flex-shrink: 0;
-}
-.tabletop-toggles {
-  display: flex;
-  flex: 1;
-  justify-content: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-.tabletop-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  color: var(--text-dim);
-  font: inherit;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-.tabletop-toggle-btn:hover {
-  background: var(--panel-2);
-  color: var(--text);
-}
-.tabletop-toggle-btn.active {
-  background: var(--accent-bg, rgba(192, 132, 252, 0.18));
-  color: var(--accent, var(--text));
-  border-color: var(--accent, var(--border));
-}
-.tabletop-toggle-label {
-  /* Hide label text below the breakpoint where the icon alone reads. */
-}
-@media (max-width: 540px) {
-  .tabletop-toggle-label {
-    display: none;
-  }
-}
 .tabletop-canvas {
   flex: 1;
   min-height: 0;
@@ -503,25 +448,38 @@
    two. */
 .tabletop-toolbar-wrapper {
   position: absolute;
-  top: 64px;
+  top: 12px;
   right: 12px;
+  /* Reserve room on the bottom for the new TabletopDock (it lives in
+     normal flow below the canvas, but the wrapper is absolute so we
+     need to keep its own footprint from extending behind the dock).
+     `bottom: 12px` constrains the wrapper to the visible canvas. */
+  bottom: 12px;
   z-index: 1;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 8px;
-  /* Cap the total horizontal footprint so the panel never collides
-     with the left-side tools palette. The left palette can be up
-     to 132 px wide (desktop always, mobile when focused), plus 12
-     px right of it as breathing room and 12 px from the screen
-     edge on each side: 12 + 132 + 12 + 12 = 168. The flex
-     container then shrinks the panel as needed to fit. */
-  max-width: calc(100vw - 168px);
+  /* Cap the horizontal footprint so a wide panel does not visually
+     overflow the left tools palette. The palette eats up to ~76 px
+     on the left (12 + 56 + 8 breathing); the panel can extend just
+     past that on its left edge to "cover up to a bit right of the
+     palette". */
+  max-width: calc(100vw - 80px);
+  pointer-events: none;
+}
+.tabletop-toolbar-wrapper > * {
+  pointer-events: auto;
 }
 .tabletop-toolbar-panel {
-  width: min(280px, calc(100vw - 100px));
-  max-height: calc(100vh - 96px);
-  max-height: calc(100svh - 96px);
+  /* The panel grows to fill whatever the wrapper's max-width leaves
+     after the icon strip. Cap so it never gets absurdly wide on
+     desktop; on phones the wrapper's max-width already pushes the
+     practical width below the cap. */
+  flex: 1 1 auto;
+  min-width: 240px;
+  max-width: 480px;
+  align-self: stretch;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -550,7 +508,15 @@
   gap: 8px;
   padding: 12px;
   overflow-y: auto;
+  /* Horizontal scroll is undesired — the user complained content
+     should fit width-wise. Sized inputs / lists below honour this
+     constraint individually. */
+  overflow-x: hidden;
 }
+/* The right-side icon strip mirrors the LEFT-side tools palette
+   exactly (same padding / sizing / radius / shadow / button
+   styling) so the two sides feel like a matched pair rather than
+   two independent designs. */
 .tabletop-toolbar-icons {
   flex-shrink: 0;
   display: flex;
@@ -561,28 +527,25 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  /* Stay inside the viewport even if the category list grows so a
-     future 5th / 6th icon does not push the strip off-screen. */
-  max-height: calc(100vh - 96px);
-  max-height: calc(100svh - 96px);
+  font-size: 0.78rem;
+  max-width: 132px;
   overflow-y: auto;
 }
 .tabletop-toolbar-icon-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 8px 6px;
-  min-width: 48px;
-  background: transparent;
-  border: 1px solid transparent;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--text-dim);
+  color: var(--text);
   cursor: pointer;
 }
 .tabletop-toolbar-icon-btn:hover {
-  background: var(--panel-2);
-  color: var(--text);
+  background: var(--panel);
 }
 .tabletop-toolbar-icon-btn.active {
   background: var(--accent, #3b6ea5);
@@ -590,20 +553,19 @@
   border-color: transparent;
 }
 .tabletop-toolbar-icon-label {
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.72rem;
   line-height: 1.1;
   text-align: center;
 }
-/* On narrow screens, hide the label text so the icon strip stays
-   thin. Tooltips (`title`) still surface the name. */
+/* Mobile: drop the strip down to icon-only just like the left
+   palette does so the two columns stay matched. */
 @media (max-width: 720px) {
+  .tabletop-toolbar-icons {
+    max-width: 56px;
+    padding: 6px 4px;
+  }
   .tabletop-toolbar-icon-label {
     display: none;
-  }
-  .tabletop-toolbar-icon-btn {
-    min-width: 44px;
-    padding: 8px 4px;
   }
 }
 .tabletop-toolbar-select {
@@ -635,10 +597,20 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  /* Keep all row children on one line; controls have fixed widths and
+     the label shrinks with ellipsis so the row never line-wraps even
+     when a long Japanese label meets a 96px-wide select. */
+  flex-wrap: nowrap;
 }
 .tabletop-toolbar-row > span {
-  flex: 1;
+  flex: 1 1 auto;
+  /* min-width 0 lets the label shrink past its intrinsic content width
+     and use the ellipsis below instead of forcing the row to overflow. */
+  min-width: 0;
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tabletop-toolbar-row > select,
 .tabletop-toolbar-row > input[type='number'] {
@@ -649,9 +621,12 @@
   border-radius: 6px;
   color: var(--text);
   font: inherit;
+  min-width: 0;
 }
 .tabletop-toolbar-row > input[type='color'] {
-  flex: 0 0 36px;
+  /* Square swatch so the color preview reads as a tile, not a pill. */
+  flex: 0 0 28px;
+  width: 28px;
   height: 28px;
   padding: 0;
   border: 1px solid var(--border);
@@ -659,7 +634,8 @@
   background: transparent;
 }
 .tabletop-toolbar-row > input[type='range'] {
-  flex: 0 0 96px;
+  flex: 0 1 96px;
+  min-width: 0;
 }
 .tabletop-toolbar-row > input[type='checkbox'] {
   width: 18px;
@@ -713,6 +689,12 @@
   border-radius: 6px;
   color: var(--text);
   font: inherit;
+  /* Full-width inputs must shrink with their parent so a long
+     placeholder / option does not push the panel into horizontal
+     overflow. min-width:0 lets flex children narrow past content. */
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .tabletop-toolbar-list {
   margin: 0;
@@ -929,7 +911,7 @@
 .tabletop-tools {
   position: absolute;
   z-index: 1;
-  top: 64px;
+  top: 12px;
   left: 12px;
   display: flex;
   flex-direction: column;
@@ -1266,6 +1248,21 @@
   bottom: 12px;
   width: min(360px, calc(100vw - 24px));
   height: min(60svh, 480px);
+}
+/* Mobile: chat overlay turns into a full-width bottom sheet that
+   covers roughly the bottom 60% of the viewport — same as the
+   regular chat panel just shorter, so the user can still read the
+   feed without losing the canvas underneath. */
+@media (max-width: 720px) {
+  .tabletop-overlay-chat {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 60svh;
+    border-radius: 12px 12px 0 0;
+    border-bottom: none;
+  }
 }
 .tabletop-overlay-rolls {
   /* Combined dice + patterns overlay. Width sized for the dice
