@@ -3488,25 +3488,30 @@ button.char-avatar-large:disabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* Bumped padding + gap so the icon and text breathe. Without this
-     the icon sits flush against the label and squeezes the chip's
-     usable area — the label legibility complaint that prompted
-     adding explicit `color` / `font-weight` below. */
+  /* Padding + gap give the icon and text room to breathe. Without
+     this the icon sits flush against the label and squeezes the
+     chip's usable area. */
   gap: 8px;
-  padding: 8px 12px;
-  /* `.chip` itself has no explicit text colour, so it inherits from
-     the parent — which can land on the dim default in some themes.
-     Pin the colour and a slightly heavier weight here so the chip's
-     label reads cleanly next to a brightly-tinted kind icon. */
-  color: var(--text);
-  font-weight: 500;
+  padding: 10px 14px;
+  /* `.chip` defaults to `font-size: 0.9rem` with no explicit colour;
+     the kind chip bumps both so the LABEL — not the colourful icon
+     — anchors the chip visually. `--text-h` is the highest-contrast
+     text colour in every theme (vs. the standard `--text` which is
+     slightly dimmer), and `font-weight: 700` matches the heading
+     weight used elsewhere in the dice roller for primary controls. */
+  color: var(--text-h);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 .chip-kind.active {
-  /* Active state already gets `color: #fff` and `font-weight: 600`
-     from `.chip.active`. Override font-weight to a slightly heavier
-     value so the label outweighs the icon visually when both are
-     white on the accent bg. */
-  font-weight: 700;
+  /* Active state already gets `color: #fff` from `.chip.active`.
+     Add a soft text shadow so the white label keeps its outline
+     against any of the accent colours (some themes — Ember orange,
+     Forest green — have lower contrast with white than midnight
+     purple). The shadow is too small to read as a glow but reliably
+     separates each glyph from the accent fill. */
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
 }
 .chip-kind-icon {
   display: inline-flex;
