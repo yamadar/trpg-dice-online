@@ -462,6 +462,7 @@ function App() {
             onClose={() => setTabletopOpen(false)}
             characters={characters.characters}
             activeCharacterId={activeCharacterId}
+            onOpenCharacter={() => setOpenSheet('character')}
             onNotice={flash}
             chatPanel={
               <ActivityPanel

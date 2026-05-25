@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import {
   ALargeSmall,
+  ArrowLeft,
   ChevronDown,
   Cloud,
   CloudOff,
@@ -422,6 +423,20 @@ export function PenIcon({ size = 16 }: IconProps) {
 export function EraserIcon({ size = 16 }: IconProps) {
   return (
     <Eraser
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Left-pointing arrow — "return to the previous view" affordance,
+ *  e.g. the tabletop dock's exit button. */
+export function ArrowLeftIcon({ size = 22 }: IconProps) {
+  return (
+    <ArrowLeft
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}

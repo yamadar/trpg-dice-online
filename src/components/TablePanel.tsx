@@ -40,13 +40,9 @@ import {
 } from '../tabletop/hexGrid'
 import type { Character } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
-import {
-  ChatIcon,
-  CloseIcon,
-  DiceIcon,
-  TabletopIcon,
-  TrashIcon,
-} from './icons'
+import { CloseIcon, DiceIcon, TrashIcon } from './icons'
+import { Sheet } from './Sheet'
+import { TabletopDock } from './TabletopDock'
 import { TableToolbar } from './TableToolbar'
 import { TableTools, type TableTool } from './TableTools'
 
@@ -76,6 +72,11 @@ interface Props {
    * without the formula row overflowing.
    */
   rollsPanel?: ReactNode
+  /** Open the character sheet on top of the tabletop. Used by the
+   *  bottom-of-tabletop dock so the character button works there too;
+   *  unlike chat / dice, the character sheet is App-owned (it shares
+   *  state with the main app's Dock), so the click routes back up. */
+  onOpenCharacter?: () => void
   /** Surface a flash message (forwarded to the toolbar). */
   onNotice?: (text: string, kind: 'success' | 'error') => void
 }
@@ -115,6 +116,7 @@ export function TablePanel({
   activeCharacterId,
   chatPanel,
   rollsPanel,
+  onOpenCharacter,
   onNotice,
 }: Props) {
   const { t } = useI18n()
@@ -134,17 +136,56 @@ export function TablePanel({
   // offline so a player can experiment with the table on their own —
   // the saved state is harmless when there is no session id.
   const canEdit = session.role !== 'client'
-  /**
-   * Independent show/hide toggles for the three overlays. Map ops
-   * defaults ON for editable users (matches the prior always-on
-   * toolbar). Chat / dice default OFF — they belong to the rest of
-   * the app and should not block the canvas on a first look.
-   */
-  const [showMapOps, setShowMapOps] = useState(true)
-  const [showChat, setShowChat] = useState(false)
-  /** Single toggle for the combined dice + patterns overlay (the two
-   *  used to be separate toggles but the dice sheet now houses both). */
-  const [showRolls, setShowRolls] = useState(false)
+  /** Which of the bottom-left overlays is visible. Chat and dice are
+   *  mutually exclusive — they share the same anchor — so a single
+   *  state cleanly represents the rule (boolean pair would allow the
+   *  invalid both-on state and forced ad-hoc `active=` derivation).
+   *  `null` = canvas in the foreground. */
+  const [overlay, setOverlay] = useState<'chat' | 'dice' | null>(null)
+  /** True while the viewport is narrow enough to be considered a
+   *  phone (matches the same 720px breakpoint our CSS uses). The
+   *  mobile dice UI is a full-screen `<Sheet>`; desktop is a
+   *  floating overlay above the canvas. */
+  const [isMobile, setIsMobile] = useState(
+    () => window.matchMedia('(max-width: 720px)').matches,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 720px)')
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  const toggleOverlay = (next: 'chat' | 'dice') =>
+    setOverlay((prev) => (prev === next ? null : next))
+  // When the local player commits a roll while the dice overlay is
+  // open, swap to chat so the result is visible. Watching
+  // `session.history` lets us react without entangling the App-owned
+  // roll dispatch with TablePanel-owned state. Implemented as
+  // render-phase "derived state" (the React-recommended escape hatch
+  // — see https://react.dev/reference/react/useState#storing-
+  // information-from-previous-renders) rather than an effect because
+  // React 19's `set-state-in-effect` lint disallows the effect form.
+  //
+  // The initial value is the last roll already in history at mount so
+  // re-opening the tabletop later does NOT see a stale roll as "new"
+  // and immediately swap to chat. With this baseline the swap fires
+  // on every genuinely new roll, including the very first one after
+  // mounting with empty history.
+  const [lastSeenRollId, setLastSeenRollId] = useState<string | null>(() =>
+    session.history.length > 0
+      ? session.history[session.history.length - 1].id
+      : null,
+  )
+  const lastRoll =
+    session.history.length > 0
+      ? session.history[session.history.length - 1]
+      : null
+  if (lastRoll && lastSeenRollId !== lastRoll.id) {
+    setLastSeenRollId(lastRoll.id)
+    if (overlay === 'dice' && lastRoll.playerId === session.playerId) {
+      setOverlay('chat')
+    }
+  }
   // Mirrors the wire-level permission: a non-host can drag their own
   // PC tokens; a host (or offline sandbox) can drag anything. Wrapped
   // here so the `draggable` prop on each `TokenView` reads it
@@ -716,71 +757,13 @@ export function TablePanel({
       className="tabletop-layer"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="tabletop-title"
+      aria-label={t('tabletop.title')}
     >
-      <header className="tabletop-header">
-        <h2 id="tabletop-title" className="tabletop-title">
-          <span className="panel-icon">
-            <TabletopIcon size={20} />
-          </span>
-          {t('tabletop.title')}
-        </h2>
-        <nav
-          className="tabletop-toggles"
-          aria-label={t('tabletop.toggle.nav')}
-        >
-          {canEdit && (
-            <button
-              type="button"
-              className={`tabletop-toggle-btn${showMapOps ? ' active' : ''}`}
-              aria-pressed={showMapOps}
-              title={t('tabletop.toggle.mapOps')}
-              onClick={() => setShowMapOps((v) => !v)}
-            >
-              <TabletopIcon size={18} />
-              <span className="tabletop-toggle-label">
-                {t('tabletop.toggle.mapOps')}
-              </span>
-            </button>
-          )}
-          {chatPanel && (
-            <button
-              type="button"
-              className={`tabletop-toggle-btn${showChat ? ' active' : ''}`}
-              aria-pressed={showChat}
-              title={t('tabletop.toggle.chat')}
-              onClick={() => setShowChat((v) => !v)}
-            >
-              <ChatIcon size={18} />
-              <span className="tabletop-toggle-label">
-                {t('tabletop.toggle.chat')}
-              </span>
-            </button>
-          )}
-          {rollsPanel && (
-            <button
-              type="button"
-              className={`tabletop-toggle-btn${showRolls ? ' active' : ''}`}
-              aria-pressed={showRolls}
-              title={t('tabletop.toggle.dice')}
-              onClick={() => setShowRolls((v) => !v)}
-            >
-              <DiceIcon size={18} />
-              <span className="tabletop-toggle-label">
-                {t('tabletop.toggle.dice')}
-              </span>
-            </button>
-          )}
-        </nav>
-        <button
-          type="button"
-          className="sheet-close icon-btn"
-          onClick={onClose}
-          aria-label={t('tabletop.close')}
-        >
-          <CloseIcon />
-        </button>
-      </header>
+      {/* The top header (title + view toggles + close) used to live
+          here; it has been replaced by the bottom `TabletopDock`,
+          which mirrors the main app's bottom-Dock metaphors so the
+          user does not have to relearn the layout when the tabletop
+          opens. */}
       <div
         ref={containerRef}
         className="tabletop-canvas"
@@ -984,8 +967,14 @@ export function TablePanel({
             onCancel={() => setTextDraft(null)}
           />
         )}
-      </div>
-      <TableTools
+        {/* TableTools / TableToolbar / chat / dice overlays sit
+            INSIDE the canvas div so their `position: absolute`
+            anchors to the canvas's box rather than the whole
+            tabletop layer. That keeps them above the canvas but
+            below the bottom-of-layer `TabletopDock` (a sibling
+            of canvas in normal flow), which would otherwise be
+            covered by an absolute child of the layer. */}
+        <TableTools
         tool={tool}
         onToolChange={setTool}
         color={toolColor}
@@ -1001,8 +990,11 @@ export function TablePanel({
         // 'none', so this single flag covers both cases in practice.
         fogPaintReady={tabletop.fog.enabled}
       />
-      {showMapOps && (
-        <TableToolbar
+      {/* Map ops toolbar is always rendered now (the old top-header
+          toggle is gone). Its right-edge icon strip is reachable at
+          all times, and only the optional side-expanding panel
+          consumes screen space. */}
+      <TableToolbar
           grid={tabletop.grid}
           onChange={updateGrid}
           map={tabletop.map}
@@ -1044,23 +1036,45 @@ export function TablePanel({
           onDeleteTabletopFromLibrary={session.deleteTabletopFromLibrary}
           onNotice={onNotice}
         />
-      )}
-      {chatPanel && showChat && (
+      {chatPanel && overlay === 'chat' && (
         <aside
           className="tabletop-overlay tabletop-overlay-chat"
-          aria-label={t('tabletop.toggle.chat')}
+          aria-label={t('tabletop.dock.chat')}
         >
           {chatPanel}
         </aside>
       )}
-      {rollsPanel && showRolls && (
-        <aside
-          className="tabletop-overlay tabletop-overlay-rolls"
-          aria-label={t('tabletop.toggle.dice')}
-        >
-          {rollsPanel}
-        </aside>
-      )}
+      {rollsPanel && overlay === 'dice' &&
+        // On mobile the dice overlay re-uses the same `<Sheet>`
+        // chrome the Dock-launched dice sheet does so the UX is
+        // identical between the two entry points (header + close
+        // button, full-screen body). On desktop it stays a floating
+        // anchored overlay so the canvas is still visible behind it.
+        (isMobile ? (
+          <Sheet
+            title={t('tabletop.dock.dice')}
+            titleIcon={<DiceIcon size={20} />}
+            onClose={() => setOverlay(null)}
+          >
+            {rollsPanel}
+          </Sheet>
+        ) : (
+          <aside
+            className="tabletop-overlay tabletop-overlay-rolls"
+            aria-label={t('tabletop.dock.dice')}
+          >
+            {rollsPanel}
+          </aside>
+        ))}
+      </div>
+      <TabletopDock
+        active={overlay}
+        onSelect={(id) => {
+          if (id === 'chat' || id === 'dice') toggleOverlay(id)
+          else if (id === 'character') onOpenCharacter?.()
+          else if (id === 'returnToRoom') onClose()
+        }}
+      />
     </div>
   )
 }
