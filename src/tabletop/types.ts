@@ -239,9 +239,13 @@ export interface SavedTabletop {
   updatedAt: number
 }
 
-/** Sensible defaults for a fresh tabletop: no map, no grid, no tokens. */
+/** Sensible defaults for a fresh tabletop. The grid defaults to a 50 px
+ *  square grid (the most common GM choice in playtests, and the only
+ *  kind that supports snap + fog brush). The first-mount auto-loader in
+ *  TablePanel pairs this with the bundled `test-grid` preset so a new
+ *  GM lands on a non-empty canvas they can immediately interact with. */
 export const DEFAULT_GRID: Grid = {
-  kind: 'none',
+  kind: 'square',
   cellSize: 50,
   originX: 0,
   originY: 0,

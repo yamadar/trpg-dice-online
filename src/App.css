@@ -460,9 +460,6 @@
   display: flex;
   flex-direction: column;
   background: var(--bg);
-  /* Prevent the browser's own gesture handling (pull-to-refresh,
-     pinch-zoom of the page) from competing with Konva's pan / zoom. */
-  touch-action: none;
 }
 .tabletop-canvas {
   flex: 1;
@@ -474,6 +471,15 @@
      the user does not see a confusing selection rectangle on hold. */
   user-select: none;
   -webkit-user-select: none;
+}
+/* `touch-action: none` lives ONLY on the Konva canvas — putting it on
+   any ancestor (e.g. .tabletop-canvas / .tabletop-layer) blocks the
+   native `<select>` dropdown on Android Chrome, because the browser
+   computes the effective touch-action by walking up the ancestor
+   chain of the touched element. Scoping it to the canvas keeps Konva's
+   pan / zoom gesture handling intact while letting the right-side
+   toolbar's selects open normally. */
+.tabletop-canvas canvas {
   touch-action: none;
 }
 /* --- Right-side toolbar (icon strip + side-expanding panel) ---
@@ -606,6 +612,14 @@
   background: var(--accent, #3b6ea5);
   color: #fff;
   border-color: transparent;
+}
+/* The help button sits at the bottom of the icon strip with a small
+ *  divider so it reads as "supplementary" rather than another category. */
+.tabletop-toolbar-help {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  border-radius: 8px;
 }
 .tabletop-toolbar-icon-label {
   font-size: 0.72rem;

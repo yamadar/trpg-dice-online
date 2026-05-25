@@ -23,6 +23,7 @@ import { CloseIcon, EditIcon, TrashIcon } from './icons'
 import {
   CharacterIcon,
   FogIcon,
+  HelpIcon,
   LibraryIcon,
   TabletopIcon,
   type IconProps,
@@ -120,6 +121,9 @@ interface Props {
   onFogReplace: (fog: FogState) => void
   /** Surface a flash message. Optional. */
   onNotice?: (text: string, kind: 'success' | 'error') => void
+  /** Open the tabletop tutorial overlay (re-show from the "?" button at
+   *  the bottom of the icon strip). */
+  onOpenTutorial: () => void
 }
 
 /**
@@ -160,6 +164,7 @@ export function TableToolbar({
   onFogEnabledChange,
   onFogReplace,
   onNotice,
+  onOpenTutorial,
 }: Props) {
   const { t } = useI18n()
   const confirm = useConfirm()
@@ -198,6 +203,29 @@ export function TableToolbar({
   const [expandedCategory, setExpandedCategory] = useState<CategoryId | null>(
     null,
   )
+  /** Outermost element of the toolbar — both the icon strip AND the
+   *  expanded side panel live inside this aside. Used by the outside-
+   *  click handler to detect "did the press land inside the toolbar?". */
+  const wrapperRef = useRef<HTMLElement | null>(null)
+  // Close the expanded category on any pointerdown that lands OUTSIDE
+  // the toolbar (canvas, other overlays, the bottom dock, ...). Listening
+  // at the document level — rather than wiring a click handler on every
+  // sibling — keeps the rule in one place and matches how mobile sheets
+  // typically dismiss. `pointerdown` (not `click`) fires earlier in the
+  // gesture so a Konva drag-start outside the panel still collapses it
+  // before the drag visibly engages.
+  useEffect(() => {
+    if (!expandedCategory) return
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target
+      if (target instanceof Node && wrapperRef.current?.contains(target)) {
+        return
+      }
+      setExpandedCategory(null)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [expandedCategory])
 
   // Fetch the preset-map manifest once per mount. Errors degrade to an
   // empty list — the toolbar still shows the hand-pick path.
@@ -411,6 +439,7 @@ export function TableToolbar({
 
   return (
     <aside
+      ref={wrapperRef}
       className="tabletop-toolbar-wrapper"
       aria-label={t('tabletop.panel.title')}
     >
@@ -996,6 +1025,18 @@ export function TableToolbar({
             </button>
           )
         })}
+        {/* Help button sits beneath the category icons with a small
+         *  visual gap (see `.tabletop-toolbar-help` in App.css) so it
+         *  reads as "supplementary" rather than another category. */}
+        <button
+          type="button"
+          className="tabletop-toolbar-icon-btn tabletop-toolbar-help"
+          title={t('tabletop.help')}
+          onClick={onOpenTutorial}
+        >
+          <HelpIcon size={20} />
+          <span className="tabletop-toolbar-icon-label">{t('tabletop.help')}</span>
+        </button>
       </nav>
       {cropSrc && (
         <CharacterImageCropDialog

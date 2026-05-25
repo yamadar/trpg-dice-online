@@ -44,8 +44,14 @@ import { ChatIcon, CloseIcon, DiceIcon, TrashIcon } from './icons'
 import { Sheet } from './Sheet'
 import { SpeechBubble } from './SpeechBubble'
 import { TabletopDock } from './TabletopDock'
+import { TabletopTutorial } from './TabletopTutorial'
 import { TableToolbar } from './TableToolbar'
 import { TableTools, type TableTool } from './TableTools'
+import { loadPresetMapManifest } from '../tabletop/presetMaps'
+import {
+  isTabletopTutorialSeen,
+  markTabletopTutorialSeen,
+} from '../storage/tabletopTutorial'
 
 interface Props {
   session: Session
@@ -223,6 +229,50 @@ export function TablePanel({
   // offline so a player can experiment with the table on their own —
   // the saved state is harmless when there is no session id.
   const canEdit = session.role !== 'client'
+  /** First-mount onboarding for the tabletop. Two coordinated effects:
+   *  1. Auto-open the tutorial overlay (one-shot per device via
+   *     localStorage; re-openable via the "?" button at the bottom of
+   *     the right toolbar).
+   *  2. Auto-load the `test-grid` preset map for editable users (host or
+   *     offline sandbox) whose tabletop is genuinely empty, so the user
+   *     lands on a non-blank canvas they can immediately interact with
+   *     instead of "what do I do now?". */
+  const [showTutorial, setShowTutorial] = useState(
+    () => !isTabletopTutorialSeen(),
+  )
+  // Auto-load test-grid preset on first mount when canvas is empty.
+  // Gated to `offline` role only because `setMapFromPreset` broadcasts
+  // to peers: silently pushing test-grid onto a populated room would
+  // surprise other players (and could overwrite a host's prior map if
+  // their IndexedDB restore happened to land after our mount). Offline
+  // users have no peers and no async restore, so the case is clean.
+  // The `useRef` guard ensures the attempt fires at most once per
+  // mount even if `role` flickers.
+  const autoPresetDoneRef = useRef(false)
+  useEffect(() => {
+    if (autoPresetDoneRef.current) return
+    if (session.role !== 'offline') return
+    autoPresetDoneRef.current = true
+    const isEmpty =
+      !tabletop.map &&
+      tabletop.tokens.length === 0 &&
+      tabletop.strokes.length === 0 &&
+      tabletop.texts.length === 0
+    if (!isEmpty) return
+    let cancelled = false
+    loadPresetMapManifest().then((list) => {
+      if (cancelled) return
+      const testGrid = list.find((p) => p.id === 'test-grid')
+      if (!testGrid) return
+      void session.setMapFromPreset(testGrid)
+    })
+    return () => {
+      cancelled = true
+    }
+    // Only the first mount matters; deliberately empty deps so a later
+    // change to `tabletop` does not retrigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   /** Which of the bottom-left overlays is visible. Chat and dice are
    *  mutually exclusive — they share the same anchor — so a single
    *  state cleanly represents the rule (boolean pair would allow the
@@ -1221,6 +1271,7 @@ export function TablePanel({
           onLoadTabletopFromLibrary={session.loadTabletopFromLibrary}
           onDeleteTabletopFromLibrary={session.deleteTabletopFromLibrary}
           onNotice={onNotice}
+          onOpenTutorial={() => setShowTutorial(true)}
         />
       {chatPanel && overlay === 'chat' && (
         // Chat opens as a `<Sheet>` (same chrome the Dock-launched
@@ -1267,6 +1318,14 @@ export function TablePanel({
           else if (id === 'returnToRoom') onClose()
         }}
       />
+      {showTutorial && (
+        <TabletopTutorial
+          onClose={() => {
+            setShowTutorial(false)
+            markTabletopTutorialSeen()
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -128,6 +128,28 @@ export const ja: Dict = {
   'tabletop.dock.character': 'キャラ',
   'tabletop.dock.dice': 'ダイス',
   'tabletop.dock.returnToRoom': 'ルームに戻る',
+  'tabletop.help': 'チュートリアル',
+  'tabletop.tutorial.welcome.title': 'テーブルマップへようこそ',
+  'tabletop.tutorial.welcome.body':
+    'マップ上で駒を動かしたり、線や図を描いたり、霧（フォグ）で視界を演出したりできる、セッションの共有キャンバスです。デスクトップでもスマホでも、ストレスなく操作できるよう作っています。',
+  'tabletop.tutorial.viewport.title': 'マップを動かす・拡大する',
+  'tabletop.tutorial.viewport.body':
+    '何もない場所をドラッグで視点移動。マウスホイール、もしくは 2 本指のピンチで拡大／縮小します。自分の視点だけが動くので、他のプレイヤーの邪魔にはなりません。',
+  'tabletop.tutorial.tools.title': '左の道具パレット',
+  'tabletop.tutorial.tools.body':
+    '選択 / ペン / テキスト / 消しゴムが並んでいます。ペンとテキストは色や太さを調整可能。「フォグブラシ」は GM 限定で、マップの一部を隠したり開いたりできます。',
+  'tabletop.tutorial.tokens.title': '自分のトークンを動かす',
+  'tabletop.tutorial.tokens.body':
+    '自分のキャラのトークンはドラッグで自由に移動。タップ／クリックでメニューが出ます。（GM 限定: すべてのトークンを動かしたり、ラベルや名前を編集したり、マップから外したりできます）',
+  'tabletop.tutorial.rightPanel.title': '右側のパネル',
+  'tabletop.tutorial.rightPanel.body':
+    'マップ管理はここに集約。トークン配置に加えて、GM 限定として「マップ＆グリッド設定」「フォグ管理」「テンプレート/セーブのライブラリ」が並びます。',
+  'tabletop.tutorial.dock.title': '下部メニュー',
+  'tabletop.tutorial.dock.body':
+    'チャット、自分のキャラクターシート、ダイスロール、ルームへ戻る。スマホではチャットとダイスは交互表示で、ダイスを振ると自動でチャットに切り替わり結果が見えます。',
+  'tabletop.tutorial.help.title': 'いつでも見直せます',
+  'tabletop.tutorial.help.body':
+    '右側メニューの一番下にある「？」アイコンから、このチュートリアルをいつでも再表示できます。困ったらまずここを覗いてください。',
   'tabletop.preset.title': 'プリセットマップ',
   'tabletop.preset.choose': 'プリセットを選ぶ…',
   'tabletop.preset.load': 'プリセットを読み込む',
