@@ -125,6 +125,7 @@ export const ja: Dict = {
   'tabletop.library.deleted': '削除しました',
   'tabletop.toggle.chat': 'チャット',
   'tabletop.toggle.dice': 'ダイス',
+  'tabletop.dock.nav': 'テーブルマップ操作',
   'tabletop.dock.chat': 'チャット',
   'tabletop.dock.character': 'キャラ',
   'tabletop.dock.dice': 'ダイス',

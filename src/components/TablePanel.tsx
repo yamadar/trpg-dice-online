@@ -1064,7 +1064,7 @@ export function TablePanel({
         // anchored overlay so the canvas is still visible behind it.
         (isMobile ? (
           <Sheet
-            title={t('dice.section')}
+            title={t('tabletop.dock.dice')}
             titleIcon={<DiceIcon size={20} />}
             onClose={() => setShowRolls(false)}
           >

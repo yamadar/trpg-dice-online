@@ -13,13 +13,16 @@ import {
  *  (icon + label, same sizes) means muscle memory carries over and
  *  the user does not have to relearn the bottom row. */
 export type TabletopDockId = 'chat' | 'character' | 'dice' | 'returnToRoom'
+/** Subset of dock IDs that have a "currently showing a panel" state.
+ *  `character` opens an App-level sheet (state lives elsewhere) and
+ *  `returnToRoom` is a one-shot action, so neither participates in the
+ *  active-pip indicator. */
+type TabletopDockActiveId = 'chat' | 'dice'
 
 interface Props {
-  /** Which of the toggle-style buttons currently shows a panel above
-   *  the dock — for the active pip on the icon. `null` when the
-   *  canvas is the foreground. `returnToRoom` is never "active" (it
-   *  is a one-shot action, not a toggle). */
-  active: TabletopDockId | null
+  /** Which toggle button currently shows its panel above the dock.
+   *  `null` when the canvas is the foreground. */
+  active: TabletopDockActiveId | null
   onSelect: (id: TabletopDockId) => void
 }
 
@@ -39,7 +42,7 @@ export function TabletopDock({ active, onSelect }: Props) {
     { id: 'returnToRoom', label: t('tabletop.dock.returnToRoom'), Icon: ArrowLeftIcon },
   ]
   return (
-    <nav className="dock tabletop-dock" aria-label={t('dock.nav')}>
+    <nav className="dock tabletop-dock" aria-label={t('tabletop.dock.nav')}>
       {items.map(({ id, label, Icon }) => (
         <button
           key={id}
