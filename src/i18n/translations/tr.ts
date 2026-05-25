@@ -128,6 +128,28 @@ export const tr: Dict = {
   'tabletop.dock.character': 'Character',
   'tabletop.dock.dice': 'Dice',
   'tabletop.dock.returnToRoom': 'Back to room',
+  'tabletop.help': 'Tutorial',
+  'tabletop.tutorial.welcome.title': 'Welcome to the tabletop',
+  'tabletop.tutorial.welcome.body':
+    'Move tokens, draw markers, manage the fog of war — the tabletop is your shared canvas for the session. Designed to feel good on both desktop and mobile.',
+  'tabletop.tutorial.viewport.title': 'Move and zoom the map',
+  'tabletop.tutorial.viewport.body':
+    'Drag empty space to pan the view. Scroll the mouse wheel or pinch with two fingers to zoom. You can roam freely without disturbing anyone else.',
+  'tabletop.tutorial.tools.title': 'The tool palette (left)',
+  'tabletop.tutorial.tools.body':
+    'Pick Select, Pen, Text, or Eraser from the left palette. Pen and Text let you set color and size. Fog brush (GM only) lets the GM hide and reveal parts of the map.',
+  'tabletop.tutorial.tokens.title': 'Move your token',
+  'tabletop.tutorial.tokens.body':
+    'Drag your own character’s token to move it. Tap a token to open its menu. (GM only: drag any token, edit names and labels, remove tokens from the map.)',
+  'tabletop.tutorial.rightPanel.title': 'The right-side panel',
+  'tabletop.tutorial.rightPanel.body':
+    'All map management lives here: tokens you can place, plus GM-only categories — map & grid settings, fog control, and the template / save library.',
+  'tabletop.tutorial.dock.title': 'The bottom dock',
+  'tabletop.tutorial.dock.body':
+    'Chat, your character sheet, the dice roller, and the way back to the room. On phones, chat and dice swap (one at a time) — and rolling the dice flips you to chat so you can see the result.',
+  'tabletop.tutorial.help.title': 'Re-open this guide anytime',
+  'tabletop.tutorial.help.body':
+    'The “?” button at the bottom of the right-side menu re-opens this tour whenever you need a refresher.',
   'tabletop.preset.title': 'Preset map',
   'tabletop.preset.choose': 'Pick a preset…',
   'tabletop.preset.load': 'Load preset',
