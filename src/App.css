@@ -450,15 +450,16 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  /* Reserve room on the bottom for the new TabletopDock (it lives in
-     normal flow below the canvas, but the wrapper is absolute so we
-     need to keep its own footprint from extending behind the dock).
-     `bottom: 12px` constrains the wrapper to the visible canvas. */
+  /* `bottom: 12px` defines the wrapper's bounds so children with
+     `max-height: 100%` know how tall they may grow before scrolling
+     internally. We do NOT stretch children to fill this height —
+     icon strip and panel each size to their own content (see
+     `align-items: flex-start` below). */
   bottom: 12px;
   z-index: 1;
   display: flex;
   flex-direction: row;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 8px;
   /* Cap the horizontal footprint so a wide panel does not visually
      overflow the left tools palette. The palette eats up to ~76 px
@@ -479,7 +480,10 @@
   flex: 1 1 auto;
   min-width: 240px;
   max-width: 480px;
-  align-self: stretch;
+  /* Vertically: size to content. Cap at the wrapper's height so a
+     very tall category (e.g. a long NPC library) scrolls inside the
+     panel body rather than overflowing past the bottom dock. */
+  max-height: 100%;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -529,6 +533,10 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   font-size: 0.78rem;
   max-width: 132px;
+  /* Vertical size follows content. Cap so a hypothetical longer
+     category list still scrolls inside the strip rather than
+     overflowing the wrapper. */
+  max-height: 100%;
   overflow-y: auto;
 }
 .tabletop-toolbar-icon-btn {
