@@ -301,6 +301,13 @@ interface Props {
   onOpenImage: (file: ChatFile) => void
   /** Overrides the default "nothing here yet" hint when the feed is empty. */
   emptyState?: ReactNode
+  /** Fired when the user has caught up with the feed (auto-scrolled to
+   *  the bottom, or feed updated while already at the bottom). Drives
+   *  the App-level unread chat marker. */
+  onSeenLatestChat?: () => void
+  /** Whether there are chat messages newer than what the user has
+   *  seen. Renders a red dot on the jump-to-latest button. */
+  hasUnreadChat?: boolean
 }
 
 /** The scrollable roll + chat timeline. */
@@ -317,6 +324,8 @@ export function FeedList({
   onOpenDetail,
   onOpenImage,
   emptyState,
+  onSeenLatestChat,
+  hasUnreadChat,
 }: Props) {
   const { t, lang } = useI18n()
   const listRef = useRef<HTMLUListElement>(null)
@@ -330,8 +339,13 @@ export function FeedList({
 
   useEffect(() => {
     const el = listRef.current
-    if (el && stuckToBottom.current) el.scrollTop = el.scrollHeight
-  }, [feed.length, pending.length])
+    if (el && stuckToBottom.current) {
+      el.scrollTop = el.scrollHeight
+      // The user has caught up by virtue of being parked at the bottom
+      // when a new entry arrived — clear the App-level unread marker.
+      onSeenLatestChat?.()
+    }
+  }, [feed.length, pending.length, onSeenLatestChat])
 
   const onScroll = () => {
     const el = listRef.current
@@ -339,6 +353,9 @@ export function FeedList({
     const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_THRESHOLD
     stuckToBottom.current = isAtBottom
     setAtBottom(isAtBottom)
+    // Reaching the bottom clears the unread marker — the user has now
+    // physically seen the latest message.
+    if (isAtBottom) onSeenLatestChat?.()
   }
 
   const jumpToLatest = () => {
@@ -424,12 +441,19 @@ export function FeedList({
     {!atBottom && (
       <button
         type="button"
-        className="feed-jump-latest"
+        className={`feed-jump-latest${hasUnreadChat ? ' has-unread' : ''}`}
         aria-label={t('feed.jumpToLatest')}
         title={t('feed.jumpToLatest')}
         onClick={jumpToLatest}
       >
         <ChevronDownIcon />
+        {hasUnreadChat && (
+          // Red unread-message indicator. Aria-hidden because the
+          // button's aria-label already announces "jump to latest" —
+          // the dot is a visual nudge, not a separately announced
+          // semantic element.
+          <span className="feed-jump-latest-dot" aria-hidden="true" />
+        )}
       </button>
     )}
     </div>

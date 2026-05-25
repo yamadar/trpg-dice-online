@@ -88,6 +88,27 @@ function App() {
   const [showTyping, setShowTyping] = useState(loadShowTyping)
   const [broadcastTyping, setBroadcastTyping] = useState(loadBroadcastTyping)
 
+  // Unread chat tracking — drives the red dot on the tabletop dock's
+  // chat icon and the room view's "jump to latest" button. The user
+  // is considered up-to-date with the chat when they are scrolled to
+  // the bottom of the feed AND the feed is visible (room view, or
+  // tabletop with the chat Sheet open). Both conditions are signalled
+  // by `markChatRead`, fired from FeedList on auto-scroll / scroll-
+  // to-bottom. `lastReadChatId` initialises to the current latest so
+  // app-startup messages never appear as unread.
+  const [lastReadChatId, setLastReadChatId] = useState<string | null>(() =>
+    session.chat.length > 0 ? session.chat[session.chat.length - 1].id : null,
+  )
+  const latestChatId =
+    session.chat.length > 0 ? session.chat[session.chat.length - 1].id : null
+  const hasUnreadChat =
+    latestChatId !== null && latestChatId !== lastReadChatId
+  const markChatRead = useCallback(() => {
+    setLastReadChatId(
+      (prev) => (latestChatId !== null ? latestChatId : prev),
+    )
+  }, [latestChatId])
+
   const { updateIdentity, setCharacterImage, resumeRoom } = session
   const activeCharacterId = characters.activeId ?? ''
   const activeName = characters.activeCharacter?.name
@@ -361,6 +382,8 @@ function App() {
             broadcastTyping={broadcastTyping}
             onNotice={flash}
             onOpenRoom={() => setOpenSheet('room')}
+            onSeenLatestChat={markChatRead}
+            hasUnreadChat={hasUnreadChat}
           />
         )}
       </main>
@@ -464,6 +487,8 @@ function App() {
             activeCharacterId={activeCharacterId}
             onOpenCharacter={() => setOpenSheet('character')}
             onNotice={flash}
+            hasUnreadChat={hasUnreadChat}
+            onChatOpened={markChatRead}
             chatPanel={
               <ActivityPanel
                 session={session}
@@ -473,6 +498,8 @@ function App() {
                 broadcastTyping={broadcastTyping}
                 onNotice={flash}
                 onOpenRoom={() => setOpenSheet('room')}
+                onSeenLatestChat={markChatRead}
+                hasUnreadChat={hasUnreadChat}
               />
             }
             rollsPanel={

@@ -73,6 +73,14 @@ interface Props {
   onNotice: (message: string, kind?: 'success' | 'error') => void
   /** Opens the Room sheet; surfaced from the empty-feed CTA when offline. */
   onOpenRoom: () => void
+  /** Called when the user has caught up with the chat (auto-scrolled
+   *  to the bottom of the feed). Used by App to clear the unread
+   *  notification dot. */
+  onSeenLatestChat?: () => void
+  /** Whether there are chat messages newer than what the user has
+   *  seen. Threaded down to FeedList so the "jump to latest" button
+   *  can render a red dot. */
+  hasUnreadChat?: boolean
 }
 
 /**
@@ -89,6 +97,8 @@ export function ActivityPanel({
   broadcastTyping,
   onNotice,
   onOpenRoom,
+  onSeenLatestChat,
+  hasUnreadChat,
 }: Props) {
   const { t } = useI18n()
   const [filter, setFilter] = useState<FeedFilter>('all')
@@ -338,6 +348,8 @@ export function ActivityPanel({
         onOpenDetail={setDetail}
         onOpenImage={openLightbox}
         emptyState={emptyState}
+        onSeenLatestChat={onSeenLatestChat}
+        hasUnreadChat={hasUnreadChat}
       />
 
       <p className="typing-line" aria-live="polite">
