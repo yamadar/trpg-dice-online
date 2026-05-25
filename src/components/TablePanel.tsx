@@ -40,8 +40,9 @@ import {
 } from '../tabletop/hexGrid'
 import type { Character } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
-import { CloseIcon, DiceIcon, TrashIcon } from './icons'
+import { ChatIcon, CloseIcon, DiceIcon, TrashIcon } from './icons'
 import { Sheet } from './Sheet'
+import { SpeechBubble } from './SpeechBubble'
 import { TabletopDock } from './TabletopDock'
 import { TableToolbar } from './TableToolbar'
 import { TableTools, type TableTool } from './TableTools'
@@ -79,6 +80,13 @@ interface Props {
   onOpenCharacter?: () => void
   /** Surface a flash message (forwarded to the toolbar). */
   onNotice?: (text: string, kind: 'success' | 'error') => void
+  /** True when there are chat messages newer than what the user has
+   *  seen. Drives the red dot on the bottom dock's chat icon. */
+  hasUnreadChat?: boolean
+  /** Fires when the user explicitly opens the chat overlay from the
+   *  dock. App listens to clear the unread marker — opening the chat
+   *  is a natural "I'm catching up" signal. */
+  onChatOpened?: () => void
 }
 
 interface PanState {
@@ -109,6 +117,83 @@ const WHEEL_ZOOM_FACTOR = 1.1
  * pan / zoom for every layer at once. Pan is deliberately *not* a
  * single-finger drag so PR 4's token drag does not collide with it.
  */
+
+/** How long a speech bubble lingers above its token (ms). */
+const BUBBLE_TTL_MS = 6000
+/** Distance from the token centre to the bubble centre at the default
+ *  grid (cellSize 50, token radius ≈ 23). The real distance scales
+ *  with `grid.cellSize` so large grids — where tokens are
+ *  proportionally bigger — push the bubble farther out, avoiding any
+ *  visible overlap with the token icon itself. */
+const BUBBLE_OFFSET_BASE = 70
+/** Approximate bubble half-width / half-height in world px at scale = 1.
+ *  Used by the avoid-overlap check; matches SpeechBubble's constants. */
+const BUBBLE_HALF_W = 80
+const BUBBLE_HALF_H = 28
+
+/**
+ * Pick an offset direction for a new bubble that does not overlap any
+ * other token's circle. Tries the 8 cardinal/diagonal directions
+ * (starting from "up" and rotating clockwise) and returns the first
+ * direction whose computed bubble bounding box has no token within it.
+ * Falls back to the random direction if every direction is blocked.
+ *
+ * `cellSize` scales the offset so larger grids — which render larger
+ * tokens — get a proportionally larger bubble distance.
+ */
+function pickBubbleOffset(
+  speaker: Token,
+  allTokens: Token[],
+  cellSize: number,
+): { x: number; y: number } {
+  // Token radius (cellSize/2 - 2, clamped >= 8). Mirrors TokenView.
+  const tokenRadius = Math.max(8, cellSize / 2 - 2)
+  const offsetDist = Math.max(BUBBLE_OFFSET_BASE, tokenRadius * 2 + 24)
+  // Order: up, up-right, right, down-right, down, down-left, left, up-left.
+  // "Up" first because that's the conventional chat-bubble placement.
+  const directions: Array<{ x: number; y: number }> = [
+    { x: 0, y: -1 },
+    { x: 0.7, y: -0.7 },
+    { x: 1, y: 0 },
+    { x: 0.7, y: 0.7 },
+    { x: 0, y: 1 },
+    { x: -0.7, y: 0.7 },
+    { x: -1, y: 0 },
+    { x: -0.7, y: -0.7 },
+  ]
+  // Randomise the start so multiple consecutive speakers don't pile
+  // every bubble in the same "up" slot.
+  const startAt = Math.floor(Math.random() * directions.length)
+  // Inflate the overlap margin by the token's render radius so a
+  // bubble that places a token JUST outside its bbox but whose circle
+  // would still intrude is rejected.
+  const margin = tokenRadius + 8
+  for (let i = 0; i < directions.length; i += 1) {
+    const dir = directions[(startAt + i) % directions.length]
+    const offX = dir.x * offsetDist
+    const offY = dir.y * offsetDist
+    const cx = speaker.x + offX
+    const cy = speaker.y + offY
+    const blocked = allTokens.some((tk) => {
+      if (tk.id === speaker.id) return false
+      return (
+        tk.x >= cx - BUBBLE_HALF_W - margin &&
+        tk.x <= cx + BUBBLE_HALF_W + margin &&
+        tk.y >= cy - BUBBLE_HALF_H - margin &&
+        tk.y <= cy + BUBBLE_HALF_H + margin
+      )
+    })
+    if (!blocked) return { x: offX, y: offY }
+  }
+  // Everything overlapped — return the first (randomised) direction
+  // anyway. Better a slight overlap than no bubble at all.
+  const fallback = directions[startAt]
+  return {
+    x: fallback.x * offsetDist,
+    y: fallback.y * offsetDist,
+  }
+}
+
 export function TablePanel({
   session,
   onClose,
@@ -118,6 +203,8 @@ export function TablePanel({
   rollsPanel,
   onOpenCharacter,
   onNotice,
+  hasUnreadChat,
+  onChatOpened,
 }: Props) {
   const { t } = useI18n()
   const {
@@ -155,8 +242,16 @@ export function TablePanel({
     mq.addEventListener('change', onChange)
     return () => mq.removeEventListener('change', onChange)
   }, [])
-  const toggleOverlay = (next: 'chat' | 'dice') =>
-    setOverlay((prev) => (prev === next ? null : next))
+  const toggleOverlay = (next: 'chat' | 'dice') => {
+    setOverlay((prev) => {
+      const result = prev === next ? null : next
+      // Opening chat is a natural "user is now reading" signal —
+      // tell App to clear the unread dot. (No-op when the chat is
+      // already open, or when the toggle is closing it.)
+      if (result === 'chat') onChatOpened?.()
+      return result
+    })
+  }
   // When the local player commits a roll while the dice overlay is
   // open, swap to chat so the result is visible. Watching
   // `session.history` lets us react without entangling the App-owned
@@ -186,6 +281,75 @@ export function TablePanel({
       setOverlay('chat')
     }
   }
+  // --- Speech bubbles ---
+  // Floating bubbles anchored above PC tokens for a few seconds when
+  // their owner posts a chat message. Detection is the same render-
+  // phase derived-state pattern the roll auto-swap above uses: track
+  // the latest seen chat id and react to a fresh one without an
+  // effect, which React 19's `set-state-in-effect` lint would reject.
+  const [bubbles, setBubbles] = useState<
+    Array<{
+      key: string
+      tokenId: string
+      text: string
+      offsetX: number
+      offsetY: number
+      createdAt: number
+    }>
+  >([])
+  const [lastSeenChatBubbleId, setLastSeenChatBubbleId] = useState<
+    string | null
+  >(() =>
+    session.chat.length > 0 ? session.chat[session.chat.length - 1].id : null,
+  )
+  const lastChat =
+    session.chat.length > 0 ? session.chat[session.chat.length - 1] : null
+  if (lastChat && lastChat.id !== lastSeenChatBubbleId) {
+    setLastSeenChatBubbleId(lastChat.id)
+    // Only bubble character speech anchored to a placed PC token —
+    // GM-as-self / player-as-self messages (characterId='') and chat
+    // from players without a token on the table are silent.
+    if (lastChat.characterId !== '' && lastChat.text.trim().length > 0) {
+      const token = tabletop.tokens.find(
+        (tk) =>
+          tk.kind === 'pc' &&
+          tk.ownerPlayerId === lastChat.playerId &&
+          tk.characterId === lastChat.characterId,
+      )
+      if (token) {
+        const offset = pickBubbleOffset(
+          token,
+          tabletop.tokens,
+          tabletop.grid.cellSize,
+        )
+        setBubbles((prev) => [
+          ...prev,
+          {
+            key: lastChat.id,
+            tokenId: token.id,
+            text: lastChat.text,
+            offsetX: offset.x,
+            offsetY: offset.y,
+            createdAt: Date.now(),
+          },
+        ])
+      }
+    }
+  }
+  // Schedule per-bubble removal. The effect re-runs whenever the
+  // bubble set changes so brand-new bubbles each get their own timer;
+  // already-scheduled ones are cleaned up + re-scheduled with their
+  // remaining time, which is idempotent in practice.
+  useEffect(() => {
+    if (bubbles.length === 0) return
+    const timers = bubbles.map((b) => {
+      const remaining = b.createdAt + BUBBLE_TTL_MS - Date.now()
+      return window.setTimeout(() => {
+        setBubbles((prev) => prev.filter((p) => p.key !== b.key))
+      }, Math.max(0, remaining))
+    })
+    return () => timers.forEach((t) => window.clearTimeout(t))
+  }, [bubbles])
   // Mirrors the wire-level permission: a non-host can drag their own
   // PC tokens; a host (or offline sandbox) can drag anything. Wrapped
   // here so the `draggable` prop on each `TokenView` reads it
@@ -876,6 +1040,28 @@ export function TablePanel({
                 />
               ))}
             </Layer>
+            {/* Speech bubbles — above tokens so a bubble never hides
+                under the token icon it belongs to. listening=false
+                so the bubbles never intercept clicks meant for
+                tokens / map text below. */}
+            {bubbles.length > 0 && (
+              <Layer listening={false}>
+                {bubbles.map((b) => {
+                  const tk = tabletop.tokens.find((t) => t.id === b.tokenId)
+                  if (!tk) return null
+                  return (
+                    <SpeechBubble
+                      key={b.key}
+                      token={tk}
+                      text={b.text}
+                      offsetX={b.offsetX}
+                      offsetY={b.offsetY}
+                      scale={stageScale}
+                    />
+                  )
+                })}
+              </Layer>
+            )}
             {/* Text labels — above tokens. Listens for clicks in
                 eraser mode so the owner / GM can remove their own. */}
             <Layer listening={tool === 'eraser'}>
@@ -1037,12 +1223,17 @@ export function TablePanel({
           onNotice={onNotice}
         />
       {chatPanel && overlay === 'chat' && (
-        <aside
-          className="tabletop-overlay tabletop-overlay-chat"
-          aria-label={t('tabletop.dock.chat')}
+        // Chat opens as a `<Sheet>` (same chrome the Dock-launched
+        // character / dice sheets use) so backdrop click + Escape
+        // close behaviour is shared. On mobile it covers the dock
+        // ("snap to the very bottom") just like the others.
+        <Sheet
+          title={t('tabletop.dock.chat')}
+          titleIcon={<ChatIcon size={20} />}
+          onClose={() => setOverlay(null)}
         >
           {chatPanel}
-        </aside>
+        </Sheet>
       )}
       {rollsPanel && overlay === 'dice' &&
         // On mobile the dice overlay re-uses the same `<Sheet>`
@@ -1069,6 +1260,7 @@ export function TablePanel({
       </div>
       <TabletopDock
         active={overlay}
+        unreadChat={hasUnreadChat && overlay !== 'chat'}
         onSelect={(id) => {
           if (id === 'chat' || id === 'dice') toggleOverlay(id)
           else if (id === 'character') onOpenCharacter?.()
