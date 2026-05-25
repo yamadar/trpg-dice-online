@@ -144,38 +144,32 @@ export function TablePanel({
   /** Single toggle for the combined dice + patterns overlay. */
   const [showRolls, setShowRolls] = useState(false)
   /** True while the viewport is narrow enough to be considered a
-   *  phone (matches the same 720px breakpoint our CSS uses). On
-   *  mobile, chat and dice are mutually exclusive so they don't
-   *  fight for vertical screen real estate. */
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.matchMedia('(max-width: 720px)').matches
-  })
+   *  phone (matches the same 720px breakpoint our CSS uses). The
+   *  mobile dice UI is a full-screen `<Sheet>`; desktop is a
+   *  floating overlay above the canvas. */
+  const [isMobile, setIsMobile] = useState(
+    () => window.matchMedia('(max-width: 720px)').matches,
+  )
   useEffect(() => {
-    if (typeof window === 'undefined') return
     const mq = window.matchMedia('(max-width: 720px)')
     const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches)
     mq.addEventListener('change', onChange)
     return () => mq.removeEventListener('change', onChange)
   }, [])
-  const toggleChat = useCallback(() => {
-    setShowChat((prev) => {
-      const next = !prev
-      // On mobile, only one of chat / dice is visible at a time so
-      // the bottom overlay stays usable on a phone-sized canvas.
-      if (next && isMobile) setShowRolls(false)
-      return next
-    })
-  }, [isMobile])
-  const toggleRolls = useCallback(() => {
-    setShowRolls((prev) => {
-      const next = !prev
-      if (next && isMobile) setShowChat(false)
-      return next
-    })
-  }, [isMobile])
+  // Chat and dice share the bottom-left overlay slot so only one is
+  // visible at a time on every viewport. Keeps the dock's `active`
+  // pip truthful and avoids stacking two floating panels on top of
+  // the tools palette.
+  const toggleChat = () => {
+    setShowChat((prev) => !prev)
+    setShowRolls(false)
+  }
+  const toggleRolls = () => {
+    setShowRolls((prev) => !prev)
+    setShowChat(false)
+  }
   // When the local player commits a roll while the dice overlay is
-  // open on mobile, swap to chat so the result is visible. Watching
+  // open, swap to chat so the result is visible. Watching
   // `session.history` lets us react without entangling the App-owned
   // roll dispatch with TablePanel-owned state. Implemented as
   // render-phase "derived state" (the React-recommended escape hatch
@@ -199,7 +193,7 @@ export function TablePanel({
       : null
   if (lastRoll && lastSeenRollId !== lastRoll.id) {
     setLastSeenRollId(lastRoll.id)
-    if (isMobile && showRolls && lastRoll.playerId === session.playerId) {
+    if (showRolls && lastRoll.playerId === session.playerId) {
       setShowRolls(false)
       setShowChat(true)
     }
