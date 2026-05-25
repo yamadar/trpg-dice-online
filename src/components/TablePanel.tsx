@@ -241,25 +241,24 @@ export function TablePanel({
     () => !isTabletopTutorialSeen(),
   )
   // Auto-load test-grid preset on first mount when canvas is empty.
-  // Guarded with a ref so a host-with-empty-table that then CLEARs
-  // their map doesn't get the preset jammed back in on the next
-  // render — only the first attempt fires per mount.
+  // Gated to `offline` role only because `setMapFromPreset` broadcasts
+  // to peers: silently pushing test-grid onto a populated room would
+  // surprise other players (and could overwrite a host's prior map if
+  // their IndexedDB restore happened to land after our mount). Offline
+  // users have no peers and no async restore, so the case is clean.
+  // The `useRef` guard ensures the attempt fires at most once per
+  // mount even if `role` flickers.
   const autoPresetDoneRef = useRef(false)
   useEffect(() => {
     if (autoPresetDoneRef.current) return
-    if (!canEdit) return
+    if (session.role !== 'offline') return
+    autoPresetDoneRef.current = true
     const isEmpty =
       !tabletop.map &&
       tabletop.tokens.length === 0 &&
       tabletop.strokes.length === 0 &&
       tabletop.texts.length === 0
-    if (!isEmpty) {
-      // Existing content — never auto-load. Mark done so a later
-      // clear doesn't re-trigger.
-      autoPresetDoneRef.current = true
-      return
-    }
-    autoPresetDoneRef.current = true
+    if (!isEmpty) return
     let cancelled = false
     loadPresetMapManifest().then((list) => {
       if (cancelled) return
