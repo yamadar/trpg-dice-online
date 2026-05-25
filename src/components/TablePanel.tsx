@@ -136,13 +136,12 @@ export function TablePanel({
   // offline so a player can experiment with the table on their own —
   // the saved state is harmless when there is no session id.
   const canEdit = session.role !== 'client'
-  /** Chat / dice overlays default OFF — they belong to the rest of
-   *  the app and should not block the canvas on a first look. The
-   *  right-side map-ops toolbar (TableToolbar) now renders
-   *  unconditionally so its icon strip is always reachable. */
-  const [showChat, setShowChat] = useState(false)
-  /** Single toggle for the combined dice + patterns overlay. */
-  const [showRolls, setShowRolls] = useState(false)
+  /** Which of the bottom-left overlays is visible. Chat and dice are
+   *  mutually exclusive — they share the same anchor — so a single
+   *  state cleanly represents the rule (boolean pair would allow the
+   *  invalid both-on state and forced ad-hoc `active=` derivation).
+   *  `null` = canvas in the foreground. */
+  const [overlay, setOverlay] = useState<'chat' | 'dice' | null>(null)
   /** True while the viewport is narrow enough to be considered a
    *  phone (matches the same 720px breakpoint our CSS uses). The
    *  mobile dice UI is a full-screen `<Sheet>`; desktop is a
@@ -156,18 +155,8 @@ export function TablePanel({
     mq.addEventListener('change', onChange)
     return () => mq.removeEventListener('change', onChange)
   }, [])
-  // Chat and dice share the bottom-left overlay slot so only one is
-  // visible at a time on every viewport. Keeps the dock's `active`
-  // pip truthful and avoids stacking two floating panels on top of
-  // the tools palette.
-  const toggleChat = () => {
-    setShowChat((prev) => !prev)
-    setShowRolls(false)
-  }
-  const toggleRolls = () => {
-    setShowRolls((prev) => !prev)
-    setShowChat(false)
-  }
+  const toggleOverlay = (next: 'chat' | 'dice') =>
+    setOverlay((prev) => (prev === next ? null : next))
   // When the local player commits a roll while the dice overlay is
   // open, swap to chat so the result is visible. Watching
   // `session.history` lets us react without entangling the App-owned
@@ -193,9 +182,8 @@ export function TablePanel({
       : null
   if (lastRoll && lastSeenRollId !== lastRoll.id) {
     setLastSeenRollId(lastRoll.id)
-    if (showRolls && lastRoll.playerId === session.playerId) {
-      setShowRolls(false)
-      setShowChat(true)
+    if (overlay === 'dice' && lastRoll.playerId === session.playerId) {
+      setOverlay('chat')
     }
   }
   // Mirrors the wire-level permission: a non-host can drag their own
@@ -1048,15 +1036,15 @@ export function TablePanel({
           onDeleteTabletopFromLibrary={session.deleteTabletopFromLibrary}
           onNotice={onNotice}
         />
-      {chatPanel && showChat && (
+      {chatPanel && overlay === 'chat' && (
         <aside
           className="tabletop-overlay tabletop-overlay-chat"
-          aria-label={t('tabletop.toggle.chat')}
+          aria-label={t('tabletop.dock.chat')}
         >
           {chatPanel}
         </aside>
       )}
-      {rollsPanel && showRolls &&
+      {rollsPanel && overlay === 'dice' &&
         // On mobile the dice overlay re-uses the same `<Sheet>`
         // chrome the Dock-launched dice sheet does so the UX is
         // identical between the two entry points (header + close
@@ -1066,24 +1054,23 @@ export function TablePanel({
           <Sheet
             title={t('tabletop.dock.dice')}
             titleIcon={<DiceIcon size={20} />}
-            onClose={() => setShowRolls(false)}
+            onClose={() => setOverlay(null)}
           >
             {rollsPanel}
           </Sheet>
         ) : (
           <aside
             className="tabletop-overlay tabletop-overlay-rolls"
-            aria-label={t('tabletop.toggle.dice')}
+            aria-label={t('tabletop.dock.dice')}
           >
             {rollsPanel}
           </aside>
         ))}
       </div>
       <TabletopDock
-        active={showChat ? 'chat' : showRolls ? 'dice' : null}
+        active={overlay}
         onSelect={(id) => {
-          if (id === 'chat') toggleChat()
-          else if (id === 'dice') toggleRolls()
+          if (id === 'chat' || id === 'dice') toggleOverlay(id)
           else if (id === 'character') onOpenCharacter?.()
           else if (id === 'returnToRoom') onClose()
         }}

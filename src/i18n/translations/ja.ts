@@ -123,8 +123,6 @@ export const ja: Dict = {
   'tabletop.library.loaded': 'テーブルを読み込みました',
   'tabletop.library.loadFailed': '読み込みに失敗しました',
   'tabletop.library.deleted': '削除しました',
-  'tabletop.toggle.chat': 'チャット',
-  'tabletop.toggle.dice': 'ダイス',
   'tabletop.dock.nav': 'テーブルマップ操作',
   'tabletop.dock.chat': 'チャット',
   'tabletop.dock.character': 'キャラ',

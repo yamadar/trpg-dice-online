@@ -123,8 +123,6 @@ export const ar: Dict = {
   'tabletop.library.loaded': 'Tabletop loaded.',
   'tabletop.library.loadFailed': 'Load failed.',
   'tabletop.library.deleted': 'Entry deleted.',
-  'tabletop.toggle.chat': 'Chat',
-  'tabletop.toggle.dice': 'Dice',
   'tabletop.dock.nav': 'Tabletop dock',
   'tabletop.dock.chat': 'Chat',
   'tabletop.dock.character': 'Character',
