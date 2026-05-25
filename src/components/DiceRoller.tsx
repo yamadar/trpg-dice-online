@@ -153,7 +153,7 @@ export function DiceRoller({ draft, onChange, isGM, onRoll, onSave }: Props) {
               <span className="chip-kind-icon" aria-hidden="true">
                 <KindIcon kind={k} size={16} />
               </span>
-              <span>{t(`kind.${k}`)}</span>
+              {t(`kind.${k}`)}
             </button>
           ))}
         </div>
