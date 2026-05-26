@@ -99,6 +99,7 @@ import {
   defaultPlacementOrigin,
   makeGmToken,
   planPcTokenAdds,
+  recenterTokensOnMap,
 } from '../tabletop/tokens'
 import { prepareNpcTokenImage } from '../characters/image'
 import { ChunkBuffer, chunkString } from '../tabletop/imageChunk'
@@ -1010,7 +1011,25 @@ export function useSession(): Session {
         height: result.height,
         dataUrl: result.dataUrl,
       }
-      applyTabletop({ ...tabletopRef.current, map })
+      // When this is the FIRST map ever set on the tabletop, shift any
+      // existing tokens (placed by `ensurePcTokens` at the world's
+      // top-left) onto the new map's centre so they land where the
+      // user expects them rather than stuck at (cell/2, cell/2).
+      const prev = tabletopRef.current
+      const tokens = prev.map
+        ? prev.tokens
+        : recenterTokensOnMap(prev.tokens, map)
+      const next: TabletopState = { ...prev, map, tokens }
+      applyTabletop(next)
+      if (tokens !== prev.tokens) {
+        // Token positions changed: peers need to know. Reuse the
+        // existing `tabletopState` channel (small JSON, no map bytes)
+        // — clients receive the move along with the new map metadata.
+        roomRef.current?.broadcast({
+          t: 'tabletopState',
+          state: stripMapBytesForWire(next),
+        })
+      }
       broadcastMapAsChunks(map)
       return 'ok'
     },
@@ -1086,7 +1105,7 @@ export function useSession(): Session {
       const plans = planPcTokenAdds(
         [{ id: target.id, characterId: target.characterId }],
         tabletopRef.current.tokens,
-        tabletopRef.current.grid,
+        tabletopRef.current,
       )
       if (plans.length === 0) return
       applyTabletop({
@@ -1721,7 +1740,20 @@ export function useSession(): Session {
         height: result.height,
         dataUrl: result.dataUrl,
       }
-      applyTabletop({ ...tabletopRef.current, map })
+      // Same first-map recenter as `setMapBackground` — see comment
+      // there for the rationale.
+      const prev = tabletopRef.current
+      const tokens = prev.map
+        ? prev.tokens
+        : recenterTokensOnMap(prev.tokens, map)
+      const next: TabletopState = { ...prev, map, tokens }
+      applyTabletop(next)
+      if (tokens !== prev.tokens) {
+        roomRef.current?.broadcast({
+          t: 'tabletopState',
+          state: stripMapBytesForWire(next),
+        })
+      }
       broadcastMapAsChunks(map)
       return 'ok'
     },
@@ -1808,7 +1840,7 @@ export function useSession(): Session {
     const plans = planPcTokenAdds(
       roster,
       tabletopRef.current.tokens,
-      tabletopRef.current.grid,
+      tabletopRef.current,
     )
     if (plans.length === 0) return
     const next: TabletopState = {
