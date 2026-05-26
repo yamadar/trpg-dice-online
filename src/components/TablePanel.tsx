@@ -421,6 +421,38 @@ export function TablePanel({
    *     out when it cannot find the token in the list).
    */
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null)
+  /** A one-shot "look here!" pulse anchored to a token's position.
+   *  Driven from the placed-tokens list focus action (so the user can
+   *  see WHICH token the list row referred to without us also popping
+   *  the edit popover). `key` increments per trigger so re-clicking the
+   *  same row replays the animation. `phase` runs 0→1 over the
+   *  animation's lifetime. */
+  const [pulse, setPulse] = useState<{
+    tokenId: string
+    key: number
+    phase: number
+  } | null>(null)
+  useEffect(() => {
+    if (!pulse) return
+    // Skip if this effect run is for a finished animation — we only
+    // start a new RAF loop when `key` ticks.
+    if (pulse.phase >= 1) return
+    let raf = 0
+    const start = performance.now()
+    const DURATION_MS = 720
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / DURATION_MS)
+      setPulse((cur) =>
+        cur && cur.key === pulse.key ? { ...cur, phase: t } : cur,
+      )
+      if (t < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+    // Only the `key` change should restart the animation — `phase`
+    // updates from inside the loop must not re-trigger it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pulse?.key])
   const selectedToken = useMemo(
     () =>
       selectedTokenId === null
@@ -1098,6 +1130,30 @@ export function TablePanel({
                 />
               ))}
             </Layer>
+            {/* Focus pulse — a single short-lived ring that expands
+                and fades, anchored to whichever token was just focused
+                via the placed-tokens list. Sits above the token layer
+                so it overlays the disc, and below labels / fog so the
+                ring never gets clipped. `listening={false}` keeps the
+                ring out of pointer events. */}
+            {pulse &&
+              (() => {
+                const tk = tabletop.tokens.find(
+                  (t) => t.id === pulse.tokenId,
+                )
+                if (!tk) return null
+                return (
+                  <Layer listening={false}>
+                    <FocusPulse
+                      x={tk.x}
+                      y={tk.y}
+                      grid={tabletop.grid}
+                      scale={stageScale}
+                      phase={pulse.phase}
+                    />
+                  </Layer>
+                )
+              })()}
             {/* Speech bubbles — above tokens so a bubble never hides
                 under the token icon it belongs to. listening=false
                 so the bubbles never intercept clicks meant for
@@ -1260,12 +1316,21 @@ export function TablePanel({
           onFocusToken={(tokenId) => {
             const tok = tabletop.tokens.find((t) => t.id === tokenId)
             if (!tok) return
-            setSelectedTokenId(tokenId)
             // Centre the viewport on the token without changing the
             // current zoom — same formula the render-phase "centre on
             // map" path uses (size/2 - worldCoord * scale).
             setStageX(size.width / 2 - tok.x * stageScale)
             setStageY(size.height / 2 - tok.y * stageScale)
+            // Trigger a brief pulse ring at the token's position so the
+            // user can spot which token the list row referred to.
+            // Intentionally does NOT set `selectedTokenId` — the edit
+            // popover stays reserved for direct taps on the token on
+            // the canvas; tapping a list row only "draws attention".
+            setPulse((prev) => ({
+              tokenId,
+              key: (prev?.key ?? 0) + 1,
+              phase: 0,
+            }))
           }}
           isHost={canEdit}
           tabletopLibrary={session.tabletopLibrary}
@@ -1548,6 +1613,55 @@ function labelForToken(token: Token, session: Session): string | undefined {
   // snapshot captured at place time. This is how a non-active
   // character of the same player gets a label rendered.
   return token.snapshot?.name || undefined
+}
+
+interface FocusPulseProps {
+  /** Token centre, world coords. */
+  x: number
+  y: number
+  grid: Grid
+  scale: number
+  /** Animation progress 0..1. The component is mounted while phase < 1
+   *  and unmounted by the parent when the run completes. */
+  phase: number
+}
+
+/**
+ * One-shot "look here!" ring anchored on a token. Rendered when the
+ * user picks a token row from the right-side placed-tokens list — a
+ * subtle alternative to opening the edit popover that just helps the
+ * eye find the token after the camera re-centres on it.
+ *
+ * Two concentric rings expand and fade with a cubic ease-out so the
+ * motion feels like a quick "tap" rather than a slow throb.
+ */
+function FocusPulse({ x, y, grid, scale, phase }: FocusPulseProps) {
+  const baseRadius = Math.max(8, grid.cellSize / 2 - 2)
+  // Cubic ease-out — fast initial expansion that decelerates.
+  const eased = 1 - Math.pow(1 - phase, 3)
+  // World-coord stroke widths shrink with scale so the line stays
+  // about the same on-screen weight regardless of zoom.
+  const px = (v: number) => v / scale
+  const outerRadius = baseRadius * (1 + eased * 1.4)
+  const outerOpacity = 1 - eased
+  const innerRadius = baseRadius * (1 + eased * 0.7)
+  const innerOpacity = (1 - eased) * 0.6
+  return (
+    <Group x={x} y={y} listening={false}>
+      <Circle
+        radius={outerRadius}
+        stroke="#fde68a"
+        strokeWidth={px(3.5)}
+        opacity={outerOpacity}
+      />
+      <Circle
+        radius={innerRadius}
+        stroke="#ffffff"
+        strokeWidth={px(2)}
+        opacity={innerOpacity}
+      />
+    </Group>
+  )
 }
 
 interface TokenViewProps {
