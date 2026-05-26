@@ -7,6 +7,7 @@ import {
   defaultPlacementOrigin,
   makeGmToken,
   planPcTokenAdds,
+  recenterTokensOnMap,
 } from './tokens'
 import {
   DEFAULT_GRID,
@@ -57,7 +58,7 @@ describe('planPcTokenAdds', () => {
       { id: 'p1', characterId: 'chr-1' },
       { id: 'p2', characterId: 'chr-2' },
     ]
-    const plans = planPcTokenAdds(players, [], grid)
+    const plans = planPcTokenAdds(players, [], stateOnly)
     expect(plans).toHaveLength(2)
     expect(plans[0].kind).toBe('pc')
     expect(plans[0].ownerPlayerId).toBe('p1')
@@ -71,7 +72,7 @@ describe('planPcTokenAdds', () => {
       { id: 'p2', characterId: 'chr-2' },
     ]
     const existing = [pc({ ownerPlayerId: 'p1', characterId: 'chr-1' })]
-    const plans = planPcTokenAdds(players, existing, grid)
+    const plans = planPcTokenAdds(players, existing, stateOnly)
     expect(plans).toHaveLength(1)
     expect(plans[0].ownerPlayerId).toBe('p2')
   })
@@ -81,14 +82,14 @@ describe('planPcTokenAdds', () => {
     // GM later removes the old one if it's not in use.
     const players = [{ id: 'p1', characterId: 'chr-mage' }]
     const existing = [pc({ ownerPlayerId: 'p1', characterId: 'chr-knight' })]
-    const plans = planPcTokenAdds(players, existing, grid)
+    const plans = planPcTokenAdds(players, existing, stateOnly)
     expect(plans).toHaveLength(1)
     expect(plans[0].characterId).toBe('chr-mage')
   })
 
   it('ignores players acting directly (no characterId)', () => {
     const players = [{ id: 'p1', characterId: '' }]
-    expect(planPcTokenAdds(players, [], grid)).toHaveLength(0)
+    expect(planPcTokenAdds(players, [], stateOnly)).toHaveLength(0)
   })
 
   it('staggers new tokens horizontally so they do not overlap', () => {
@@ -96,7 +97,7 @@ describe('planPcTokenAdds', () => {
       { id: 'p1', characterId: 'chr-1' },
       { id: 'p2', characterId: 'chr-2' },
     ]
-    const plans = planPcTokenAdds(players, [], grid)
+    const plans = planPcTokenAdds(players, [], stateOnly)
     expect(plans[0].x).toBe(25)
     expect(plans[1].x).toBe(75)
     expect(plans[0].y).toBe(25)
@@ -106,7 +107,7 @@ describe('planPcTokenAdds', () => {
   it('respects an origin offset when placing new tokens', () => {
     const players = [{ id: 'p1', characterId: 'chr-1' }]
     const off = { ...grid, originX: 100, originY: 200 }
-    const plans = planPcTokenAdds(players, [], off)
+    const plans = planPcTokenAdds(players, [], { ...stateOnly, grid: off })
     expect(plans[0].x).toBe(125)
     expect(plans[0].y).toBe(225)
   })
@@ -115,7 +116,7 @@ describe('planPcTokenAdds', () => {
     // With one existing token already at index 0, the next new token
     // should land at index 1 (not collide at index 0).
     const players = [{ id: 'p2', characterId: 'chr-2' }]
-    const plans = planPcTokenAdds(players, [pc()], grid)
+    const plans = planPcTokenAdds(players, [pc()], stateOnly)
     expect(plans[0].x).toBe(75)
   })
 
@@ -133,10 +134,54 @@ describe('planPcTokenAdds', () => {
       snap: false,
     }
     const players = [{ id: 'p1', characterId: 'chr-1' }]
-    const plans = planPcTokenAdds(players, [], hexGrid)
+    const plans = planPcTokenAdds(players, [], { ...stateOnly, grid: hexGrid })
     // First hex cell centre = (cellSize/2, height/2) = (50, 50*√3/2).
     expect(plans[0].x).toBeCloseTo(50, 4)
     expect(plans[0].y).toBeCloseTo((100 * Math.sqrt(3)) / 4, 4)
+  })
+
+  it('places new tokens near the map centre when a background is set', () => {
+    // With a 800×600 map present, the row's first cell should sit at
+    // the map centre (400, 300) rather than at the world top-left.
+    const players = [
+      { id: 'p1', characterId: 'chr-1' },
+      { id: 'p2', characterId: 'chr-2' },
+    ]
+    const plans = planPcTokenAdds(players, [], {
+      grid,
+      map: sampleMap,
+      pcSpawn: undefined,
+    })
+    expect(plans[0].x).toBe(400)
+    expect(plans[0].y).toBe(300)
+    // Second token still staggers by cellSize from the first.
+    expect(plans[1].x).toBe(450)
+    expect(plans[1].y).toBe(300)
+  })
+})
+
+describe('recenterTokensOnMap', () => {
+  it('shifts tokens so their centroid lands on the map centre', () => {
+    const tokens: Token[] = [
+      pc({ id: 't1', x: 25, y: 25 }),
+      pc({ id: 't2', x: 75, y: 25, ownerPlayerId: 'p2', characterId: 'chr-2' }),
+    ]
+    const result = recenterTokensOnMap(tokens, sampleMap)
+    // Centroid was (50, 25). Map centre is (400, 300). Delta = (350, 275).
+    expect(result[0].x).toBe(25 + 350)
+    expect(result[0].y).toBe(25 + 275)
+    expect(result[1].x).toBe(75 + 350)
+    expect(result[1].y).toBe(25 + 275)
+  })
+
+  it('returns the input untouched when there are no tokens', () => {
+    expect(recenterTokensOnMap([], sampleMap)).toEqual([])
+  })
+
+  it('returns the input untouched when the centroid already matches', () => {
+    const tokens: Token[] = [pc({ x: 400, y: 300 })]
+    const result = recenterTokensOnMap(tokens, sampleMap)
+    expect(result).toBe(tokens)
   })
 })
 

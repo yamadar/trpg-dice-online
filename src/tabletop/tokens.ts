@@ -8,7 +8,7 @@
 
 import type { Player } from '../net/protocol'
 import { snapPlacementToGrid } from './grid'
-import type { GmToken, Grid, MapBackground, PcToken, TabletopState, Token } from './types'
+import type { GmToken, MapBackground, PcToken, TabletopState, Token } from './types'
 import { newTokenId } from './types'
 
 /**
@@ -45,6 +45,35 @@ export function mapCenter(map: MapBackground): { x: number; y: number } {
   return { x: map.width / 2, y: map.height / 2 }
 }
 
+/**
+ * Translate all tokens so their centroid lands on the new map's
+ * centre. Used the first time a map is added to a tabletop that
+ * already had auto-placed PC tokens stuck at the world's top-left.
+ *
+ * The shift preserves the relative arrangement of the tokens
+ * (a row stays a row, just centred on the map). When `tokens` is
+ * empty, the input array is returned unchanged.
+ */
+export function recenterTokensOnMap(
+  tokens: ReadonlyArray<Token>,
+  map: MapBackground,
+): Token[] {
+  if (tokens.length === 0) return tokens as Token[]
+  let sumX = 0
+  let sumY = 0
+  for (const t of tokens) {
+    sumX += t.x
+    sumY += t.y
+  }
+  const centroidX = sumX / tokens.length
+  const centroidY = sumY / tokens.length
+  const center = mapCenter(map)
+  const dx = center.x - centroidX
+  const dy = center.y - centroidY
+  if (dx === 0 && dy === 0) return tokens as Token[]
+  return tokens.map((t) => ({ ...t, x: t.x + dx, y: t.y + dy }))
+}
+
 /** Minimal speaker identity used by the placement / permission helpers. */
 export interface TokenOwnerInfo {
   playerId: string
@@ -56,17 +85,20 @@ export interface TokenOwnerInfo {
  * with a character has a token. Pure: returns the deltas rather than
  * mutating the input.
  *
- * New tokens are placed in a horizontal row starting at the grid
- * origin's first cell, staggered by `cellSize`. Existing tokens are
- * never moved or removed — character switches are handled by GM
- * removal (PR 6), not by silently re-keying.
+ * New tokens are placed in a horizontal row whose first cell sits on
+ * the shared `defaultPlacementOrigin` (map centre when a background is
+ * present, grid origin otherwise) and then stagger right by
+ * `cellSize`. Existing tokens are never moved or removed — character
+ * switches are handled by GM removal, not by silently re-keying.
  */
 export function planPcTokenAdds(
   players: ReadonlyArray<Pick<Player, 'id' | 'characterId'>>,
   existing: ReadonlyArray<Token>,
-  grid: Grid,
+  state: Pick<TabletopState, 'grid' | 'map' | 'pcSpawn'>,
 ): PcToken[] {
   const out: PcToken[] = []
+  const grid = state.grid
+  const origin = defaultPlacementOrigin(state)
   // Re-walk the existing array per check (O(n*m)) because rosters are
   // small (≤ 8 typical) and a Set keyed by `${player}|${character}`
   // would obscure the intent here.
@@ -87,8 +119,8 @@ export function planPcTokenAdds(
     // regardless of the user's `snap` toggle (the toggle controls
     // drag behaviour, not new-spawn placement).
     const raw = {
-      x: grid.originX + cell / 2 + index * cell,
-      y: grid.originY + cell / 2,
+      x: origin.x + index * cell,
+      y: origin.y,
     }
     const pos = snapPlacementToGrid(raw.x, raw.y, grid)
     out.push({
