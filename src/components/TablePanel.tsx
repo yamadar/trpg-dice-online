@@ -421,6 +421,25 @@ export function TablePanel({
    *     out when it cannot find the token in the list).
    */
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null)
+  // Close the popover when the user presses ANYWHERE outside the
+  // popover itself and outside the canvas (left tool palette, right
+  // toolbar, bottom dock, tutorial overlay, etc.). Canvas presses
+  // are excluded so Konva's own click handlers (empty stage =>
+  // clear, token tap => re-select) continue to drive selection.
+  // Listening at the document level keeps the rule in one place
+  // rather than wiring close handlers on every sibling surface.
+  useEffect(() => {
+    if (!selectedTokenId) return
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target
+      if (!(target instanceof Element)) return
+      if (target.closest('.tabletop-token-popover')) return
+      if (target.closest('.tabletop-canvas')) return
+      setSelectedTokenId(null)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [selectedTokenId])
   /** A one-shot "look here!" pulse anchored to a token's position.
    *  Driven from the placed-tokens list focus action (so the user can
    *  see WHICH token the list row referred to without us also popping
