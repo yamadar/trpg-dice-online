@@ -422,19 +422,22 @@ export function TablePanel({
    */
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null)
   // Close the popover when the user presses ANYWHERE outside the
-  // popover itself and outside the canvas (left tool palette, right
-  // toolbar, bottom dock, tutorial overlay, etc.). Canvas presses
-  // are excluded so Konva's own click handlers (empty stage =>
-  // clear, token tap => re-select) continue to drive selection.
-  // Listening at the document level keeps the rule in one place
-  // rather than wiring close handlers on every sibling surface.
+  // popover itself and outside the Konva-rendered map area (left
+  // tool palette, right toolbar, bottom dock, tutorial overlay,
+  // etc.). Konva area presses are excluded so Konva's own click
+  // handlers (empty stage => clear, token tap => re-select) drive
+  // selection — using the `.konvajs-content` wrapper that Konva
+  // emits around its canvas elements is precise because the left
+  // / right toolbars and overlays are siblings inside the SAME
+  // `.tabletop-canvas` div, so an over-broad `.tabletop-canvas`
+  // match would prevent toolbar clicks from closing the popover.
   useEffect(() => {
     if (!selectedTokenId) return
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target
       if (!(target instanceof Element)) return
       if (target.closest('.tabletop-token-popover')) return
-      if (target.closest('.tabletop-canvas')) return
+      if (target.closest('.konvajs-content')) return
       setSelectedTokenId(null)
     }
     document.addEventListener('pointerdown', onPointerDown)
