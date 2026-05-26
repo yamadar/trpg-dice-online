@@ -181,6 +181,8 @@ export const zhTW: Dict = {
   'tabletop.fog.confirmFillAll': 'Cover the entire map with fog?',
   'tabletop.fog.confirmClearAll': 'Reveal the entire map?',
   'tabletop.fog.needGrid': 'Choose a grid type first.',
+  'tabletop.fog.brushHint':
+    'Pick "Reveal fog" or "Apply fog" from the left toolbar to add or remove fog one grid cell at a time.',
   'tabletop.text.removeOwn': 'Remove text',
   'tabletop.stroke.removeOwn': 'Erase stroke',
   'tabletop.error.title': 'Tabletop hit a snag',

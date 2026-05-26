@@ -674,6 +674,15 @@ export function TableToolbar({
                 >
                   {t('tabletop.fog.clearAll')}
                 </button>
+                {/* Pointer at the per-cell brushes that live in the
+                 *  LEFT tool palette. Users discovering the fog panel
+                 *  for the first time don't always realise the
+                 *  "Reveal / Apply fog" tools over there are the way
+                 *  to tweak individual cells — this hint closes that
+                 *  gap. */}
+                <p className="tabletop-toolbar-meta wrap">
+                  {t('tabletop.fog.brushHint')}
+                </p>
               </>
             )}
         </>

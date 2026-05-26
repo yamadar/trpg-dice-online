@@ -181,6 +181,8 @@ export const ja: Dict = {
   'tabletop.fog.confirmFillAll': 'マップ全体を霧で覆いますか？',
   'tabletop.fog.confirmClearAll': 'マップ全体の霧を晴らしますか？',
   'tabletop.fog.needGrid': 'グリッド種類を選んでください',
+  'tabletop.fog.brushHint':
+    '左側のツールバーから「霧を晴らす」「霧をかける」を選ぶと、グリッド 1 マス単位で霧を追加・削除できます。',
   'tabletop.text.removeOwn': 'テキストを削除',
   'tabletop.stroke.removeOwn': 'ストロークを消す',
   'tabletop.error.title': 'テーブルマップでエラーが発生しました',
