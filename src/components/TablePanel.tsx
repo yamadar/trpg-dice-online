@@ -240,18 +240,21 @@ export function TablePanel({
   const [showTutorial, setShowTutorial] = useState(
     () => !isTabletopTutorialSeen(),
   )
-  // Auto-load test-grid preset on first mount when canvas is empty.
-  // Gated to `offline` role only because `setMapFromPreset` broadcasts
-  // to peers: silently pushing test-grid onto a populated room would
-  // surprise other players (and could overwrite a host's prior map if
-  // their IndexedDB restore happened to land after our mount). Offline
-  // users have no peers and no async restore, so the case is clean.
-  // The `useRef` guard ensures the attempt fires at most once per
-  // mount even if `role` flickers.
+  // Auto-load test-grid preset on the FIRST EVER open of the tabletop
+  // per device (paired with the auto-tutorial, gated on the same
+  // `isTabletopTutorialSeen` flag). Captured at mount so that the user
+  // dismissing the tutorial — which flips the flag — does not affect
+  // this run. Per user spec: "the initial state should be the test-grid
+  // preset". Gated on `canEdit` because only host / offline can
+  // broadcast a map; the empty-check ensures we never overwrite anyone's
+  // existing content. After the first dismissal a host who clears the
+  // map and re-opens the tabletop will NOT see test-grid jammed back in.
+  const firstEverOpenRef = useRef(!isTabletopTutorialSeen())
   const autoPresetDoneRef = useRef(false)
   useEffect(() => {
     if (autoPresetDoneRef.current) return
-    if (session.role !== 'offline') return
+    if (!canEdit) return
+    if (!firstEverOpenRef.current) return
     autoPresetDoneRef.current = true
     const isEmpty =
       !tabletop.map &&
@@ -1080,6 +1083,11 @@ export function TablePanel({
                   }
                   portrait={portraitForToken(token, session)}
                   label={labelForToken(token, session)}
+                  // For non-GM viewers, fade the tokens they cannot
+                  // move so they can tell at a glance which are theirs
+                  // to operate. GMs always see full opacity (every
+                  // token is theirs to move).
+                  dimmed={!canEdit && !canMoveToken(token, tokenActor)}
                   onDragMove={moveTokenLive}
                   onDragEnd={moveTokenCommit}
                   onSelect={
@@ -1249,6 +1257,16 @@ export function TablePanel({
           onPlaceNpcFromLibrary={session.placeNpcFromLibrary}
           placedTokens={placedTokens}
           onRemoveToken={session.removeToken}
+          onFocusToken={(tokenId) => {
+            const tok = tabletop.tokens.find((t) => t.id === tokenId)
+            if (!tok) return
+            setSelectedTokenId(tokenId)
+            // Centre the viewport on the token without changing the
+            // current zoom — same formula the render-phase "centre on
+            // map" path uses (size/2 - worldCoord * scale).
+            setStageX(size.width / 2 - tok.x * stageScale)
+            setStageY(size.height / 2 - tok.y * stageScale)
+          }}
           isHost={canEdit}
           tabletopLibrary={session.tabletopLibrary}
           onLoadPresetMap={session.setMapFromPreset}
@@ -1548,6 +1566,11 @@ interface TokenViewProps {
    *  open the token-edit popover. `undefined` when the viewer has no
    *  edit permission so the click is a no-op. */
   onSelect?: (tokenId: string) => void
+  /** True for tokens the local viewer cannot move (other players' PCs
+   *  or NPCs while not GM). Dims the rendering so the viewer can tell
+   *  at a glance which tokens are theirs to operate. GMs see every
+   *  token as interactive, so this flag is always false for them. */
+  dimmed?: boolean
 }
 
 /**
@@ -1567,6 +1590,7 @@ function TokenView({
   onDragMove,
   onDragEnd,
   onSelect,
+  dimmed = false,
 }: TokenViewProps) {
   const radius = Math.max(8, grid.cellSize / 2 - 2)
   const handleSelect = useCallback(() => {
@@ -1611,6 +1635,7 @@ function TokenView({
       x={token.x}
       y={token.y}
       draggable={draggable}
+      opacity={dimmed ? 0.6 : 1}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
       onClick={handleSelect}

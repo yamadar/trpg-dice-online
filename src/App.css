@@ -614,12 +614,23 @@
   border-color: transparent;
 }
 /* The help button sits at the bottom of the icon strip with a small
- *  divider so it reads as "supplementary" rather than another category. */
+ *  divider so it reads as "supplementary" rather than another category.
+ *  The divider is drawn with a `::before` pseudo so the button itself
+ *  keeps the base `.tabletop-toolbar-icon-btn` padding — adding
+ *  `padding-top` here would push the icon off-centre and look unlike
+ *  its siblings. */
 .tabletop-toolbar-help {
-  margin-top: 8px;
-  padding-top: 12px;
+  position: relative;
+  margin-top: 14px;
+}
+.tabletop-toolbar-help::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 4px;
+  right: 4px;
   border-top: 1px solid var(--border);
-  border-radius: 8px;
+  pointer-events: none;
 }
 .tabletop-toolbar-icon-label {
   font-size: 0.72rem;
@@ -775,6 +786,12 @@
   max-height: 160px;
   overflow-y: auto;
 }
+/* Placed-tokens list: capped to roughly 3.5 rows tall (3 rows of
+ *  ~32 px each + 3 row gaps + a half-row peek) so the panel does not
+ *  hog vertical space when there are many tokens on the map. */
+.tabletop-toolbar-list-placed {
+  max-height: 124px;
+}
 .tabletop-toolbar-list-item {
   display: flex;
   align-items: center;
@@ -782,6 +799,26 @@
   padding: 2px 4px;
   border-radius: 6px;
   background: var(--panel-2);
+}
+/* Clickable row inside a placed-token list-item. The whole row is a
+ *  button so tapping the thumb / label / kind tag all focus the token
+ *  on the canvas. Strips default button chrome and inherits the row
+ *  layout from `.list-item`, with a subtle hover highlight. */
+.tabletop-toolbar-list-row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  /* Global `button:hover { filter: brightness(1.15) }` already covers
+   * the hover state — no need to duplicate it here. */
 }
 .tabletop-toolbar-list-label {
   flex: 1;
@@ -1363,6 +1400,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* Square padding overrides the global `button { padding: 8px 14px }`
+   * (which made icon-only buttons noticeably wider than tall). Result is
+   * a rounded square sized to the inline icon. */
+  padding: 6px;
 }
 .icon-svg {
   /* inline-block so a stand-alone icon sits next to text without breaking

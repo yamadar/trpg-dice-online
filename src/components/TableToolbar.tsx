@@ -94,6 +94,10 @@ interface Props {
   /** GM-only: drop the named token from the map. Mirrors the popover
    *  remove action so the GM can manage placements from a list too. */
   onRemoveToken: (tokenId: string) => void
+  /** Tap a row in the placed-tokens list → select it and centre the
+   *  viewport on it. Lets a player quickly find / start moving their
+   *  PC without scrolling the canvas first. */
+  onFocusToken: (tokenId: string) => void
   /** When true, render the GM-only NPC library section. */
   isHost: boolean
   /** GM-only: named templates and saves persisted globally in
@@ -154,6 +158,7 @@ export function TableToolbar({
   onPlaceNpcFromLibrary,
   placedTokens,
   onRemoveToken,
+  onFocusToken,
   isHost,
   tabletopLibrary,
   onSaveTabletopAs,
@@ -837,7 +842,7 @@ export function TableToolbar({
               {t('tabletop.placedTokens.empty')}
             </p>
           ) : (
-            <ul className="tabletop-toolbar-list">
+            <ul className="tabletop-toolbar-list tabletop-toolbar-list-placed">
               {placedTokens.map(({ token, portrait, label }) => {
                 const displayName = label?.trim() || t('tabletop.placedTokens.unnamed')
                 const kindLabel =
@@ -846,27 +851,37 @@ export function TableToolbar({
                     : t('tabletop.placedTokens.kindGm')
                 return (
                   <li key={token.id} className="tabletop-toolbar-list-item">
-                    {portrait ? (
-                      <img
-                        src={portrait}
-                        alt=""
-                        className="tabletop-toolbar-thumb"
-                      />
-                    ) : (
-                      <span
-                        className="tabletop-toolbar-thumb tabletop-toolbar-thumb-initial"
-                        aria-hidden="true"
-                      >
-                        {avatarInitial(displayName)}
-                      </span>
-                    )}
-                    <span
-                      className="tabletop-toolbar-list-label"
+                    <button
+                      type="button"
+                      className="tabletop-toolbar-list-row"
                       title={`${displayName} · ${kindLabel}`}
+                      onClick={() => {
+                        // Collapse the expanded panel so the focused
+                        // token is not hidden behind it once the camera
+                        // re-centres ("すぐ操作できるようにフォーカス").
+                        setExpandedCategory(null)
+                        onFocusToken(token.id)
+                      }}
                     >
-                      {displayName}
-                    </span>
-                    <span className="tabletop-toolbar-list-tag">{kindLabel}</span>
+                      {portrait ? (
+                        <img
+                          src={portrait}
+                          alt=""
+                          className="tabletop-toolbar-thumb"
+                        />
+                      ) : (
+                        <span
+                          className="tabletop-toolbar-thumb tabletop-toolbar-thumb-initial"
+                          aria-hidden="true"
+                        >
+                          {avatarInitial(displayName)}
+                        </span>
+                      )}
+                      <span className="tabletop-toolbar-list-label">
+                        {displayName}
+                      </span>
+                      <span className="tabletop-toolbar-list-tag">{kindLabel}</span>
+                    </button>
                     {isHost && (
                       <button
                         type="button"
