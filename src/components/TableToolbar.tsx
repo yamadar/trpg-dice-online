@@ -855,7 +855,13 @@ export function TableToolbar({
                       type="button"
                       className="tabletop-toolbar-list-row"
                       title={`${displayName} · ${kindLabel}`}
-                      onClick={() => onFocusToken(token.id)}
+                      onClick={() => {
+                        // Collapse the expanded panel so the focused
+                        // token is not hidden behind it once the camera
+                        // re-centres ("すぐ操作できるようにフォーカス").
+                        setExpandedCategory(null)
+                        onFocusToken(token.id)
+                      }}
                     >
                       {portrait ? (
                         <img

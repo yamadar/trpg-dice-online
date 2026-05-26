@@ -240,18 +240,21 @@ export function TablePanel({
   const [showTutorial, setShowTutorial] = useState(
     () => !isTabletopTutorialSeen(),
   )
-  // Auto-load test-grid preset on first mount when the canvas is empty
-  // (no map, no tokens, no strokes, no texts). Per user spec: "the
-  // initial state should be the test-grid preset". Gated on `canEdit`
-  // because only host / offline can broadcast a map; the empty-check
-  // ensures we never overwrite anyone's existing content. Once tabletop
-  // state restoration completes during room creation / resume, this
-  // branch is skipped on subsequent mounts because the state is no
-  // longer empty.
+  // Auto-load test-grid preset on the FIRST EVER open of the tabletop
+  // per device (paired with the auto-tutorial, gated on the same
+  // `isTabletopTutorialSeen` flag). Captured at mount so that the user
+  // dismissing the tutorial — which flips the flag — does not affect
+  // this run. Per user spec: "the initial state should be the test-grid
+  // preset". Gated on `canEdit` because only host / offline can
+  // broadcast a map; the empty-check ensures we never overwrite anyone's
+  // existing content. After the first dismissal a host who clears the
+  // map and re-opens the tabletop will NOT see test-grid jammed back in.
+  const firstEverOpenRef = useRef(!isTabletopTutorialSeen())
   const autoPresetDoneRef = useRef(false)
   useEffect(() => {
     if (autoPresetDoneRef.current) return
     if (!canEdit) return
+    if (!firstEverOpenRef.current) return
     autoPresetDoneRef.current = true
     const isEmpty =
       !tabletop.map &&

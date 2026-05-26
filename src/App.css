@@ -817,9 +817,8 @@
   text-align: left;
   cursor: pointer;
   min-width: 0;
-}
-.tabletop-toolbar-list-row:hover {
-  filter: brightness(1.15);
+  /* Global `button:hover { filter: brightness(1.15) }` already covers
+   * the hover state — no need to duplicate it here. */
 }
 .tabletop-toolbar-list-label {
   flex: 1;
