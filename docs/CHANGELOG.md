@@ -4,6 +4,18 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.83 — Add a **load-by-URL** path to the background map. The GM
+  can now pick a public image URL (CORS-allowed server) in addition
+  to a local file; the result goes through the same downscale and
+  chunked-broadcast pipeline as a hand-picked file and syncs to every
+  participant. Distinct flash messages cover the URL-specific failure
+  modes: malformed URL, network / CORS failure, and "URL resolved but
+  the body is not an image". Pairs naturally with CORS-friendly
+  galleries such as the sibling
+  [trpg-map-organizer](https://yamadar.github.io/trpg-map-organizer/),
+  where the "copy URL" button drops a usable link straight into the
+  toolbar field.
+
 - v1.82 — Round out the tabletop with the model and tooling needed
   for actual scenario play, in four linked additions.
   (1) **Separate ownership from placement**: PC tokens are placed

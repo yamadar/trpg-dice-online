@@ -41,6 +41,11 @@ interface Props {
   onChange: (grid: Grid) => void
   map: MapBackground | undefined
   onSetMap: (file: File) => Promise<'ok' | MapImageError>
+  /** GM-only: load a remote URL as the background map. Returns the
+   *  same structured-error union as `onSetMap`, extended with
+   *  `'invalidUrl' | 'fetchFailed' | 'notImage'` for the URL-specific
+   *  failure modes. */
+  onSetMapFromUrl: (input: string) => Promise<'ok' | MapImageError>
   onClearMap: () => void
   /** Local player's own characters (from `useCharacters`). The toolbar
    *  surfaces these as "place token" buttons so a player can add their
@@ -147,6 +152,7 @@ export function TableToolbar({
   onChange,
   map,
   onSetMap,
+  onSetMapFromUrl,
   onClearMap,
   characters,
   onPlaceMyCharacter,
@@ -196,6 +202,11 @@ export function TableToolbar({
   const [presets, setPresets] = useState<ReadonlyArray<PresetMap>>([])
   const [selectedPreset, setSelectedPreset] = useState('')
   const [loadingPreset, setLoadingPreset] = useState(false)
+  // URL-load flow: input draft + an in-flight flag so the button can
+  // disable itself during the fetch. Cleared on success so the next
+  // load starts from an empty field.
+  const [mapUrlDraft, setMapUrlDraft] = useState('')
+  const [loadingMapUrl, setLoadingMapUrl] = useState(false)
   const templates = tabletopLibrary.filter((e) => e.kind === 'template')
   const saves = tabletopLibrary.filter((e) => e.kind === 'save')
 
@@ -341,6 +352,44 @@ export function TableToolbar({
       onNotice?.(t('tabletop.map.tooLarge'), 'error')
     } else {
       onNotice?.(t('tabletop.map.unreadable'), 'error')
+    }
+  }
+
+  const handleLoadMapUrl = async () => {
+    const url = mapUrlDraft.trim()
+    if (!url) {
+      onNotice?.(t('tabletop.mapUrl.invalidUrl'), 'error')
+      return
+    }
+    setLoadingMapUrl(true)
+    try {
+      const result = await onSetMapFromUrl(url)
+      // Distinct messages for the URL-specific failures so the GM knows
+      // whether to fix the URL (`invalidUrl`), retry / check CORS
+      // (`fetchFailed`), pick a different link (`notImage`), or shrink
+      // the image (`tooLarge`).
+      switch (result) {
+        case 'ok':
+          onNotice?.(t('tabletop.map.set'), 'success')
+          setMapUrlDraft('')
+          break
+        case 'invalidUrl':
+          onNotice?.(t('tabletop.mapUrl.invalidUrl'), 'error')
+          break
+        case 'fetchFailed':
+          onNotice?.(t('tabletop.mapUrl.fetchFailed'), 'error')
+          break
+        case 'notImage':
+          onNotice?.(t('tabletop.mapUrl.notImage'), 'error')
+          break
+        case 'tooLarge':
+          onNotice?.(t('tabletop.map.tooLarge'), 'error')
+          break
+        default:
+          onNotice?.(t('tabletop.map.unreadable'), 'error')
+      }
+    } finally {
+      setLoadingMapUrl(false)
     }
   }
 
@@ -592,6 +641,41 @@ export function TableToolbar({
               </button>
             </>
           )}
+
+          <hr className="tabletop-toolbar-divider" />
+          <h3 className="tabletop-toolbar-title">
+            {t('tabletop.mapUrl.title')}
+          </h3>
+          <input
+            type="url"
+            className="tabletop-toolbar-input"
+            placeholder={t('tabletop.mapUrl.placeholder')}
+            value={mapUrlDraft}
+            onChange={(e) => setMapUrlDraft(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter inside a single-line input would otherwise submit
+              // the enclosing form (there isn't one, but the gesture is
+              // still a natural "go" — mirror it explicitly).
+              if (e.key === 'Enter' && !loadingMapUrl) {
+                e.preventDefault()
+                void handleLoadMapUrl()
+              }
+            }}
+            inputMode="url"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <button
+            type="button"
+            className="tabletop-toolbar-button"
+            onClick={() => void handleLoadMapUrl()}
+            disabled={loadingMapUrl || !mapUrlDraft.trim()}
+          >
+            {t('tabletop.mapUrl.load')}
+          </button>
+          <p className="tabletop-toolbar-meta wrap">
+            {t('tabletop.mapUrl.hint')}
+          </p>
 
           <hr className="tabletop-toolbar-divider" />
           <h3 className="tabletop-toolbar-title">
