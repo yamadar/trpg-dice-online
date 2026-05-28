@@ -86,6 +86,10 @@ GM はホストです。タブを開いている間だけルームは生きて�
 
 GM は**隠しロール**を振れます。他のプレイヤーには*「隠しロールが行われた」*とだけ届き、数値は見えません。GM セクションにはルーム名の変更とコード再発行が折りたたまれており、退出ボタンは **ルームを閉じる** という表記で、セッション終了であることを明確にしています。
 
+### 背景マップ・グリッド・トークン・フォグオブウォーの共有テーブル
+
+ダイスルームと並んで開ける共有テーブルです。PC / NPC のトークン、スクエア / ヘックスのグリッド、自由なペン描きとテキスト注釈、グリッド単位のフォグオブウォーが揃います。背景マップは 4 通りの方法で選べます — ローカルファイルを**アップロード**、**画像 URL を指定**、姉妹リポジトリ [trpg-map-organizer](https://yamadar.github.io/trpg-map-organizer/) の**ギャラリー**（300 点超のタグ絞り込み + プレビュー）から選ぶ、または同梱の**プリセット**。トークン位置・注釈・フォグはホスト権威で、参加者全員にリアルタイム同期されます。テーブル状態はタブリロード後も復元され、テンプレート / セーブを使えば GM がシーンを準備してセッション中に切り替えられます。
+
 ### UI 19 言語 &amp; チャット自動翻訳
 
 UI は 19 言語に対応。自動翻訳をオンにすると、他プレイヤーのチャットを自分の UI 言語へ翻訳します。端末内蔵の Chrome Translator API を優先的に使い、利用できない場合は鍵不要の [MyMemory](https://mymemory.translated.net/) REST API にフォールバックします。翻訳済みメッセージの **原文** をタップすれば、相手が送ったままの文を確認できます。
@@ -148,6 +152,9 @@ GitHub Pages にデプロイして使う場合は、これらをリポジトリ 
 
 - 要件定義・実装プラン: [`docs/REQUIREMENTS.ja.md`](docs/REQUIREMENTS.ja.md)
 - 変更履歴: [`docs/CHANGELOG.ja.md`](docs/CHANGELOG.ja.md)
+- テーブルマップ実装メモ: [`docs/TABLETOP_IMPLEMENTATION.ja.md`](docs/TABLETOP_IMPLEMENTATION.ja.md)
+- リアルタイム翻訳 API 調査: [`docs/TRANSLATION_API_RESEARCH.ja.md`](docs/TRANSLATION_API_RESEARCH.ja.md)
+- サードパーティ素材のクレジット: [`docs/CREDITS.ja.md`](docs/CREDITS.ja.md)
 - リアルタイム翻訳 API の調査: [`docs/TRANSLATION_API_RESEARCH.ja.md`](docs/TRANSLATION_API_RESEARCH.ja.md)
 
 ## ライセンス

@@ -1250,7 +1250,14 @@ export function TableToolbar({
           type="button"
           className="tabletop-toolbar-icon-btn tabletop-toolbar-help"
           title={t('tabletop.help')}
-          onClick={onOpenTutorial}
+          onClick={() => {
+            // Collapse whichever category panel is open so the
+            // tutorial overlay isn't fighting the side panel for
+            // attention — the tutorial wants the whole canvas as
+            // its backdrop.
+            setExpandedCategory(null)
+            onOpenTutorial()
+          }}
         >
           <HelpIcon size={20} />
           <span className="tabletop-toolbar-icon-label">{t('tabletop.help')}</span>

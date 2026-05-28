@@ -31,3 +31,18 @@ silhouette would turn into noise.
   carries the same attribution in its SVG comment header. The same
   path data is inlined in [`src/components/icons.tsx`](../src/components/icons.tsx)
   as the `DiceIcon` component.
+
+## External map gallery
+
+### trpg-map-organizer
+
+The tabletop's "Gallery" tab fetches and displays maps from the
+sibling project [trpg-map-organizer](https://yamadar.github.io/trpg-map-organizer/),
+maintained by the same author. Hand-curated tag taxonomies (theme /
+terrain / mood / location) and per-map metadata are served from that
+project's `data/maps.json`; thumbnails, mid-resolution previews and
+originals come from the same site.
+
+- Source: https://github.com/yamadar/trpg-map-organizer
+- The gallery is only loaded on demand when the user opens the
+  picker; nothing in `dist/` ships those images.

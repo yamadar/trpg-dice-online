@@ -86,6 +86,10 @@ Every past session is stored locally as a durable log. Open an old room from the
 
 The GM can roll **hidden** — other players only see *"a hidden roll happened"* and not the number. The GM section also bundles room renaming and code regeneration behind a disclosure, and the GM's exit reads **Close room** so it's clear it ends the session for everyone.
 
+### Shared tabletop with map, grid, tokens and fog of war
+
+A live tabletop the GM opens alongside the dice room: PCs and NPCs as tokens, a square or hex grid, free-hand pen and text annotations, and grid-based fog of war. The background map can be picked four ways — **upload** a local image, **load by URL**, **browse the [trpg-map-organizer](https://yamadar.github.io/trpg-map-organizer/) gallery** (303+ hand-curated maps with tag filters and preview), or pick a bundled **preset**. Token positions, annotations and fog state are host-authoritative and sync to every participant in real time. Tabletop state survives a tab reload, and templates / saves let the GM prep scenes ahead of time and snap back to them mid-session.
+
 ### Multilingual UI &amp; auto-translated chat
 
 UI in 19 languages. Optional chat auto-translation uses the on-device Chrome Translator API when available and falls back to the keyless [MyMemory](https://mymemory.translated.net/) REST API. Tap **Original** on a translated message to see exactly what was sent.
@@ -148,7 +152,9 @@ Pushing to `main` triggers the GitHub Actions workflow (`.github/workflows/deplo
 
 - Requirements and implementation plan: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)
 - Changelog: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
+- Tabletop implementation notes: [`docs/TABLETOP_IMPLEMENTATION.md`](docs/TABLETOP_IMPLEMENTATION.md)
 - Real-time translation API research: [`docs/TRANSLATION_API_RESEARCH.md`](docs/TRANSLATION_API_RESEARCH.md)
+- Third-party credits and attributions: [`docs/CREDITS.md`](docs/CREDITS.md)
 
 ## License
 
