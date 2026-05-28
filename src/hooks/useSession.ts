@@ -103,7 +103,11 @@ import {
 } from '../tabletop/tokens'
 import { prepareNpcTokenImage } from '../characters/image'
 import { ChunkBuffer, chunkString } from '../tabletop/imageChunk'
-import { readMapBackground, type MapImageError } from '../tabletop/imageBackground'
+import {
+  readMapBackground,
+  readMapBackgroundFromUrl,
+  type MapImageError,
+} from '../tabletop/imageBackground'
 import type { MapMeta } from '../net/protocol'
 
 export type Role = 'offline' | 'host' | 'client'
@@ -219,6 +223,14 @@ export interface Session {
    * success or an error tag when the file is too large / unreadable.
    */
   setMapBackground: (file: File) => Promise<'ok' | MapImageError>
+  /**
+   * GM-only: load a background map from a remote URL. Goes through the
+   * same downscale + chunked-broadcast pipeline as `setMapBackground`.
+   * Returns a structured error tag — `'invalidUrl' | 'fetchFailed' |
+   * 'notImage' | 'tooLarge' | 'unreadable'` — so the toolbar can flash
+   * a precise message rather than a single "didn't work".
+   */
+  setMapBackgroundFromUrl: (input: string) => Promise<'ok' | MapImageError>
   /** GM-only: clear the current background map. Broadcasts `mapCleared`. */
   clearMapBackground: () => void
   /**
@@ -380,7 +392,7 @@ export interface Session {
    * as the background. Resolves to the same tag set as `setMapBackground`
    * so the toolbar can surface one error message.
    */
-  setMapFromPreset: (preset: PresetMap) => Promise<'ok' | 'tooLarge' | 'unreadable'>
+  setMapFromPreset: (preset: PresetMap) => Promise<'ok' | MapImageError>
 }
 
 /** Keep at most `max` items, dropping the oldest. */
@@ -1025,6 +1037,44 @@ export function useSession(): Session {
         // Token positions changed: peers need to know. Reuse the
         // existing `tabletopState` channel (small JSON, no map bytes)
         // — clients receive the move along with the new map metadata.
+        roomRef.current?.broadcast({
+          t: 'tabletopState',
+          state: stripMapBytesForWire(next),
+        })
+      }
+      broadcastMapAsChunks(map)
+      return 'ok'
+    },
+    [applyTabletop, broadcastMapAsChunks],
+  )
+
+  /**
+   * GM-only: load a remote image by URL, downscale, save locally, send
+   * to clients. The URL goes through `readMapBackgroundFromUrl` which
+   * returns a structured error tag for the toolbar to flash — invalid
+   * URL, fetch / CORS failure, non-image body, or oversize blob.
+   */
+  const setMapBackgroundFromUrl = useCallback(
+    async (input: string): Promise<'ok' | MapImageError> => {
+      if (roleRef.current === 'client') return 'unreadable'
+      const result = await readMapBackgroundFromUrl(input)
+      if (!result.ok) return result.error
+      const map: MapBackground = {
+        id: newMapId(),
+        name: result.name,
+        width: result.width,
+        height: result.height,
+        dataUrl: result.dataUrl,
+      }
+      // Same first-map recenter as `setMapBackground` — see the comment
+      // there for the rationale.
+      const prev = tabletopRef.current
+      const tokens = prev.map
+        ? prev.tokens
+        : recenterTokensOnMap(prev.tokens, map)
+      const next: TabletopState = { ...prev, map, tokens }
+      applyTabletop(next)
+      if (tokens !== prev.tokens) {
         roomRef.current?.broadcast({
           t: 'tabletopState',
           state: stripMapBytesForWire(next),
@@ -1729,7 +1779,7 @@ export function useSession(): Session {
   }, [setFog])
 
   const setMapFromPreset = useCallback(
-    async (preset: PresetMap): Promise<'ok' | 'tooLarge' | 'unreadable'> => {
+    async (preset: PresetMap): Promise<'ok' | MapImageError> => {
       if (roleRef.current === 'client') return 'unreadable'
       const result = await loadPresetMap(preset)
       if (!result.ok) return result.error
@@ -3330,6 +3380,7 @@ export function useSession(): Session {
     moveTokenLive,
     moveTokenCommit,
     setMapBackground,
+    setMapBackgroundFromUrl,
     clearMapBackground,
     addGmToken,
     removeToken,

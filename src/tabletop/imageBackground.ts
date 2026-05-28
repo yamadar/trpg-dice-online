@@ -23,7 +23,10 @@ export const MAX_MAP_EDGE = 3000
 /** JPEG quality used when a PNG would be too large. */
 const JPEG_QUALITY = 0.85
 
-export type MapImageError = 'tooLarge' | 'unreadable'
+/** `notImage` is the URL-load–specific tag for "fetched, but the bytes are
+ *  not an image" — surfaced as a distinct message so the GM understands
+ *  the URL resolved but pointed at a HTML page / 404 body / etc. */
+export type MapImageError = 'tooLarge' | 'unreadable' | 'notImage' | 'invalidUrl' | 'fetchFailed'
 
 export type MapImageResult =
   | {
@@ -51,6 +54,101 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onerror = () => reject(new Error('image decode failed'))
     img.src = src
   })
+}
+
+/**
+ * Parse a user-supplied string into an HTTP(S) URL, rejecting anything
+ * else (data:, file:, javascript:, blank input). Returning `null` lets
+ * the caller surface a structured error tag rather than catching an
+ * exception.
+ */
+export function parseHttpUrl(input: string): URL | null {
+  if (typeof input !== 'string') return null
+  const trimmed = input.trim()
+  if (!trimmed) return null
+  try {
+    const url = new URL(trimmed)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
+    return url
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Derive a sensible display name for a fetched map. The URL's last path
+ * segment is the obvious choice; falling back to the hostname keeps the
+ * tooltip non-empty for "naked" URLs like `https://example.com/`.
+ */
+export function filenameFromUrl(url: URL): string {
+  const segments = url.pathname.split('/').filter(Boolean)
+  const last = segments[segments.length - 1]
+  if (last) {
+    try {
+      return decodeURIComponent(last)
+    } catch {
+      return last
+    }
+  }
+  return url.hostname || 'map'
+}
+
+export type FetchedMapBlob =
+  | { ok: true; file: File }
+  | { ok: false; error: MapImageError }
+
+/**
+ * Pull a remote map image into a `File` ready for `readMapBackground`.
+ * Split out from `readMapBackgroundFromUrl` so the URL-validation +
+ * fetch + content-type + size guard stack can be unit-tested without
+ * driving the `<canvas>` pipeline (which the Node-only Vitest env can't
+ * host).
+ *
+ * Error tags:
+ *   - `invalidUrl`   bad / empty / non-HTTP input
+ *   - `fetchFailed`  network error, CORS block, or non-2xx response
+ *   - `notImage`     URL resolved but the body is not an image
+ *   - `tooLarge`     blob exceeds the same 8 MB ceiling as a picked file
+ */
+export async function fetchMapBlob(input: string): Promise<FetchedMapBlob> {
+  const parsed = parseHttpUrl(input)
+  if (!parsed) return { ok: false, error: 'invalidUrl' }
+  let res: Response
+  try {
+    res = await fetch(parsed.toString(), { cache: 'no-store' })
+  } catch {
+    return { ok: false, error: 'fetchFailed' }
+  }
+  if (!res.ok) return { ok: false, error: 'fetchFailed' }
+  let blob: Blob
+  try {
+    blob = await res.blob()
+  } catch {
+    return { ok: false, error: 'fetchFailed' }
+  }
+  if (!blob.type.startsWith('image/')) {
+    return { ok: false, error: 'notImage' }
+  }
+  if (blob.size > MAX_MAP_INPUT_BYTES) {
+    return { ok: false, error: 'tooLarge' }
+  }
+  const name = filenameFromUrl(parsed)
+  const file = new File([blob], name, { type: blob.type })
+  return { ok: true, file }
+}
+
+/**
+ * Fetch a remote image by URL and run it through the same downscale
+ * pipeline as a hand-picked file. Error tags mirror `fetchMapBlob`
+ * plus the `unreadable` tag that the underlying `<canvas>` decode
+ * surfaces when a fetched blob is malformed.
+ */
+export async function readMapBackgroundFromUrl(
+  input: string,
+): Promise<MapImageResult> {
+  const fetched = await fetchMapBlob(input)
+  if (!fetched.ok) return { ok: false, error: fetched.error }
+  return readMapBackground(fetched.file)
 }
 
 /**

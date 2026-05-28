@@ -320,6 +320,11 @@ An SPA where players roll TRPG dice and share results with other players in real
   a long-edge cap of 3000 px and saves it as PNG / JPEG. When the
   result exceeds the P2P 3 MB ceiling, it is split into chunks and
   reassembled on each client. "No background" (grid only) is supported.
+- The GM can pick a background map from a local file *or* by URL. A
+  URL-loaded image goes through the same downscale + chunked-broadcast
+  pipeline as a hand-picked file. Distinct error messages cover the
+  URL-specific failure modes: malformed URL, network / CORS failure,
+  and "URL resolved but the body is not an image".
 - The grid is "none" or "square". The GM configures the cell size,
   origin offset (required to align with a grid drawn into the map
   image), stroke color and stroke opacity. Token-drag snapping is
@@ -540,6 +545,7 @@ Commit after each step.
 - [x] Pick the dice count (1-10), die type and modifier via stepper / select
 - [x] Published on GitHub Pages and works in the browser
 - [x] The GM can upload a background map and it is synced to every participant
+- [x] The GM can also load a background map by URL, with the same sync
 - [x] The square grid's cell size, offset, color and opacity can be configured
 - [x] PC tokens are generated from the session's characters and can be moved by the owner and the GM
 - [x] A player can place multiple tokens of their own character at any time

@@ -1321,6 +1321,7 @@ export function TablePanel({
           onChange={updateGrid}
           map={tabletop.map}
           onSetMap={session.setMapBackground}
+          onSetMapFromUrl={session.setMapBackgroundFromUrl}
           onClearMap={session.clearMapBackground}
           characters={characters}
           // One PC token per character — collect the local player's
