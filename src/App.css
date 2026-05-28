@@ -4139,3 +4139,15 @@ button.char-avatar-large:disabled {
   flex-direction: column;
   gap: 8px;
 }
+
+/* Two-button row shown beneath the current map's filename / size:
+   "replace" (file picker) on the left, "clear" on the right. Lives
+   outside the source tabs so a GM with a map already set can swap
+   the file without first switching the active source tab. */
+.tabletop-map-current-actions {
+  display: flex;
+  gap: 6px;
+}
+.tabletop-map-current-actions > button {
+  flex: 1;
+}

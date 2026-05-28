@@ -7,20 +7,27 @@
  *     fixed row of toggles. Tapping a category expands its tag
  *     chips beneath the row; only one category is expanded at a
  *     time (tapping the same toggle closes it). AND / OR mode
- *     switch lives in the toolbar above and applies across
- *     categories.
+ *     switch (with arrow-key navigation matching the WAI-ARIA
+ *     radiogroup pattern) lives in the toolbar above.
  *   - A grid of thumbnail cards. Tapping a card selects it; the
  *     footer "Use this map" button drives the actual download via
  *     the parent's `onPick(midUrl)` callback, which goes through
  *     `setMapBackgroundFromUrl` and therefore the same downscale +
  *     chunked-broadcast pipeline as a hand-picked file. A hover
- *     magnifier on each card opens the full-resolution image in
+ *     magnifier on each card opens the mid-resolution image in
  *     the Lightbox without affecting the picked state.
  *
  * Tag labels follow the UI language: `ja` shows the source Japanese
  * strings verbatim, every other language pulls the English label
  * from the gallery's own `i18n.json` and falls back to the source
  * string when a tag is missing — never an empty chip.
+ *
+ * State lifecycle: the dialog is kept mounted by the toolbar so
+ * `manifest` and `tagDict` survive close → reopen as a memory cache,
+ * but the user-driven picks / filters reset on close so a fresh
+ * open always starts clean. A still-in-flight `onPick` from a prior
+ * "Use this map" tap is cancelled (its eventual resolve is ignored)
+ * when the user closes the dialog mid-apply.
  *
  * [trpg-map-organizer]: https://yamadar.github.io/trpg-map-organizer/
  */
@@ -36,7 +43,6 @@ import {
   loadGalleryManifest,
   loadGalleryTagDict,
   midUrl,
-  originalUrl,
   searchMaps,
   tagLabel,
   thumbUrl,
@@ -45,6 +51,7 @@ import { CloseIcon } from './icons'
 import { Lightbox } from './Lightbox'
 
 const CATEGORIES: GalleryCategory[] = ['theme', 'terrain', 'mood', 'location']
+const MODES: ('or' | 'and')[] = ['or', 'and']
 
 interface Props {
   open: boolean
@@ -97,11 +104,18 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
   // Cached manifest / dict survive across opens — the source site
   // regenerates infrequently, and 303 maps × tag-arrays is a few
   // hundred KB. The first open after mount pays the network round-trip;
-  // subsequent opens are instant.
+  // subsequent opens are instant. `tagDict === null` means "haven't
+  // got it yet" (initial state OR a previous fetch failure) — the
+  // next open re-tries; `tagDict === {}` means "fetched, server
+  // returned no tags" (don't retry).
   const [manifest, setManifest] = useState<GalleryManifest | null>(null)
   const [tagDict, setTagDict] = useState<GalleryTagDict | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // Error is stored as a translation key (not a translated string) so
+  // we can re-render with the latest UI language without depending on
+  // `t` from inside the load effect (which would re-fire the fetch on
+  // every language switch).
+  const [errorKey, setErrorKey] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Selection>(emptySelection)
   const [mode, setMode] = useState<'and' | 'or'>('or')
@@ -119,48 +133,68 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
   // disturb the user's selection.
   const [previewMapId, setPreviewMapId] = useState<number | null>(null)
   const closeBtnRef = useRef<HTMLButtonElement | null>(null)
+  // Cancellation token for an in-flight `onPick`. Closing the
+  // dialog mid-apply flips this to `false` so the eventual resolve
+  // is ignored — without it, a "Use this map" tap followed by a
+  // backdrop click would still apply the map after the user thought
+  // they cancelled.
+  const inFlightPickRef = useRef(false)
 
-  // Lazy first load. `manifest` itself acts as the cache flag —
-  // once populated, subsequent `open` flips skip the network round-
-  // trip entirely. The `setLoading(true)` happens inside the async
-  // IIFE so the effect body itself doesn't synchronously call
-  // setState (which `react-hooks/set-state-in-effect` would flag).
+  // Lazy first load + tag-dict retry. `manifest` survives across
+  // opens as a memory cache; `tagDict === null` means the previous
+  // attempt failed (or hadn't started), so we retry on each open.
+  // A successful fetch returns `{}` (truthy), which is treated as
+  // "fetched, nothing to translate" and not retried.
+  //
+  // The `setLoading(true)` happens inside the async IIFE so the
+  // effect body itself doesn't synchronously call setState (which
+  // `react-hooks/set-state-in-effect` would flag), and the
+  // `finally` clears it even when the cancellation early-returns —
+  // otherwise a close-then-reopen could leave loading stuck on.
   useEffect(() => {
-    if (!open || manifest) return
+    if (!open) return
+    if (manifest && tagDict !== null) return
     let cancelled = false
     void (async () => {
-      setLoading(true)
-      setError(null)
-      const [man, dict] = await Promise.all([
-        loadGalleryManifest(),
-        loadGalleryTagDict(),
-      ])
-      if (cancelled) return
-      if (!man) {
-        setError(t('tabletop.gallery.loadFailed'))
-        setLoading(false)
-        return
+      try {
+        if (!manifest) setLoading(true)
+        setErrorKey(null)
+        const [man, dict] = await Promise.all([
+          manifest ? Promise.resolve(manifest) : loadGalleryManifest(),
+          tagDict !== null
+            ? Promise.resolve(tagDict)
+            : loadGalleryTagDict(),
+        ])
+        if (cancelled) return
+        if (!man) {
+          setErrorKey('tabletop.gallery.loadFailed')
+          return
+        }
+        if (man !== manifest) setManifest(man)
+        if (dict !== null && dict !== tagDict) setTagDict(dict)
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-      setManifest(man)
-      setTagDict(dict)
-      setLoading(false)
     })()
     return () => {
       cancelled = true
     }
-  }, [open, manifest, t])
+  }, [open, manifest, tagDict])
 
-  // Escape closes the dialog (or the preview when it's open).
-  // Capture phase so a parent Sheet listening to Escape on the
-  // window doesn't also close behind us. The preview's own
-  // `Lightbox` already handles Escape internally; this guard
-  // only fires when no preview is up.
+  // Escape: when the gallery is open, swallow the key in the capture
+  // phase so the underlying TablePanel's window-level Escape handler
+  // doesn't also fire and close the whole tabletop sheet behind us.
+  // If a Lightbox preview is up, close that first; otherwise close
+  // the dialog itself.
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && previewMapId === null) {
-        e.preventDefault()
-        e.stopImmediatePropagation()
+      if (e.key !== 'Escape') return
+      e.preventDefault()
+      e.stopImmediatePropagation()
+      if (previewMapId !== null) {
+        setPreviewMapId(null)
+      } else {
         onClose()
       }
     }
@@ -180,6 +214,15 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
     return filterMaps(searchMaps(manifest.maps, search), selected, mode)
   }, [manifest, search, selected, mode])
 
+  // A picked map that the current filters/search hide from the grid
+  // would otherwise still be apply-able from the (visible) footer
+  // button — surprising and easy to misclick. The "Use this map"
+  // button stays disabled until the pick is visible in the grid.
+  const pickedIsVisible = useMemo(() => {
+    if (pickedId === null) return false
+    return filteredMaps.some((m) => m.id === pickedId)
+  }, [pickedId, filteredMaps])
+
   const toggleTag = useCallback((cat: GalleryCategory, tag: string) => {
     setSelected((prev) => {
       const next = { ...prev }
@@ -191,8 +234,13 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
     })
   }, [])
 
-  const clearTags = useCallback(() => {
+  const clearFilters = useCallback(() => {
+    // Collapse the chip strip too: leaving it expanded after
+    // clearing reads as "still filtering" but with zero chips
+    // active, which is more confusing than helpful.
     setSelected(emptySelection())
+    setSearch('')
+    setExpandedCat(null)
   }, [])
 
   /** Tap a category row → expand its chips, or collapse if it was
@@ -202,38 +250,85 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
     setExpandedCat((prev) => (prev === cat ? null : cat))
   }, [])
 
-  const handlePick = useCallback(async () => {
-    if (pickedId === null || !manifest) return
-    const map = manifest.maps.find((m) => m.id === pickedId)
-    if (!map) return
-    setApplying(true)
-    try {
-      // `mid` is the right resolution for the toolbar: ≈1280 px JPEG,
-      // ≤ 2 MB in practice — comfortably under the 8 MB ingest cap
-      // and a fraction of the original's bytes.
-      const result = await onPick(midUrl(map))
-      if (result === 'ok') {
-        onNotice?.(t('tabletop.map.set'), 'success')
-        onClose()
-      } else if (result === 'tooLarge') {
-        onNotice?.(t('tabletop.map.tooLarge'), 'error')
-      } else if (result === 'fetchFailed') {
-        onNotice?.(t('tabletop.mapUrl.fetchFailed'), 'error')
-      } else if (result === 'notImage') {
-        onNotice?.(t('tabletop.mapUrl.notImage'), 'error')
-      } else if (result === 'invalidUrl') {
-        // Internal error — the dialog only ever passes the canonical
-        // gallery URL, so reaching this branch points at a bug
-        // upstream. Surface as a generic failure rather than the
-        // user-facing "Invalid URL" copy.
-        onNotice?.(t('tabletop.gallery.applyFailed'), 'error')
-      } else {
-        onNotice?.(t('tabletop.map.unreadable'), 'error')
+  /**
+   * Close the dialog AND cancel any in-flight `onPick` so the
+   * eventual resolve does not fire side effects. Also reset all
+   * user-driven state (selection, filters, preview) so a reopen
+   * starts from a clean grid — `manifest` / `tagDict` / `mode` are
+   * preserved as a memory cache + a user setting.
+   *
+   * Every close path (backdrop, X, Cancel, Escape, successful
+   * apply) routes through this so the reset is in one place.
+   */
+  const handleClose = useCallback(() => {
+    inFlightPickRef.current = false
+    setApplying(false)
+    setPreviewMapId(null)
+    setPickedId(null)
+    setSearch('')
+    setExpandedCat(null)
+    setSelected(emptySelection())
+    setErrorKey(null)
+    onClose()
+  }, [onClose])
+
+  /**
+   * Apply a specific map by id. The id is passed in (rather than
+   * read from `pickedId` via closure) so a double-click handler can
+   * `setPickedId(map.id); void handlePick(map.id)` without the
+   * second call seeing a stale closure value.
+   */
+  const handlePick = useCallback(
+    async (id: number) => {
+      if (!manifest) return
+      const map = manifest.maps.find((m) => m.id === id)
+      if (!map) return
+      inFlightPickRef.current = true
+      setApplying(true)
+      try {
+        // `mid` is the right resolution for the toolbar: ≈1280 px
+        // JPEG, ≤ 2 MB in practice — comfortably under the 8 MB
+        // ingest cap and a fraction of the original's bytes.
+        const result = await onPick(midUrl(map))
+        // User closed the dialog mid-apply; skip the side effects
+        // so we don't surprise them with a delayed "applied"
+        // notice or re-fire onClose on an already-closed dialog.
+        if (!inFlightPickRef.current) return
+        if (result === 'ok') {
+          onNotice?.(t('tabletop.map.set'), 'success')
+          handleClose()
+        } else if (result === 'tooLarge') {
+          onNotice?.(t('tabletop.map.tooLarge'), 'error')
+        } else if (result === 'fetchFailed') {
+          onNotice?.(t('tabletop.mapUrl.fetchFailed'), 'error')
+        } else if (result === 'notImage') {
+          onNotice?.(t('tabletop.mapUrl.notImage'), 'error')
+        } else if (result === 'invalidUrl') {
+          // Internal error — the dialog only ever passes the
+          // canonical gallery URL, so reaching this branch points
+          // at a bug upstream. Surface as a generic failure rather
+          // than the user-facing "Invalid URL" copy.
+          onNotice?.(t('tabletop.gallery.applyFailed'), 'error')
+        } else {
+          onNotice?.(t('tabletop.map.unreadable'), 'error')
+        }
+      } catch {
+        // An uncaught throw from `onPick` would otherwise bubble out
+        // through `void handlePick(...)` to an unhandled rejection
+        // with no UI feedback. Surface a generic "could not apply"
+        // toast so the GM knows the click registered but failed.
+        if (inFlightPickRef.current) {
+          onNotice?.(t('tabletop.gallery.applyFailed'), 'error')
+        }
+      } finally {
+        if (inFlightPickRef.current) {
+          setApplying(false)
+          inFlightPickRef.current = false
+        }
       }
-    } finally {
-      setApplying(false)
-    }
-  }, [pickedId, manifest, onPick, onNotice, onClose, t])
+    },
+    [manifest, onPick, onNotice, handleClose, t],
+  )
 
   if (!open) return null
 
@@ -251,7 +346,7 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
     <div className="map-gallery-layer" role="presentation">
       <div
         className="map-gallery-backdrop"
-        onClick={onClose}
+        onClick={handleClose}
         aria-hidden="true"
       />
       <div
@@ -269,7 +364,7 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
             type="button"
             className="icon-btn"
             aria-label={t('tabletop.gallery.close')}
-            onClick={onClose}
+            onClick={handleClose}
           >
             <CloseIcon />
           </button>
@@ -288,24 +383,42 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
             role="radiogroup"
             aria-label={t('tabletop.gallery.mode')}
           >
-            <button
-              type="button"
-              className={`map-gallery-mode-btn${mode === 'or' ? ' active' : ''}`}
-              role="radio"
-              aria-checked={mode === 'or'}
-              onClick={() => setMode('or')}
-            >
-              {t('tabletop.gallery.modeOr')}
-            </button>
-            <button
-              type="button"
-              className={`map-gallery-mode-btn${mode === 'and' ? ' active' : ''}`}
-              role="radio"
-              aria-checked={mode === 'and'}
-              onClick={() => setMode('and')}
-            >
-              {t('tabletop.gallery.modeAnd')}
-            </button>
+            {MODES.map((m) => (
+              <button
+                key={m}
+                type="button"
+                className={`map-gallery-mode-btn${mode === m ? ' active' : ''}`}
+                role="radio"
+                aria-checked={mode === m}
+                // WAI-ARIA radiogroup: only the active radio is in
+                // the tab sequence; arrow keys move the selection
+                // among siblings.
+                tabIndex={mode === m ? 0 : -1}
+                onClick={() => setMode(m)}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                    e.preventDefault()
+                    setMode(MODES[(MODES.indexOf(m) + 1) % MODES.length]!)
+                  } else if (
+                    e.key === 'ArrowLeft' ||
+                    e.key === 'ArrowUp'
+                  ) {
+                    e.preventDefault()
+                    setMode(
+                      MODES[
+                        (MODES.indexOf(m) - 1 + MODES.length) % MODES.length
+                      ]!,
+                    )
+                  }
+                }}
+              >
+                {t(
+                  m === 'or'
+                    ? 'tabletop.gallery.modeOr'
+                    : 'tabletop.gallery.modeAnd',
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -338,10 +451,7 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
                 <button
                   type="button"
                   className="map-gallery-clear"
-                  onClick={() => {
-                    clearTags()
-                    setSearch('')
-                  }}
+                  onClick={clearFilters}
                 >
                   {t('tabletop.gallery.clearFilters')}
                 </button>
@@ -370,8 +480,10 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
 
         <div className="map-gallery-status" aria-live="polite">
           {loading && t('tabletop.gallery.loading')}
-          {error && !loading && <span className="error">{error}</span>}
-          {!loading && !error && manifest && (
+          {errorKey && !loading && (
+            <span className="error">{t(errorKey)}</span>
+          )}
+          {!loading && !errorKey && manifest && (
             <span>
               {t('tabletop.gallery.count', {
                 shown: filteredMaps.length,
@@ -402,7 +514,7 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
                 }}
                 onDoubleClick={() => {
                   setPickedId(map.id)
-                  void handlePick()
+                  void handlePick(map.id)
                 }}
                 title={map.desc || map.file}
               >
@@ -430,7 +542,7 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
               </div>
             )
           })}
-          {!loading && !error && manifest && filteredMaps.length === 0 && (
+          {!loading && !errorKey && manifest && filteredMaps.length === 0 && (
             <p className="map-gallery-empty">{t('tabletop.gallery.empty')}</p>
           )}
         </div>
@@ -442,14 +554,16 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
             </p>
           )}
           <div className="map-gallery-actions">
-            <button type="button" onClick={onClose}>
+            <button type="button" onClick={handleClose}>
               {t('tabletop.gallery.cancel')}
             </button>
             <button
               type="button"
               className="primary"
-              disabled={pickedId === null || applying}
-              onClick={() => void handlePick()}
+              disabled={!pickedIsVisible || applying}
+              onClick={() => {
+                if (pickedId !== null) void handlePick(pickedId)
+              }}
             >
               {applying
                 ? t('tabletop.gallery.applying')
@@ -460,7 +574,12 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
       </div>
       {previewMap && (
         <Lightbox
-          images={[{ name: previewMap.file, dataUrl: originalUrl(previewMap) }]}
+          // The mid-resolution JPEG (~1280 px) loads an order of
+          // magnitude faster than the original PNG and is plenty
+          // for a quick "what does this look like" preview. It
+          // also dodges the `hasOriginals === false` case that
+          // would otherwise 404 the original endpoint.
+          images={[{ name: previewMap.file, dataUrl: midUrl(previewMap) }]}
           index={0}
           onIndexChange={() => {
             /* Single-image preview — paging doesn't apply. */

@@ -78,7 +78,11 @@ export type GalleryCategory = keyof GalleryTagSets
 
 /** Build the original (PNG) URL for a map. Used by the picker's
  *  "open original" affordance; the toolbar itself loads `mid` to keep
- *  download size predictable. */
+ *  download size predictable. The upstream contract is that file /
+ *  thumb / mid are raw (un-encoded) filenames containing
+ *  no folder separators, so `encodeURIComponent` is the right
+ *  encoder — it matches the upstream `app.js` and handles spaces,
+ *  Japanese, and other non-ASCII safely. */
 export function originalUrl(map: GalleryMap): string {
   return GALLERY_BASE + ORIGINAL_DIR + encodeURIComponent(map.file)
 }
@@ -104,7 +108,12 @@ function parseStringArray(value: unknown): string[] {
 function parseMap(raw: unknown): GalleryMap | null {
   if (typeof raw !== 'object' || raw === null) return null
   const r = raw as Record<string, unknown>
-  const id = typeof r.id === 'number' ? r.id : null
+  // `typeof NaN === 'number'` and `typeof Infinity === 'number'` —
+  // both would pass a bare typeof check yet break find()/React keys.
+  // Require a finite number so id collisions and "NaN doesn't equal
+  // NaN" don't silently misroute clicks.
+  const id =
+    typeof r.id === 'number' && Number.isFinite(r.id) ? r.id : null
   const file = typeof r.file === 'string' ? r.file : null
   const thumb = typeof r.thumb === 'string' ? r.thumb : null
   const mid = typeof r.mid === 'string' ? r.mid : null
@@ -154,14 +163,27 @@ export function parseGalleryManifest(raw: unknown): GalleryManifest | null {
   const r = raw as Record<string, unknown>
   if (!Array.isArray(r.maps)) return null
   const maps: GalleryMap[] = []
+  // De-dup by id (first occurrence wins). A duplicated id collides
+  // on React keys in the grid AND makes
+  // `manifest.maps.find(m => m.id === pickedId)` return the wrong
+  // entry on the second one, so we drop the dupe at parse time.
+  const seen = new Set<number>()
   for (const entry of r.maps) {
     const m = parseMap(entry)
-    if (m) maps.push(m)
+    if (!m) continue
+    if (seen.has(m.id)) continue
+    seen.add(m.id)
+    maps.push(m)
   }
   return {
     generatedAt:
       typeof r.generated_at === 'string' ? r.generated_at : '',
-    total: typeof r.total === 'number' ? r.total : maps.length,
+    // `Number.isFinite` keeps NaN/Infinity from sneaking through as
+    // a valid `total` (typeof NaN is 'number').
+    total:
+      typeof r.total === 'number' && Number.isFinite(r.total)
+        ? r.total
+        : maps.length,
     hasOriginals: r.has_originals === true,
     tags: parseTagSets(r.tags),
     maps,
@@ -224,11 +246,14 @@ export async function loadGalleryManifest(): Promise<GalleryManifest | null> {
   return parseGalleryManifest(raw)
 }
 
-/** Fetch the tag translation dictionary. Failures degrade to an empty
- *  dict; the picker still works (every tag renders as its source
- *  string). */
-export async function loadGalleryTagDict(): Promise<GalleryTagDict> {
+/** Fetch the tag translation dictionary. Returns `null` on a network
+ *  / parse failure so the caller can distinguish "haven't tried yet"
+ *  from "tried, got nothing" — useful for a one-shot retry on a
+ *  later open. A successful fetch with an empty `tags` map returns
+ *  `{}` (truthy), which the caller treats as "tried, nothing here". */
+export async function loadGalleryTagDict(): Promise<GalleryTagDict | null> {
   const raw = await fetchJson(GALLERY_BASE + I18N_PATH)
+  if (raw === null) return null
   return parseGalleryTagDict(raw)
 }
 

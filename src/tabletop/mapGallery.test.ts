@@ -66,6 +66,13 @@ describe('URL builders', () => {
   it('builds a thumbUrl', () => {
     expect(thumbUrl(sample)).toBe(`${GALLERY_BASE}images/thumb/a.jpg`)
   })
+
+  it('encodes Japanese filenames safely', () => {
+    const ja: GalleryMap = { ...sample, file: '地下水路.png' }
+    expect(originalUrl(ja)).toBe(
+      `${GALLERY_BASE}originals/${encodeURIComponent('地下水路.png')}`,
+    )
+  })
 })
 
 describe('parseGalleryManifest', () => {
@@ -115,6 +122,36 @@ describe('parseGalleryManifest', () => {
     })
     expect(result?.maps).toHaveLength(2)
     expect(result?.maps.map((m) => m.id)).toEqual([1, 5])
+  })
+
+  it('drops map entries with non-finite ids (NaN, Infinity)', () => {
+    const result = parseGalleryManifest({
+      maps: [
+        { id: NaN, file: 'a.png', thumb: 'a.jpg', mid: 'a.jpg' },
+        { id: Infinity, file: 'b.png', thumb: 'b.jpg', mid: 'b.jpg' },
+        { id: 7, file: 'c.png', thumb: 'c.jpg', mid: 'c.jpg' },
+      ],
+    })
+    expect(result?.maps.map((m) => m.id)).toEqual([7])
+  })
+
+  it('de-duplicates entries with the same id (first occurrence wins)', () => {
+    const result = parseGalleryManifest({
+      maps: [
+        { id: 1, file: 'first.png', thumb: 'a.jpg', mid: 'a.jpg' },
+        { id: 1, file: 'second.png', thumb: 'b.jpg', mid: 'b.jpg' },
+        { id: 2, file: 'c.png', thumb: 'c.jpg', mid: 'c.jpg' },
+      ],
+    })
+    expect(result?.maps.map((m) => m.file)).toEqual(['first.png', 'c.png'])
+  })
+
+  it('coerces non-finite total to maps length', () => {
+    const result = parseGalleryManifest({
+      maps: [SAMPLE_MAP_RAW],
+      total: NaN,
+    })
+    expect(result?.total).toBe(1)
   })
 
   it('coerces missing tag arrays to empty', () => {
@@ -323,11 +360,11 @@ describe('loadGalleryManifest (network)', () => {
 })
 
 describe('loadGalleryTagDict (network)', () => {
-  it('returns an empty dict when offline', async () => {
+  it('returns null when offline (caller can retry)', async () => {
     globalThis.fetch = vi.fn(async () => {
       throw new Error('offline')
     })
-    expect(await loadGalleryTagDict()).toEqual({})
+    expect(await loadGalleryTagDict()).toBeNull()
   })
 
   it('returns the tags map on success', async () => {
@@ -338,5 +375,15 @@ describe('loadGalleryTagDict (network)', () => {
       }) as unknown as Response,
     )
     expect(await loadGalleryTagDict()).toEqual({ 森: 'forest' })
+  })
+
+  it('returns an empty object when the JSON has no tags (cached, not retried)', async () => {
+    globalThis.fetch = vi.fn(async () =>
+      ({
+        ok: true,
+        json: async () => ({ ui: {} }),
+      }) as unknown as Response,
+    )
+    expect(await loadGalleryTagDict()).toEqual({})
   })
 })

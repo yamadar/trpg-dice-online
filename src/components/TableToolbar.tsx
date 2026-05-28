@@ -625,18 +625,39 @@ export function TableToolbar({
 
           <hr className="tabletop-toolbar-divider" />
           <h3 className="tabletop-toolbar-title">{t('tabletop.map.title')}</h3>
+          {/* The file input lives at the top level (not inside the
+              upload tab panel) so its `mapInputRef` is mounted
+              whenever the section is visible — the "replace" button
+              shown next to the current map's info needs to trigger
+              it regardless of which source tab is active. */}
+          <input
+            ref={mapInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleMapFile}
+          />
           {map && (
             <>
               <p className="tabletop-toolbar-meta" title={map.name}>
                 {map.name} ({map.width}×{map.height})
               </p>
-              <button
-                type="button"
-                className="tabletop-toolbar-button outline"
-                onClick={onClearMap}
-              >
-                {t('tabletop.map.clear')}
-              </button>
+              <div className="tabletop-map-current-actions">
+                <button
+                  type="button"
+                  className="tabletop-toolbar-button"
+                  onClick={() => mapInputRef.current?.click()}
+                >
+                  {t('tabletop.map.replace')}
+                </button>
+                <button
+                  type="button"
+                  className="tabletop-toolbar-button outline"
+                  onClick={onClearMap}
+                >
+                  {t('tabletop.map.clear')}
+                </button>
+              </div>
             </>
           )}
           {/* Tab row: four mutually-exclusive sources for the
@@ -671,13 +692,6 @@ export function TableToolbar({
           </div>
           {mapSourceTab === 'upload' && (
             <div className="tabletop-map-source-panel">
-              <input
-                ref={mapInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleMapFile}
-              />
               <button
                 type="button"
                 className="tabletop-toolbar-button"
