@@ -35,6 +35,7 @@ import type { ComponentType } from 'react'
  *  Order = display order in the strip. */
 type CategoryId = 'mapGrid' | 'fog' | 'tokens' | 'library'
 import { CharacterImageCropDialog } from './CharacterImageCropDialog'
+import { MapGalleryDialog } from './MapGalleryDialog'
 
 interface Props {
   grid: Grid
@@ -207,6 +208,9 @@ export function TableToolbar({
   // load starts from an empty field.
   const [mapUrlDraft, setMapUrlDraft] = useState('')
   const [loadingMapUrl, setLoadingMapUrl] = useState(false)
+  // The gallery dialog stays mounted (so its manifest cache survives
+  // close→open cycles) and gates its render on this flag.
+  const [galleryOpen, setGalleryOpen] = useState(false)
   const templates = tabletopLibrary.filter((e) => e.kind === 'template')
   const saves = tabletopLibrary.filter((e) => e.kind === 'save')
 
@@ -675,6 +679,21 @@ export function TableToolbar({
           </button>
           <p className="tabletop-toolbar-meta wrap">
             {t('tabletop.mapUrl.hint')}
+          </p>
+
+          <hr className="tabletop-toolbar-divider" />
+          <h3 className="tabletop-toolbar-title">
+            {t('tabletop.gallery.title')}
+          </h3>
+          <button
+            type="button"
+            className="tabletop-toolbar-button"
+            onClick={() => setGalleryOpen(true)}
+          >
+            {t('tabletop.gallery.open')}
+          </button>
+          <p className="tabletop-toolbar-meta wrap">
+            {t('tabletop.gallery.hint')}
           </p>
 
           <hr className="tabletop-toolbar-divider" />
@@ -1153,6 +1172,12 @@ export function TableToolbar({
           onConfirm={(cropped) => void handleCropConfirm(cropped)}
         />
       )}
+      <MapGalleryDialog
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        onPick={onSetMapFromUrl}
+        onNotice={onNotice}
+      />
     </aside>
   )
 }

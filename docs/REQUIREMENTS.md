@@ -325,6 +325,15 @@ An SPA where players roll TRPG dice and share results with other players in real
   pipeline as a hand-picked file. Distinct error messages cover the
   URL-specific failure modes: malformed URL, network / CORS failure,
   and "URL resolved but the body is not an image".
+- The toolbar also ships an in-app picker for the sibling
+  [trpg-map-organizer](https://yamadar.github.io/trpg-map-organizer/)
+  gallery (~303 maps across four tag taxonomies). The picker fetches
+  the gallery manifest and tag-translations once and keeps them in
+  memory. Tag chips follow the UI language: Japanese UI shows the
+  source tags verbatim, every other language pulls the English label
+  from the gallery's `i18n.json` and falls back to the source tag
+  when a translation is missing. Picking a map loads its mid-
+  resolution JPEG (~1280 px) through the same URL pipeline.
 - The grid is "none" or "square". The GM configures the cell size,
   origin offset (required to align with a grid drawn into the map
   image), stroke color and stroke opacity. Token-drag snapping is
@@ -546,6 +555,7 @@ Commit after each step.
 - [x] Published on GitHub Pages and works in the browser
 - [x] The GM can upload a background map and it is synced to every participant
 - [x] The GM can also load a background map by URL, with the same sync
+- [x] An in-app picker browses the trpg-map-organizer gallery (tags + search)
 - [x] The square grid's cell size, offset, color and opacity can be configured
 - [x] PC tokens are generated from the session's characters and can be moved by the owner and the GM
 - [x] A player can place multiple tokens of their own character at any time

@@ -4,6 +4,20 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.84 — Add an **in-app picker** for the sibling
+  [trpg-map-organizer](https://yamadar.github.io/trpg-map-organizer/)
+  gallery. A new "Open gallery…" button in the tabletop toolbar
+  opens a modal that browses ~303 hand-curated maps across four tag
+  taxonomies, with file-name / description search, AND / OR tag mode
+  toggle, and a thumbnail grid. Tag chips follow the UI language —
+  Japanese UI shows the source tags, every other language pulls the
+  English label from the gallery's own `i18n.json` and falls back to
+  the source tag when a translation is missing. Picking a map sends
+  its mid-resolution JPEG through PR #171's URL-load pipeline, so
+  syncing and downscaling reuse the same code path as a hand-picked
+  file. Manifest and tag dictionary are cached in memory for an
+  instant second open.
+
 - v1.83 — Add a **load-by-URL** path to the background map. The GM
   can now pick a public image URL (CORS-allowed server) in addition
   to a local file; the result goes through the same downscale and
