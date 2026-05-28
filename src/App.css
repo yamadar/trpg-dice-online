@@ -3117,11 +3117,30 @@ label.setting-row {
   padding: 24px;
   cursor: zoom-out;
 }
-.lightbox-img {
+.lightbox-figure {
+  /* Wraps the image and its caption together so the caption sits
+     directly beneath the picture rather than pinned to the viewport
+     bottom. `min-height: 0` lets the inner img shrink instead of
+     pushing the caption off-screen on short viewports. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   max-width: 100%;
   max-height: 100%;
+  min-height: 0;
+  cursor: default;
+}
+.lightbox-img {
+  max-width: 100%;
+  /* Reserve a small slice for the caption when present; on uncaptioned
+     usages the caption is absent and the img can take the full
+     figure height. flex-shrink lets it scale down on tall captions. */
+  max-height: 100%;
+  min-height: 0;
   object-fit: contain;
   border-radius: 4px;
+  flex: 0 1 auto;
 }
 .lightbox-close {
   position: absolute;
@@ -3958,12 +3977,15 @@ button.char-avatar-large:disabled {
 .map-gallery-chips-close {
   /* Anchored to the top-right corner of the chip cluster so an
      expanded category is always one tap away from collapse without
-     having to scroll back to the toggle. */
+     having to scroll back to the toggle. `padding: 0` and
+     `flex: none` are explicit so a global `button { padding: ... }`
+     or a flex parent's stretch don't blow the 24×24 circle wide. */
   position: absolute;
   top: 4px;
   right: 6px;
   width: 24px;
   height: 24px;
+  padding: 0;
   border-radius: 50%;
   background: transparent;
   border: 1px solid var(--border);
@@ -3972,19 +3994,11 @@ button.char-avatar-large:disabled {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  flex: none;
 }
 .map-gallery-chips-close:hover {
   background: var(--panel);
   color: var(--text);
-}
-.map-gallery-status {
-  padding: 8px 16px;
-  font-size: 0.85rem;
-  color: var(--text-dim);
-  border-bottom: 1px solid var(--border);
-}
-.map-gallery-status .error {
-  color: var(--danger, #e35);
 }
 .map-gallery-grid {
   /* Flex-wrap, not CSS Grid: grid's auto-row sizing collapses items
@@ -4069,15 +4083,16 @@ button.char-avatar-large:disabled {
   /* Magnifier overlay shown on hover (mouse) or always on touch.
      Anchored to the top-right corner of the thumbnail so it does
      not obscure the centre of the map. Hidden by default; the
-     item's :hover surfaces it. The white SVG stroke is forced via
-     a high-specificity descendant rule below — `currentColor` from
-     the button's `color: #fff` alone was getting overridden by an
-     ancestor's inherited color on some themes. */
+     item's :hover surfaces it. `padding: 0` is explicit so a
+     global `button { padding: ... }` reset doesn't shrink the
+     fixed 28×28 box's visible content area to zero — the symptom
+     looks like "icon missing" rather than "button missing". */
   position: absolute;
   top: 4px;
   right: 4px;
   width: 28px;
   height: 28px;
+  padding: 0;
   border-radius: 50%;
   border: none;
   background: rgba(0, 0, 0, 0.7);
@@ -4088,6 +4103,7 @@ button.char-avatar-large:disabled {
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.12s ease;
+  flex: none;
 }
 .map-gallery-preview-btn > svg {
   stroke: #fff;
@@ -4335,23 +4351,21 @@ button.char-avatar-large:disabled {
   line-height: 1.4;
 }
 
-/* --- Lightbox caption (used by map-gallery preview) --- */
+/* --- Lightbox caption (used by map-gallery preview) ---
+   Sits inside `.lightbox-figure` directly beneath the image rather
+   than pinned to the viewport bottom — keeps "what is this map?"
+   physically attached to the picture. */
 .lightbox-caption {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   margin: 0;
-  padding: 12px 60px;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.85),
-    rgba(0, 0, 0, 0)
-  );
+  padding: 6px 12px;
+  max-width: min(90vw, 720px);
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 6px;
   color: rgba(255, 255, 255, 0.92);
   font-size: 0.9rem;
+  line-height: 1.4;
   text-align: center;
-  pointer-events: none;
+  flex: none;
 }
 
 /* --- ToggleSwitch (binary on/off button styled as a swipe switch) ---
