@@ -38,6 +38,7 @@ import {
 } from './icons'
 import { ColorInput } from './ColorInput'
 import { StepperInput } from './StepperInput'
+import { ToggleSwitch } from './ToggleSwitch'
 import type { ComponentType } from 'react'
 
 /** Right-side toolbar categories. Each maps to an icon button in the
@@ -642,14 +643,14 @@ export function TableToolbar({
               }}
             />
           </label>
-          <label className="tabletop-toolbar-row">
+          <div className="tabletop-toolbar-row">
             <span>{t('tabletop.grid.snap')}</span>
-            <input
-              type="checkbox"
+            <ToggleSwitch
               checked={grid.snap}
-              onChange={(e) => set('snap', e.target.checked)}
+              onChange={(v) => set('snap', v)}
+              label={t('tabletop.grid.snap')}
             />
-          </label>
+          </div>
 
           <hr className="tabletop-toolbar-divider" />
           <h3 className="tabletop-toolbar-title">{t('tabletop.map.title')}</h3>
@@ -753,9 +754,6 @@ export function TableToolbar({
               >
                 {t('tabletop.gallery.open')}
               </button>
-              <p className="tabletop-toolbar-meta wrap">
-                {t('tabletop.gallery.hint')}
-              </p>
             </div>
           )}
           {mapSourceTab === 'url' && (
@@ -788,9 +786,6 @@ export function TableToolbar({
               >
                 {t('tabletop.mapUrl.load')}
               </button>
-              <p className="tabletop-toolbar-meta wrap">
-                {t('tabletop.mapUrl.hint')}
-              </p>
             </div>
           )}
           {mapSourceTab === 'preset' && (
@@ -847,19 +842,27 @@ export function TableToolbar({
               </p>
             ) : (
               <>
-                <label className="tabletop-toolbar-row">
+                <div className="tabletop-toolbar-row">
                   <span>{t('tabletop.fog.title')}</span>
-                  <input
-                    type="checkbox"
+                  <ToggleSwitch
                     checked={fog.enabled}
-                    onChange={(e) => onFogEnabledChange(e.target.checked)}
-                    aria-label={
+                    onChange={onFogEnabledChange}
+                    label={
                       fog.enabled
                         ? t('tabletop.fog.disable')
                         : t('tabletop.fog.enable')
                     }
                   />
-                </label>
+                </div>
+                {/* Pointer at the per-cell brushes that live in the
+                 *  LEFT tool palette. Users discovering the fog panel
+                 *  for the first time don't always realise the
+                 *  "Reveal / Apply fog" tools over there are the way
+                 *  to tweak individual cells — this hint closes that
+                 *  gap. */}
+                <p className="tabletop-toolbar-meta wrap">
+                  {t('tabletop.fog.brushHint')}
+                </p>
                 <button
                   type="button"
                   className="tabletop-toolbar-button"
@@ -874,15 +877,6 @@ export function TableToolbar({
                 >
                   {t('tabletop.fog.clearAll')}
                 </button>
-                {/* Pointer at the per-cell brushes that live in the
-                 *  LEFT tool palette. Users discovering the fog panel
-                 *  for the first time don't always realise the
-                 *  "Reveal / Apply fog" tools over there are the way
-                 *  to tweak individual cells — this hint closes that
-                 *  gap. */}
-                <p className="tabletop-toolbar-meta wrap">
-                  {t('tabletop.fog.brushHint')}
-                </p>
               </>
             )}
         </>
