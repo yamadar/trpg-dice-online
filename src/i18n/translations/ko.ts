@@ -76,6 +76,7 @@ export const ko: Dict = {
   'tabletop.tokenEdit.titlePc': 'PC 토큰',
   'tabletop.tokenEdit.label': '라벨',
   'tabletop.tokenEdit.changeImage': '이미지 변경…',
+  'tabletop.tokenEdit.size': '크기',
   'tabletop.tokenEdit.remove': '삭제',
   'tabletop.tokenEdit.close': '닫기',
   'tabletop.playerToken.place': '배치',

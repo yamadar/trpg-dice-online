@@ -4414,3 +4414,28 @@ button.char-avatar-large:disabled {
 .toggle-switch.on .toggle-switch-thumb {
   transform: translateX(20px);
 }
+
+/* --- Token-size selector (radiogroup inside TokenPopover) ---
+   A compact pill row matching the AND/OR mode toggle's idiom so the
+   five sizes (0.6 / 1 / 2 / 3 / 4) stay tappable without crowding
+   the popover. */
+.tabletop-token-size-group {
+  display: inline-flex;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.tabletop-token-size-btn {
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  min-width: 32px;
+  cursor: pointer;
+}
+.tabletop-token-size-btn.active {
+  background: var(--accent);
+  color: var(--text-on-accent, #fff);
+}

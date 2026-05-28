@@ -62,6 +62,8 @@ import {
   type TabletopLibraryKind,
   type TabletopState,
   type Token,
+  type TokenSize,
+  tokenSize,
 } from '../tabletop/types'
 import {
   applyDrawStrokeRemove,
@@ -90,7 +92,7 @@ import {
   listLibrary,
   saveLibraryEntry,
 } from '../storage/tabletopLibrary'
-import { snapPlacementToGrid, snapToGrid } from '../tabletop/grid'
+import { snapPlacementToGrid, snapToGrid, snapToGridForSize } from '../tabletop/grid'
 import {
   applyTokenMove as applyTokenMoveHelper,
   applyTokenRemove,
@@ -100,6 +102,7 @@ import {
   makeGmToken,
   planPcTokenAdds,
   recenterTokensOnMap,
+  snapAllTokensToGrid,
 } from '../tabletop/tokens'
 import { prepareNpcTokenImage } from '../characters/image'
 import { ChunkBuffer, chunkString } from '../tabletop/imageChunk'
@@ -274,6 +277,11 @@ export interface Session {
     tokenId: string,
     updates: { label?: string; image?: string },
   ) => void
+  /** GM-only: change a token's grid size. Re-snaps the token's
+   *  position to the appropriate cell anchor for the new size so
+   *  even-integer sizes align on cell corners, odd / 0.6 sizes stay
+   *  on centres. */
+  setTokenSize: (tokenId: string, size: TokenSize) => void
   /**
    * GM-only: add an NPC to the library (host-side stash that can be
    * placed on the map repeatedly). The image is optional at add-time
@@ -907,10 +915,17 @@ export function useSession(): Session {
   const moveTokenCommit = useCallback(
     (tokenId: string, x: number, y: number) => {
       const tabletop = tabletopRef.current
+      // Look up the token so the snap can respect its size (a 2×2
+      // token wants a 4-cell-corner anchor; 0.6 / odd sizes want a
+      // cell centre). Fallback to the size-1 snap when the id is
+      // unknown so a stale move from a deleted token still rounds.
+      const moving = tabletop.tokens.find((t) => t.id === tokenId)
       // Existing snap behaviour runs first; the rescue below only ever
       // triggers when the user is a non-GM client (the GM may
       // deliberately position a token under fog, e.g., a hidden NPC).
-      let snapped = snapToGrid(x, y, tabletop.grid)
+      let snapped = moving
+        ? snapToGridForSize(x, y, tokenSize(moving), tabletop.grid)
+        : snapToGrid(x, y, tabletop.grid)
       if (
         roleRef.current === 'client' &&
         tabletop.fog.enabled &&
@@ -1028,9 +1043,13 @@ export function useSession(): Session {
       // top-left) onto the new map's centre so they land where the
       // user expects them rather than stuck at (cell/2, cell/2).
       const prev = tabletopRef.current
+      // First map ever: shift existing tokens onto the new map's
+      // centre (and snap if snap is on). Subsequent map replacements
+      // keep token positions but re-snap to the grid when snap is on
+      // so a new scene's grid alignment isn't visually broken.
       const tokens = prev.map
-        ? prev.tokens
-        : recenterTokensOnMap(prev.tokens, map)
+        ? snapAllTokensToGrid(prev.tokens, prev.grid)
+        : recenterTokensOnMap(prev.tokens, map, prev.grid)
       const next: TabletopState = { ...prev, map, tokens }
       applyTabletop(next)
       if (tokens !== prev.tokens) {
@@ -1069,9 +1088,13 @@ export function useSession(): Session {
       // Same first-map recenter as `setMapBackground` — see the comment
       // there for the rationale.
       const prev = tabletopRef.current
+      // First map ever: shift existing tokens onto the new map's
+      // centre (and snap if snap is on). Subsequent map replacements
+      // keep token positions but re-snap to the grid when snap is on
+      // so a new scene's grid alignment isn't visually broken.
       const tokens = prev.map
-        ? prev.tokens
-        : recenterTokensOnMap(prev.tokens, map)
+        ? snapAllTokensToGrid(prev.tokens, prev.grid)
+        : recenterTokensOnMap(prev.tokens, map, prev.grid)
       const next: TabletopState = { ...prev, map, tokens }
       applyTabletop(next)
       if (tokens !== prev.tokens) {
@@ -1273,6 +1296,36 @@ export function useSession(): Session {
       // (the renderer keys off "label is present" rather than truthy).
       if (updates.label !== undefined && !nextLabel && 'label' in next) {
         delete (next as { label?: string }).label
+      }
+      const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
+      applyTabletop({ ...tabletopRef.current, tokens })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token: next })
+    },
+    [applyTabletop],
+  )
+
+  /**
+   * GM-only: resize a token (PC or GM). Re-snaps the token to the
+   * new size's appropriate cell anchor when snap is on so a 2×2
+   * token immediately lines up on a 4-cell intersection. A
+   * non-existent id is a silent no-op.
+   */
+  const setTokenSize = useCallback(
+    (tokenId: string, size: TokenSize) => {
+      if (roleRef.current === 'client') return
+      const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
+      if (!existing) return
+      const snapped = snapToGridForSize(
+        existing.x,
+        existing.y,
+        size,
+        tabletopRef.current.grid,
+      )
+      const next: Token = {
+        ...existing,
+        size,
+        x: snapped.x,
+        y: snapped.y,
       }
       const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
       applyTabletop({ ...tabletopRef.current, tokens })
@@ -1793,9 +1846,13 @@ export function useSession(): Session {
       // Same first-map recenter as `setMapBackground` — see comment
       // there for the rationale.
       const prev = tabletopRef.current
+      // First map ever: shift existing tokens onto the new map's
+      // centre (and snap if snap is on). Subsequent map replacements
+      // keep token positions but re-snap to the grid when snap is on
+      // so a new scene's grid alignment isn't visually broken.
       const tokens = prev.map
-        ? prev.tokens
-        : recenterTokensOnMap(prev.tokens, map)
+        ? snapAllTokensToGrid(prev.tokens, prev.grid)
+        : recenterTokensOnMap(prev.tokens, map, prev.grid)
       const next: TabletopState = { ...prev, map, tokens }
       applyTabletop(next)
       if (tokens !== prev.tokens) {
@@ -3387,6 +3444,7 @@ export function useSession(): Session {
     addPlayerToken,
     placeMyCharacterToken,
     updateGmToken,
+    setTokenSize,
     addNpcDef,
     updateNpcDef,
     removeNpcDef,

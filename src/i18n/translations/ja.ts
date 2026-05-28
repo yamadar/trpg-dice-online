@@ -76,6 +76,7 @@ export const ja: Dict = {
   'tabletop.tokenEdit.titlePc': 'PC トークン',
   'tabletop.tokenEdit.label': 'ラベル',
   'tabletop.tokenEdit.changeImage': '画像を変更…',
+  'tabletop.tokenEdit.size': 'サイズ',
   'tabletop.tokenEdit.remove': '削除',
   'tabletop.tokenEdit.close': '閉じる',
   'tabletop.playerToken.place': '配置',

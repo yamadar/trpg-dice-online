@@ -76,6 +76,7 @@ export const vi: Dict = {
   'tabletop.tokenEdit.titlePc': 'Token PC',
   'tabletop.tokenEdit.label': 'Nhãn',
   'tabletop.tokenEdit.changeImage': 'Đổi ảnh…',
+  'tabletop.tokenEdit.size': 'Kích thước',
   'tabletop.tokenEdit.remove': 'Xoá',
   'tabletop.tokenEdit.close': 'Đóng',
   'tabletop.playerToken.place': 'Đặt',
