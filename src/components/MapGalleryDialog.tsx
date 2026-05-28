@@ -378,14 +378,22 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
         <header className="map-gallery-header">
           <h2 id="map-gallery-title" className="map-gallery-title">
             {t('tabletop.gallery.title')}
-            {manifest && (
-              <span className="map-gallery-count" aria-live="polite">
-                {t('tabletop.gallery.count', {
-                  shown: filteredMaps.length,
-                  total: manifest.maps.length,
-                })}
-              </span>
-            )}
+            {/* Status pill: shows loading / error / count side-by-side
+                with the title rather than carving out a dedicated
+                status row. Exactly one state renders at a time so the
+                layout stays stable as the manifest resolves. */}
+            <span className="map-gallery-count" aria-live="polite">
+              {loading
+                ? t('tabletop.gallery.loading')
+                : errorKey
+                  ? t(errorKey)
+                  : manifest
+                    ? t('tabletop.gallery.count', {
+                        shown: filteredMaps.length,
+                        total: manifest.maps.length,
+                      })
+                    : ''}
+            </span>
           </h2>
           <button
             ref={closeBtnRef}
@@ -518,13 +526,6 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
           </div>
         )}
 
-        <div className="map-gallery-status" aria-live="polite">
-          {loading && t('tabletop.gallery.loading')}
-          {errorKey && !loading && (
-            <span className="error">{t(errorKey)}</span>
-          )}
-        </div>
-
         <div className="map-gallery-grid">
           {filteredMaps.map((map) => {
             const isPicked = map.id === pickedId
@@ -536,6 +537,11 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
                 tabIndex={0}
                 aria-pressed={isPicked}
                 aria-label={map.file}
+                // The scroll-into-view helper (used by the Lightbox
+                // prev/next handler) finds the card by id via this
+                // attribute — querying by data attribute is cheap
+                // and avoids 303-ref bookkeeping.
+                data-map-id={map.id}
                 className={`map-gallery-item${isPicked ? ' picked' : ''}`}
                 onClick={handleSelect}
                 onKeyDown={(e) => {
@@ -562,9 +568,13 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
                   aria-label={t('tabletop.gallery.preview')}
                   title={t('tabletop.gallery.preview')}
                   onClick={(e) => {
-                    // Don't let the preview click select / re-select
-                    // the card; the magnifier is a separate action.
+                    // Don't let the click bubble to the parent
+                    // card's onClick, but DO select the card —
+                    // previewing a map is a strong intent signal
+                    // ("I'm interested in this one"), so picking it
+                    // matches what the GM is about to do anyway.
                     e.stopPropagation()
+                    setPickedId(map.id)
                     setPreviewMapId(map.id)
                   }}
                 >
@@ -606,15 +616,33 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
       </div>
       {previewMap && (
         <Lightbox
-          // The mid-resolution JPEG (~1280 px) loads an order of
-          // magnitude faster than the original PNG and is plenty
-          // for a quick "what does this look like" preview. It
-          // also dodges the `hasOriginals === false` case that
-          // would otherwise 404 the original endpoint.
-          images={[{ name: previewMap.file, dataUrl: midUrl(previewMap) }]}
-          index={0}
-          onIndexChange={() => {
-            /* Single-image preview — paging doesn't apply. */
+          // Hand the Lightbox every currently-visible map so prev /
+          // next walk through the user's actual working set —
+          // search and tag filters in the dialog above carry into
+          // the preview navigation. Mid-resolution JPEG (~1280 px)
+          // is plenty for "what does this look like" and dodges the
+          // `hasOriginals === false` case that would otherwise 404.
+          images={filteredMaps.map((m) => ({
+            name: m.file,
+            dataUrl: midUrl(m),
+          }))}
+          index={Math.max(
+            0,
+            filteredMaps.findIndex((m) => m.id === previewMap.id),
+          )}
+          onIndexChange={(nextIdx) => {
+            const next = filteredMaps[nextIdx]
+            if (!next) return
+            setPreviewMapId(next.id)
+            // Moving in the preview is a stronger intent signal
+            // than just hovering — mirror the pick state and pull
+            // the card into view in the grid behind so a quick
+            // dismiss lands back on the right thumbnail.
+            setPickedId(next.id)
+            const el = document.querySelector<HTMLElement>(
+              `[data-map-id="${next.id}"]`,
+            )
+            el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
           }}
           onClose={() => setPreviewMapId(null)}
           // Surface the map's description below the preview so the

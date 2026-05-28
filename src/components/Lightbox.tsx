@@ -129,7 +129,10 @@ export function Lightbox({
         </button>
       )}
 
-      <img className="lightbox-img" src={file.dataUrl} alt={file.name} />
+      <div className="lightbox-figure" onClick={(e) => e.stopPropagation()}>
+        <img className="lightbox-img" src={file.dataUrl} alt={file.name} />
+        {caption && <p className="lightbox-caption">{caption}</p>}
+      </div>
 
       {hasNext && (
         <button
@@ -143,15 +146,6 @@ export function Lightbox({
         >
           ›
         </button>
-      )}
-
-      {caption && (
-        <p
-          className="lightbox-caption"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {caption}
-        </p>
       )}
     </div>
   )
