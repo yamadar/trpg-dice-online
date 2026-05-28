@@ -573,6 +573,96 @@ export function DiceIcon({ size = 18 }: IconProps) {
 }
 
 /**
+ * Lucide-style icons for the background-map source tabs. Each shows
+ * the *purpose* of the corresponding picker at a glance so the
+ * four-tab strip can collapse to icon-only on narrow viewports and
+ * still be scannable.
+ */
+export function ImageUpIcon({ size = 20 }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5.3" />
+      <path d="m3 16 5-5c.928-.893 2.072-.893 3 0l3.5 3.5" />
+      <path d="M14 19.5 17 16.5l3 3" />
+      <path d="M17 22v-5.5" />
+      <circle cx="9" cy="9" r="2" />
+    </svg>
+  )
+}
+
+export function ImageSearchIcon({ size = 20 }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M18 22H4a2 2 0 0 1-2-2V6" />
+      <path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18" />
+      <circle cx="12" cy="8" r="2" />
+      <rect width="16" height="16" x="6" y="2" rx="2" />
+      <circle cx="19.5" cy="19.5" r="2.5" />
+      <path d="M21.5 21.5 23 23" />
+    </svg>
+  )
+}
+
+export function Link2Icon({ size = 20 }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 17H7A5 5 0 0 1 7 7h2" />
+      <path d="M15 7h2a5 5 0 1 1 0 10h-2" />
+      <line x1="8" x2="16" y1="12" y2="12" />
+    </svg>
+  )
+}
+
+export function AlbumIcon({ size = 20 }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+      <polyline points="11 3 11 11 14 8 17 11 17 3" />
+    </svg>
+  )
+}
+
+/**
  * Brand mark for "Dice & Chat": a speech bubble framing a d20 (hexagon +
  * inscribed hexagram + "20"). Sized via `size` (defaults to `1em` so it
  * scales with the surrounding text). The gradient is baked in — the icon

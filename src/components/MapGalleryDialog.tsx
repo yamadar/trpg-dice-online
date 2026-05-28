@@ -47,7 +47,7 @@ import {
   tagLabel,
   thumbUrl,
 } from '../tabletop/mapGallery'
-import { CloseIcon } from './icons'
+import { CloseIcon, TrashIcon } from './icons'
 import { Lightbox } from './Lightbox'
 
 const CATEGORIES: GalleryCategory[] = ['theme', 'terrain', 'mood', 'location']
@@ -133,6 +133,11 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
   // disturb the user's selection.
   const [previewMapId, setPreviewMapId] = useState<number | null>(null)
   const closeBtnRef = useRef<HTMLButtonElement | null>(null)
+  /** Wraps the category row + the expandable chip cluster. Used by
+   *  the outside-pointerdown handler so a tap anywhere else in the
+   *  grid / footer collapses the chips without needing an extra
+   *  close affordance. */
+  const filtersWrapRef = useRef<HTMLDivElement | null>(null)
   // Cancellation token for an in-flight `onPick`. Closing the
   // dialog mid-apply flips this to `false` so the eventual resolve
   // is ignored — without it, a "Use this map" tap followed by a
@@ -208,6 +213,21 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
   useEffect(() => {
     if (open) closeBtnRef.current?.focus({ preventScroll: true })
   }, [open])
+
+  // Tap outside the filter row / chip cluster while a category is
+  // expanded → collapse it. Without this, a chip strip can swallow
+  // a meaningful fraction of the dialog on phones, and the user
+  // has no obvious way back besides retapping the same category.
+  useEffect(() => {
+    if (!open || expandedCat === null) return
+    const onDown = (e: PointerEvent) => {
+      const t = e.target
+      if (t instanceof Node && filtersWrapRef.current?.contains(t)) return
+      setExpandedCat(null)
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [open, expandedCat])
 
   const filteredMaps = useMemo(() => {
     if (!manifest) return [] as GalleryMap[]
@@ -358,6 +378,14 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
         <header className="map-gallery-header">
           <h2 id="map-gallery-title" className="map-gallery-title">
             {t('tabletop.gallery.title')}
+            {manifest && (
+              <span className="map-gallery-count" aria-live="polite">
+                {t('tabletop.gallery.count', {
+                  shown: filteredMaps.length,
+                  total: manifest.maps.length,
+                })}
+              </span>
+            )}
           </h2>
           <button
             ref={closeBtnRef}
@@ -423,7 +451,7 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
         </div>
 
         {manifest && (
-          <>
+          <div ref={filtersWrapRef}>
             <div className="map-gallery-cat-row">
               {CATEGORIES.map((cat) => {
                 const tags = manifest.tags[cat]
@@ -452,8 +480,11 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
                   type="button"
                   className="map-gallery-clear"
                   onClick={clearFilters}
+                  aria-label={t('tabletop.gallery.clearFilters')}
+                  title={t('tabletop.gallery.clearFilters')}
                 >
-                  {t('tabletop.gallery.clearFilters')}
+                  <TrashIcon />
+                  <span>{t('tabletop.gallery.clear')}</span>
                 </button>
               )}
             </div>
@@ -473,23 +504,24 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
                     </button>
                   )
                 })}
+                <button
+                  type="button"
+                  className="map-gallery-chips-close"
+                  aria-label={t('tabletop.gallery.closeFilter')}
+                  title={t('tabletop.gallery.closeFilter')}
+                  onClick={() => setExpandedCat(null)}
+                >
+                  <CloseIcon size={14} />
+                </button>
               </div>
             )}
-          </>
+          </div>
         )}
 
         <div className="map-gallery-status" aria-live="polite">
           {loading && t('tabletop.gallery.loading')}
           {errorKey && !loading && (
             <span className="error">{t(errorKey)}</span>
-          )}
-          {!loading && !errorKey && manifest && (
-            <span>
-              {t('tabletop.gallery.count', {
-                shown: filteredMaps.length,
-                total: manifest.maps.length,
-              })}
-            </span>
           )}
         </div>
 
@@ -585,6 +617,9 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
             /* Single-image preview — paging doesn't apply. */
           }}
           onClose={() => setPreviewMapId(null)}
+          // Surface the map's description below the preview so the
+          // GM doesn't have to dismiss the Lightbox to read it.
+          caption={previewMap.desc || previewMap.file}
         />
       )}
     </div>

@@ -15,6 +15,10 @@ interface Props {
   index: number
   onIndexChange: (index: number) => void
   onClose: () => void
+  /** Optional caption overlay shown along the bottom edge of the
+   *  viewer — used by the map-gallery picker to surface each map's
+   *  description without leaving the preview. */
+  caption?: string
 }
 
 /** Minimum horizontal travel (px) for a touch to count as a swipe. */
@@ -25,7 +29,13 @@ const SWIPE_THRESHOLD = 40
  * / next image is reached with the arrow keys, a horizontal swipe, or the
  * on-screen arrows. Escape or a tap on the backdrop dismisses it.
  */
-export function Lightbox({ images, index, onIndexChange, onClose }: Props) {
+export function Lightbox({
+  images,
+  index,
+  onIndexChange,
+  onClose,
+  caption,
+}: Props) {
   const { t } = useI18n()
   const touchStartX = useRef<number | null>(null)
   // A swipe also ends with a click event; this flag swallows that click so
@@ -133,6 +143,15 @@ export function Lightbox({ images, index, onIndexChange, onClose }: Props) {
         >
           ›
         </button>
+      )}
+
+      {caption && (
+        <p
+          className="lightbox-caption"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {caption}
+        </p>
       )}
     </div>
   )
