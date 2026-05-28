@@ -3,14 +3,19 @@
  *
  * Renders a modal with:
  *   - A text search (file name + description, case-insensitive).
- *   - Four tag categories (theme / terrain / mood / location) as
- *     toggle chips, with an AND / OR mode switch matching the source
- *     site's behaviour.
+ *   - Four tag categories (theme / terrain / mood / location) in a
+ *     fixed row of toggles. Tapping a category expands its tag
+ *     chips beneath the row; only one category is expanded at a
+ *     time (tapping the same toggle closes it). AND / OR mode
+ *     switch lives in the toolbar above and applies across
+ *     categories.
  *   - A grid of thumbnail cards. Tapping a card selects it; the
  *     footer "Use this map" button drives the actual download via
  *     the parent's `onPick(midUrl)` callback, which goes through
  *     `setMapBackgroundFromUrl` and therefore the same downscale +
- *     chunked-broadcast pipeline as a hand-picked file.
+ *     chunked-broadcast pipeline as a hand-picked file. A hover
+ *     magnifier on each card opens the full-resolution image in
+ *     the Lightbox without affecting the picked state.
  *
  * Tag labels follow the UI language: `ja` shows the source Japanese
  * strings verbatim, every other language pulls the English label
@@ -31,11 +36,13 @@ import {
   loadGalleryManifest,
   loadGalleryTagDict,
   midUrl,
+  originalUrl,
   searchMaps,
   tagLabel,
   thumbUrl,
 } from '../tabletop/mapGallery'
 import { CloseIcon } from './icons'
+import { Lightbox } from './Lightbox'
 
 const CATEGORIES: GalleryCategory[] = ['theme', 'terrain', 'mood', 'location']
 
@@ -63,6 +70,28 @@ function emptySelection(): Selection {
   }
 }
 
+/** 14 px magnifier icon used on the hover-preview affordance. Inline
+ *  rather than added to `icons.tsx` since it's only used here and
+ *  the lucide-style geometry is tiny. */
+function MagnifierIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="6" />
+      <path d="M21 21l-4.35-4.35" />
+    </svg>
+  )
+}
+
 export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
   const { t, lang } = useI18n()
   // Cached manifest / dict survive across opens — the source site
@@ -78,13 +107,17 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
   const [mode, setMode] = useState<'and' | 'or'>('or')
   const [pickedId, setPickedId] = useState<number | null>(null)
   const [applying, setApplying] = useState(false)
-  // Tracks which tag categories the user has expanded. All start
-  // collapsed so 300+ tag chips don't dominate the viewport on first
-  // open — the user expands the one they care about.
-  const [expandedCats, setExpandedCats] = useState<Set<GalleryCategory>>(
-    () => new Set(),
-  )
-  const cardRef = useRef<HTMLDivElement | null>(null)
+  // Exclusive expansion: only one category's chips are visible at a
+  // time. Tapping the active category closes it. The category row
+  // itself stays in place — only the chip cluster beneath it appears
+  // or disappears.
+  const [expandedCat, setExpandedCat] = useState<GalleryCategory | null>(null)
+  // Lightbox preview state: which map is being previewed (full-res
+  // image) on top of the dialog. `null` means no preview. Tapping
+  // the magnifier on a card or hitting Enter on a focused card opens
+  // it; this is independent of `pickedId` so previewing does not
+  // disturb the user's selection.
+  const [previewMapId, setPreviewMapId] = useState<number | null>(null)
   const closeBtnRef = useRef<HTMLButtonElement | null>(null)
 
   // Lazy first load. `manifest` itself acts as the cache flag —
@@ -117,13 +150,15 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
     }
   }, [open, manifest, t])
 
-  // Escape closes the dialog. Registered in the capture phase so a
-  // parent Sheet listening to Escape on the window doesn't also
-  // close behind us.
+  // Escape closes the dialog (or the preview when it's open).
+  // Capture phase so a parent Sheet listening to Escape on the
+  // window doesn't also close behind us. The preview's own
+  // `Lightbox` already handles Escape internally; this guard
+  // only fires when no preview is up.
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && previewMapId === null) {
         e.preventDefault()
         e.stopImmediatePropagation()
         onClose()
@@ -131,7 +166,7 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [open, onClose])
+  }, [open, onClose, previewMapId])
 
   // Focus the close button when the dialog opens — gives keyboard
   // users a predictable starting point and prevents focus from being
@@ -160,13 +195,11 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
     setSelected(emptySelection())
   }, [])
 
+  /** Tap a category row → expand its chips, or collapse if it was
+   *  already the active one. Exclusive: tapping a different category
+   *  replaces the open chip set rather than stacking them. */
   const toggleCategory = useCallback((cat: GalleryCategory) => {
-    setExpandedCats((prev) => {
-      const next = new Set(prev)
-      if (next.has(cat)) next.delete(cat)
-      else next.add(cat)
-      return next
-    })
+    setExpandedCat((prev) => (prev === cat ? null : cat))
   }, [])
 
   const handlePick = useCallback(async () => {
@@ -209,6 +242,11 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
       ? null
       : manifest?.maps.find((m) => m.id === pickedId) || null
 
+  const previewMap =
+    previewMapId === null
+      ? null
+      : manifest?.maps.find((m) => m.id === previewMapId) || null
+
   return (
     <div className="map-gallery-layer" role="presentation">
       <div
@@ -217,7 +255,6 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
         aria-hidden="true"
       />
       <div
-        ref={cardRef}
         className="map-gallery-card"
         role="dialog"
         aria-modal="true"
@@ -246,7 +283,11 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <div className="map-gallery-mode" role="radiogroup" aria-label={t('tabletop.gallery.mode')}>
+          <div
+            className="map-gallery-mode"
+            role="radiogroup"
+            aria-label={t('tabletop.gallery.mode')}
+          >
             <button
               type="button"
               className={`map-gallery-mode-btn${mode === 'or' ? ' active' : ''}`}
@@ -269,17 +310,18 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
         </div>
 
         {manifest && (
-          <div className="map-gallery-filters">
-            {CATEGORIES.map((cat) => {
-              const tags = manifest.tags[cat]
-              if (tags.length === 0) return null
-              const isExpanded = expandedCats.has(cat)
-              const selectedCount = selected[cat].size
-              return (
-                <div key={cat} className="map-gallery-cat">
+          <>
+            <div className="map-gallery-cat-row">
+              {CATEGORIES.map((cat) => {
+                const tags = manifest.tags[cat]
+                if (tags.length === 0) return null
+                const isExpanded = expandedCat === cat
+                const selectedCount = selected[cat].size
+                return (
                   <button
+                    key={cat}
                     type="button"
-                    className="map-gallery-cat-toggle"
+                    className={`map-gallery-cat-toggle${isExpanded ? ' active' : ''}`}
                     aria-expanded={isExpanded}
                     onClick={() => toggleCategory(cat)}
                   >
@@ -290,40 +332,40 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
                       </span>
                     )}
                   </button>
-                  {isExpanded && (
-                    <div className="map-gallery-chips">
-                      {tags.map((tag) => {
-                        const on = selected[cat].has(tag)
-                        return (
-                          <button
-                            key={tag}
-                            type="button"
-                            className={`map-gallery-chip${on ? ' active' : ''}`}
-                            aria-pressed={on}
-                            onClick={() => toggleTag(cat, tag)}
-                          >
-                            {tagLabel(tag, lang, tagDict)}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-            {(Object.values(selected).some((s) => s.size > 0) || search) && (
-              <button
-                type="button"
-                className="map-gallery-clear"
-                onClick={() => {
-                  clearTags()
-                  setSearch('')
-                }}
-              >
-                {t('tabletop.gallery.clearFilters')}
-              </button>
+                )
+              })}
+              {(Object.values(selected).some((s) => s.size > 0) || search) && (
+                <button
+                  type="button"
+                  className="map-gallery-clear"
+                  onClick={() => {
+                    clearTags()
+                    setSearch('')
+                  }}
+                >
+                  {t('tabletop.gallery.clearFilters')}
+                </button>
+              )}
+            </div>
+            {expandedCat && manifest.tags[expandedCat].length > 0 && (
+              <div className="map-gallery-chips">
+                {manifest.tags[expandedCat].map((tag) => {
+                  const on = selected[expandedCat].has(tag)
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      className={`map-gallery-chip${on ? ' active' : ''}`}
+                      aria-pressed={on}
+                      onClick={() => toggleTag(expandedCat, tag)}
+                    >
+                      {tagLabel(tag, lang, tagDict)}
+                    </button>
+                  )
+                })}
+              </div>
             )}
-          </div>
+          </>
         )}
 
         <div className="map-gallery-status" aria-live="polite">
@@ -342,13 +384,22 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
         <div className="map-gallery-grid">
           {filteredMaps.map((map) => {
             const isPicked = map.id === pickedId
+            const handleSelect = () => setPickedId(map.id)
             return (
-              <button
+              <div
                 key={map.id}
-                type="button"
-                className={`map-gallery-item${isPicked ? ' picked' : ''}`}
+                role="button"
+                tabIndex={0}
                 aria-pressed={isPicked}
-                onClick={() => setPickedId(map.id)}
+                aria-label={map.file}
+                className={`map-gallery-item${isPicked ? ' picked' : ''}`}
+                onClick={handleSelect}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleSelect()
+                  }
+                }}
                 onDoubleClick={() => {
                   setPickedId(map.id)
                   void handlePick()
@@ -361,8 +412,22 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
                   loading="lazy"
                   className="map-gallery-thumb"
                 />
+                <button
+                  type="button"
+                  className="map-gallery-preview-btn"
+                  aria-label={t('tabletop.gallery.preview')}
+                  title={t('tabletop.gallery.preview')}
+                  onClick={(e) => {
+                    // Don't let the preview click select / re-select
+                    // the card; the magnifier is a separate action.
+                    e.stopPropagation()
+                    setPreviewMapId(map.id)
+                  }}
+                >
+                  <MagnifierIcon />
+                </button>
                 <span className="map-gallery-item-name">{map.file}</span>
-              </button>
+              </div>
             )
           })}
           {!loading && !error && manifest && filteredMaps.length === 0 && (
@@ -393,6 +458,16 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
           </div>
         </footer>
       </div>
+      {previewMap && (
+        <Lightbox
+          images={[{ name: previewMap.file, dataUrl: originalUrl(previewMap) }]}
+          index={0}
+          onIndexChange={() => {
+            /* Single-image preview — paging doesn't apply. */
+          }}
+          onClose={() => setPreviewMapId(null)}
+        />
+      )}
     </div>
   )
 }
