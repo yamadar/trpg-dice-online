@@ -76,6 +76,7 @@ export const id: Dict = {
   'tabletop.tokenEdit.titlePc': 'Token PC',
   'tabletop.tokenEdit.label': 'Label',
   'tabletop.tokenEdit.changeImage': 'Ganti gambar…',
+  'tabletop.tokenEdit.size': 'Ukuran',
   'tabletop.tokenEdit.remove': 'Hapus',
   'tabletop.tokenEdit.close': 'Tutup',
   'tabletop.playerToken.place': 'Tempatkan',

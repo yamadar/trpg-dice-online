@@ -76,6 +76,7 @@ export const es: Dict = {
   'tabletop.tokenEdit.titlePc': 'Ficha de PJ',
   'tabletop.tokenEdit.label': 'Etiqueta',
   'tabletop.tokenEdit.changeImage': 'Cambiar imagen…',
+  'tabletop.tokenEdit.size': 'Tamaño',
   'tabletop.tokenEdit.remove': 'Quitar',
   'tabletop.tokenEdit.close': 'Cerrar',
   'tabletop.playerToken.place': 'Colocar',

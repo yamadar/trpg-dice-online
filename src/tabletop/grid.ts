@@ -33,21 +33,46 @@ export interface Cell {
 /**
  * Snap a world (x, y) to the nearest grid cell center. With `kind` set
  * to 'none' or `snap` false the input is returned unchanged so callers
- * can use this unconditionally on drag end.
+ * can use this unconditionally on drag end. Default size (1) is the
+ * common case; callers that know the token's size should use
+ * `snapToGridForSize` so a 2×2 token lines up on cell corners.
  */
 export function snapToGrid(x: number, y: number, grid: Grid): Vec2 {
+  return snapToGridForSize(x, y, 1, grid)
+}
+
+/**
+ * Size-aware snap. Square grids align differently by size:
+ *   - Even integer sizes (2, 4) snap the centre to a cell CORNER
+ *     (the intersection of 4 cells), so a 2×2 token fills exactly
+ *     four cells with its edges on grid lines.
+ *   - Odd integer sizes (1, 3) and the sub-cell 0.6 size snap to a
+ *     cell CENTRE.
+ * Hex grids ignore size — every snap lands on the hex centre, since
+ * "between hexes" isn't a meaningful position.
+ */
+export function snapToGridForSize(
+  x: number,
+  y: number,
+  size: number,
+  grid: Grid,
+): Vec2 {
   if (grid.kind === 'none' || !grid.snap) return { x, y }
   if (grid.kind === 'hex') return snapToHexCell(x, y, grid)
-  const half = grid.cellSize / 2
+  const cell = grid.cellSize
+  // Even integer sizes align to a 4-cell intersection; everything
+  // else (odd integers + the 0.6 sub-cell) lands on a cell centre.
+  const useCorner = Number.isInteger(size) && size % 2 === 0
+  if (useCorner) {
+    return {
+      x: grid.originX + Math.round((x - grid.originX) / cell) * cell,
+      y: grid.originY + Math.round((y - grid.originY) / cell) * cell,
+    }
+  }
+  const half = cell / 2
   return {
-    x:
-      grid.originX +
-      half +
-      Math.round((x - grid.originX - half) / grid.cellSize) * grid.cellSize,
-    y:
-      grid.originY +
-      half +
-      Math.round((y - grid.originY - half) / grid.cellSize) * grid.cellSize,
+    x: grid.originX + half + Math.round((x - grid.originX - half) / cell) * cell,
+    y: grid.originY + half + Math.round((y - grid.originY - half) / cell) * cell,
   }
 }
 

@@ -76,6 +76,7 @@ export const th: Dict = {
   'tabletop.tokenEdit.titlePc': 'โทเคน PC',
   'tabletop.tokenEdit.label': 'ป้ายชื่อ',
   'tabletop.tokenEdit.changeImage': 'เปลี่ยนรูป…',
+  'tabletop.tokenEdit.size': 'ขนาด',
   'tabletop.tokenEdit.remove': 'ลบ',
   'tabletop.tokenEdit.close': 'ปิด',
   'tabletop.playerToken.place': 'วาง',

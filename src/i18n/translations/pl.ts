@@ -76,6 +76,7 @@ export const pl: Dict = {
   'tabletop.tokenEdit.titlePc': 'Znacznik BG',
   'tabletop.tokenEdit.label': 'Etykieta',
   'tabletop.tokenEdit.changeImage': 'Zmień obraz…',
+  'tabletop.tokenEdit.size': 'Rozmiar',
   'tabletop.tokenEdit.remove': 'Usuń',
   'tabletop.tokenEdit.close': 'Zamknij',
   'tabletop.playerToken.place': 'Umieść',

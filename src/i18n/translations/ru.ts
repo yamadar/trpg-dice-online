@@ -76,6 +76,7 @@ export const ru: Dict = {
   'tabletop.tokenEdit.titlePc': 'Фишка PC',
   'tabletop.tokenEdit.label': 'Подпись',
   'tabletop.tokenEdit.changeImage': 'Сменить изображение…',
+  'tabletop.tokenEdit.size': 'Размер',
   'tabletop.tokenEdit.remove': 'Удалить',
   'tabletop.tokenEdit.close': 'Закрыть',
   'tabletop.playerToken.place': 'Разместить',

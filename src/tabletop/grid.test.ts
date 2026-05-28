@@ -3,6 +3,7 @@ import {
   cellCenterToWorld,
   cellToWorld,
   snapToGrid,
+  snapToGridForSize,
   worldToCell,
 } from './grid'
 import type { Grid } from './types'
@@ -57,6 +58,41 @@ describe('snapToGrid', () => {
     // (-25, -25) is the center of cell (-1, -1)
     expect(snapToGrid(-25, -25, grid)).toEqual({ x: -25, y: -25 })
     expect(snapToGrid(-1, -1, grid)).toEqual({ x: -25, y: -25 })
+  })
+})
+
+describe('snapToGridForSize', () => {
+  it('returns the input unchanged when snap is off', () => {
+    const grid = makeGrid({ snap: false })
+    expect(snapToGridForSize(10, 10, 2, grid)).toEqual({ x: 10, y: 10 })
+  })
+
+  it('snaps size 1 to a cell centre', () => {
+    const grid = makeGrid()
+    expect(snapToGridForSize(10, 10, 1, grid)).toEqual({ x: 25, y: 25 })
+  })
+
+  it('snaps size 3 to a cell centre (odd integer)', () => {
+    const grid = makeGrid()
+    expect(snapToGridForSize(60, 60, 3, grid)).toEqual({ x: 75, y: 75 })
+  })
+
+  it('snaps the 0.6 sub-cell size to a cell centre', () => {
+    const grid = makeGrid()
+    expect(snapToGridForSize(10, 10, 0.6, grid)).toEqual({ x: 25, y: 25 })
+  })
+
+  it('snaps size 2 to a cell corner (4-cell intersection)', () => {
+    const grid = makeGrid()
+    // 40,40 is closer to corner (50,50) than corner (0,0)
+    expect(snapToGridForSize(40, 40, 2, grid)).toEqual({ x: 50, y: 50 })
+    expect(snapToGridForSize(20, 20, 2, grid)).toEqual({ x: 0, y: 0 })
+  })
+
+  it('snaps size 4 to a cell corner', () => {
+    const grid = makeGrid()
+    // size 4 also uses corner-anchored snap
+    expect(snapToGridForSize(45, 45, 4, grid)).toEqual({ x: 50, y: 50 })
   })
 })
 

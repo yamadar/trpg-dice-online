@@ -24,13 +24,16 @@ import {
   DEFAULT_PEN_COLOR,
   DEFAULT_PEN_WIDTH,
   DEFAULT_TEXT_FONT_SIZE,
+  TOKEN_SIZES,
   cellFromWorld,
+  tokenSize,
   type DrawStroke,
   type FogState,
   type Grid,
   type MapText,
   type TabletopLibraryKind,
   type Token,
+  type TokenSize,
 } from '../tabletop/types'
 import {
   hexCellCenter,
@@ -1256,6 +1259,7 @@ export function TablePanel({
             onChangeImage={(image) =>
               session.updateGmToken(selectedToken.id, { image })
             }
+            onChangeSize={(size) => session.setTokenSize(selectedToken.id, size)}
             onRemove={() => {
               session.removeToken(selectedToken.id)
               setSelectedTokenId(null)
@@ -1447,6 +1451,8 @@ interface TokenPopoverProps {
   onRename: (label: string) => void
   /** GM-only: replace the GM token's image. */
   onChangeImage: (image: string) => void
+  /** GM-only: change the token's grid size. */
+  onChangeSize: (size: TokenSize) => void
   /** GM-only: remove the token. */
   onRemove: () => void
 }
@@ -1465,6 +1471,7 @@ function TokenPopover({
   onClose,
   onRename,
   onChangeImage,
+  onChangeSize,
   onRemove,
 }: TokenPopoverProps) {
   const { t } = useI18n()
@@ -1553,6 +1560,31 @@ function TokenPopover({
           </button>
         </>
       )}
+      <div className="tabletop-token-popover-row">
+        <span>{t('tabletop.tokenEdit.size')}</span>
+        <div
+          className="tabletop-token-size-group"
+          role="radiogroup"
+          aria-label={t('tabletop.tokenEdit.size')}
+        >
+          {TOKEN_SIZES.map((s) => {
+            const active = tokenSize(token) === s
+            return (
+              <button
+                key={s}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                tabIndex={active ? 0 : -1}
+                className={`tabletop-token-size-btn${active ? ' active' : ''}`}
+                onClick={() => onChangeSize(s)}
+              >
+                {String(s)}
+              </button>
+            )
+          })}
+        </div>
+      </div>
       <button
         type="button"
         className="tabletop-toolbar-button outline danger"
@@ -1729,7 +1761,10 @@ function TokenView({
   onSelect,
   dimmed = false,
 }: TokenViewProps) {
-  const radius = Math.max(8, grid.cellSize / 2 - 2)
+  // Token radius scales with the token's grid size (1, 2, 3, 4 are
+  // multiples of a cell; 0.6 is a sub-cell). The `- 2` keeps a small
+  // visual gap so adjacent same-size tokens don't touch their borders.
+  const radius = Math.max(8, (grid.cellSize * tokenSize(token)) / 2 - 2)
   const handleSelect = useCallback(() => {
     onSelect?.(token.id)
   }, [onSelect, token.id])

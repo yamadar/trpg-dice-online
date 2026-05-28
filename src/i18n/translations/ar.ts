@@ -76,6 +76,7 @@ export const ar: Dict = {
   'tabletop.tokenEdit.titlePc': 'رمز PC',
   'tabletop.tokenEdit.label': 'التسمية',
   'tabletop.tokenEdit.changeImage': 'تغيير الصورة…',
+  'tabletop.tokenEdit.size': 'الحجم',
   'tabletop.tokenEdit.remove': 'إزالة',
   'tabletop.tokenEdit.close': 'إغلاق',
   'tabletop.playerToken.place': 'ضع',

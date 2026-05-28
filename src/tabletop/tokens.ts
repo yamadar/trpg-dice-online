@@ -7,9 +7,16 @@
  */
 
 import type { Player } from '../net/protocol'
-import { snapPlacementToGrid } from './grid'
-import type { GmToken, MapBackground, PcToken, TabletopState, Token } from './types'
-import { newTokenId } from './types'
+import { snapPlacementToGrid, snapToGridForSize } from './grid'
+import type {
+  GmToken,
+  Grid,
+  MapBackground,
+  PcToken,
+  TabletopState,
+  Token,
+} from './types'
+import { newTokenId, tokenSize } from './types'
 
 /**
  * Where new tokens should be placed when no `pcSpawn` is set.
@@ -46,6 +53,28 @@ export function mapCenter(map: MapBackground): { x: number; y: number } {
 }
 
 /**
+ * Re-snap every token to its cell anchor on the current grid. Used
+ * when the GM replaces the background map and the existing tokens
+ * should align to the new scene's grid. Returns the same array when
+ * snap is off / grid is disabled / nothing moved, so callers can
+ * short-circuit on identity.
+ */
+export function snapAllTokensToGrid(
+  tokens: ReadonlyArray<Token>,
+  grid: Grid,
+): Token[] {
+  if (!grid.snap || grid.kind === 'none') return tokens as Token[]
+  let changed = false
+  const next = tokens.map((t) => {
+    const snapped = snapToGridForSize(t.x, t.y, tokenSize(t), grid)
+    if (snapped.x === t.x && snapped.y === t.y) return t
+    changed = true
+    return { ...t, x: snapped.x, y: snapped.y }
+  })
+  return changed ? next : (tokens as Token[])
+}
+
+/**
  * Translate all tokens so their centroid lands on the new map's
  * centre. Used the first time a map is added to a tabletop that
  * already had auto-placed PC tokens stuck at the world's top-left.
@@ -57,6 +86,7 @@ export function mapCenter(map: MapBackground): { x: number; y: number } {
 export function recenterTokensOnMap(
   tokens: ReadonlyArray<Token>,
   map: MapBackground,
+  grid?: Grid,
 ): Token[] {
   if (tokens.length === 0) return tokens as Token[]
   let sumX = 0
@@ -70,8 +100,20 @@ export function recenterTokensOnMap(
   const center = mapCenter(map)
   const dx = center.x - centroidX
   const dy = center.y - centroidY
-  if (dx === 0 && dy === 0) return tokens as Token[]
-  return tokens.map((t) => ({ ...t, x: t.x + dx, y: t.y + dy }))
+  // When `grid` is provided AND the user's snap is on, also re-snap
+  // each token to its appropriate cell anchor — otherwise a map
+  // replacement with snap on would leave tokens floating off-grid
+  // until the GM nudged each one.
+  if (dx === 0 && dy === 0 && !(grid && grid.snap)) return tokens as Token[]
+  return tokens.map((t) => {
+    const next = { ...t, x: t.x + dx, y: t.y + dy }
+    if (grid && grid.snap) {
+      const snapped = snapToGridForSize(next.x, next.y, tokenSize(t), grid)
+      next.x = snapped.x
+      next.y = snapped.y
+    }
+    return next
+  })
 }
 
 /** Minimal speaker identity used by the placement / permission helpers. */

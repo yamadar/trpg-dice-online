@@ -76,6 +76,7 @@ export const ptBR: Dict = {
   'tabletop.tokenEdit.titlePc': 'Ficha de PC',
   'tabletop.tokenEdit.label': 'Rótulo',
   'tabletop.tokenEdit.changeImage': 'Trocar imagem…',
+  'tabletop.tokenEdit.size': 'Tamanho',
   'tabletop.tokenEdit.remove': 'Remover',
   'tabletop.tokenEdit.close': 'Fechar',
   'tabletop.playerToken.place': 'Posicionar',

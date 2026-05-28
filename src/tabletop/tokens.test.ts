@@ -8,6 +8,7 @@ import {
   makeGmToken,
   planPcTokenAdds,
   recenterTokensOnMap,
+  snapAllTokensToGrid,
 } from './tokens'
 import {
   DEFAULT_GRID,
@@ -329,5 +330,47 @@ describe('applyTokenRemove', () => {
   it('returns the same reference when the id is unknown', () => {
     const tokens: Token[] = [pc()]
     expect(applyTokenRemove(tokens, 'missing')).toBe(tokens)
+  })
+})
+
+describe('snapAllTokensToGrid', () => {
+  it('returns the same array reference when snap is off', () => {
+    const noSnap: Grid = { ...grid, snap: false }
+    const tokens: Token[] = [pc({ id: 'a', x: 10, y: 10 })]
+    expect(snapAllTokensToGrid(tokens, noSnap)).toBe(tokens)
+  })
+
+  it('returns the same array reference when nothing moves', () => {
+    const tokens: Token[] = [pc({ id: 'a', x: 25, y: 25 })]
+    // 25,25 is already a cell centre on a cellSize-50 grid at origin 0.
+    expect(snapAllTokensToGrid(tokens, grid)).toBe(tokens)
+  })
+
+  it('snaps each token by its own size', () => {
+    const tokens: Token[] = [
+      pc({ id: 'a', x: 10, y: 10, size: 1 }),
+      gm({ id: 'b', x: 40, y: 40, size: 2 }),
+    ]
+    const result = snapAllTokensToGrid(tokens, grid)
+    expect(result[0]).toMatchObject({ x: 25, y: 25 })
+    expect(result[1]).toMatchObject({ x: 50, y: 50 })
+  })
+})
+
+describe('recenterTokensOnMap with grid snap', () => {
+  it('re-snaps the centroid-shifted positions when snap is on', () => {
+    const tokens: Token[] = [pc({ id: 'a', x: 10, y: 10 })]
+    // Centroid (10,10) → centre (400,300). Shift = (390, 290), new
+    // position = (400,300). On a 50-cell grid that's already a corner;
+    // size-1 snap goes to the cell centre (425, 325).
+    const result = recenterTokensOnMap(tokens, sampleMap, grid)
+    expect(result[0]).toMatchObject({ x: 425, y: 325 })
+  })
+
+  it('skips snap when snap is off (centroid-shift only)', () => {
+    const noSnap: Grid = { ...grid, snap: false }
+    const tokens: Token[] = [pc({ id: 'a', x: 10, y: 10 })]
+    const result = recenterTokensOnMap(tokens, sampleMap, noSnap)
+    expect(result[0]).toMatchObject({ x: 400, y: 300 })
   })
 })

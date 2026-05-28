@@ -14,6 +14,31 @@
 export type TokenKind = 'pc' | 'gm'
 
 /**
+ * Token size in grid-cell multiples. `1` is the default — a token of
+ * 1×1 cells. Sizes follow the TRPG convention:
+ *   - `0.6` — sub-cell (small creature). Snap centres on a cell.
+ *   - `1`   — 1×1, centre of a cell.
+ *   - `2`   — 2×2, centre lands on the intersection of 4 cells.
+ *   - `3`   — 3×3, centre of the middle cell.
+ *   - `4`   — 4×4, centre on a 4-cell intersection.
+ *
+ * Hex grids ignore the distinction (any size snaps to a hex centre);
+ * the choices above are about square-grid alignment.
+ */
+export const TOKEN_SIZES = [0.6, 1, 2, 3, 4] as const
+export type TokenSize = (typeof TOKEN_SIZES)[number]
+export const DEFAULT_TOKEN_SIZE: TokenSize = 1
+
+/** Source of truth for "what size is this token?" — handles tokens
+ *  placed before the `size` field existed (treated as 1). */
+export function tokenSize(token: { size?: number }): TokenSize {
+  const s = token.size
+  return (s !== undefined && (TOKEN_SIZES as ReadonlyArray<number>).includes(s)
+    ? (s as TokenSize)
+    : DEFAULT_TOKEN_SIZE)
+}
+
+/**
  * A token bound to a session character. The portrait used at render time
  * is pulled from the `sessionCharacters` store (the same source as the
  * feed avatar) so a portrait change automatically propagates to the
@@ -39,6 +64,8 @@ export interface PcToken {
   /** Character name + portrait at placement time, used when the live
    *  `sessionCharacters` record is absent. */
   snapshot?: { name: string; image: string }
+  /** Token size in grid cells. Missing = default (1). */
+  size?: TokenSize
 }
 
 /**
@@ -55,6 +82,8 @@ export interface GmToken {
   image: string
   /** Optional label rendered under the token. */
   label?: string
+  /** Token size in grid cells. Missing = default (1). */
+  size?: TokenSize
 }
 
 export type Token = PcToken | GmToken
