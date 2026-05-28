@@ -3793,3 +3793,361 @@ button.char-avatar-large:disabled {
   /* Inline flex / gap is layered on top by the rule next to .settings-title
      so the icon and label sit centred together. */
 }
+
+/* --- map gallery dialog (trpg-map-organizer picker) ---
+   Sits at z 65 — above the sheet / lightbox / tutorial / banner stack
+   (which top out at 60) but below the global confirm prompt at 70, so
+   an "are you sure?" raised from inside the gallery still wins focus.
+
+   A Lightbox launched from inside the gallery (the per-card preview)
+   normally lives at z 50, which would put it beneath this layer.
+   The override at the bottom of this section bumps gallery-spawned
+   Lightboxes above the gallery so the preview is actually visible. */
+.map-gallery-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+.map-gallery-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+.map-gallery-card {
+  position: relative;
+  width: 100%;
+  max-width: 920px;
+  max-height: 92svh;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.map-gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.map-gallery-title {
+  font-size: 1.05rem;
+  margin: 0;
+  color: var(--text-h);
+}
+.map-gallery-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.map-gallery-search {
+  flex: 1;
+  min-width: 180px;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.95rem;
+}
+.map-gallery-mode {
+  display: inline-flex;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.map-gallery-mode-btn {
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.map-gallery-mode-btn.active {
+  background: var(--accent);
+  color: var(--text-on-accent, #fff);
+}
+.map-gallery-cat-row {
+  /* Fixed row of four category toggles. The chip cluster below
+     belongs to whichever one is currently expanded — only one at a
+     time, so the row's own layout never shifts as the user switches
+     between categories. */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+.map-gallery-cat-toggle {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.map-gallery-cat-toggle.active {
+  background: var(--accent);
+  color: var(--text-on-accent, #fff);
+  border-color: var(--accent);
+}
+.map-gallery-cat-count {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 6px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  text-align: center;
+}
+.map-gallery-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-2);
+}
+.map-gallery-chip {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.map-gallery-chip.active {
+  background: var(--accent);
+  color: var(--text-on-accent, #fff);
+  border-color: var(--accent);
+}
+.map-gallery-clear {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  margin-left: auto;
+}
+.map-gallery-status {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+.map-gallery-status .error {
+  color: var(--danger, #e35);
+}
+.map-gallery-grid {
+  /* Flex-wrap, not CSS Grid: grid's auto-row sizing collapses items
+     whose height comes from `aspect-ratio` (the spec's min-content
+     for an aspect-only block is 0, and `grid-auto-rows: auto` uses
+     min-content). Flex wrap takes each item's full sized box,
+     including its aspect-ratio'd height, without the collapsing
+     problem. */
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 10px;
+}
+.map-gallery-item {
+  /* Width as a flex basis — 140 px squares, ~5 per row on the 900 px
+     dialog. The aspect-ratio rule lower down still drives the
+     height. `min-width: 0` lets the flex item shrink if a really
+     narrow dialog (mobile) demands it. */
+  flex: 0 0 140px;
+  min-width: 0;
+}
+.map-gallery-item {
+  /* `<div role="button">` rather than `<button>` because native
+     <button> mis-sizes a flex column with an inner <img>.
+     The item itself owns the aspect-ratio so the grid track has a
+     deterministic row height — chasing it through a flex column +
+     img aspect-ratio collapses the row to min-content (4 px) on a
+     grid with `grid-auto-rows: auto`. The thumbnail and the name
+     overlay absolutely-position inside the squared container. */
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: var(--panel-2);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  text-align: left;
+  user-select: none;
+}
+.map-gallery-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.map-gallery-item.picked {
+  border-color: var(--accent);
+}
+.map-gallery-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: var(--panel);
+}
+.map-gallery-item-name {
+  /* Overlay strip at the bottom of the squared thumbnail. The
+     darkening gradient keeps the filename legible across light and
+     dark map art without dimming the rest of the image. */
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 4px 6px;
+  font-size: 0.7rem;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.78),
+    rgba(0, 0, 0, 0)
+  );
+  color: rgba(255, 255, 255, 0.92);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.map-gallery-preview-btn {
+  /* Magnifier overlay shown on hover (mouse) or always on touch.
+     Anchored to the top-right corner of the thumbnail so it does
+     not obscure the centre of the map. Hidden by default; the
+     item's :hover surfaces it. */
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.map-gallery-item:hover .map-gallery-preview-btn,
+.map-gallery-item:focus-within .map-gallery-preview-btn,
+.map-gallery-preview-btn:focus-visible {
+  opacity: 1;
+}
+/* Touch devices have no hover; surface the icon always so the
+   feature is reachable by tap. */
+@media (hover: none) {
+  .map-gallery-preview-btn {
+    opacity: 1;
+  }
+}
+/* Lift the per-card Lightbox preview above the gallery dialog
+   itself; the default Lightbox z-index (50) would otherwise leave
+   it stranded behind the gallery's z-65 layer. */
+.map-gallery-layer .lightbox {
+  z-index: 75;
+}
+.map-gallery-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--text-dim);
+  padding: 24px;
+}
+.map-gallery-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.map-gallery-picked-desc {
+  flex: 1;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  /* Truncate gracefully — the hover-tooltip surfaces the full text. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.map-gallery-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.map-gallery-actions button {
+  min-width: 96px;
+}
+
+/* --- background-map source tabs --- */
+.tabletop-map-source-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--panel-2);
+  border-radius: 8px;
+  padding: 3px;
+  margin: 8px 0;
+}
+.tabletop-map-source-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tabletop-map-source-tab.active {
+  background: var(--panel);
+  color: var(--text-h);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+.tabletop-map-source-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Two-button row shown beneath the current map's filename / size:
+   "replace" (file picker) on the left, "clear" on the right. Lives
+   outside the source tabs so a GM with a map already set can swap
+   the file without first switching the active source tab. */
+.tabletop-map-current-actions {
+  display: flex;
+  gap: 6px;
+}
+.tabletop-map-current-actions > button {
+  flex: 1;
+}

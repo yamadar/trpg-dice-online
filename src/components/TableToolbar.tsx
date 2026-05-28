@@ -35,6 +35,7 @@ import type { ComponentType } from 'react'
  *  Order = display order in the strip. */
 type CategoryId = 'mapGrid' | 'fog' | 'tokens' | 'library'
 import { CharacterImageCropDialog } from './CharacterImageCropDialog'
+import { MapGalleryDialog } from './MapGalleryDialog'
 
 interface Props {
   grid: Grid
@@ -207,6 +208,17 @@ export function TableToolbar({
   // load starts from an empty field.
   const [mapUrlDraft, setMapUrlDraft] = useState('')
   const [loadingMapUrl, setLoadingMapUrl] = useState(false)
+  // The gallery dialog stays mounted (so its manifest cache survives
+  // close→open cycles) and gates its render on this flag.
+  const [galleryOpen, setGalleryOpen] = useState(false)
+  // Background-map source selector. Four mutually-exclusive panels
+  // share a single tab row instead of stacking all the controls
+  // (one Section per source) on top of each other — playtesters
+  // found the stacked layout overwhelming once URL + gallery were
+  // added on top of upload + preset.
+  const [mapSourceTab, setMapSourceTab] = useState<
+    'upload' | 'gallery' | 'url' | 'preset'
+  >('upload')
   const templates = tabletopLibrary.filter((e) => e.kind === 'template')
   const saves = tabletopLibrary.filter((e) => e.kind === 'save')
 
@@ -613,6 +625,11 @@ export function TableToolbar({
 
           <hr className="tabletop-toolbar-divider" />
           <h3 className="tabletop-toolbar-title">{t('tabletop.map.title')}</h3>
+          {/* The file input lives at the top level (not inside the
+              upload tab panel) so its `mapInputRef` is mounted
+              whenever the section is visible — the "replace" button
+              shown next to the current map's info needs to trigger
+              it regardless of which source tab is active. */}
           <input
             ref={mapInputRef}
             type="file"
@@ -620,101 +637,157 @@ export function TableToolbar({
             style={{ display: 'none' }}
             onChange={handleMapFile}
           />
-          <button
-            type="button"
-            className="tabletop-toolbar-button"
-            onClick={() => mapInputRef.current?.click()}
-          >
-            {map ? t('tabletop.map.replace') : t('tabletop.map.choose')}
-          </button>
           {map && (
             <>
               <p className="tabletop-toolbar-meta" title={map.name}>
                 {map.name} ({map.width}×{map.height})
               </p>
-              <button
-                type="button"
-                className="tabletop-toolbar-button outline"
-                onClick={onClearMap}
-              >
-                {t('tabletop.map.clear')}
-              </button>
+              <div className="tabletop-map-current-actions">
+                <button
+                  type="button"
+                  className="tabletop-toolbar-button"
+                  onClick={() => mapInputRef.current?.click()}
+                >
+                  {t('tabletop.map.replace')}
+                </button>
+                <button
+                  type="button"
+                  className="tabletop-toolbar-button outline"
+                  onClick={onClearMap}
+                >
+                  {t('tabletop.map.clear')}
+                </button>
+              </div>
             </>
           )}
-
-          <hr className="tabletop-toolbar-divider" />
-          <h3 className="tabletop-toolbar-title">
-            {t('tabletop.mapUrl.title')}
-          </h3>
-          <input
-            type="url"
-            className="tabletop-toolbar-input"
-            placeholder={t('tabletop.mapUrl.placeholder')}
-            value={mapUrlDraft}
-            onChange={(e) => setMapUrlDraft(e.target.value)}
-            onKeyDown={(e) => {
-              // Enter inside a single-line input would otherwise submit
-              // the enclosing form (there isn't one, but the gesture is
-              // still a natural "go" — mirror it explicitly).
-              if (e.key === 'Enter' && !loadingMapUrl) {
-                e.preventDefault()
-                void handleLoadMapUrl()
-              }
-            }}
-            inputMode="url"
-            autoComplete="off"
-            spellCheck={false}
-          />
-          <button
-            type="button"
-            className="tabletop-toolbar-button"
-            onClick={() => void handleLoadMapUrl()}
-            disabled={loadingMapUrl || !mapUrlDraft.trim()}
+          {/* Tab row: four mutually-exclusive sources for the
+              background map. Switching tabs swaps the panel below
+              without touching the in-flight URL draft / preset
+              selection, so a GM can shop between sources without
+              losing intermediate input. */}
+          <div
+            className="tabletop-map-source-tabs"
+            role="tablist"
+            aria-label={t('tabletop.mapSource.label')}
           >
-            {t('tabletop.mapUrl.load')}
-          </button>
-          <p className="tabletop-toolbar-meta wrap">
-            {t('tabletop.mapUrl.hint')}
-          </p>
-
-          <hr className="tabletop-toolbar-divider" />
-          <h3 className="tabletop-toolbar-title">
-            {t('tabletop.preset.title')}
-          </h3>
-          {presets.length === 0 ? (
-            <p className="tabletop-toolbar-meta">
-              {t('tabletop.preset.empty')}
-            </p>
-          ) : (
-            <>
-              <select
-                className="tabletop-toolbar-input"
-                value={selectedPreset}
-                onChange={(e) => setSelectedPreset(e.target.value)}
-                aria-label={t('tabletop.preset.choose')}
+            {(
+              [
+                ['upload', 'tabletop.mapSource.upload'],
+                ['gallery', 'tabletop.mapSource.gallery'],
+                ['url', 'tabletop.mapSource.url'],
+                ['preset', 'tabletop.mapSource.preset'],
+              ] as const
+            ).map(([id, key]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={mapSourceTab === id}
+                className={`tabletop-map-source-tab${mapSourceTab === id ? ' active' : ''}`}
+                onClick={() => setMapSourceTab(id)}
               >
-                {presets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              {(() => {
-                const desc = presets.find((p) => p.id === selectedPreset)
-                  ?.description
-                return desc ? (
-                  <p className="tabletop-toolbar-meta wrap">{desc}</p>
-                ) : null
-              })()}
+                {t(key)}
+              </button>
+            ))}
+          </div>
+          {mapSourceTab === 'upload' && (
+            <div className="tabletop-map-source-panel">
               <button
                 type="button"
                 className="tabletop-toolbar-button"
-                onClick={() => void handleLoadPreset()}
-                disabled={loadingPreset || !selectedPreset}
+                onClick={() => mapInputRef.current?.click()}
               >
-                {t('tabletop.preset.load')}
+                {map ? t('tabletop.map.replace') : t('tabletop.map.choose')}
               </button>
-            </>
+            </div>
+          )}
+          {mapSourceTab === 'gallery' && (
+            <div className="tabletop-map-source-panel">
+              <button
+                type="button"
+                className="tabletop-toolbar-button"
+                onClick={() => setGalleryOpen(true)}
+              >
+                {t('tabletop.gallery.open')}
+              </button>
+              <p className="tabletop-toolbar-meta wrap">
+                {t('tabletop.gallery.hint')}
+              </p>
+            </div>
+          )}
+          {mapSourceTab === 'url' && (
+            <div className="tabletop-map-source-panel">
+              <input
+                type="url"
+                className="tabletop-toolbar-input"
+                placeholder={t('tabletop.mapUrl.placeholder')}
+                value={mapUrlDraft}
+                onChange={(e) => setMapUrlDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  // Enter inside a single-line input would otherwise
+                  // submit the enclosing form (there isn't one, but
+                  // the gesture is still a natural "go" — mirror it
+                  // explicitly).
+                  if (e.key === 'Enter' && !loadingMapUrl) {
+                    e.preventDefault()
+                    void handleLoadMapUrl()
+                  }
+                }}
+                inputMode="url"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button
+                type="button"
+                className="tabletop-toolbar-button"
+                onClick={() => void handleLoadMapUrl()}
+                disabled={loadingMapUrl || !mapUrlDraft.trim()}
+              >
+                {t('tabletop.mapUrl.load')}
+              </button>
+              <p className="tabletop-toolbar-meta wrap">
+                {t('tabletop.mapUrl.hint')}
+              </p>
+            </div>
+          )}
+          {mapSourceTab === 'preset' && (
+            <div className="tabletop-map-source-panel">
+              {presets.length === 0 ? (
+                <p className="tabletop-toolbar-meta">
+                  {t('tabletop.preset.empty')}
+                </p>
+              ) : (
+                <>
+                  <select
+                    className="tabletop-toolbar-input"
+                    value={selectedPreset}
+                    onChange={(e) => setSelectedPreset(e.target.value)}
+                    aria-label={t('tabletop.preset.choose')}
+                  >
+                    {presets.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  {(() => {
+                    const desc = presets.find((p) => p.id === selectedPreset)
+                      ?.description
+                    return desc ? (
+                      <p className="tabletop-toolbar-meta wrap">{desc}</p>
+                    ) : null
+                  })()}
+                  <button
+                    type="button"
+                    className="tabletop-toolbar-button"
+                    onClick={() => void handleLoadPreset()}
+                    disabled={loadingPreset || !selectedPreset}
+                  >
+                    {t('tabletop.preset.load')}
+                  </button>
+                </>
+              )}
+            </div>
           )}
         </>
       )}
@@ -1153,6 +1226,12 @@ export function TableToolbar({
           onConfirm={(cropped) => void handleCropConfirm(cropped)}
         />
       )}
+      <MapGalleryDialog
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        onPick={onSetMapFromUrl}
+        onNotice={onNotice}
+      />
     </aside>
   )
 }
