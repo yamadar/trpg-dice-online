@@ -19,7 +19,15 @@ import { loadPresetMapManifest } from '../tabletop/presetMaps'
 import type { Character } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
 import { avatarInitial } from '../players/identity'
-import { CloseIcon, EditIcon, TrashIcon } from './icons'
+import {
+  AlbumIcon,
+  CloseIcon,
+  EditIcon,
+  ImageSearchIcon,
+  ImageUpIcon,
+  Link2Icon,
+  TrashIcon,
+} from './icons'
 import {
   CharacterIcon,
   FogIcon,
@@ -28,12 +36,52 @@ import {
   TabletopIcon,
   type IconProps,
 } from './icons'
+import { ColorInput } from './ColorInput'
+import { StepperInput } from './StepperInput'
 import type { ComponentType } from 'react'
 
 /** Right-side toolbar categories. Each maps to an icon button in the
  *  vertical strip plus the body rendered in the side-expanding panel.
  *  Order = display order in the strip. */
 type CategoryId = 'mapGrid' | 'fog' | 'tokens' | 'library'
+
+/** Background-map source tabs. Defined at module level so the array
+ *  identity is stable across renders and the icon components are
+ *  resolved once. `descKey` points at the explanatory copy shown
+ *  below the icon row in the panel header. */
+type MapSourceId = 'upload' | 'gallery' | 'url' | 'preset'
+interface MapSourceTabDef {
+  id: MapSourceId
+  Icon: ComponentType<IconProps>
+  labelKey: string
+  descKey: string
+}
+const MAP_SOURCE_TABS: ReadonlyArray<MapSourceTabDef> = [
+  {
+    id: 'upload',
+    Icon: ImageUpIcon,
+    labelKey: 'tabletop.mapSource.upload',
+    descKey: 'tabletop.mapSource.uploadDesc',
+  },
+  {
+    id: 'gallery',
+    Icon: ImageSearchIcon,
+    labelKey: 'tabletop.mapSource.gallery',
+    descKey: 'tabletop.mapSource.galleryDesc',
+  },
+  {
+    id: 'url',
+    Icon: Link2Icon,
+    labelKey: 'tabletop.mapSource.url',
+    descKey: 'tabletop.mapSource.urlDesc',
+  },
+  {
+    id: 'preset',
+    Icon: AlbumIcon,
+    labelKey: 'tabletop.mapSource.preset',
+    descKey: 'tabletop.mapSource.presetDesc',
+  },
+]
 import { CharacterImageCropDialog } from './CharacterImageCropDialog'
 import { MapGalleryDialog } from './MapGalleryDialog'
 
@@ -216,9 +264,7 @@ export function TableToolbar({
   // (one Section per source) on top of each other — playtesters
   // found the stacked layout overwhelming once URL + gallery were
   // added on top of upload + preset.
-  const [mapSourceTab, setMapSourceTab] = useState<
-    'upload' | 'gallery' | 'url' | 'preset'
-  >('upload')
+  const [mapSourceTab, setMapSourceTab] = useState<MapSourceId>('upload')
   const templates = tabletopLibrary.filter((e) => e.kind === 'template')
   const saves = tabletopLibrary.filter((e) => e.kind === 'save')
 
@@ -546,58 +592,40 @@ export function TableToolbar({
               <option value="hex">{t('tabletop.grid.kindHex')}</option>
             </select>
           </label>
-          <label className="tabletop-toolbar-row">
+          <div className="tabletop-toolbar-row">
             <span>{t('tabletop.grid.cellSize')}</span>
-            <input
-              type="number"
+            <StepperInput
+              value={grid.cellSize}
+              onChange={(n) => set('cellSize', n)}
               min={MIN_CELL_SIZE}
               max={MAX_CELL_SIZE}
-              step={1}
-              value={grid.cellSize}
-              onChange={(e) => {
-                const n = Number(e.target.value)
-                if (Number.isFinite(n)) {
-                  const clamped = Math.max(
-                    MIN_CELL_SIZE,
-                    Math.min(MAX_CELL_SIZE, n),
-                  )
-                  set('cellSize', clamped)
-                }
-              }}
+              label={t('tabletop.grid.cellSize')}
             />
-          </label>
-          <label className="tabletop-toolbar-row">
+          </div>
+          <div className="tabletop-toolbar-row">
             <span>{t('tabletop.grid.originX')}</span>
-            <input
-              type="number"
-              step={1}
+            <StepperInput
               value={grid.originX}
-              onChange={(e) => {
-                const n = Number(e.target.value)
-                if (Number.isFinite(n)) set('originX', n)
-              }}
+              onChange={(n) => set('originX', n)}
+              label={t('tabletop.grid.originX')}
             />
-          </label>
-          <label className="tabletop-toolbar-row">
+          </div>
+          <div className="tabletop-toolbar-row">
             <span>{t('tabletop.grid.originY')}</span>
-            <input
-              type="number"
-              step={1}
+            <StepperInput
               value={grid.originY}
-              onChange={(e) => {
-                const n = Number(e.target.value)
-                if (Number.isFinite(n)) set('originY', n)
-              }}
+              onChange={(n) => set('originY', n)}
+              label={t('tabletop.grid.originY')}
             />
-          </label>
-          <label className="tabletop-toolbar-row">
+          </div>
+          <div className="tabletop-toolbar-row">
             <span>{t('tabletop.grid.strokeColor')}</span>
-            <input
-              type="color"
+            <ColorInput
               value={grid.strokeColor}
-              onChange={(e) => set('strokeColor', e.target.value)}
+              onChange={(v) => set('strokeColor', v)}
+              label={t('tabletop.grid.strokeColor')}
             />
-          </label>
+          </div>
           <label className="tabletop-toolbar-row">
             <span>{t('tabletop.grid.strokeOpacity')}</span>
             <input
@@ -661,34 +689,49 @@ export function TableToolbar({
             </>
           )}
           {/* Tab row: four mutually-exclusive sources for the
-              background map. Switching tabs swaps the panel below
-              without touching the in-flight URL draft / preset
-              selection, so a GM can shop between sources without
-              losing intermediate input. */}
+              background map. Icons-only so the four-tab strip
+              comfortably fits a narrow phone-width panel; the
+              selected tab's name + description renders just below
+              so the affordance is still discoverable. Switching
+              tabs swaps the panel without touching in-flight
+              drafts / preset selection, so a GM can shop between
+              sources without losing intermediate input. */}
           <div
             className="tabletop-map-source-tabs"
             role="tablist"
             aria-label={t('tabletop.mapSource.label')}
           >
-            {(
-              [
-                ['upload', 'tabletop.mapSource.upload'],
-                ['gallery', 'tabletop.mapSource.gallery'],
-                ['url', 'tabletop.mapSource.url'],
-                ['preset', 'tabletop.mapSource.preset'],
-              ] as const
-            ).map(([id, key]) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={mapSourceTab === id}
-                className={`tabletop-map-source-tab${mapSourceTab === id ? ' active' : ''}`}
-                onClick={() => setMapSourceTab(id)}
-              >
-                {t(key)}
-              </button>
-            ))}
+            {MAP_SOURCE_TABS.map(({ id, Icon, labelKey }) => {
+              const active = mapSourceTab === id
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  aria-label={t(labelKey)}
+                  title={t(labelKey)}
+                  className={`tabletop-map-source-tab${active ? ' active' : ''}`}
+                  onClick={() => setMapSourceTab(id)}
+                >
+                  <Icon size={18} />
+                </button>
+              )
+            })}
+          </div>
+          <div className="tabletop-map-source-header">
+            <h4 className="tabletop-map-source-name">
+              {t(
+                MAP_SOURCE_TABS.find((tab) => tab.id === mapSourceTab)!
+                  .labelKey,
+              )}
+            </h4>
+            <p className="tabletop-map-source-desc">
+              {t(
+                MAP_SOURCE_TABS.find((tab) => tab.id === mapSourceTab)!
+                  .descKey,
+              )}
+            </p>
           </div>
           {mapSourceTab === 'upload' && (
             <div className="tabletop-map-source-panel">

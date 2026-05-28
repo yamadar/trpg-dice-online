@@ -3948,6 +3948,34 @@ button.char-avatar-large:disabled {
   font-size: 0.82rem;
   cursor: pointer;
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.map-gallery-chips {
+  position: relative;
+}
+.map-gallery-chips-close {
+  /* Anchored to the top-right corner of the chip cluster so an
+     expanded category is always one tap away from collapse without
+     having to scroll back to the toggle. */
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.map-gallery-chips-close:hover {
+  background: var(--panel);
+  color: var(--text);
 }
 .map-gallery-status {
   padding: 8px 16px;
@@ -3971,14 +3999,15 @@ button.char-avatar-large:disabled {
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
-  gap: 10px;
+  gap: 8px;
 }
 .map-gallery-item {
-  /* Width as a flex basis — 140 px squares, ~5 per row on the 900 px
-     dialog. The aspect-ratio rule lower down still drives the
-     height. `min-width: 0` lets the flex item shrink if a really
-     narrow dialog (mobile) demands it. */
-  flex: 0 0 140px;
+  /* 104 px squares — small enough to put more cards in view on a
+     phone-sized dialog while staying legible at glance distance.
+     The aspect-ratio rule lower down still drives the height.
+     `min-width: 0` lets the flex item shrink if a really narrow
+     dialog demands it. */
+  flex: 0 0 104px;
   min-width: 0;
 }
 .map-gallery-item {
@@ -4040,7 +4069,10 @@ button.char-avatar-large:disabled {
   /* Magnifier overlay shown on hover (mouse) or always on touch.
      Anchored to the top-right corner of the thumbnail so it does
      not obscure the centre of the map. Hidden by default; the
-     item's :hover surfaces it. */
+     item's :hover surfaces it. The white SVG stroke is forced via
+     a high-specificity descendant rule below — `currentColor` from
+     the button's `color: #fff` alone was getting overridden by an
+     ancestor's inherited color on some themes. */
   position: absolute;
   top: 4px;
   right: 4px;
@@ -4048,7 +4080,7 @@ button.char-avatar-large:disabled {
   height: 28px;
   border-radius: 50%;
   border: none;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
   display: flex;
   align-items: center;
@@ -4056,6 +4088,9 @@ button.char-avatar-large:disabled {
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.12s ease;
+}
+.map-gallery-preview-btn > svg {
+  stroke: #fff;
 }
 .map-gallery-item:hover .map-gallery-preview-btn,
 .map-gallery-item:focus-within .map-gallery-preview-btn,
@@ -4082,31 +4117,41 @@ button.char-avatar-large:disabled {
   padding: 24px;
 }
 .map-gallery-footer {
+  /* Column layout so the picked map's description sits on its own
+     row above the cancel / "use this map" actions — much more
+     readable than the prior horizontal flex where the desc was
+     compressed by the actions on narrow viewports. */
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 6px;
   padding: 10px 16px;
   border-top: 1px solid var(--border);
-  flex-wrap: wrap;
 }
 .map-gallery-picked-desc {
-  flex: 1;
   margin: 0;
   font-size: 0.85rem;
   color: var(--text-dim);
-  /* Truncate gracefully — the hover-tooltip surfaces the full text. */
+  /* Single-line ellipsis — full text surfaces on hover via title. */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0;
 }
 .map-gallery-actions {
   display: flex;
   gap: 8px;
-  margin-left: auto;
+  justify-content: flex-end;
 }
 .map-gallery-actions button {
   min-width: 96px;
+}
+.map-gallery-count {
+  /* Inline next to the dialog title so the result count is one
+     glance away. Smaller and dimmer than the title to stay
+     secondary. */
+  margin-left: 8px;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--text-dim);
 }
 
 /* --- background-map source tabs --- */
@@ -4150,4 +4195,161 @@ button.char-avatar-large:disabled {
 }
 .tabletop-map-current-actions > button {
   flex: 1;
+}
+
+/* --- ColorInput (react-colorful wrapper) --- */
+/* Utility for visually-hidden labels (consumed by ColorInput's
+   popover dialog so the sr-only heading describes the picker for
+   assistive tech). Standard "clip-path" pattern. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.color-input {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.color-input-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  padding: 0;
+  cursor: pointer;
+  flex: none;
+}
+.color-input-text {
+  width: 84px;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 0.9rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-transform: uppercase;
+}
+.color-input-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.color-input-popover .react-colorful {
+  width: 200px;
+  height: 180px;
+}
+
+/* --- StepperInput (touch-friendly numeric stepper) --- */
+.stepper-input {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--panel-2);
+}
+.stepper-input-btn {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Prevent the long-press text-selection / context menu that some
+     browsers fire on a held button. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+.stepper-input-btn:hover:not(:disabled) {
+  background: var(--panel);
+}
+.stepper-input-btn:disabled {
+  color: var(--text-dim);
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.stepper-input-text {
+  width: 72px;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.95rem;
+  padding: 6px 0;
+  outline: none;
+}
+.stepper-input-text:focus {
+  background: var(--panel);
+}
+
+/* --- Background-map source tabs (icon-only) --- */
+.tabletop-map-source-tab {
+  /* Icons-only on the tab strip. The active tab's name + description
+     renders just below so the affordance stays self-explanatory
+     without dedicating a row of horizontal space to text labels. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+}
+.tabletop-map-source-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 4px 4px;
+}
+.tabletop-map-source-name {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.tabletop-map-source-desc {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* --- Lightbox caption (used by map-gallery preview) --- */
+.lightbox-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 12px 60px;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.85),
+    rgba(0, 0, 0, 0)
+  );
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.9rem;
+  text-align: center;
+  pointer-events: none;
 }
