@@ -30,3 +30,18 @@ UI 全体のダイス表象（フィードフィルタ「ダイス」、Dock の
   に SVG コメント形式で同じ帰属を残しています。同じパスデータは
   [`src/components/icons.tsx`](../src/components/icons.tsx) の
   `DiceIcon` コンポーネントにもインライン化しています。
+
+## 外部マップギャラリー
+
+### trpg-map-organizer
+
+テーブルの「ギャラリー」タブは姉妹リポジトリ
+[trpg-map-organizer](https://yamadar.github.io/trpg-map-organizer/)
+（同じ作者が管理）からマップを取得して表示します。タグ分類
+（テーマ / 地形 / 雰囲気 / 場所）とマップごとのメタデータは
+同プロジェクトの `data/maps.json` から、サムネイル・中解像度
+プレビュー・オリジナル画像も同サイトから提供されています。
+
+- ソース: https://github.com/yamadar/trpg-map-organizer
+- ギャラリーはユーザーがピッカーを開いたときのみオンデマンドで
+  読み込まれ、画像は `dist/` には含まれません。

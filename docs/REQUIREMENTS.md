@@ -334,6 +334,18 @@ An SPA where players roll TRPG dice and share results with other players in real
   from the gallery's `i18n.json` and falls back to the source tag
   when a translation is missing. Picking a map loads its mid-
   resolution JPEG (~1280 px) through the same URL pipeline.
+- Each gallery thumbnail surfaces a magnifier overlay that opens a
+  full-screen preview of the mid-resolution image. The preview has
+  prev / next buttons (and touch-swipe on mobile) that walk through
+  the *currently-filtered* set, sync the underlying grid selection
+  on every move, scroll the matching card back into view, and show
+  the map's description directly below the picture.
+- Background-map source selection is unified into a four-tab UI —
+  Upload / Gallery / URL / Preset. Tabs render icons-only with the
+  active tab's name and short description rendered just below the
+  strip. When a map is already set, the "Replace / Clear" controls
+  sit outside the tab strip so a GM can swap files without first
+  switching the active source.
 - The grid is "none" or "square". The GM configures the cell size,
   origin offset (required to align with a grid drawn into the map
   image), stroke color and stroke opacity. Token-drag snapping is

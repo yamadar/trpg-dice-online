@@ -4,6 +4,21 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.85 — A round of tabletop-UI polish. Consolidate background-map
+  source selection into a **four-tab UI (Upload / Gallery / URL /
+  Preset)** rendered as icons with the active tab's name and a
+  short description beneath the strip. Replace the grid's numeric
+  inputs with a touch-friendly **stepper** (−/+ buttons with
+  long-press auto-repeat) and the stroke-color input with a
+  **react-colorful** picker. Convert fog-of-war and grid-snap
+  on/off controls to **toggle switches**. The gallery's
+  **per-thumbnail preview** now supports prev / next (with mobile
+  swipe), inherits the active filters, syncs the underlying grid
+  selection on every move, scrolls the matching card into view,
+  and shows the map's description directly below the image.
+  Re-opening the tabletop tutorial collapses whichever category
+  panel was open.
+
 - v1.84 — Add an **in-app picker** for the sibling
   [trpg-map-organizer](https://yamadar.github.io/trpg-map-organizer/)
   gallery. A new "Open gallery…" button in the tabletop toolbar
