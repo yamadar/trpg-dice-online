@@ -4,6 +4,15 @@
 
 English version: [CHANGELOG.md](CHANGELOG.md).
 
+- v1.86 — マップギャラリーの読み込み先を **中解像度 JPEG (mid)
+  から オリジナル WebP に切替**。upstream が WebP 化で十分な
+  サイズになったため `images/mid/` ティアを廃止する方針に
+  合わせる。`MapGalleryDialog` の「このマップを使う」と拡大鏡
+  プレビューがどちらも `originalUrl(map)` を使うようにする
+  （`midUrl` 関数自体は upstream の `mid` フィールドが残っている
+  間の互換 + テストカバレッジ保持のため module export として
+  残置）。
+
 - v1.85 — テーブルマップ UI の一連の磨き込み。背景マップの
   ソース選択を **「アップロード / ギャラリー / URL / プリセット」
   の 4 タブ UI** に統合（アイコンのみ + 選択中タブの説明を直下に
@@ -21,7 +30,7 @@ English version: [CHANGELOG.md](CHANGELOG.md).
   の 303 マップを 4 カテゴリのタグフィルタとファイル名 / 説明検索で
   絞り込めるモーダルが開く。タグの表示は UI 言語に追従し、ja は原語、
   それ以外は同リポジトリの `i18n.json` の英訳を使う。選択したマップは
-  中解像度 JPEG が PR #171 の URL 経由パイプラインに乗って参加者へ
+  オリジナル WebP が PR #171 の URL 経由パイプラインに乗って参加者へ
   同期される。manifest と i18n はメモリキャッシュで二度目以降の
   表示が即時。
 

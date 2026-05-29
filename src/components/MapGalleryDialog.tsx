@@ -11,11 +11,11 @@
  *     radiogroup pattern) lives in the toolbar above.
  *   - A grid of thumbnail cards. Tapping a card selects it; the
  *     footer "Use this map" button drives the actual download via
- *     the parent's `onPick(midUrl)` callback, which goes through
+ *     the parent's `onPick(originalUrl)` callback, which goes through
  *     `setMapBackgroundFromUrl` and therefore the same downscale +
  *     chunked-broadcast pipeline as a hand-picked file. A hover
- *     magnifier on each card opens the mid-resolution image in
- *     the Lightbox without affecting the picked state.
+ *     magnifier on each card opens the same WebP in the Lightbox
+ *     without affecting the picked state.
  *
  * Tag labels follow the UI language: `ja` shows the source Japanese
  * strings verbatim, every other language pulls the English label
@@ -42,7 +42,7 @@ import {
   filterMaps,
   loadGalleryManifest,
   loadGalleryTagDict,
-  midUrl,
+  originalUrl,
   searchMaps,
   tagLabel,
   thumbUrl,
@@ -56,10 +56,10 @@ const MODES: ('or' | 'and')[] = ['or', 'and']
 interface Props {
   open: boolean
   onClose: () => void
-  /** Apply the picked map. Receives the `mid.jpg` URL; resolves to
-   *  the same `'ok' | MapImageError` union as `setMapBackgroundFromUrl`
-   *  so this dialog can surface the URL-specific failure tags inline
-   *  rather than guessing the cause. */
+  /** Apply the picked map. Receives the original-resolution WebP URL;
+   *  resolves to the same `'ok' | MapImageError` union as
+   *  `setMapBackgroundFromUrl` so this dialog can surface the URL-
+   *  specific failure tags inline rather than guessing the cause. */
   onPick: (url: string) => Promise<'ok' | MapImageError>
   /** Surface a flash message (success / error). Optional — when not
    *  provided, the dialog only closes / stays open. */
@@ -306,10 +306,12 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
       inFlightPickRef.current = true
       setApplying(true)
       try {
-        // `mid` is the right resolution for the toolbar: ≈1280 px
-        // JPEG, ≤ 2 MB in practice — comfortably under the 8 MB
-        // ingest cap and a fraction of the original's bytes.
-        const result = await onPick(midUrl(map))
+        // The original is shipped as WebP now, which is roughly the
+        // same byte count as the old `mid` JPEG would have been. The
+        // mid file is being retired upstream, so use the original
+        // directly — it stays under the 8 MB ingest cap thanks to
+        // WebP's compression and gives us a sharper preview.
+        const result = await onPick(originalUrl(map))
         // User closed the dialog mid-apply; skip the side effects
         // so we don't surprise them with a delayed "applied"
         // notice or re-fire onClose on an already-closed dialog.
@@ -619,12 +621,13 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
           // Hand the Lightbox every currently-visible map so prev /
           // next walk through the user's actual working set —
           // search and tag filters in the dialog above carry into
-          // the preview navigation. Mid-resolution JPEG (~1280 px)
-          // is plenty for "what does this look like" and dodges the
-          // `hasOriginals === false` case that would otherwise 404.
+          // the preview navigation. Use the original (WebP) here so
+          // the preview matches what "Use this map" actually applies;
+          // WebP compression keeps the bytes close to the retired
+          // mid-resolution JPEG.
           images={filteredMaps.map((m) => ({
             name: m.file,
-            dataUrl: midUrl(m),
+            dataUrl: originalUrl(m),
           }))}
           index={Math.max(
             0,

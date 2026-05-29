@@ -40,8 +40,8 @@ The tabletop's "Gallery" tab fetches and displays maps from the
 sibling project [trpg-map-organizer](https://yamadar.github.io/trpg-map-organizer/),
 maintained by the same author. Hand-curated tag taxonomies (theme /
 terrain / mood / location) and per-map metadata are served from that
-project's `data/maps.json`; thumbnails, mid-resolution previews and
-originals come from the same site.
+project's `data/maps.json`; thumbnails and originals (WebP) come
+from the same site.
 
 - Source: https://github.com/yamadar/trpg-map-organizer
 - The gallery is only loaded on demand when the user opens the
