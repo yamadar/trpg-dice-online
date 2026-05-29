@@ -63,6 +63,11 @@ describe('URL builders', () => {
     expect(midUrl(sample)).toBe(`${GALLERY_BASE}images/mid/b.jpg`)
   })
 
+  it('midUrl falls back to the original when `mid` is absent', () => {
+    const noMid: GalleryMap = { ...sample, mid: undefined }
+    expect(midUrl(noMid)).toBe(originalUrl(noMid))
+  })
+
   it('builds a thumbUrl', () => {
     expect(thumbUrl(sample)).toBe(`${GALLERY_BASE}images/thumb/a.jpg`)
   })
@@ -115,13 +120,26 @@ describe('parseGalleryManifest', () => {
         SAMPLE_MAP_RAW,
         { id: 2, thumb: 'a', mid: 'b' }, // no `file`
         { id: 3, file: 'a', mid: 'b' }, // no `thumb`
-        { id: 4, file: 'a', thumb: 'a' }, // no `mid`
         { file: 'a', thumb: 'a', mid: 'b' }, // no `id`
         { id: 5, file: 'ok.png', thumb: 't.jpg', mid: 'm.jpg' },
       ],
     })
     expect(result?.maps).toHaveLength(2)
     expect(result?.maps.map((m) => m.id)).toEqual([1, 5])
+  })
+
+  it('keeps map entries that omit the optional mid field', () => {
+    // Upstream retired the `mid` tier, so freshly-generated
+    // manifests omit the field. Previously this dropped every
+    // entry and the dialog read "no maps match" for the whole
+    // gallery; the parser must keep the row.
+    const result = parseGalleryManifest({
+      maps: [
+        { id: 9, file: 'a.webp', thumb: 'a.jpg' },
+      ],
+    })
+    expect(result?.maps).toHaveLength(1)
+    expect(result?.maps[0]?.mid).toBeUndefined()
   })
 
   it('drops map entries with non-finite ids (NaN, Infinity)', () => {
