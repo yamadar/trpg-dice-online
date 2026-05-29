@@ -34,12 +34,19 @@ const THUMB_DIR = 'images/thumb/'
  *  as a React key. */
 export interface GalleryMap {
   id: number
-  /** Filename of the original PNG (relative to `originals/`). */
+  /** Filename of the original (WebP) — relative to `originals/`. */
   file: string
   /** Filename of the thumbnail JPG (relative to `images/thumb/`). */
   thumb: string
-  /** Filename of the mid-resolution JPG (relative to `images/mid/`). */
-  mid: string
+  /**
+   * Filename of the mid-resolution JPG (relative to `images/mid/`).
+   * Optional: upstream retired the mid tier in favour of WebP
+   * originals, so the field may be absent on freshly-generated
+   * manifests. Code that wants a mid URL should go through
+   * `midUrl()`, which falls back to the original when `mid` is
+   * undefined.
+   */
+  mid?: string
   /** One-line Japanese description (~40-80 chars). The i18n.json
    *  ships a translated UI but tag-strings only, so `desc` stays
    *  Japanese regardless of the UI language. */
@@ -90,14 +97,16 @@ export function originalUrl(map: GalleryMap): string {
 
 /** Build the mid-resolution JPEG URL.
  *
- *  Deprecated path: upstream is retiring the `images/mid/` tier in
+ *  Deprecated path: upstream retired the `images/mid/` tier in
  *  favour of WebP originals (similar byte count, better quality).
  *  The picker now reads `originalUrl` everywhere; this helper is
- *  kept for any external consumer that might still want the mid
- *  endpoint while it's still being published, and so its existing
- *  unit-test coverage stays useful. Will be removed once the
- *  upstream manifest stops shipping the `mid` field. */
+ *  kept for any external consumer that hard-coded the old URL
+ *  shape, and so its existing unit-test coverage stays useful.
+ *  When `map.mid` is missing (the now-default state from upstream),
+ *  we fall back to the original so a caller never gets back a
+ *  silently-broken URL. */
 export function midUrl(map: GalleryMap): string {
+  if (!map.mid) return originalUrl(map)
   return GALLERY_BASE + MID_DIR + encodeURIComponent(map.mid)
 }
 
@@ -122,13 +131,17 @@ function parseMap(raw: unknown): GalleryMap | null {
     typeof r.id === 'number' && Number.isFinite(r.id) ? r.id : null
   const file = typeof r.file === 'string' ? r.file : null
   const thumb = typeof r.thumb === 'string' ? r.thumb : null
-  const mid = typeof r.mid === 'string' ? r.mid : null
-  if (id === null || !file || !thumb || !mid) return null
+  // `mid` is intentionally NOT required — upstream retired the mid
+  // tier in favour of WebP originals, so freshly-generated
+  // manifests omit the field. Requiring it would silently drop
+  // every map entry (the symptom: the dialog says "no maps match").
+  const mid = typeof r.mid === 'string' ? r.mid : undefined
+  if (id === null || !file || !thumb) return null
   return {
     id,
     file,
     thumb,
-    mid,
+    ...(mid !== undefined ? { mid } : {}),
     desc: typeof r.desc === 'string' ? r.desc : '',
     theme: parseStringArray(r.theme),
     terrain: parseStringArray(r.terrain),
