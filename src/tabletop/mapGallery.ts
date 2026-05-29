@@ -76,21 +76,27 @@ export type GalleryTagDict = Record<string, string>
 
 export type GalleryCategory = keyof GalleryTagSets
 
-/** Build the original (PNG) URL for a map. Used by the picker's
- *  "open original" affordance; the toolbar itself loads `mid` to keep
- *  download size predictable. The upstream contract is that file /
- *  thumb / mid are raw (un-encoded) filenames containing
- *  no folder separators, so `encodeURIComponent` is the right
- *  encoder — it matches the upstream `app.js` and handles spaces,
- *  Japanese, and other non-ASCII safely. */
+/** Build the original-resolution URL for a map. As of upstream's
+ *  WebP roll-out the original IS the everyday resolution — the old
+ *  mid-resolution JPEG is being retired because WebP brings the file
+ *  size close enough that a separate mid tier earns nothing. The
+ *  upstream contract is that file / thumb / mid are raw (un-encoded)
+ *  filenames containing no folder separators, so `encodeURIComponent`
+ *  is the right encoder — it matches the upstream `app.js` and
+ *  handles spaces, Japanese, and other non-ASCII safely. */
 export function originalUrl(map: GalleryMap): string {
   return GALLERY_BASE + ORIGINAL_DIR + encodeURIComponent(map.file)
 }
 
-/** Build the mid-resolution JPEG URL. The mid file is ≈1280 px and a
- *  fraction of the original PNG's bytes; comfortably under the
- *  toolbar's 8 MB pre-downscale cap and a sweet spot for "set as
- *  background" in one click. */
+/** Build the mid-resolution JPEG URL.
+ *
+ *  Deprecated path: upstream is retiring the `images/mid/` tier in
+ *  favour of WebP originals (similar byte count, better quality).
+ *  The picker now reads `originalUrl` everywhere; this helper is
+ *  kept for any external consumer that might still want the mid
+ *  endpoint while it's still being published, and so its existing
+ *  unit-test coverage stays useful. Will be removed once the
+ *  upstream manifest stops shipping the `mid` field. */
 export function midUrl(map: GalleryMap): string {
   return GALLERY_BASE + MID_DIR + encodeURIComponent(map.mid)
 }

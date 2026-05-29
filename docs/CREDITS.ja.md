@@ -39,8 +39,8 @@ UI 全体のダイス表象（フィードフィルタ「ダイス」、Dock の
 [trpg-map-organizer](https://yamadar.github.io/trpg-map-organizer/)
 （同じ作者が管理）からマップを取得して表示します。タグ分類
 （テーマ / 地形 / 雰囲気 / 場所）とマップごとのメタデータは
-同プロジェクトの `data/maps.json` から、サムネイル・中解像度
-プレビュー・オリジナル画像も同サイトから提供されています。
+同プロジェクトの `data/maps.json` から、サムネイルとオリジナル
+画像（WebP）も同サイトから提供されています。
 
 - ソース: https://github.com/yamadar/trpg-map-organizer
 - ギャラリーはユーザーがピッカーを開いたときのみオンデマンドで

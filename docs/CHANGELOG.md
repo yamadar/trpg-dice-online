@@ -4,6 +4,15 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.86 — Switch the map-gallery picker from the **mid-resolution
+  JPEG (`images/mid/`)** to the **original WebP**. Upstream is
+  retiring the mid tier because WebP compression brings the
+  original close to the same byte count, so an extra resolution
+  earns nothing. Both "Use this map" and the magnifier preview now
+  read `originalUrl(map)`; `midUrl()` itself stays exported as long
+  as upstream still ships the `mid` field, so external consumers
+  and the existing unit-test coverage keep working.
+
 - v1.85 — A round of tabletop-UI polish. Consolidate background-map
   source selection into a **four-tab UI (Upload / Gallery / URL /
   Preset)** rendered as icons with the active tab's name and a
@@ -28,7 +37,7 @@ Also available in [日本語](CHANGELOG.ja.md).
   Japanese UI shows the source tags, every other language pulls the
   English label from the gallery's own `i18n.json` and falls back to
   the source tag when a translation is missing. Picking a map sends
-  its mid-resolution JPEG through PR #171's URL-load pipeline, so
+  its original-resolution WebP through PR #171's URL-load pipeline, so
   syncing and downscaling reuse the same code path as a hand-picked
   file. Manifest and tag dictionary are cached in memory for an
   instant second open.
