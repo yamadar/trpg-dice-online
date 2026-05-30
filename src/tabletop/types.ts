@@ -269,10 +269,11 @@ export interface SavedTabletop {
 }
 
 /** Sensible defaults for a fresh tabletop. The grid defaults to a 50 px
- *  square grid (the most common GM choice in playtests, and the only
- *  kind that supports snap + fog brush). The first-mount auto-loader in
- *  TablePanel pairs this with the bundled `test-grid` preset so a new
- *  GM lands on a non-empty canvas they can immediately interact with. */
+ *  square grid (the most common GM choice in playtests). Snap and the
+ *  fog brush work on every cell-based grid kind (square + hex); only
+ *  'none' disables them. The first-mount auto-loader in TablePanel pairs
+ *  this with the bundled `test-grid` preset so a new GM lands on a
+ *  non-empty canvas they can immediately interact with. */
 export const DEFAULT_GRID: Grid = {
   kind: 'square',
   cellSize: 50,
