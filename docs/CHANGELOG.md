@@ -4,6 +4,17 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.87 — Add an **image picker** to the NPC library editor and the
+  token edit popover. Tapping "Change image" now opens a unified
+  dialog with three tabs — Upload, Character, Monster — that
+  browse 715 character portraits and 40 monster icons from the
+  sibling [trpg-chara-image-organizer](https://yamadar.github.io/trpg-chara-image-organizer/)
+  filtered by race / gender / age / profession / name. Uploads
+  still go through the existing crop dialog; library picks skip
+  the crop (they're already framed) and feed straight into the
+  `prepareNpcTokenImage` downscale. The manifest is memory-cached
+  so the second open is instant.
+
 - v1.86 — Switch the map-gallery picker from the **mid-resolution
   JPEG (`images/mid/`)** to the **original WebP**. Upstream is
   retiring the mid tier because WebP compression brings the

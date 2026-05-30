@@ -84,6 +84,7 @@ const MAP_SOURCE_TABS: ReadonlyArray<MapSourceTabDef> = [
   },
 ]
 import { CharacterImageCropDialog } from './CharacterImageCropDialog'
+import { ImagePickerDialog } from './ImagePickerDialog'
 import { MapGalleryDialog } from './MapGalleryDialog'
 
 interface Props {
@@ -230,7 +231,6 @@ export function TableToolbar({
   const { t } = useI18n()
   const confirm = useConfirm()
   const mapInputRef = useRef<HTMLInputElement | null>(null)
-  const npcImageInputRef = useRef<HTMLInputElement | null>(null)
   // NPC add flow state: just the name. The portrait is attached after
   // the NPC has been added through the per-row "edit" button so a GM
   // can register a stack of NPCs first and worry about art later.
@@ -246,6 +246,15 @@ export function TableToolbar({
   const [editingNpcId, setEditingNpcId] = useState<string | null>(null)
   const [imageTargetNpcId, setImageTargetNpcId] = useState<string | null>(null)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
+  // The "image picker" dialog is the new top-level entrypoint for
+  // changing an NPC portrait: tabs offer Upload / Character /
+  // Monster sources. The picker stays mounted (so the manifest
+  // cache survives close → reopen); `imagePickerNpcId` gates the
+  // `open` flag and remembers which NPC the result should attach
+  // to. When the user picks an UPLOADED file the legacy crop
+  // dialog still gets driven via `setCropSrc`; library picks are
+  // already cropped, so they bypass it.
+  const [imagePickerNpcId, setImagePickerNpcId] = useState<string | null>(null)
   // Library save flow state: a single name input feeds both save
   // flavours; the buttons differ only in `kind`.
   const [libraryName, setLibraryName] = useState('')
@@ -466,17 +475,30 @@ export function TableToolbar({
     }
   }
 
-  const handleNpcImageFile = async (
-    e: React.ChangeEvent<HTMLInputElement>,
+  /** Result handler for the unified `ImagePickerDialog`. Uploaded
+   *  files still go through the crop dialog (so the GM frames the
+   *  portrait), while library picks skip the crop because the
+   *  chara-image-organizer images are already centred at the
+   *  intended subject. */
+  const handleNpcImagePicked = async (
+    file: File,
+    opts: { fromLibrary: boolean },
   ) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file || !imageTargetNpcId) return
-    // Read the file as a data URL so the crop dialog can decode it
-    // without further await chain. The dialog crops and hands the
-    // result back via `onConfirm` — at that point we hit
-    // `onUpdateNpcDef` to attach the cropped portrait to the NPC the
-    // user picked.
+    const defId = imagePickerNpcId
+    if (!defId) return
+    setImagePickerNpcId(null)
+    if (opts.fromLibrary) {
+      const processed = await prepareNpcTokenImage(file)
+      if (!processed) {
+        onNotice?.(t('tabletop.npcLibrary.unreadable'), 'error')
+        return
+      }
+      onUpdateNpcDef(defId, { image: processed })
+      onNotice?.(t('tabletop.npcLibrary.imageUpdated'), 'success')
+      return
+    }
+    // Uploaded file — drive the crop dialog as before.
+    setImageTargetNpcId(defId)
     const reader = new FileReader()
     reader.onload = () => setCropSrc(String(reader.result))
     reader.onerror = () => {
@@ -509,8 +531,7 @@ export function TableToolbar({
   }
 
   const handleSetNpcImage = (defId: string) => {
-    setImageTargetNpcId(defId)
-    npcImageInputRef.current?.click()
+    setImagePickerNpcId(defId)
   }
 
   const handleNpcDelete = async (def: NpcDef) => {
@@ -945,13 +966,6 @@ export function TableToolbar({
                 {t('tabletop.npcLibrary.title')}
               </h3>
               <input
-                ref={npcImageInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleNpcImageFile}
-              />
-              <input
                 type="text"
                 className="tabletop-toolbar-input"
                 placeholder={t('tabletop.npcLibrary.namePlaceholder')}
@@ -1275,6 +1289,15 @@ export function TableToolbar({
         onClose={() => setGalleryOpen(false)}
         onPick={onSetMapFromUrl}
         onNotice={onNotice}
+      />
+      <ImagePickerDialog
+        open={imagePickerNpcId !== null}
+        onClose={() => setImagePickerNpcId(null)}
+        // NPC library can hold either NPCs (characters) or monsters,
+        // so let the GM browse both source libraries — the upload
+        // tab covers anything that's not in either.
+        mode="both"
+        onPick={handleNpcImagePicked}
       />
     </aside>
   )
