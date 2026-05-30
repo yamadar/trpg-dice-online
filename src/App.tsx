@@ -484,6 +484,7 @@ function App() {
             session={session}
             onClose={() => setTabletopOpen(false)}
             characters={characters.characters}
+            onUpdateCharacter={characters.updateCharacter}
             activeCharacterId={activeCharacterId}
             onOpenCharacter={() => setOpenSheet('character')}
             onNotice={flash}
