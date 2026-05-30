@@ -4,6 +4,17 @@
 
 English version: [CHANGELOG.md](CHANGELOG.md).
 
+- v1.87 — NPC エディタとトークン編集に **画像ピッカー** を追加。
+  「画像を変更」を押すと、アップロード / キャラクター / モンスター
+  の 3 タブをもつダイアログが開き、姉妹リポジトリ
+  [trpg-chara-image-organizer](https://yamadar.github.io/trpg-chara-image-organizer/)
+  の 715 点のキャラクター画像と 40 点のモンスター画像から
+  種族・性別・年齢・職業のタグや名前で絞り込んで選べる。アップロード
+  したファイルは既存のクロップフローを通り、ライブラリの画像は
+  既にトリミング済みのためそのまま `prepareNpcTokenImage` の
+  ダウンスケールに乗る。manifest はメモリにキャッシュされ、2 回目
+  以降の表示は即時。
+
 - v1.86 — マップギャラリーの読み込み先を **中解像度 JPEG (mid)
   から オリジナル WebP に切替**。upstream が WebP 化で十分な
   サイズになったため `images/mid/` ティアを廃止する方針に

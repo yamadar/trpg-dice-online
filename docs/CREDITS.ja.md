@@ -31,7 +31,21 @@ UI 全体のダイス表象（フィードフィルタ「ダイス」、Dock の
   [`src/components/icons.tsx`](../src/components/icons.tsx) の
   `DiceIcon` コンポーネントにもインライン化しています。
 
-## 外部マップギャラリー
+## 外部画像ライブラリ
+
+### trpg-chara-image-organizer
+
+NPC エディタとトークンポップオーバーの「画像を変更」から開く統合
+ピッカーの 2 つのライブラリタブは、姉妹リポジトリ
+[trpg-chara-image-organizer](https://yamadar.github.io/trpg-chara-image-organizer/)
+（同じ作者）からキャラクター画像とモンスター画像を取得して表示します。
+タグ分類（種族 / 性別 / 年齢 / 職業、モンスターは `monster`）と画像
+メタデータは同プロジェクトの `data/library.json` から、512 px の
+WebP サムネイルも同サイトから提供されています。
+
+- ソース: https://github.com/yamadar/trpg-chara-image-organizer
+- ライブラリはピッカー初回オープン時にオンデマンドで読み込まれ
+  （セッションあたり 1 回）、画像は `dist/` には含まれません。
 
 ### trpg-map-organizer
 

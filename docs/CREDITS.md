@@ -32,7 +32,23 @@ silhouette would turn into noise.
   path data is inlined in [`src/components/icons.tsx`](../src/components/icons.tsx)
   as the `DiceIcon` component.
 
-## External map gallery
+## External image libraries
+
+### trpg-chara-image-organizer
+
+The NPC editor and the token popover's "Change image" button open a
+unified picker whose two library tabs fetch portraits and monster
+icons from the sibling project
+[trpg-chara-image-organizer](https://yamadar.github.io/trpg-chara-image-organizer/)
+(same author). Hand-curated tag taxonomies (race / gender / age /
+profession for characters, `monster` for monsters) and per-item
+metadata are served from that project's `data/library.json`; 512 px
+WebP thumbnails come from the same site.
+
+- Source: https://github.com/yamadar/trpg-chara-image-organizer
+- The library is fetched on demand when the picker first opens
+  (one round-trip per app session); nothing in `dist/` ships those
+  images.
 
 ### trpg-map-organizer
 

@@ -44,6 +44,7 @@ import {
 import type { Character } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
 import { ChatIcon, CloseIcon, DiceIcon, TrashIcon } from './icons'
+import { ImagePickerDialog } from './ImagePickerDialog'
 import { Sheet } from './Sheet'
 import { SpeechBubble } from './SpeechBubble'
 import { TabletopDock } from './TabletopDock'
@@ -1474,6 +1475,7 @@ function TokenPopover({
   onChangeSize,
   onRemove,
 }: TokenPopoverProps) {
+  const [imagePickerOpen, setImagePickerOpen] = useState(false)
   const { t } = useI18n()
   // Local edit buffer so the input stays responsive while waiting for
   // the host commit to echo back. Commits on blur / Enter, so a typing
@@ -1481,7 +1483,6 @@ function TokenPopover({
   // on `token.id`, so a new selection remounts and reseeds this state.
   const initialLabel = token.kind === 'gm' ? token.label ?? '' : ''
   const [labelDraft, setLabelDraft] = useState(initialLabel)
-  const imageInputRef = useRef<HTMLInputElement | null>(null)
 
   // Anchor: 12 px to the right of the token's right edge in screen
   // space. The radius lookup matches the renderer's `cellSize / 2 - 2`
@@ -1495,10 +1496,12 @@ function TokenPopover({
     onRename(labelDraft)
   }
 
-  const handleImagePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
+  /** ImagePickerDialog result handler. GM tokens never went through
+   *  a crop step (they always used the raw upload), so neither the
+   *  upload nor library paths need one here — both can flow
+   *  straight into `prepareNpcTokenImage`. */
+  const handleImagePicked = async (file: File) => {
+    setImagePickerOpen(false)
     const next = await prepareNpcTokenImage(file)
     if (next) onChangeImage(next)
   }
@@ -1544,17 +1547,10 @@ function TokenPopover({
               }}
             />
           </label>
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleImagePick}
-          />
           <button
             type="button"
             className="tabletop-toolbar-button outline"
-            onClick={() => imageInputRef.current?.click()}
+            onClick={() => setImagePickerOpen(true)}
           >
             {t('tabletop.tokenEdit.changeImage')}
           </button>
@@ -1593,6 +1589,17 @@ function TokenPopover({
         <TrashIcon />
         <span>{t('tabletop.tokenEdit.remove')}</span>
       </button>
+      {token.kind === 'gm' && (
+        <ImagePickerDialog
+          open={imagePickerOpen}
+          onClose={() => setImagePickerOpen(false)}
+          // GM tokens are usually monsters / props, so default the
+          // tab to monster — but keep characters available too in
+          // case the GM is staging an NPC.
+          mode="both"
+          onPick={(file) => handleImagePicked(file)}
+        />
+      )}
     </div>
   )
 }
