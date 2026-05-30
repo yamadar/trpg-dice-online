@@ -679,7 +679,10 @@ export function TablePanel({
 
   const paintFogAt = useCallback(
     (w: { x: number; y: number }, reveal: boolean) => {
-      if (tabletop.grid.kind !== 'square') return
+      // Fog is cell-based, so a gridless ('none') scene has no cells
+      // to paint. Square AND hex both resolve a cell via
+      // `cellFromWorld` (which dispatches on `grid.kind`).
+      if (tabletop.grid.kind === 'none') return
       const cell = cellFromWorld(w.x, w.y, tabletop.grid)
       const key = `${cell.col},${cell.row}`
       if (fogGestureCellsRef.current.has(key)) return
@@ -704,7 +707,7 @@ export function TablePanel({
       if (canEdit) return false
       const fog = tabletop.fog
       if (!fog.enabled) return false
-      if (tabletop.grid.kind !== 'square') return false
+      if (tabletop.grid.kind === 'none') return false
       const cell = cellFromWorld(w.x, w.y, tabletop.grid)
       return !isCellRevealed(fog, cell.col, cell.row)
     },
@@ -742,12 +745,13 @@ export function TablePanel({
         setTextDraft({ x: w.x, y: w.y })
       } else if (tool === 'fog-reveal' || tool === 'fog-conceal') {
         if (!canEdit) return
-        // Grid must be square for the cell math; if it is not we
-        // refuse to start the gesture so mouseup does not emit a
-        // pointless commit broadcast. The TableTools palette also
-        // disables the buttons in this state — this is defence in
-        // depth for keyboard / programmatic activation.
-        if (tabletop.grid.kind !== 'square') return
+        // Fog is cell-based, so a gridless ('none') scene cannot
+        // paint; refuse to start the gesture so mouseup does not emit
+        // a pointless commit broadcast. Square AND hex both resolve a
+        // cell via `cellFromWorld`. The toolbar already hides the fog
+        // section while the grid is 'none' — this is defence in depth
+        // for keyboard / programmatic activation.
+        if (tabletop.grid.kind === 'none') return
         fogPaintingRef.current = tool === 'fog-reveal' ? 'reveal' : 'conceal'
         fogGestureCellsRef.current = new Set()
         paintFogAt(w, tool === 'fog-reveal')
@@ -848,7 +852,8 @@ export function TablePanel({
         setTextDraft({ x: w.x, y: w.y })
       } else if (tool === 'fog-reveal' || tool === 'fog-conceal') {
         if (!canEdit) return
-        if (tabletop.grid.kind !== 'square') return
+        // See handleMouseDown: only a gridless scene blocks fog paint.
+        if (tabletop.grid.kind === 'none') return
         fogPaintingRef.current = tool === 'fog-reveal' ? 'reveal' : 'conceal'
         fogGestureCellsRef.current = new Set()
         paintFogAt(w, tool === 'fog-reveal')

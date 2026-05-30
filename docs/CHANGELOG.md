@@ -4,6 +4,15 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.88 — **Fix the fog-of-war brush not painting on hex grids**. The
+  fog gesture's start check and its per-cell paint were both gated on
+  `grid.kind === 'square'`, so on a hex grid the "Reveal / Apply fog"
+  tools could be selected but never painted anything (both mouse and
+  touch; surfaced on mobile). Cell hit-testing (`cellFromWorld`),
+  rendering (`FogLayer`), and state updates (`paintFog`) were already
+  hex-aware, so the four guards were relaxed to block only the
+  gridless (`'none'`) case.
+
 - v1.87 — Add an **image picker** to the NPC library editor and the
   token edit popover. Tapping "Change image" now opens a unified
   dialog with three tabs — Upload, Character, Monster — that
