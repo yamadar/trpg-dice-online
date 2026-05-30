@@ -26,7 +26,8 @@ An SPA where players roll TRPG dice and share results with other players in real
 | GM | Game master who created the room; also the P2P host |
 | Tabletop | The room's map view — a shared space made of a background image, a grid and tokens |
 | Token | A piece on the tabletop. PC tokens (tied to a character) and GM-only tokens (for NPCs / monsters / props) |
-| Grid | The mesh laid over the tabletop. Currently square |
+| Grid | The mesh laid over the tabletop. Square or flat-top hex |
+| Fog of war | GM-controlled per-cell visibility; non-GM players only see revealed cells |
 
 ## 3. Functional Requirements
 
@@ -348,10 +349,19 @@ An SPA where players roll TRPG dice and share results with other players in real
   strip. When a map is already set, the "Replace / Clear" controls
   sit outside the tab strip so a GM can swap files without first
   switching the active source.
-- The grid is "none" or "square". The GM configures the cell size,
-  origin offset (required to align with a grid drawn into the map
-  image), stroke color and stroke opacity. Token-drag snapping is
-  toggleable.
+- The grid is "none", "square" or "hex". Hex grids are flat-top with
+  odd-q offset coordinates (odd columns shifted down by half a cell).
+  The GM configures the cell size, origin offset (required to align
+  with a grid drawn into the map image), stroke color and stroke
+  opacity. Token-drag snapping is toggleable; both square and hex
+  snap to the cell centre.
+- **Fog of war**: the GM controls visibility one grid cell at a time.
+  Enable or disable fog from the toolbar, then use the "reveal / conceal"
+  brush to expose or hide individual cells, or "cover all / reveal all"
+  for the whole map at once. Non-GM players see nothing beneath the fog
+  (background, tokens, text). It is unavailable when the grid is "none"
+  and works on both square and hex grids. The state stores the set of
+  revealed cells and syncs host-authoritative like the rest of the table.
 - Tokens come in two kinds.
   - **PC tokens** are tied to a session character and reuse the
     character portrait as the token image. The owning player and the
@@ -505,11 +515,16 @@ FeedItem    = roll | chat | system marker, merged and sorted by time
 // snapshot. The background image is chunked over P2P when over 3 MB.
 TabletopState = {
   map?: { id, name, width, height, dataUrl },
-  grid: { kind: 'none'|'square', cellSize, originX, originY,
-          strokeColor, strokeOpacity, snap },
+  grid: { kind: 'none'|'square'|'hex', cellSize, originX, originY,
+          strokeColor, strokeOpacity, snap },  // hex is flat-top, odd-q
   tokens: Token[],
   npcLibrary: NpcDef[],          // GM's NPC stash, independent of placement
-  pcSpawn?: { x, y }             // set by templates; initial PC drop point
+  pcSpawn?: { x, y },            // set by templates; initial PC drop point
+  fog: FogState                  // per-cell fog of war (GM-only edits)
+}
+FogState = {
+  enabled: boolean,              // master on/off for the fog layer
+  revealed: string[]             // revealed cells as "col,row" (the rest is fog)
 }
 Token = {
   id, kind: 'pc'|'gm',
@@ -571,6 +586,8 @@ Commit after each step.
 - [x] The GM can also load a background map by URL, with the same sync
 - [x] An in-app picker browses the trpg-map-organizer gallery (tags + search)
 - [x] The square grid's cell size, offset, color and opacity can be configured
+- [x] A flat-top hex grid (odd-q offset) can be selected and tokens snap to the cell centre
+- [x] The GM controls visibility with per-cell fog of war; non-GM players cannot see beneath the fog
 - [x] PC tokens are generated from the session's characters and can be moved by the owner and the GM
 - [x] A player can place multiple tokens of their own character at any time
 - [x] GM-only tokens can be added, moved and removed by the GM
