@@ -68,7 +68,12 @@ export function SpeechBubble({
   // halfExtent` along each axis and take the smaller `t`.
   const tx = dirX !== 0 ? (w / 2) / Math.abs(dirX) : Infinity
   const ty = dirY !== 0 ? (h / 2) / Math.abs(dirY) : Infinity
-  const t = Math.min(tx, ty)
+  // Pull the base inward past the rounded corner so the bubble body
+  // (drawn on top) always covers the tail's base edge. Without the
+  // inset, diagonal directions land the base on a rounded corner where
+  // the body's fill is clipped away, leaving the triangle's flat base
+  // poking out from under the bubble.
+  const t = Math.max(0, Math.min(tx, ty) - radius)
   const baseCx = cx + dirX * t
   const baseCy = cy + dirY * t
   // Perpendicular vector for the base width.
@@ -81,15 +86,17 @@ export function SpeechBubble({
   const baseBy = baseCy - perpY * pHalf
 
   return (
-    <Group listening={false}>
-      {/* Tail first so the bubble's body overlaps the tail's base
-          edge — the tail disappears under the bubble cleanly. */}
+    <Group listening={false} opacity={0.92}>
+      {/* Tail first so the bubble body (drawn on top) overlaps the
+          tail's base — the tail then reads as part of the bubble. The
+          shapes are opaque and the Group fades them together, so the
+          overlap never composites into a darker seam. The tail carries
+          no stroke: its base hides under the body and its slanted sides
+          simply extend the body's fill toward the token. */}
       <Line
         points={[token.x, token.y, baseAx, baseAy, baseBx, baseBy]}
         closed
-        fill="rgba(20, 20, 20, 0.92)"
-        stroke="rgba(255, 255, 255, 0.8)"
-        strokeWidth={stroke}
+        fill="rgb(20, 20, 20)"
       />
       <Rect
         x={cx - w / 2}
@@ -97,7 +104,7 @@ export function SpeechBubble({
         width={w}
         height={h}
         cornerRadius={radius}
-        fill="rgba(20, 20, 20, 0.92)"
+        fill="rgb(20, 20, 20)"
         stroke="rgba(255, 255, 255, 0.8)"
         strokeWidth={stroke}
       />

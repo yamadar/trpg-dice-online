@@ -79,6 +79,8 @@ export const id: Dict = {
   'tabletop.tokenEdit.size': 'Ukuran',
   'tabletop.tokenEdit.remove': 'Hapus token',
   'tabletop.tokenEdit.editCharacter': 'Info karakter',
+  'tabletop.reorder.up': 'Naikkan',
+  'tabletop.reorder.down': 'Turunkan',
   'tabletop.tokenEdit.close': 'Tutup',
   'tabletop.playerToken.place': 'Tempatkan',
   'tabletop.playerToken.placed': 'Di peta',

@@ -79,6 +79,8 @@ export const vi: Dict = {
   'tabletop.tokenEdit.size': 'Kích thước',
   'tabletop.tokenEdit.remove': 'Xoá token',
   'tabletop.tokenEdit.editCharacter': 'Thông tin nhân vật',
+  'tabletop.reorder.up': 'Di chuyển lên',
+  'tabletop.reorder.down': 'Di chuyển xuống',
   'tabletop.tokenEdit.close': 'Đóng',
   'tabletop.playerToken.place': 'Đặt',
   'tabletop.playerToken.placed': 'Trên bản đồ',

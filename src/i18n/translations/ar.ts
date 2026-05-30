@@ -79,6 +79,8 @@ export const ar: Dict = {
   'tabletop.tokenEdit.size': 'الحجم',
   'tabletop.tokenEdit.remove': 'إزالة الرمز',
   'tabletop.tokenEdit.editCharacter': 'معلومات الشخصية',
+  'tabletop.reorder.up': 'تحريك لأعلى',
+  'tabletop.reorder.down': 'تحريك لأسفل',
   'tabletop.tokenEdit.close': 'إغلاق',
   'tabletop.playerToken.place': 'ضع',
   'tabletop.playerToken.placed': 'على الخريطة',

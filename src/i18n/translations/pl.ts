@@ -79,6 +79,8 @@ export const pl: Dict = {
   'tabletop.tokenEdit.size': 'Rozmiar',
   'tabletop.tokenEdit.remove': 'Usuń żeton',
   'tabletop.tokenEdit.editCharacter': 'Informacje o postaci',
+  'tabletop.reorder.up': 'W górę',
+  'tabletop.reorder.down': 'W dół',
   'tabletop.tokenEdit.close': 'Zamknij',
   'tabletop.playerToken.place': 'Umieść',
   'tabletop.playerToken.placed': 'Na mapie',

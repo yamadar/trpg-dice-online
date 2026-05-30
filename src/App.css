@@ -800,6 +800,29 @@
   border-radius: 6px;
   background: var(--panel-2);
 }
+/* Up/down reorder controls at the start of a toolbar list row. Stacked
+   compact icon buttons so they do not balloon the row height. */
+.tabletop-reorder {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.tabletop-reorder-btn {
+  width: 18px;
+  height: 15px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+}
+.tabletop-reorder-btn:hover:not(:disabled) {
+  color: var(--text);
+}
+.tabletop-reorder-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
 /* Clickable row inside a placed-token list-item. The whole row is a
  *  button so tapping the thumb / label / kind tag all focus the token
  *  on the canvas. Strips default button chrome and inherits the row
@@ -4232,10 +4255,15 @@ button.char-avatar-large:disabled {
    the file without first switching the active source tab. */
 .tabletop-map-current-actions {
   display: flex;
+  align-items: center;
   gap: 6px;
 }
-.tabletop-map-current-actions > button {
+.tabletop-map-current-actions > p {
   flex: 1;
+  min-width: 0;
+}
+.tabletop-map-clear-btn {
+  flex: 0 0 auto;
 }
 
 /* --- ColorInput (react-colorful wrapper) --- */

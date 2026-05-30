@@ -37,9 +37,13 @@ export function CharacterPanel({ characters, onNotice }: Props) {
 
   const [importError, setImportError] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Bumped on "create" so the shared CharacterEditor focuses the name
+  // field for the freshly created (and now active) character.
+  const [createSignal, setCreateSignal] = useState(0)
 
   const handleCreate = () => {
     createCharacter('', lang)
+    setCreateSignal((s) => s + 1)
   }
 
   const confirm = useConfirm()
@@ -136,6 +140,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
             character={activeCharacter}
             onUpdate={(patch) => updateCharacter(activeCharacter.id, patch)}
             onNotice={onNotice}
+            autoFocusSignal={createSignal}
           />
 
           {/* === Zone 5: export (option + button kept together) === */}

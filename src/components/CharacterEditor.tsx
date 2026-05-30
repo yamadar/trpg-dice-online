@@ -13,6 +13,9 @@ interface Props {
   /** Apply a partial edit to this character. */
   onUpdate: (patch: Partial<CharacterEdits>) => void
   onNotice: (message: string) => void
+  /** Bump this to focus the name field — used when a brand-new
+   *  character is created so the user can type its name right away. */
+  autoFocusSignal?: number
 }
 
 /**
@@ -24,8 +27,20 @@ interface Props {
  * handling (upload → crop → downscale, the GitHub-style edit popover,
  * and the full-size lightbox) lives here.
  */
-export function CharacterEditor({ character, onUpdate, onNotice }: Props) {
+export function CharacterEditor({
+  character,
+  onUpdate,
+  onNotice,
+  autoFocusSignal,
+}: Props) {
   const { t } = useI18n()
+  const nameRef = useRef<HTMLInputElement>(null)
+  // Focus the name field whenever the parent bumps the signal (a fresh
+  // "create character"). Falsy on mount (undefined / 0) so it does not
+  // steal focus when the editor first appears or the character switches.
+  useEffect(() => {
+    if (autoFocusSignal) nameRef.current?.focus()
+  }, [autoFocusSignal])
   // Crop dialog source (a freshly picked file as a data URL); the
   // confirm callback feeds the cropped result through the resize
   // pipeline. A spinner-style busy flag and an error flag cover the
@@ -145,6 +160,7 @@ export function CharacterEditor({ character, onUpdate, onNotice }: Props) {
         <label className="field">
           <span>{t('character.name')}</span>
           <input
+            ref={nameRef}
             type="text"
             value={character.name}
             maxLength={40}

@@ -79,6 +79,8 @@ export const es: Dict = {
   'tabletop.tokenEdit.size': 'Tamaño',
   'tabletop.tokenEdit.remove': 'Quitar ficha',
   'tabletop.tokenEdit.editCharacter': 'Información del personaje',
+  'tabletop.reorder.up': 'Subir',
+  'tabletop.reorder.down': 'Bajar',
   'tabletop.tokenEdit.close': 'Cerrar',
   'tabletop.playerToken.place': 'Colocar',
   'tabletop.playerToken.placed': 'En el mapa',

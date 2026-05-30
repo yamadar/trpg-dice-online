@@ -79,6 +79,8 @@ export const it: Dict = {
   'tabletop.tokenEdit.size': 'Dimensione',
   'tabletop.tokenEdit.remove': 'Rimuovi segnalino',
   'tabletop.tokenEdit.editCharacter': 'Info personaggio',
+  'tabletop.reorder.up': 'Sposta su',
+  'tabletop.reorder.down': 'Sposta giù',
   'tabletop.tokenEdit.close': 'Chiudi',
   'tabletop.playerToken.place': 'Posiziona',
   'tabletop.playerToken.placed': 'Sulla mappa',

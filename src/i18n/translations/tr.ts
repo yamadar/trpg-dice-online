@@ -79,6 +79,8 @@ export const tr: Dict = {
   'tabletop.tokenEdit.size': 'Boyut',
   'tabletop.tokenEdit.remove': 'Jetonu kaldır',
   'tabletop.tokenEdit.editCharacter': 'Karakter bilgisi',
+  'tabletop.reorder.up': 'Yukarı taşı',
+  'tabletop.reorder.down': 'Aşağı taşı',
   'tabletop.tokenEdit.close': 'Kapat',
   'tabletop.playerToken.place': 'Yerleştir',
   'tabletop.playerToken.placed': 'Haritada',

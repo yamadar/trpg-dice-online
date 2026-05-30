@@ -79,6 +79,8 @@ export const ru: Dict = {
   'tabletop.tokenEdit.size': 'Размер',
   'tabletop.tokenEdit.remove': 'Убрать фишку',
   'tabletop.tokenEdit.editCharacter': 'О персонаже',
+  'tabletop.reorder.up': 'Вверх',
+  'tabletop.reorder.down': 'Вниз',
   'tabletop.tokenEdit.close': 'Закрыть',
   'tabletop.playerToken.place': 'Разместить',
   'tabletop.playerToken.placed': 'На карте',

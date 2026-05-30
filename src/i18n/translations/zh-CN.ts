@@ -79,6 +79,8 @@ export const zhCN: Dict = {
   'tabletop.tokenEdit.size': '尺寸',
   'tabletop.tokenEdit.remove': '移除棋子',
   'tabletop.tokenEdit.editCharacter': '角色信息',
+  'tabletop.reorder.up': '上移',
+  'tabletop.reorder.down': '下移',
   'tabletop.tokenEdit.close': '关闭',
   'tabletop.playerToken.place': '放置',
   'tabletop.playerToken.placed': '已上场',

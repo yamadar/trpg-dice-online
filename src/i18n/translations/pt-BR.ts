@@ -79,6 +79,8 @@ export const ptBR: Dict = {
   'tabletop.tokenEdit.size': 'Tamanho',
   'tabletop.tokenEdit.remove': 'Remover ficha',
   'tabletop.tokenEdit.editCharacter': 'Informações do personagem',
+  'tabletop.reorder.up': 'Mover para cima',
+  'tabletop.reorder.down': 'Mover para baixo',
   'tabletop.tokenEdit.close': 'Fechar',
   'tabletop.playerToken.place': 'Posicionar',
   'tabletop.playerToken.placed': 'No mapa',

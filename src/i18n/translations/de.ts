@@ -79,6 +79,8 @@ export const de: Dict = {
   'tabletop.tokenEdit.size': 'Größe',
   'tabletop.tokenEdit.remove': 'Marker entfernen',
   'tabletop.tokenEdit.editCharacter': 'Charakterinfo',
+  'tabletop.reorder.up': 'Nach oben',
+  'tabletop.reorder.down': 'Nach unten',
   'tabletop.tokenEdit.close': 'Schließen',
   'tabletop.playerToken.place': 'Platzieren',
   'tabletop.playerToken.placed': 'Auf der Karte',

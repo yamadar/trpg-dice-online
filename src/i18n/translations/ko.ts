@@ -79,6 +79,8 @@ export const ko: Dict = {
   'tabletop.tokenEdit.size': '크기',
   'tabletop.tokenEdit.remove': '토큰 삭제',
   'tabletop.tokenEdit.editCharacter': '캐릭터 정보',
+  'tabletop.reorder.up': '위로',
+  'tabletop.reorder.down': '아래로',
   'tabletop.tokenEdit.close': '닫기',
   'tabletop.playerToken.place': '배치',
   'tabletop.playerToken.placed': '맵에 있음',

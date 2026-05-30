@@ -79,6 +79,8 @@ export const hi: Dict = {
   'tabletop.tokenEdit.size': 'आकार',
   'tabletop.tokenEdit.remove': 'टोकन हटाएँ',
   'tabletop.tokenEdit.editCharacter': 'किरदार जानकारी',
+  'tabletop.reorder.up': 'ऊपर ले जाएँ',
+  'tabletop.reorder.down': 'नीचे ले जाएँ',
   'tabletop.tokenEdit.close': 'बंद करें',
   'tabletop.playerToken.place': 'रखें',
   'tabletop.playerToken.placed': 'मानचित्र पर',

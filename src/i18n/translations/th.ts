@@ -79,6 +79,8 @@ export const th: Dict = {
   'tabletop.tokenEdit.size': 'ขนาด',
   'tabletop.tokenEdit.remove': 'ลบโทเคน',
   'tabletop.tokenEdit.editCharacter': 'ข้อมูลตัวละคร',
+  'tabletop.reorder.up': 'ย้ายขึ้น',
+  'tabletop.reorder.down': 'ย้ายลง',
   'tabletop.tokenEdit.close': 'ปิด',
   'tabletop.playerToken.place': 'วาง',
   'tabletop.playerToken.placed': 'อยู่บนแผนที่',

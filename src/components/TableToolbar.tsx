@@ -21,11 +21,14 @@ import { prepareNpcTokenImage } from '../characters/image'
 import { avatarInitial } from '../players/identity'
 import {
   AlbumIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   CloseIcon,
   EditIcon,
   ImageSearchIcon,
   ImageUpIcon,
   Link2Icon,
+  PlusIcon,
   TrashIcon,
 } from './icons'
 import {
@@ -131,13 +134,20 @@ interface Props {
    *  the GM enters a name first and can attach / change the portrait
    *  later through the NPC list's "set image" button (which uses
    *  `onUpdateNpcDef`). */
-  onAddNpcDef: (name: string, input?: File | string) => Promise<'ok' | 'unreadable'>
+  onAddNpcDef: (
+    name: string,
+    input?: File | string,
+  ) => Promise<string | 'unreadable'>
   /** Edit an existing NPC's name or image. */
   onUpdateNpcDef: (
     defId: string,
     updates: { name?: string; image?: string },
   ) => void
   onRemoveNpcDef: (defId: string) => void
+  /** GM-only: reorder a library entry / placed token up (-1) or down
+   *  (+1) within its list. */
+  onReorderNpcDef: (defId: string, dir: -1 | 1) => void
+  onReorderToken: (tokenId: string, dir: -1 | 1) => void
   onPlaceNpcFromLibrary: (defId: string) => void
   /** Snapshot of every token currently on the map, enriched with the
    *  display data (portrait / label) the renderer already computes.
@@ -212,6 +222,8 @@ export function TableToolbar({
   onAddNpcDef,
   onUpdateNpcDef,
   onRemoveNpcDef,
+  onReorderNpcDef,
+  onReorderToken,
   onPlaceNpcFromLibrary,
   placedTokens,
   onRemoveToken,
@@ -242,7 +254,6 @@ export function TableToolbar({
   //                      separately so the editor can close without
   //                      cancelling an in-flight crop.
   //   `cropSrc`        - the picked image while the crop dialog is up.
-  const [npcName, setNpcName] = useState('')
   const [editingNpcId, setEditingNpcId] = useState<string | null>(null)
   const [imageTargetNpcId, setImageTargetNpcId] = useState<string | null>(null)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
@@ -462,17 +473,15 @@ export function TableToolbar({
   }
 
   const handleAddNpc = async () => {
-    if (!npcName.trim()) {
-      onNotice?.(t('tabletop.npcLibrary.needName'), 'error')
+    // Create a blank library entry and open its editor focused on the
+    // name field. The inline name input is gone — the add button is an
+    // icon and naming happens in the Edit NPC dialog.
+    const result = await onAddNpcDef('')
+    if (result === 'unreadable') {
+      onNotice?.(t('tabletop.npcLibrary.unreadable'), 'error')
       return
     }
-    const result = await onAddNpcDef(npcName)
-    if (result === 'ok') {
-      onNotice?.(t('tabletop.npcLibrary.added'), 'success')
-      setNpcName('')
-    } else {
-      onNotice?.(t('tabletop.npcLibrary.unreadable'), 'error')
-    }
+    setEditingNpcId(result)
   }
 
   /** Result handler for the unified `ImagePickerDialog`. Uploaded
@@ -688,27 +697,24 @@ export function TableToolbar({
             onChange={handleMapFile}
           />
           {map && (
-            <>
+            // Current map: name + a compact icon-only "clear" button.
+            // Replacing the image is done from the Upload tab below, so
+            // there is no separate "replace" button here (it duplicated
+            // the upload action and pushed the clear button too wide).
+            <div className="tabletop-map-current-actions">
               <p className="tabletop-toolbar-meta" title={map.name}>
                 {map.name} ({map.width}×{map.height})
               </p>
-              <div className="tabletop-map-current-actions">
-                <button
-                  type="button"
-                  className="tabletop-toolbar-button"
-                  onClick={() => mapInputRef.current?.click()}
-                >
-                  {t('tabletop.map.replace')}
-                </button>
-                <button
-                  type="button"
-                  className="tabletop-toolbar-button outline"
-                  onClick={onClearMap}
-                >
-                  {t('tabletop.map.clear')}
-                </button>
-              </div>
-            </>
+              <button
+                type="button"
+                className="icon-btn tabletop-map-clear-btn"
+                onClick={onClearMap}
+                aria-label={t('tabletop.map.clear')}
+                title={t('tabletop.map.clear')}
+              >
+                <TrashIcon />
+              </button>
+            </div>
           )}
           {/* Tab row: four mutually-exclusive sources for the
               background map. Icons-only so the four-tab strip
@@ -965,30 +971,29 @@ export function TableToolbar({
               <h3 className="tabletop-toolbar-title">
                 {t('tabletop.npcLibrary.title')}
               </h3>
-              <input
-                type="text"
-                className="tabletop-toolbar-input"
-                placeholder={t('tabletop.npcLibrary.namePlaceholder')}
-                value={npcName}
-                onChange={(e) => setNpcName(e.target.value)}
-                maxLength={32}
-              />
               <button
                 type="button"
-                className="tabletop-toolbar-button"
+                className="icon-btn tabletop-npc-add-btn"
                 onClick={() => void handleAddNpc()}
+                aria-label={t('tabletop.npcLibrary.add')}
+                title={t('tabletop.npcLibrary.add')}
               >
-                {t('tabletop.npcLibrary.add')}
+                <PlusIcon />
               </button>
               {npcLibrary.length > 0 && (
                 <ul className="tabletop-toolbar-list">
-                  {npcLibrary.map((def) => {
+                  {npcLibrary.map((def, index) => {
                     const isEditing = editingNpcId === def.id
                     return (
                       <li
                         key={def.id}
                         className="tabletop-toolbar-list-item"
                       >
+                        <ReorderControls
+                          index={index}
+                          count={npcLibrary.length}
+                          onMove={(dir) => onReorderNpcDef(def.id, dir)}
+                        />
                         {def.image ? (
                           <img
                             src={def.image}
@@ -1048,7 +1053,7 @@ export function TableToolbar({
             </p>
           ) : (
             <ul className="tabletop-toolbar-list tabletop-toolbar-list-placed">
-              {placedTokens.map(({ token, portrait, label }) => {
+              {placedTokens.map(({ token, portrait, label }, index) => {
                 const displayName = label?.trim() || t('tabletop.placedTokens.unnamed')
                 const kindLabel =
                   token.kind === 'pc'
@@ -1056,6 +1061,13 @@ export function TableToolbar({
                     : t('tabletop.placedTokens.kindGm')
                 return (
                   <li key={token.id} className="tabletop-toolbar-list-item">
+                    {isHost && (
+                      <ReorderControls
+                        index={index}
+                        count={placedTokens.length}
+                        onMove={(dir) => onReorderToken(token.id, dir)}
+                      />
+                    )}
                     <button
                       type="button"
                       className="tabletop-toolbar-list-row"
@@ -1321,6 +1333,47 @@ export function TableToolbar({
   )
 }
 
+/**
+ * Up / down reorder buttons for a list row (NPC library or placed
+ * tokens). Disabled at the list's ends. Compact icon buttons so adding
+ * them does not balloon the row height.
+ */
+function ReorderControls({
+  index,
+  count,
+  onMove,
+}: {
+  index: number
+  count: number
+  onMove: (dir: -1 | 1) => void
+}) {
+  const { t } = useI18n()
+  return (
+    <span className="tabletop-reorder">
+      <button
+        type="button"
+        className="icon-btn tabletop-reorder-btn"
+        disabled={index === 0}
+        aria-label={t('tabletop.reorder.up')}
+        title={t('tabletop.reorder.up')}
+        onClick={() => onMove(-1)}
+      >
+        <ChevronUpIcon size={14} />
+      </button>
+      <button
+        type="button"
+        className="icon-btn tabletop-reorder-btn"
+        disabled={index === count - 1}
+        aria-label={t('tabletop.reorder.down')}
+        title={t('tabletop.reorder.down')}
+        onClick={() => onMove(1)}
+      >
+        <ChevronDownIcon size={14} />
+      </button>
+    </span>
+  )
+}
+
 interface NpcInlineEditorProps {
   def: NpcDef
   /** Commit a new name for the entry. Called on blur / Enter so a
@@ -1352,6 +1405,13 @@ function NpcInlineEditor({
 }: NpcInlineEditorProps) {
   const { t } = useI18n()
   const [nameDraft, setNameDraft] = useState(def.name)
+  const nameRef = useRef<HTMLInputElement>(null)
+  // Focus (and select) the name on open so a freshly added blank NPC —
+  // and any edit — is immediately ready for typing.
+  useEffect(() => {
+    nameRef.current?.focus()
+    nameRef.current?.select()
+  }, [])
   const commitName = () => {
     const trimmed = nameDraft.trim()
     if (!trimmed) {
@@ -1378,6 +1438,7 @@ function NpcInlineEditor({
       <label className="tabletop-toolbar-editor-field">
         <span>{t('tabletop.npcLibrary.nameLabel')}</span>
         <input
+          ref={nameRef}
           type="text"
           value={nameDraft}
           maxLength={32}

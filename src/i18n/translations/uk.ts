@@ -79,6 +79,8 @@ export const uk: Dict = {
   'tabletop.tokenEdit.size': 'Розмір',
   'tabletop.tokenEdit.remove': 'Прибрати фішку',
   'tabletop.tokenEdit.editCharacter': 'Про персонажа',
+  'tabletop.reorder.up': 'Вгору',
+  'tabletop.reorder.down': 'Вниз',
   'tabletop.tokenEdit.close': 'Закрити',
   'tabletop.playerToken.place': 'Розмістити',
   'tabletop.playerToken.placed': 'На карті',

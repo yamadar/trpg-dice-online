@@ -79,6 +79,8 @@ export const ja: Dict = {
   'tabletop.tokenEdit.size': 'サイズ',
   'tabletop.tokenEdit.remove': 'トークンを消す',
   'tabletop.tokenEdit.editCharacter': 'キャラクター情報',
+  'tabletop.reorder.up': '上へ',
+  'tabletop.reorder.down': '下へ',
   'tabletop.tokenEdit.close': '閉じる',
   'tabletop.playerToken.place': '配置',
   'tabletop.playerToken.placed': '配置済み',
