@@ -1,13 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
-import { useFieldNotice } from '../hooks/useFieldNotice'
 import type { UseCharacters } from '../characters/useCharacters'
 import { exportCharacterJSON } from '../characters/io'
-import { prepareCharacterImage } from '../characters/image'
 import { useConfirm } from '../hooks/useConfirm'
-import { CharacterIcon, EditIcon } from './icons'
-import { Lightbox } from './Lightbox'
-import { CharacterImageCropDialog } from './CharacterImageCropDialog'
+import { CharacterEditor } from './CharacterEditor'
 
 interface Props {
   characters: UseCharacters
@@ -15,13 +11,14 @@ interface Props {
 }
 
 /**
- * Character management. Laid out as six zones so each block has one
- * clear job and adjacent actions don't get confused with each other:
+ * Character management. The card + edit fields live in the shared
+ * `CharacterEditor` (also reused by the tabletop's character-info
+ * modal); this panel adds the surrounding zones that only make sense in
+ * the full management view:
  *
  * 1. Switcher (select an active character)
- * 2. Add a character (new / import — both grow the collection)
- * 3. Character card (avatar + name + 1-line background — a summary)
- * 4. Edit fields (name, image, background, memo)
+ * 2. Add a character (new / import)
+ * — CharacterEditor: card + edit fields (name, image, background, memo)
  * 5. Export (option + button)
  * 6. Danger zone (delete — isolated at the bottom)
  */
@@ -39,67 +36,7 @@ export function CharacterPanel({ characters, onNotice }: Props) {
   } = characters
 
   const [importError, setImportError] = useState(false)
-  // Crop dialog state: when a freshly picked file is loaded as a data URL
-  // the dialog opens with the source image, lets the user position /
-  // zoom the square crop (rendered as a circle to match the avatar
-  // shape), and on confirm the cropped data URL is fed through the
-  // existing `prepareCharacterImage` resize / re-encode pipeline.
-  const [cropSource, setCropSource] = useState<string | null>(null)
-  const [cropTargetId, setCropTargetId] = useState<string | null>(null)
-  // Portrait state: a spinner-style busy flag while an image is processed,
-  // an error flag, and whether the full-size viewer is open.
-  const [imageBusy, setImageBusy] = useState(false)
-  const [imageError, setImageError] = useState(false)
-  const [lightboxOpen, setLightboxOpen] = useState(false)
-  // GitHub-style "Edit" popover next to the profile picture.
-  const [imageMenuOpen, setImageMenuOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const imageInputRef = useRef<HTMLInputElement>(null)
-  const imageMenuRef = useRef<HTMLDivElement>(null)
-
-  // Close the image-edit popover on outside click or Escape so it
-  // behaves like other lightweight menus across the app. `e.target` on
-  // a `MouseEvent` is typed as `EventTarget | null` and is not
-  // guaranteed to be a DOM Node (eg. when synthesised in tests), so
-  // guard before calling `.contains`.
-  useEffect(() => {
-    if (!imageMenuOpen) return
-    const onPointer = (e: MouseEvent) => {
-      const target = e.target
-      if (!(target instanceof Node)) return
-      if (imageMenuRef.current && !imageMenuRef.current.contains(target)) {
-        setImageMenuOpen(false)
-      }
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setImageMenuOpen(false)
-    }
-    document.addEventListener('mousedown', onPointer)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onPointer)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [imageMenuOpen])
-
-  // Close the popover if the active character changes (or is cleared)
-  // while it is open — otherwise the menu would stay "open" in state
-  // and pop back up the next time a character is selected. Done with
-  // the "set state during render" pattern React recommends over an
-  // effect, to avoid cascading renders.
-  const [popoverCharId, setPopoverCharId] = useState<string | null>(
-    activeCharacter?.id ?? null,
-  )
-  if (popoverCharId !== (activeCharacter?.id ?? null)) {
-    setPopoverCharId(activeCharacter?.id ?? null)
-    setImageMenuOpen(false)
-  }
-
-  // One toast after a burst of name edits settles, not per keystroke.
-  // Toast once the name edit settles (on blur or when the sheet closes).
-  const nameNotice = useFieldNotice(() => onNotice(t('toast.characterName')))
-  // The same settle-then-toast for the background / memo detail fields.
-  const detailNotice = useFieldNotice(() => onNotice(t('toast.characterDetail')))
 
   const handleCreate = () => {
     createCharacter('', lang)
@@ -143,56 +80,6 @@ export function CharacterPanel({ characters, onNotice }: Props) {
         if (!ok) setImportError(true)
       })
       .catch(() => setImportError(true))
-  }
-
-  // Attach / replace the portrait: the picked file is downscaled and
-  // compressed (see characters/image.ts) before it is stored.
-  const handlePickImage = () => {
-    setImageMenuOpen(false)
-    imageInputRef.current?.click()
-  }
-
-  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = '' // allow re-picking the same file
-    if (!file || !activeCharacter) return
-    setImageError(false)
-    // Read the picked file into a data URL so the crop dialog has a
-    // source to render. The dialog's confirm callback feeds the
-    // cropped data URL into the existing portrait pipeline; cancel
-    // just clears the source and nothing is saved.
-    const reader = new FileReader()
-    reader.onload = () => {
-      setCropTargetId(activeCharacter.id)
-      setCropSource(String(reader.result))
-    }
-    reader.onerror = () => setImageError(true)
-    reader.readAsDataURL(file)
-  }
-
-  const handleCropConfirm = (croppedDataUrl: string) => {
-    const characterId = cropTargetId
-    setCropSource(null)
-    setCropTargetId(null)
-    if (!characterId) return
-    setImageBusy(true)
-    prepareCharacterImage(croppedDataUrl)
-      .then((image) => {
-        if (image) updateCharacter(characterId, { image })
-        else setImageError(true)
-      })
-      .catch(() => setImageError(true))
-      .finally(() => setImageBusy(false))
-  }
-
-  const handleCropCancel = () => {
-    setCropSource(null)
-    setCropTargetId(null)
-  }
-
-  const handleRemoveImage = () => {
-    setImageMenuOpen(false)
-    if (activeCharacter) updateCharacter(activeCharacter.id, { image: undefined })
   }
 
   return (
@@ -244,152 +131,12 @@ export function CharacterPanel({ characters, onNotice }: Props) {
 
       {activeCharacter && (
         <>
-          {/* === Zone 3: character card (visual summary) === */}
-          <div className="char-card">
-            <button
-              type="button"
-              className="char-card-avatar"
-              disabled={!activeCharacter.image}
-              aria-label={t('character.imageView')}
-              onClick={() => activeCharacter.image && setLightboxOpen(true)}
-            >
-              {activeCharacter.image ? (
-                <img src={activeCharacter.image} alt="" />
-              ) : (
-                <span aria-hidden="true">
-                  <CharacterIcon size={28} />
-                </span>
-              )}
-            </button>
-            <div className="char-card-body">
-              <p className="char-card-name">
-                {activeCharacter.name || t('character.unnamed')}
-              </p>
-              {activeCharacter.background && (
-                <p className="char-card-background">{activeCharacter.background}</p>
-              )}
-            </div>
-          </div>
-
-          {/* === Zone 4: edit fields === */}
-          <div className="char-details">
-            <label className="field">
-              <span>{t('character.name')}</span>
-              <input
-                type="text"
-                value={activeCharacter.name}
-                maxLength={40}
-                placeholder={t('character.namePlaceholder')}
-                onChange={(e) => {
-                  updateCharacter(activeCharacter.id, { name: e.target.value })
-                  nameNotice.markChanged()
-                }}
-                onBlur={nameNotice.flush}
-              />
-            </label>
-
-            <div className="field char-avatar-field">
-              <span>{t('character.image')}</span>
-              {/* GitHub-style portrait: a large circular avatar with an
-                  "Edit" pill button overlaid bottom-left that opens a
-                  small popover offering upload (and remove, if present). */}
-              <div className="char-avatar-area">
-                {activeCharacter.image ? (
-                  <button
-                    type="button"
-                    className="char-avatar-large"
-                    aria-label={t('character.imageView')}
-                    onClick={() => setLightboxOpen(true)}
-                    disabled={imageBusy}
-                  >
-                    <img src={activeCharacter.image} alt="" />
-                  </button>
-                ) : (
-                  <div className="char-avatar-large" aria-hidden="true">
-                    <span className="char-avatar-placeholder">
-                      <CharacterIcon size={56} />
-                    </span>
-                  </div>
-                )}
-                <div className="char-avatar-edit" ref={imageMenuRef}>
-                  <button
-                    type="button"
-                    className="char-avatar-edit-trigger"
-                    aria-haspopup="true"
-                    aria-expanded={imageMenuOpen}
-                    disabled={imageBusy}
-                    onClick={() => setImageMenuOpen((v) => !v)}
-                  >
-                    <span aria-hidden="true">
-                      <EditIcon />
-                    </span>
-                    {t('character.imageEdit')}
-                  </button>
-                  {imageMenuOpen && (
-                    // No `role="menu"` here — the contents are a simple
-                    // list of buttons. A real ARIA menu would require
-                    // full keyboard (arrow / Home / End) navigation,
-                    // which this lightweight popover does not implement.
-                    <div className="char-avatar-edit-menu">
-                      <button type="button" onClick={handlePickImage}>
-                        {activeCharacter.image
-                          ? t('character.imageChange')
-                          : t('character.imageAdd')}
-                      </button>
-                      {activeCharacter.image && (
-                        <button type="button" className="danger" onClick={handleRemoveImage}>
-                          {t('character.imageRemove')}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {imageBusy && <p className="hint">{t('character.imageProcessing')}</p>}
-              {imageError && (
-                <p className="banner error" role="alert">
-                  {t('character.imageError')}
-                </p>
-              )}
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={handleImageFile}
-              />
-            </div>
-
-            <label className="field">
-              <span>{t('character.background')}</span>
-              <textarea
-                rows={5}
-                value={activeCharacter.background}
-                maxLength={1000}
-                placeholder={t('character.backgroundPlaceholder')}
-                onChange={(e) => {
-                  updateCharacter(activeCharacter.id, { background: e.target.value })
-                  detailNotice.markChanged()
-                }}
-                onBlur={detailNotice.flush}
-              />
-            </label>
-
-            <label className="field">
-              <span>{t('character.memo')}</span>
-              <textarea
-                rows={5}
-                value={activeCharacter.memo}
-                maxLength={2000}
-                placeholder={t('character.memoPlaceholder')}
-                onChange={(e) => {
-                  updateCharacter(activeCharacter.id, { memo: e.target.value })
-                  detailNotice.markChanged()
-                }}
-                onBlur={detailNotice.flush}
-              />
-            </label>
-          </div>
+          {/* === Zones 3-4: card + edit fields (shared editor) === */}
+          <CharacterEditor
+            character={activeCharacter}
+            onUpdate={(patch) => updateCharacter(activeCharacter.id, patch)}
+            onNotice={onNotice}
+          />
 
           {/* === Zone 5: export (option + button kept together) === */}
           <div className="char-export">
@@ -415,28 +162,6 @@ export function CharacterPanel({ characters, onNotice }: Props) {
             </button>
           </div>
         </>
-      )}
-
-      {lightboxOpen && activeCharacter?.image && (
-        <Lightbox
-          images={[
-            {
-              name: activeCharacter.name || t('character.unnamed'),
-              dataUrl: activeCharacter.image,
-            },
-          ]}
-          index={0}
-          onIndexChange={() => {}}
-          onClose={() => setLightboxOpen(false)}
-        />
-      )}
-
-      {cropSource && (
-        <CharacterImageCropDialog
-          src={cropSource}
-          onCancel={handleCropCancel}
-          onConfirm={handleCropConfirm}
-        />
       )}
     </section>
   )

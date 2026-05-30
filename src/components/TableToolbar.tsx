@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useConfirm } from '../hooks/useConfirm'
 import { useI18n } from '../i18n/useI18n'
 import {
@@ -985,64 +985,52 @@ export function TableToolbar({
                   {npcLibrary.map((def) => {
                     const isEditing = editingNpcId === def.id
                     return (
-                      <Fragment key={def.id}>
-                        <li className="tabletop-toolbar-list-item">
-                          {def.image ? (
-                            <img
-                              src={def.image}
-                              alt=""
-                              className="tabletop-toolbar-thumb"
-                            />
-                          ) : (
-                            <span
-                              className="tabletop-toolbar-thumb tabletop-toolbar-thumb-initial"
-                              aria-hidden="true"
-                            >
-                              {avatarInitial(def.name)}
-                            </span>
-                          )}
+                      <li
+                        key={def.id}
+                        className="tabletop-toolbar-list-item"
+                      >
+                        {def.image ? (
+                          <img
+                            src={def.image}
+                            alt=""
+                            className="tabletop-toolbar-thumb"
+                          />
+                        ) : (
                           <span
-                            className="tabletop-toolbar-list-label"
-                            title={def.name}
+                            className="tabletop-toolbar-thumb tabletop-toolbar-thumb-initial"
+                            aria-hidden="true"
                           >
-                            {def.name}
+                            {avatarInitial(def.name)}
                           </span>
-                          <button
-                            type="button"
-                            className={`icon-btn tabletop-toolbar-list-icon-btn${isEditing ? ' active' : ''}`}
-                            aria-label={t('tabletop.npcLibrary.edit')}
-                            aria-expanded={isEditing}
-                            title={t('tabletop.npcLibrary.edit')}
-                            onClick={() =>
-                              setEditingNpcId((cur) =>
-                                cur === def.id ? null : def.id,
-                              )
-                            }
-                          >
-                            <EditIcon />
-                          </button>
-                          <button
-                            type="button"
-                            className="tabletop-toolbar-list-action"
-                            onClick={() => onPlaceNpcFromLibrary(def.id)}
-                          >
-                            {t('tabletop.npcLibrary.place')}
-                          </button>
-                        </li>
-                        {isEditing && (
-                          <li className="tabletop-toolbar-editor-row">
-                            <NpcInlineEditor
-                              def={def}
-                              onChangeName={(name) =>
-                                onUpdateNpcDef(def.id, { name })
-                              }
-                              onChangeImage={() => handleSetNpcImage(def.id)}
-                              onRemove={() => void handleNpcDelete(def)}
-                              onClose={() => setEditingNpcId(null)}
-                            />
-                          </li>
                         )}
-                      </Fragment>
+                        <span
+                          className="tabletop-toolbar-list-label"
+                          title={def.name}
+                        >
+                          {def.name}
+                        </span>
+                        <button
+                          type="button"
+                          className={`icon-btn tabletop-toolbar-list-icon-btn${isEditing ? ' active' : ''}`}
+                          aria-label={t('tabletop.npcLibrary.edit')}
+                          aria-expanded={isEditing}
+                          title={t('tabletop.npcLibrary.edit')}
+                          onClick={() =>
+                            setEditingNpcId((cur) =>
+                              cur === def.id ? null : def.id,
+                            )
+                          }
+                        >
+                          <EditIcon />
+                        </button>
+                        <button
+                          type="button"
+                          className="tabletop-toolbar-list-action"
+                          onClick={() => onPlaceNpcFromLibrary(def.id)}
+                        >
+                          {t('tabletop.npcLibrary.place')}
+                        </button>
+                      </li>
                     )
                   })}
                 </ul>
@@ -1299,6 +1287,36 @@ export function TableToolbar({
         mode="both"
         onPick={handleNpcImagePicked}
       />
+      {/* NPC edit popup. Rendered outside the scrolling library list so
+          it is not clipped by the list / panel overflow — shown as a
+          centred popup over the table, mirroring the character-info
+          modal opened from a PC token. */}
+      {editingNpcId &&
+        (() => {
+          const def = npcLibrary.find((d) => d.id === editingNpcId)
+          if (!def) return null
+          return (
+            <div className="npc-edit-layer" role="presentation">
+              <div
+                className="char-info-backdrop"
+                onClick={() => setEditingNpcId(null)}
+                aria-hidden="true"
+              />
+              <div
+                className="npc-edit-popup"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <NpcInlineEditor
+                  def={def}
+                  onChangeName={(name) => onUpdateNpcDef(def.id, { name })}
+                  onChangeImage={() => handleSetNpcImage(def.id)}
+                  onRemove={() => void handleNpcDelete(def)}
+                  onClose={() => setEditingNpcId(null)}
+                />
+              </div>
+            </div>
+          )
+        })()}
     </aside>
   )
 }
@@ -1378,9 +1396,7 @@ function NpcInlineEditor({
         className="tabletop-toolbar-button outline"
         onClick={onChangeImage}
       >
-        {def.image
-          ? t('tabletop.npcLibrary.changeImage')
-          : t('tabletop.npcLibrary.setImage')}
+        {t('tabletop.npcLibrary.changeImage')}
       </button>
       <button
         type="button"

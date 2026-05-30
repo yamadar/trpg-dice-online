@@ -931,6 +931,31 @@
   color: var(--text);
   font: inherit;
 }
+/* NPC edit popup layer. Like `.char-info-layer` but one notch BELOW the
+   ImagePickerDialog (z-index 65) so "change image" opens its picker on
+   top of this popup rather than behind it. */
+.npc-edit-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+/* NPC edit popup. A centred popup over a dimmed backdrop (reusing the
+   character-info modal's `.char-info-backdrop`) so it escapes the
+   library list's overflow clipping. The card itself is the shared
+   `.tabletop-toolbar-editor`; this only sizes + shadows it. */
+.npc-edit-popup {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 340px;
+}
+.npc-edit-popup .tabletop-toolbar-editor {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+}
 
 /* Small "kind" tag (PC / NPC) shown in the placed-tokens list so the
    row reads at a glance. */
@@ -4438,4 +4463,51 @@ button.char-avatar-large:disabled {
 .tabletop-token-size-btn.active {
   background: var(--accent);
   color: var(--text-on-accent, #fff);
+}
+
+/* Character-info modal: a compact dialog wrapping the shared
+   CharacterEditor, opened from a placed PC token's edit popover. Styled
+   like a narrow centred dialog rather than the wide map gallery. */
+.char-info-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 66;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+.char-info-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+.char-info-card {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: 92svh;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.char-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.char-info-header h2 {
+  font-size: 1.05rem;
+  margin: 0;
+  color: var(--text-h);
+}
+.char-info-body {
+  overflow-y: auto;
+  padding: 16px;
 }

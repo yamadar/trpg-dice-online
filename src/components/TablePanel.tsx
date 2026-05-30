@@ -41,8 +41,9 @@ import {
   hexHeight,
   iterHexCellsInViewport,
 } from '../tabletop/hexGrid'
-import type { Character } from '../characters/types'
+import type { Character, CharacterEdits } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
+import { CharacterInfoModal } from './CharacterInfoModal'
 import { ChatIcon, CloseIcon, DiceIcon, TrashIcon } from './icons'
 import { ImagePickerDialog } from './ImagePickerDialog'
 import { Sheet } from './Sheet'
@@ -64,6 +65,10 @@ interface Props {
    *  toolbar to list "place my X" buttons and by the initial-centre
    *  logic to find the user's active character's token. */
   characters: ReadonlyArray<Character>
+  /** Update one of the local player's character records. Forwarded to
+   *  the character-info modal opened from a placed PC token's popover so
+   *  the GM/owner can edit the bound character in place. */
+  onUpdateCharacter?: (id: string, patch: Partial<CharacterEdits>) => void
   /** Local player's active character id ('' when acting directly).
    *  The tabletop's first paint pans the stage to centre on a token
    *  for this character if one exists. */
@@ -208,6 +213,7 @@ export function TablePanel({
   session,
   onClose,
   characters,
+  onUpdateCharacter,
   activeCharacterId,
   chatPanel,
   rollsPanel,
@@ -425,6 +431,10 @@ export function TablePanel({
    *     out when it cannot find the token in the list).
    */
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null)
+  // Character whose info modal is open, opened from a placed PC token's
+  // edit popover. null = closed. Resolved against `characters` at render
+  // time so live edits (name / portrait) reflect immediately.
+  const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null)
   // Close the popover when the user presses ANYWHERE outside the
   // popover itself and outside the Konva-rendered map area (left
   // tool palette, right toolbar, bottom dock, tutorial overlay,
@@ -968,10 +978,10 @@ export function TablePanel({
     () =>
       tabletop.tokens.map((token) => ({
         token,
-        portrait: portraitForToken(token, session),
-        label: labelForToken(token, session),
+        portrait: portraitForToken(token, session, characters),
+        label: labelForToken(token, session, characters),
       })),
-    [tabletop.tokens, session],
+    [tabletop.tokens, session, characters],
   )
 
   /**
@@ -1144,8 +1154,8 @@ export function TablePanel({
                   draggable={
                     tool === 'select' && canMoveToken(token, tokenActor)
                   }
-                  portrait={portraitForToken(token, session)}
-                  label={labelForToken(token, session)}
+                  portrait={portraitForToken(token, session, characters)}
+                  label={labelForToken(token, session, characters)}
                   // For non-GM viewers, fade the tokens they cannot
                   // move so they can tell at a glance which are theirs
                   // to operate. GMs always see full opacity (every
@@ -1270,8 +1280,30 @@ export function TablePanel({
               session.removeToken(selectedToken.id)
               setSelectedTokenId(null)
             }}
+            onEditCharacter={
+              selectedToken.kind === 'pc' && selectedToken.characterId
+                ? () => setEditingCharacterId(selectedToken.characterId)
+                : undefined
+            }
           />
         )}
+        {/* Character-info modal opened from a PC token's popover. Edits
+            the token's bound character directly (independent of the
+            operating character), resolved against the live `characters`
+            list so name / portrait edits reflect immediately. */}
+        {editingCharacterId &&
+          (() => {
+            const char = characters.find((c) => c.id === editingCharacterId)
+            if (!char) return null
+            return (
+              <CharacterInfoModal
+                character={char}
+                onUpdate={(patch) => onUpdateCharacter?.(char.id, patch)}
+                onNotice={(message) => onNotice?.(message, 'success')}
+                onClose={() => setEditingCharacterId(null)}
+              />
+            )
+          })()}
         {textDraft && (
           <TextDraftInput
             // Key on position so a fresh click in text mode remounts
@@ -1459,8 +1491,11 @@ interface TokenPopoverProps {
   onChangeImage: (image: string) => void
   /** GM-only: change the token's grid size. */
   onChangeSize: (size: TokenSize) => void
-  /** GM-only: remove the token. */
+  /** Remove the token. */
   onRemove: () => void
+  /** PC-only: open the character-info modal for the token's bound
+   *  character. Absent for GM tokens (which have no character record). */
+  onEditCharacter?: () => void
 }
 
 /**
@@ -1479,6 +1514,7 @@ function TokenPopover({
   onChangeImage,
   onChangeSize,
   onRemove,
+  onEditCharacter,
 }: TokenPopoverProps) {
   const [imagePickerOpen, setImagePickerOpen] = useState(false)
   const { t } = useI18n()
@@ -1586,6 +1622,15 @@ function TokenPopover({
           })}
         </div>
       </div>
+      {token.kind === 'pc' && onEditCharacter && (
+        <button
+          type="button"
+          className="tabletop-toolbar-button outline"
+          onClick={onEditCharacter}
+        >
+          {t('tabletop.tokenEdit.editCharacter')}
+        </button>
+      )}
       <button
         type="button"
         className="tabletop-toolbar-button outline danger"
@@ -1638,11 +1683,28 @@ function MapImage({
 }
 
 /** Resolve the portrait to render on a token, or `undefined`. */
-function portraitForToken(token: Token, session: Session): string | undefined {
+function portraitForToken(
+  token: Token,
+  session: Session,
+  myCharacters: ReadonlyArray<Character>,
+): string | undefined {
   if (token.kind === 'pc') {
+    // The local player's own PC tokens resolve from the live local
+    // character record, NOT `sessionCharacters`. The latter only ever
+    // holds the player's *active* character, so switching the operating
+    // character prunes the previous character's key — which would drop
+    // the portrait of every token the player already placed (the
+    // place-time snapshot is not always present, e.g. tokens restored
+    // from IndexedDB or placed before the portrait was set). Reading the
+    // local record keeps all of the player's tokens showing their
+    // current portrait regardless of which character is active.
+    if (token.ownerPlayerId === session.playerId && token.characterId) {
+      const mine = myCharacters.find((c) => c.id === token.characterId)
+      if (mine) return mine.image || undefined
+    }
     const key = characterImagesKey(token.ownerPlayerId, token.characterId)
-    // Prefer the live record so a portrait edit on the active character
-    // propagates instantly; fall back to the token's place-time
+    // Other players' tokens: prefer the live shared record so a portrait
+    // edit propagates instantly; fall back to the token's place-time
     // snapshot for non-active characters (which never land in
     // sessionCharacters), keeping the second-and-onwards-character
     // tokens visible.
@@ -1664,8 +1726,18 @@ function portraitForToken(token: Token, session: Session): string | undefined {
  * a fallback for non-active characters. Returns `undefined` for tokens
  * with no usable label so the renderer can skip drawing it.
  */
-function labelForToken(token: Token, session: Session): string | undefined {
+function labelForToken(
+  token: Token,
+  session: Session,
+  myCharacters: ReadonlyArray<Character>,
+): string | undefined {
   if (token.kind === 'gm') return token.label || undefined
+  // Own PC tokens read the live local character name (see
+  // portraitForToken) so the label survives an operating-character swap.
+  if (token.ownerPlayerId === session.playerId && token.characterId) {
+    const mine = myCharacters.find((c) => c.id === token.characterId)
+    if (mine) return mine.name || undefined
+  }
   const key = characterImagesKey(token.ownerPlayerId, token.characterId)
   const record = session.sessionCharacters[key]
   if (record) {
