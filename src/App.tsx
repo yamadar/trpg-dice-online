@@ -129,6 +129,19 @@ function App() {
     setCharacterImage(activeImage ?? '')
   }, [setCharacterImage, activeImage])
 
+  // Keep the host's own placed PC tokens' snapshots in step with the
+  // live character list (name + portrait). `sessionCharacters` only ever
+  // carries each player's ACTIVE character, so a token's place-time
+  // snapshot is the sole channel by which other players can render a
+  // token bound to a NON-active character. Re-syncing here (on character
+  // edits and on placement) keeps those tokens resolvable for clients
+  // that join later. No-op for non-hosts.
+  const { syncOwnTokenSnapshots } = session
+  const tabletopTokens = session.tabletop.tokens
+  useEffect(() => {
+    syncOwnTokenSnapshots(characters.characters)
+  }, [syncOwnTokenSnapshots, characters.characters, tabletopTokens])
+
   // ...and with the chosen UI language.
   useEffect(() => {
     updateIdentity({ lang })
@@ -382,7 +395,13 @@ function App() {
             broadcastTyping={broadcastTyping}
             onNotice={flash}
             onOpenRoom={() => setOpenSheet('room')}
-            onSeenLatestChat={markChatRead}
+            // While the tabletop is open this room-view feed is hidden
+            // behind it but still mounted, and FeedList marks chat read
+            // on every new message regardless of visibility. Suppress
+            // that here so the unread dot can appear on the tabletop
+            // dock; the tabletop's own chat overlay marks read when the
+            // user actually opens it.
+            onSeenLatestChat={tabletopOpen ? undefined : markChatRead}
             hasUnreadChat={hasUnreadChat}
           />
         )}

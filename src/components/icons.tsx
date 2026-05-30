@@ -3,6 +3,7 @@ import {
   ALargeSmall,
   ArrowLeft,
   ChevronDown,
+  ChevronUp,
   Cloud,
   CloudOff,
   Drama,
@@ -20,6 +21,7 @@ import {
   Paperclip,
   Palette,
   Pencil,
+  Plus,
   Rows3,
   Ruler,
   Send,
@@ -99,6 +101,19 @@ export function TrashIcon({ size = 16 }: IconProps) {
   )
 }
 
+/** Plus / add. */
+export function PlusIcon({ size = 18 }: IconProps) {
+  return (
+    <Plus
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
 /** Settings cog. */
 export function SettingsIcon({ size = 18 }: IconProps) {
   return (
@@ -130,6 +145,19 @@ export function SendIcon({ size = 18 }: IconProps) {
 export function ChevronDownIcon({ size = 20 }: IconProps) {
   return (
     <ChevronDown
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Upward chevron — paired with ChevronDownIcon for list reordering. */
+export function ChevronUpIcon({ size = 20 }: IconProps) {
+  return (
+    <ChevronUp
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}

@@ -1188,6 +1188,7 @@ export function TablePanel({
                     <FocusPulse
                       x={tk.x}
                       y={tk.y}
+                      token={tk}
                       grid={tabletop.grid}
                       scale={stageScale}
                       phase={pulse.phase}
@@ -1375,6 +1376,8 @@ export function TablePanel({
           onAddNpcDef={session.addNpcDef}
           onUpdateNpcDef={session.updateNpcDef}
           onRemoveNpcDef={session.removeNpcDef}
+          onReorderNpcDef={session.reorderNpcDef}
+          onReorderToken={session.reorderToken}
           onPlaceNpcFromLibrary={session.placeNpcFromLibrary}
           placedTokens={placedTokens}
           onRemoveToken={session.removeToken}
@@ -1571,31 +1574,22 @@ function TokenPopover({
         </button>
       </header>
       {token.kind === 'gm' && (
-        <>
-          <label className="tabletop-token-popover-row">
-            <span>{t('tabletop.tokenEdit.label')}</span>
-            <input
-              type="text"
-              value={labelDraft}
-              maxLength={32}
-              onChange={(e) => setLabelDraft(e.target.value)}
-              onBlur={commitLabel}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  commitLabel()
-                  ;(e.target as HTMLInputElement).blur()
-                }
-              }}
-            />
-          </label>
-          <button
-            type="button"
-            className="tabletop-toolbar-button outline"
-            onClick={() => setImagePickerOpen(true)}
-          >
-            {t('tabletop.tokenEdit.changeImage')}
-          </button>
-        </>
+        <label className="tabletop-token-popover-row">
+          <span>{t('tabletop.tokenEdit.label')}</span>
+          <input
+            type="text"
+            value={labelDraft}
+            maxLength={32}
+            onChange={(e) => setLabelDraft(e.target.value)}
+            onBlur={commitLabel}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                commitLabel()
+                ;(e.target as HTMLInputElement).blur()
+              }
+            }}
+          />
+        </label>
       )}
       <div className="tabletop-token-popover-row">
         <span>{t('tabletop.tokenEdit.size')}</span>
@@ -1622,6 +1616,17 @@ function TokenPopover({
           })}
         </div>
       </div>
+      {/* Action buttons below the size picker — same placement for GM
+          (change image) and PC (character info) tokens. */}
+      {token.kind === 'gm' && (
+        <button
+          type="button"
+          className="tabletop-toolbar-button outline"
+          onClick={() => setImagePickerOpen(true)}
+        >
+          {t('tabletop.tokenEdit.changeImage')}
+        </button>
+      )}
       {token.kind === 'pc' && onEditCharacter && (
         <button
           type="button"
@@ -1758,6 +1763,9 @@ interface FocusPulseProps {
   /** Token centre, world coords. */
   x: number
   y: number
+  /** The token, read for its grid size so the ring scales to large
+   *  (2×2+) tokens instead of expanding from inside them. */
+  token: Token
   grid: Grid
   scale: number
   /** Animation progress 0..1. The component is mounted while phase < 1
@@ -1774,8 +1782,11 @@ interface FocusPulseProps {
  * Two concentric rings expand and fade with a cubic ease-out so the
  * motion feels like a quick "tap" rather than a slow throb.
  */
-function FocusPulse({ x, y, grid, scale, phase }: FocusPulseProps) {
-  const baseRadius = Math.max(8, grid.cellSize / 2 - 2)
+function FocusPulse({ x, y, token, grid, scale, phase }: FocusPulseProps) {
+  // Mirror TokenView's radius so the ring hugs the token's outer edge at
+  // every size. A single-cell ring would otherwise sit inside a 2×2+
+  // token instead of around it.
+  const baseRadius = Math.max(8, (grid.cellSize * tokenSize(token)) / 2 - 2)
   // Cubic ease-out — fast initial expansion that decelerates.
   const eased = 1 - Math.pow(1 - phase, 3)
   // World-coord stroke widths shrink with scale so the line stays

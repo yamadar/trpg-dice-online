@@ -292,7 +292,10 @@ export interface Session {
    * (the latter only when the image was supplied and failed to
    * decode; a name-only add cannot fail on image grounds).
    */
-  addNpcDef: (name: string, input?: File | string) => Promise<'ok' | 'unreadable'>
+  addNpcDef: (
+    name: string,
+    input?: File | string,
+  ) => Promise<string | 'unreadable'>
   /** GM-only: edit an NPC library entry's name / image. */
   updateNpcDef: (
     defId: string,
@@ -303,6 +306,16 @@ export interface Session {
    * map are left as-is — they carry their image inline.
    */
   removeNpcDef: (defId: string) => void
+  /** GM-only: move an NPC library entry / placed token up (-1) or down
+   *  (+1) within its list. */
+  reorderNpcDef: (defId: string, dir: -1 | 1) => void
+  reorderToken: (tokenId: string, dir: -1 | 1) => void
+  /** Host-only: re-sync the host's own placed PC tokens' snapshots from
+   *  the live character list so other players can render the host's
+   *  non-active characters. */
+  syncOwnTokenSnapshots: (
+    chars: ReadonlyArray<{ id: string; name: string; image?: string }>,
+  ) => void
   /**
    * GM-only: drop a fresh GmToken on the map sourced from the named
    * library entry. The image / label are copied so a later library
@@ -1344,14 +1357,15 @@ export function useSession(): Session {
     async (
       name: string,
       input?: File | string,
-    ): Promise<'ok' | 'unreadable'> => {
+    ): Promise<string | 'unreadable'> => {
       if (roleRef.current === 'client') return 'unreadable'
+      // Name may be blank: the add flow creates an empty entry and opens
+      // the editor focused on the name field. Image is optional too
+      // (attach later via `updateNpcDef`); when supplied, the pipeline
+      // still rejects unreadable bytes so a corrupted image cannot
+      // smuggle itself onto the wire under the wrong NPC. Returns the
+      // new entry's id so the caller can open it for editing.
       const trimmed = name.trim()
-      if (!trimmed) return 'unreadable'
-      // Image is optional: the new flow is "add by name, attach the
-      // portrait later via `updateNpcDef`". When supplied here, the
-      // pipeline still rejects unreadable bytes so a corrupted image
-      // doesn't smuggle itself onto the wire under the wrong NPC.
       let image = ''
       if (input !== undefined) {
         const prepared = await prepareNpcTokenImage(input)
@@ -1364,7 +1378,7 @@ export function useSession(): Session {
         npcLibrary: [...tabletopRef.current.npcLibrary, def],
       })
       roomRef.current?.broadcast({ t: 'npcDefUpsert', def })
-      return 'ok'
+      return def.id
     },
     [applyTabletop],
   )
@@ -1405,6 +1419,102 @@ export function useSession(): Session {
       roomRef.current?.broadcast({ t: 'npcDefRemove', defId })
     },
     [applyTabletop],
+  )
+
+  /**
+   * GM-only: move a library entry or a placed token up (-1) / down (+1)
+   * within its list. Reordering is a list-shape change with no dedicated
+   * wire message, so it rebroadcasts the whole tabletop via
+   * `tabletopState` (map bytes stripped — they travel on their own
+   * channel). No-op at the ends or for a client.
+   */
+  const reorderById = <T extends { id: string }>(
+    list: ReadonlyArray<T>,
+    id: string,
+    dir: -1 | 1,
+  ): T[] | null => {
+    const i = list.findIndex((x) => x.id === id)
+    if (i < 0) return null
+    const j = i + dir
+    if (j < 0 || j >= list.length) return null
+    const next = [...list]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    return next
+  }
+  const reorderNpcDef = useCallback(
+    (defId: string, dir: -1 | 1) => {
+      if (roleRef.current === 'client') return
+      const next = reorderById(tabletopRef.current.npcLibrary, defId, dir)
+      if (!next) return
+      const state: TabletopState = {
+        ...tabletopRef.current,
+        npcLibrary: next,
+      }
+      applyTabletop(state)
+      roomRef.current?.broadcast({
+        t: 'tabletopState',
+        state: stripMapBytesForWire(state),
+      })
+      // `tabletopState` clears the map's bytes on the wire; the client
+      // does a full replace, so without re-streaming the bytes a reorder
+      // would blank everyone's background map. Mirror the library-load /
+      // set-map path and push the chunks back out.
+      if (state.map?.dataUrl) broadcastMapAsChunks(state.map)
+    },
+    [applyTabletop, broadcastMapAsChunks],
+  )
+  const reorderToken = useCallback(
+    (tokenId: string, dir: -1 | 1) => {
+      if (roleRef.current === 'client') return
+      const next = reorderById(tabletopRef.current.tokens, tokenId, dir)
+      if (!next) return
+      const state: TabletopState = { ...tabletopRef.current, tokens: next }
+      applyTabletop(state)
+      roomRef.current?.broadcast({
+        t: 'tabletopState',
+        state: stripMapBytesForWire(state),
+      })
+      // See reorderNpcDef: re-stream the stripped map bytes so the
+      // client's full-state replace doesn't drop the background.
+      if (state.map?.dataUrl) broadcastMapAsChunks(state.map)
+    },
+    [applyTabletop, broadcastMapAsChunks],
+  )
+
+  /**
+   * Host-only: refresh the place-time `snapshot` (name + portrait) of the
+   * host's own placed PC tokens from the live character records, and
+   * broadcast each change. This is the channel by which OTHER players see
+   * the host's NON-active characters: `sessionCharacters` only ever
+   * carries each player's *active* character, so a token's snapshot is
+   * the only way a late-joining client can resolve a token bound to a
+   * character the host is not currently operating. Called whenever the
+   * local character list changes (name / portrait edits, new characters).
+   */
+  const syncOwnTokenSnapshots = useCallback(
+    (chars: ReadonlyArray<{ id: string; name: string; image?: string }>) => {
+      if (roleRef.current === 'client') return
+      const byId = new Map(chars.map((c) => [c.id, c]))
+      let changed = false
+      const next = tabletopRef.current.tokens.map((tok) => {
+        if (tok.kind !== 'pc' || tok.ownerPlayerId !== playerId) return tok
+        const c = byId.get(tok.characterId)
+        if (!c) return tok
+        const name = c.name
+        const image = c.image ?? ''
+        if (tok.snapshot?.name === name && tok.snapshot?.image === image) {
+          return tok
+        }
+        changed = true
+        const updated: Token = { ...tok, snapshot: { name, image } }
+        roomRef.current?.broadcast({ t: 'tokenUpsert', token: updated })
+        return updated
+      })
+      if (changed) {
+        applyTabletop({ ...tabletopRef.current, tokens: next })
+      }
+    },
+    [applyTabletop, playerId],
   )
 
   /**
@@ -3448,6 +3558,9 @@ export function useSession(): Session {
     addNpcDef,
     updateNpcDef,
     removeNpcDef,
+    reorderNpcDef,
+    reorderToken,
+    syncOwnTokenSnapshots,
     placeNpcFromLibrary,
     tabletopLibrary,
     saveTabletopAs,

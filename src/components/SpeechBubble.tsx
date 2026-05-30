@@ -68,7 +68,12 @@ export function SpeechBubble({
   // halfExtent` along each axis and take the smaller `t`.
   const tx = dirX !== 0 ? (w / 2) / Math.abs(dirX) : Infinity
   const ty = dirY !== 0 ? (h / 2) / Math.abs(dirY) : Infinity
-  const t = Math.min(tx, ty)
+  // Pull the base inward past the rounded corner so the bubble body
+  // (drawn on top) always covers the tail's base edge. Without the
+  // inset, diagonal directions land the base on a rounded corner where
+  // the body's fill is clipped away, leaving the triangle's flat base
+  // poking out from under the bubble.
+  const t = Math.max(0, Math.min(tx, ty) - radius)
   const baseCx = cx + dirX * t
   const baseCy = cy + dirY * t
   // Perpendicular vector for the base width.
@@ -82,25 +87,30 @@ export function SpeechBubble({
 
   return (
     <Group listening={false}>
-      {/* Tail first so the bubble's body overlaps the tail's base
-          edge — the tail disappears under the bubble cleanly. */}
-      <Line
-        points={[token.x, token.y, baseAx, baseAy, baseBx, baseBy]}
-        closed
-        fill="rgba(20, 20, 20, 0.92)"
-        stroke="rgba(255, 255, 255, 0.8)"
-        strokeWidth={stroke}
-      />
-      <Rect
-        x={cx - w / 2}
-        y={cy - h / 2}
-        width={w}
-        height={h}
-        cornerRadius={radius}
-        fill="rgba(20, 20, 20, 0.92)"
-        stroke="rgba(255, 255, 255, 0.8)"
-        strokeWidth={stroke}
-      />
+      {/* Only the dark tail + body fade together, at one shared opacity
+          on this inner Group, so their overlap never composites into a
+          darker seam. The text and border live OUTSIDE it and stay
+          fully opaque — folding the fade onto the outer Group would dim
+          the white chat text too. Tail first so the body (drawn on top)
+          overlaps the tail's base; the tail carries no stroke so its
+          slanted sides just extend the body's fill toward the token. */}
+      <Group opacity={0.92}>
+        <Line
+          points={[token.x, token.y, baseAx, baseAy, baseBx, baseBy]}
+          closed
+          fill="rgb(20, 20, 20)"
+        />
+        <Rect
+          x={cx - w / 2}
+          y={cy - h / 2}
+          width={w}
+          height={h}
+          cornerRadius={radius}
+          fill="rgb(20, 20, 20)"
+          stroke="rgba(255, 255, 255, 0.8)"
+          strokeWidth={stroke}
+        />
+      </Group>
       <Text
         x={cx - w / 2 + padding}
         y={cy - h / 2 + padding}
