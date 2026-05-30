@@ -255,6 +255,13 @@ export function TableToolbar({
   //                      cancelling an in-flight crop.
   //   `cropSrc`        - the picked image while the crop dialog is up.
   const [editingNpcId, setEditingNpcId] = useState<string | null>(null)
+  // An NPC created via the "+" button starts nameless; its id is parked
+  // here until a non-blank name is committed (see the editor's
+  // `onChangeName`). If the editor closes while the id is still parked,
+  // the add was abandoned before naming and the entry is dropped —
+  // otherwise it would linger as a nameless ghost in the library and be
+  // broadcast to every client.
+  const provisionalNpcIdRef = useRef<string | null>(null)
   const [imageTargetNpcId, setImageTargetNpcId] = useState<string | null>(null)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
   // The "image picker" dialog is the new top-level entrypoint for
@@ -482,6 +489,19 @@ export function TableToolbar({
       return
     }
     setEditingNpcId(result)
+    // Park the id: this entry stays provisional until a name is committed.
+    provisionalNpcIdRef.current = result
+  }
+
+  // Close the NPC editor, discarding a still-nameless entry created via
+  // "+". `provisionalNpcIdRef` is cleared the instant a name is committed
+  // (see `onChangeName` below), so a non-null value here means the add
+  // was abandoned before naming.
+  const closeNpcEditor = () => {
+    const provisional = provisionalNpcIdRef.current
+    if (provisional) onRemoveNpcDef(provisional)
+    provisionalNpcIdRef.current = null
+    setEditingNpcId(null)
   }
 
   /** Result handler for the unified `ImagePickerDialog`. Uploaded
@@ -550,6 +570,9 @@ export function TableToolbar({
     })
     if (!ok) return
     onRemoveNpcDef(def.id)
+    if (provisionalNpcIdRef.current === def.id) {
+      provisionalNpcIdRef.current = null
+    }
     if (editingNpcId === def.id) setEditingNpcId(null)
   }
 
@@ -1311,7 +1334,7 @@ export function TableToolbar({
             <div className="npc-edit-layer" role="presentation">
               <div
                 className="char-info-backdrop"
-                onClick={() => setEditingNpcId(null)}
+                onClick={closeNpcEditor}
                 aria-hidden="true"
               />
               <div
@@ -1319,11 +1342,19 @@ export function TableToolbar({
                 onClick={(e) => e.stopPropagation()}
               >
                 <NpcInlineEditor
+                  key={def.id}
                   def={def}
-                  onChangeName={(name) => onUpdateNpcDef(def.id, { name })}
+                  onChangeName={(name) => {
+                    // A committed name promotes this entry out of the
+                    // provisional state, so it survives the editor close.
+                    if (provisionalNpcIdRef.current === def.id) {
+                      provisionalNpcIdRef.current = null
+                    }
+                    onUpdateNpcDef(def.id, { name })
+                  }}
                   onChangeImage={() => handleSetNpcImage(def.id)}
                   onRemove={() => void handleNpcDelete(def)}
-                  onClose={() => setEditingNpcId(null)}
+                  onClose={closeNpcEditor}
                 />
               </div>
             </div>

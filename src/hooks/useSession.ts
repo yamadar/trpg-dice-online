@@ -1455,8 +1455,13 @@ export function useSession(): Session {
         t: 'tabletopState',
         state: stripMapBytesForWire(state),
       })
+      // `tabletopState` clears the map's bytes on the wire; the client
+      // does a full replace, so without re-streaming the bytes a reorder
+      // would blank everyone's background map. Mirror the library-load /
+      // set-map path and push the chunks back out.
+      if (state.map?.dataUrl) broadcastMapAsChunks(state.map)
     },
-    [applyTabletop],
+    [applyTabletop, broadcastMapAsChunks],
   )
   const reorderToken = useCallback(
     (tokenId: string, dir: -1 | 1) => {
@@ -1469,8 +1474,11 @@ export function useSession(): Session {
         t: 'tabletopState',
         state: stripMapBytesForWire(state),
       })
+      // See reorderNpcDef: re-stream the stripped map bytes so the
+      // client's full-state replace doesn't drop the background.
+      if (state.map?.dataUrl) broadcastMapAsChunks(state.map)
     },
-    [applyTabletop],
+    [applyTabletop, broadcastMapAsChunks],
   )
 
   /**

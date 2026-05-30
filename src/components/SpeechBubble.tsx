@@ -86,28 +86,31 @@ export function SpeechBubble({
   const baseBy = baseCy - perpY * pHalf
 
   return (
-    <Group listening={false} opacity={0.92}>
-      {/* Tail first so the bubble body (drawn on top) overlaps the
-          tail's base — the tail then reads as part of the bubble. The
-          shapes are opaque and the Group fades them together, so the
-          overlap never composites into a darker seam. The tail carries
-          no stroke: its base hides under the body and its slanted sides
-          simply extend the body's fill toward the token. */}
-      <Line
-        points={[token.x, token.y, baseAx, baseAy, baseBx, baseBy]}
-        closed
-        fill="rgb(20, 20, 20)"
-      />
-      <Rect
-        x={cx - w / 2}
-        y={cy - h / 2}
-        width={w}
-        height={h}
-        cornerRadius={radius}
-        fill="rgb(20, 20, 20)"
-        stroke="rgba(255, 255, 255, 0.8)"
-        strokeWidth={stroke}
-      />
+    <Group listening={false}>
+      {/* Only the dark tail + body fade together, at one shared opacity
+          on this inner Group, so their overlap never composites into a
+          darker seam. The text and border live OUTSIDE it and stay
+          fully opaque — folding the fade onto the outer Group would dim
+          the white chat text too. Tail first so the body (drawn on top)
+          overlaps the tail's base; the tail carries no stroke so its
+          slanted sides just extend the body's fill toward the token. */}
+      <Group opacity={0.92}>
+        <Line
+          points={[token.x, token.y, baseAx, baseAy, baseBx, baseBy]}
+          closed
+          fill="rgb(20, 20, 20)"
+        />
+        <Rect
+          x={cx - w / 2}
+          y={cy - h / 2}
+          width={w}
+          height={h}
+          cornerRadius={radius}
+          fill="rgb(20, 20, 20)"
+          stroke="rgba(255, 255, 255, 0.8)"
+          strokeWidth={stroke}
+        />
+      </Group>
       <Text
         x={cx - w / 2 + padding}
         y={cy - h / 2 + padding}
