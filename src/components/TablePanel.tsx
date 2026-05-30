@@ -968,10 +968,10 @@ export function TablePanel({
     () =>
       tabletop.tokens.map((token) => ({
         token,
-        portrait: portraitForToken(token, session),
-        label: labelForToken(token, session),
+        portrait: portraitForToken(token, session, characters),
+        label: labelForToken(token, session, characters),
       })),
-    [tabletop.tokens, session],
+    [tabletop.tokens, session, characters],
   )
 
   /**
@@ -1144,8 +1144,8 @@ export function TablePanel({
                   draggable={
                     tool === 'select' && canMoveToken(token, tokenActor)
                   }
-                  portrait={portraitForToken(token, session)}
-                  label={labelForToken(token, session)}
+                  portrait={portraitForToken(token, session, characters)}
+                  label={labelForToken(token, session, characters)}
                   // For non-GM viewers, fade the tokens they cannot
                   // move so they can tell at a glance which are theirs
                   // to operate. GMs always see full opacity (every
@@ -1638,11 +1638,28 @@ function MapImage({
 }
 
 /** Resolve the portrait to render on a token, or `undefined`. */
-function portraitForToken(token: Token, session: Session): string | undefined {
+function portraitForToken(
+  token: Token,
+  session: Session,
+  myCharacters: ReadonlyArray<Character>,
+): string | undefined {
   if (token.kind === 'pc') {
+    // The local player's own PC tokens resolve from the live local
+    // character record, NOT `sessionCharacters`. The latter only ever
+    // holds the player's *active* character, so switching the operating
+    // character prunes the previous character's key — which would drop
+    // the portrait of every token the player already placed (the
+    // place-time snapshot is not always present, e.g. tokens restored
+    // from IndexedDB or placed before the portrait was set). Reading the
+    // local record keeps all of the player's tokens showing their
+    // current portrait regardless of which character is active.
+    if (token.ownerPlayerId === session.playerId && token.characterId) {
+      const mine = myCharacters.find((c) => c.id === token.characterId)
+      if (mine) return mine.image || undefined
+    }
     const key = characterImagesKey(token.ownerPlayerId, token.characterId)
-    // Prefer the live record so a portrait edit on the active character
-    // propagates instantly; fall back to the token's place-time
+    // Other players' tokens: prefer the live shared record so a portrait
+    // edit propagates instantly; fall back to the token's place-time
     // snapshot for non-active characters (which never land in
     // sessionCharacters), keeping the second-and-onwards-character
     // tokens visible.
@@ -1664,8 +1681,18 @@ function portraitForToken(token: Token, session: Session): string | undefined {
  * a fallback for non-active characters. Returns `undefined` for tokens
  * with no usable label so the renderer can skip drawing it.
  */
-function labelForToken(token: Token, session: Session): string | undefined {
+function labelForToken(
+  token: Token,
+  session: Session,
+  myCharacters: ReadonlyArray<Character>,
+): string | undefined {
   if (token.kind === 'gm') return token.label || undefined
+  // Own PC tokens read the live local character name (see
+  // portraitForToken) so the label survives an operating-character swap.
+  if (token.ownerPlayerId === session.playerId && token.characterId) {
+    const mine = myCharacters.find((c) => c.id === token.characterId)
+    if (mine) return mine.name || undefined
+  }
   const key = characterImagesKey(token.ownerPlayerId, token.characterId)
   const record = session.sessionCharacters[key]
   if (record) {
