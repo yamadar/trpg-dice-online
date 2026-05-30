@@ -310,6 +310,12 @@ export interface Session {
    *  (+1) within its list. */
   reorderNpcDef: (defId: string, dir: -1 | 1) => void
   reorderToken: (tokenId: string, dir: -1 | 1) => void
+  /** Host-only: re-sync the host's own placed PC tokens' snapshots from
+   *  the live character list so other players can render the host's
+   *  non-active characters. */
+  syncOwnTokenSnapshots: (
+    chars: ReadonlyArray<{ id: string; name: string; image?: string }>,
+  ) => void
   /**
    * GM-only: drop a fresh GmToken on the map sourced from the named
    * library entry. The image / label are copied so a later library
@@ -1465,6 +1471,42 @@ export function useSession(): Session {
       })
     },
     [applyTabletop],
+  )
+
+  /**
+   * Host-only: refresh the place-time `snapshot` (name + portrait) of the
+   * host's own placed PC tokens from the live character records, and
+   * broadcast each change. This is the channel by which OTHER players see
+   * the host's NON-active characters: `sessionCharacters` only ever
+   * carries each player's *active* character, so a token's snapshot is
+   * the only way a late-joining client can resolve a token bound to a
+   * character the host is not currently operating. Called whenever the
+   * local character list changes (name / portrait edits, new characters).
+   */
+  const syncOwnTokenSnapshots = useCallback(
+    (chars: ReadonlyArray<{ id: string; name: string; image?: string }>) => {
+      if (roleRef.current === 'client') return
+      const byId = new Map(chars.map((c) => [c.id, c]))
+      let changed = false
+      const next = tabletopRef.current.tokens.map((tok) => {
+        if (tok.kind !== 'pc' || tok.ownerPlayerId !== playerId) return tok
+        const c = byId.get(tok.characterId)
+        if (!c) return tok
+        const name = c.name
+        const image = c.image ?? ''
+        if (tok.snapshot?.name === name && tok.snapshot?.image === image) {
+          return tok
+        }
+        changed = true
+        const updated: Token = { ...tok, snapshot: { name, image } }
+        roomRef.current?.broadcast({ t: 'tokenUpsert', token: updated })
+        return updated
+      })
+      if (changed) {
+        applyTabletop({ ...tabletopRef.current, tokens: next })
+      }
+    },
+    [applyTabletop, playerId],
   )
 
   /**
@@ -3510,6 +3552,7 @@ export function useSession(): Session {
     removeNpcDef,
     reorderNpcDef,
     reorderToken,
+    syncOwnTokenSnapshots,
     placeNpcFromLibrary,
     tabletopLibrary,
     saveTabletopAs,
