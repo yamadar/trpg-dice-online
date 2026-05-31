@@ -96,6 +96,7 @@ export const vi: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'Đã cập nhật ảnh NPC',
   'tabletop.npcLibrary.edit': 'Sửa NPC',
   'tabletop.npcLibrary.editTitle': 'Sửa NPC',
+  'tabletop.npcLibrary.newTitle': 'NPC mới',
   'tabletop.npcLibrary.nameLabel': 'Tên',
   'tabletop.npcLibrary.confirmDelete': 'Xoá "{name}" khỏi thư viện NPC?',
   'tabletop.placedTokens.title': 'Token đã đặt',

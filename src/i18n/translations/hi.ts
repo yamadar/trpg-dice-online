@@ -96,6 +96,7 @@ export const hi: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'NPC छवि अपडेट हुई',
   'tabletop.npcLibrary.edit': 'NPC संपादित करें',
   'tabletop.npcLibrary.editTitle': 'NPC संपादित करें',
+  'tabletop.npcLibrary.newTitle': 'नया NPC',
   'tabletop.npcLibrary.nameLabel': 'नाम',
   'tabletop.npcLibrary.confirmDelete': 'NPC लाइब्रेरी से "{name}" हटाएँ?',
   'tabletop.placedTokens.title': 'रखे गए टोकन',

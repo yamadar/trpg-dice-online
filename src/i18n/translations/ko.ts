@@ -96,6 +96,7 @@ export const ko: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'NPC 이미지를 업데이트했습니다',
   'tabletop.npcLibrary.edit': 'NPC 편집',
   'tabletop.npcLibrary.editTitle': 'NPC 편집',
+  'tabletop.npcLibrary.newTitle': '새 NPC',
   'tabletop.npcLibrary.nameLabel': '이름',
   'tabletop.npcLibrary.confirmDelete': 'NPC 라이브러리에서 "{name}"을(를) 삭제할까요?',
   'tabletop.placedTokens.title': '배치된 토큰',

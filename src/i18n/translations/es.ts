@@ -96,6 +96,7 @@ export const es: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'Imagen del PNJ actualizada',
   'tabletop.npcLibrary.edit': 'Editar PNJ',
   'tabletop.npcLibrary.editTitle': 'Editar PNJ',
+  'tabletop.npcLibrary.newTitle': 'Nuevo PNJ',
   'tabletop.npcLibrary.nameLabel': 'Nombre',
   'tabletop.npcLibrary.confirmDelete': '¿Eliminar «{name}» de la biblioteca de PNJ?',
   'tabletop.placedTokens.title': 'Fichas colocadas',

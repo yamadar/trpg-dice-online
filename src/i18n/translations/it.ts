@@ -96,6 +96,7 @@ export const it: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'Immagine PNG aggiornata',
   'tabletop.npcLibrary.edit': 'Modifica PNG',
   'tabletop.npcLibrary.editTitle': 'Modifica PNG',
+  'tabletop.npcLibrary.newTitle': 'Nuovo PNG',
   'tabletop.npcLibrary.nameLabel': 'Nome',
   'tabletop.npcLibrary.confirmDelete': 'Eliminare "{name}" dalla libreria PNG?',
   'tabletop.placedTokens.title': 'Segnalini posizionati',

@@ -262,6 +262,11 @@ export function TableToolbar({
   // otherwise it would linger as a nameless ghost in the library and be
   // broadcast to every client.
   const provisionalNpcIdRef = useRef<string | null>(null)
+  // The entry the editor is showing as a brand-new add (via "+"), so its
+  // title reads "New NPC". Unlike the provisional ref above this persists
+  // until the editor closes, so the title stays put after the first name
+  // commit (the ref clears on commit, this does not).
+  const [newNpcId, setNewNpcId] = useState<string | null>(null)
   const [imageTargetNpcId, setImageTargetNpcId] = useState<string | null>(null)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
   // The "image picker" dialog is the new top-level entrypoint for
@@ -491,6 +496,7 @@ export function TableToolbar({
     setEditingNpcId(result)
     // Park the id: this entry stays provisional until a name is committed.
     provisionalNpcIdRef.current = result
+    setNewNpcId(result)
   }
 
   // Close the NPC editor, discarding a still-nameless entry created via
@@ -501,6 +507,7 @@ export function TableToolbar({
     const provisional = provisionalNpcIdRef.current
     if (provisional) onRemoveNpcDef(provisional)
     provisionalNpcIdRef.current = null
+    setNewNpcId(null)
     setEditingNpcId(null)
   }
 
@@ -1344,6 +1351,7 @@ export function TableToolbar({
                 <NpcInlineEditor
                   key={def.id}
                   def={def}
+                  isNew={newNpcId === def.id}
                   onChangeName={(name) => {
                     // A committed name promotes this entry out of the
                     // provisional state, so it survives the editor close.
@@ -1407,6 +1415,9 @@ function ReorderControls({
 
 interface NpcInlineEditorProps {
   def: NpcDef
+  /** True when the entry was just created via "+", so the card titles
+   *  itself "New NPC" instead of "Edit NPC". */
+  isNew: boolean
   /** Commit a new name for the entry. Called on blur / Enter so a
    *  typing burst is a single network update. */
   onChangeName: (name: string) => void
@@ -1429,6 +1440,7 @@ interface NpcInlineEditorProps {
  */
 function NpcInlineEditor({
   def,
+  isNew,
   onChangeName,
   onChangeImage,
   onRemove,
@@ -1455,7 +1467,11 @@ function NpcInlineEditor({
     <div className="tabletop-toolbar-editor">
       <header className="tabletop-toolbar-editor-header">
         <span className="tabletop-toolbar-editor-title">
-          {t('tabletop.npcLibrary.editTitle')}
+          {t(
+            isNew
+              ? 'tabletop.npcLibrary.newTitle'
+              : 'tabletop.npcLibrary.editTitle',
+          )}
         </span>
         <button
           type="button"

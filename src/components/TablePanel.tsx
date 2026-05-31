@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Circle,
   Group,
@@ -1286,6 +1287,11 @@ export function TablePanel({
                 ? () => setEditingCharacterId(selectedToken.characterId)
                 : undefined
             }
+            characterName={
+              selectedToken.kind === 'pc'
+                ? labelForToken(selectedToken, session, characters)
+                : undefined
+            }
           />
         )}
         {/* Character-info modal opened from a PC token's popover. Edits
@@ -1499,6 +1505,9 @@ interface TokenPopoverProps {
   /** PC-only: open the character-info modal for the token's bound
    *  character. Absent for GM tokens (which have no character record). */
   onEditCharacter?: () => void
+  /** PC-only: the bound character's display name, shown read-only above
+   *  the size picker (mirrors the GM token's editable label row). */
+  characterName?: string
 }
 
 /**
@@ -1518,6 +1527,7 @@ function TokenPopover({
   onChangeSize,
   onRemove,
   onEditCharacter,
+  characterName,
 }: TokenPopoverProps) {
   const [imagePickerOpen, setImagePickerOpen] = useState(false)
   const { t } = useI18n()
@@ -1591,6 +1601,14 @@ function TokenPopover({
           />
         </label>
       )}
+      {token.kind === 'pc' && (
+        <div className="tabletop-token-popover-row">
+          <span>{t('character.name')}</span>
+          <span className="tabletop-token-popover-value">
+            {characterName || t('tabletop.placedTokens.unnamed')}
+          </span>
+        </div>
+      )}
       <div className="tabletop-token-popover-row">
         <span>{t('tabletop.tokenEdit.size')}</span>
         <div
@@ -1644,17 +1662,24 @@ function TokenPopover({
         <TrashIcon />
         <span>{t('tabletop.tokenEdit.remove')}</span>
       </button>
-      {token.kind === 'gm' && (
-        <ImagePickerDialog
-          open={imagePickerOpen}
-          onClose={() => setImagePickerOpen(false)}
-          // GM tokens are usually monsters / props, so default the
-          // tab to monster — but keep characters available too in
-          // case the GM is staging an NPC.
-          mode="both"
-          onPick={(file) => handleImagePicked(file)}
-        />
-      )}
+      {/* Portalled to <body>: this popover sets `transform`, which would
+          otherwise become the containing block for the dialog's
+          position:fixed layer and shrink it to the popover's 220px width.
+          Rendering at the document root restores the full-screen size,
+          matching the NPC-library editor's picker. */}
+      {token.kind === 'gm' &&
+        createPortal(
+          <ImagePickerDialog
+            open={imagePickerOpen}
+            onClose={() => setImagePickerOpen(false)}
+            // GM tokens are usually monsters / props, so default the
+            // tab to monster — but keep characters available too in
+            // case the GM is staging an NPC.
+            mode="both"
+            onPick={(file) => handleImagePicked(file)}
+          />,
+          document.body,
+        )}
     </div>
   )
 }

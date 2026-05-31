@@ -96,6 +96,7 @@ export const pl: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'Obraz NPC zaktualizowany',
   'tabletop.npcLibrary.edit': 'Edytuj NPC',
   'tabletop.npcLibrary.editTitle': 'Edytuj NPC',
+  'tabletop.npcLibrary.newTitle': 'Nowy NPC',
   'tabletop.npcLibrary.nameLabel': 'Imię',
   'tabletop.npcLibrary.confirmDelete': 'Usunąć „{name}” z biblioteki NPC?',
   'tabletop.placedTokens.title': 'Umieszczone znaczniki',

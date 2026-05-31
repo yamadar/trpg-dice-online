@@ -96,6 +96,7 @@ export const th: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'อัปเดตรูป NPC แล้ว',
   'tabletop.npcLibrary.edit': 'แก้ไข NPC',
   'tabletop.npcLibrary.editTitle': 'แก้ไข NPC',
+  'tabletop.npcLibrary.newTitle': 'NPC ใหม่',
   'tabletop.npcLibrary.nameLabel': 'ชื่อ',
   'tabletop.npcLibrary.confirmDelete': 'ลบ "{name}" จากคลัง NPC?',
   'tabletop.placedTokens.title': 'โทเคนที่วางไว้',
