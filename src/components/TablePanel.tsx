@@ -48,6 +48,7 @@ import { CharacterInfoModal } from './CharacterInfoModal'
 import { ChatIcon, CloseIcon, DiceIcon, TrashIcon } from './icons'
 import { ImagePickerDialog } from './ImagePickerDialog'
 import { Sheet } from './Sheet'
+import { DiceRollAnimation } from './DiceRollAnimation'
 import { SpeechBubble } from './SpeechBubble'
 import { TabletopDock } from './TabletopDock'
 import { TabletopTutorial } from './TabletopTutorial'
@@ -414,6 +415,43 @@ export function TablePanel({
     })
     return () => timers.forEach((t) => window.clearTimeout(t))
   }, [bubbles])
+
+  // Dice-roll animation: a die tumbles out of the roller's operating-
+  // character token when a new roll lands. Mirrors the speech-bubble
+  // trigger (derive from the latest roll during render), anchored to the
+  // PC token for (playerId, characterId). Rolls "as the player" (no
+  // character) or from players without a placed token are silent. Each
+  // entry removes itself via the component's onDone.
+  const [diceRolls, setDiceRolls] = useState<
+    Array<{ key: string; tokenId: string }>
+  >([])
+  const [lastSeenRollAnimId, setLastSeenRollAnimId] = useState<string | null>(
+    () =>
+      session.history.length > 0
+        ? session.history[session.history.length - 1].id
+        : null,
+  )
+  const latestRoll =
+    session.history.length > 0
+      ? session.history[session.history.length - 1]
+      : null
+  if (latestRoll && latestRoll.id !== lastSeenRollAnimId) {
+    setLastSeenRollAnimId(latestRoll.id)
+    if (latestRoll.characterId !== '') {
+      const token = tabletop.tokens.find(
+        (tk) =>
+          tk.kind === 'pc' &&
+          tk.ownerPlayerId === latestRoll.playerId &&
+          tk.characterId === latestRoll.characterId,
+      )
+      if (token) {
+        setDiceRolls((prev) => [
+          ...prev,
+          { key: latestRoll.id, tokenId: token.id },
+        ])
+      }
+    }
+  }
   // Mirrors the wire-level permission: a non-host can drag their own
   // PC tokens; a host (or offline sandbox) can drag anything. Wrapped
   // here so the `draggable` prop on each `TokenView` reads it
@@ -1220,6 +1258,28 @@ export function TablePanel({
                       offsetX={b.offsetX}
                       offsetY={b.offsetY}
                       scale={stageScale}
+                    />
+                  )
+                })}
+              </Layer>
+            )}
+            {/* Dice-roll tumbles — above tokens, below text/fog, never
+                intercepting pointer events. */}
+            {diceRolls.length > 0 && (
+              <Layer listening={false}>
+                {diceRolls.map((d) => {
+                  const tk = tabletop.tokens.find((t) => t.id === d.tokenId)
+                  if (!tk) return null
+                  return (
+                    <DiceRollAnimation
+                      key={d.key}
+                      token={tk}
+                      scale={stageScale}
+                      onDone={() =>
+                        setDiceRolls((prev) =>
+                          prev.filter((p) => p.key !== d.key),
+                        )
+                      }
                     />
                   )
                 })}

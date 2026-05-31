@@ -622,6 +622,13 @@
 .tabletop-toolbar-help {
   position: relative;
   margin-top: 14px;
+  /* The tutorial is a secondary affordance — keep it muted so it does
+     not compete with the primary tools, but brighten on interaction. */
+  opacity: 0.5;
+}
+.tabletop-toolbar-help:hover,
+.tabletop-toolbar-help:focus-visible {
+  opacity: 1;
 }
 .tabletop-toolbar-help::before {
   content: '';

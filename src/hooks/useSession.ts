@@ -52,6 +52,7 @@ import {
   newNpcDefId,
   newSavedTabletopId,
   newTokenId,
+  TOKEN_SIZES,
   type FogState,
   type Grid,
   type MapBackground,
@@ -751,6 +752,11 @@ export function useSession(): Session {
   const lastHostMsgRef = useRef(0)
   /** Host only: connected clients keyed by their PeerJS peer id. */
   const peerPlayersRef = useRef(new Map<string, Player>())
+  // PC `playerId|characterId` pairs whose token was deliberately removed
+  // (by the owner or the GM). `ensurePcTokens` skips re-adding these so a
+  // removed token does not resurrect on the next join / identity change.
+  // Cleared when the pair is explicitly (re)placed.
+  const removedPcKeysRef = useRef(new Set<string>())
   /** Host only: last time each client peer was heard from. */
   const lastSeenRef = useRef(new Map<string, number>())
   const roomRef = useRef<RoomManager | null>(null)
@@ -1171,8 +1177,16 @@ export function useSession(): Session {
         roomRef.current?.sendToHost({ t: 'tokenRemoveRequest', tokenId })
         return
       }
+      const removed = tabletopRef.current.tokens.find((t) => t.id === tokenId)
       const tokens = applyTokenRemove(tabletopRef.current.tokens, tokenId)
       if (tokens === tabletopRef.current.tokens) return
+      // Tombstone a removed PC token so the auto-placer does not bring it
+      // back; GM tokens are never auto-placed, so they need no tombstone.
+      if (removed?.kind === 'pc') {
+        removedPcKeysRef.current.add(
+          `${removed.ownerPlayerId}|${removed.characterId}`,
+        )
+      }
       applyTabletop({ ...tabletopRef.current, tokens })
       roomRef.current?.broadcast({ t: 'tokenRemove', tokenId })
     },
@@ -1190,6 +1204,9 @@ export function useSession(): Session {
   const addPlayerToken = useCallback(
     (target: { id: string; characterId: string }) => {
       if (roleRef.current === 'client') return
+      // Explicit (re)placement clears any tombstone so a later removal
+      // can re-tombstone cleanly.
+      removedPcKeysRef.current.delete(`${target.id}|${target.characterId}`)
       const plans = planPcTokenAdds(
         [{ id: target.id, characterId: target.characterId }],
         tabletopRef.current.tokens,
@@ -2087,6 +2104,9 @@ export function useSession(): Session {
       roster,
       tabletopRef.current.tokens,
       tabletopRef.current,
+    ).filter(
+      (t) =>
+        !removedPcKeysRef.current.has(`${t.ownerPlayerId}|${t.characterId}`),
     )
     if (plans.length === 0) return
     // Stamp a name snapshot from the roster so a freshly-joined client
@@ -2280,6 +2300,10 @@ export function useSession(): Session {
           )
           if (!token) break
           if (!canMoveToken(token, { playerId: sender.id, isHost: false })) break
+          // `msg.size` is typed TokenSize but arrives untrusted over the
+          // wire; reject anything outside the allowed set so a bad client
+          // can't persist an out-of-spec size into authoritative state.
+          if (!(TOKEN_SIZES as ReadonlyArray<number>).includes(msg.size)) break
           const snapped = snapToGridForSize(
             token.x,
             token.y,
@@ -2307,6 +2331,11 @@ export function useSession(): Session {
           if (!canMoveToken(token, { playerId: sender.id, isHost: false })) break
           const tokens = applyTokenRemove(tabletopRef.current.tokens, msg.tokenId)
           if (tokens === tabletopRef.current.tokens) break
+          if (token.kind === 'pc') {
+            removedPcKeysRef.current.add(
+              `${token.ownerPlayerId}|${token.characterId}`,
+            )
+          }
           applyTabletop({ ...tabletopRef.current, tokens })
           roomRef.current?.broadcast({ t: 'tokenRemove', tokenId: msg.tokenId })
           break
@@ -2328,6 +2357,9 @@ export function useSession(): Session {
               t.characterId === msg.characterId,
           )
           if (has) break
+          // Explicit placement clears any tombstone so the auto-placer
+          // manages this pair again after a future removal.
+          removedPcKeysRef.current.delete(`${sender.id}|${msg.characterId}`)
           const cell = tabletop.grid.cellSize
           const index = tabletop.tokens.length
           // Shared default-placement rule (see `defaultPlacementOrigin`):
