@@ -9,6 +9,7 @@ import type {
   NpcDef,
   TabletopState,
   Token,
+  TokenSize,
 } from '../tabletop/types'
 
 export interface Player {
@@ -167,6 +168,13 @@ export type ClientMessage =
   | { t: 'drawStrokeAddRequest'; stroke: DrawStroke }
   /** Any participant asks the host to drop a stroke they own. */
   | { t: 'drawStrokeRemoveRequest'; id: string }
+  /** A participant asks the host to resize a token they can operate
+   *  (their own PC token; the GM can resize any). The host validates
+   *  `canMoveToken` before applying + broadcasting the resized token. */
+  | { t: 'tokenSizeRequest'; tokenId: string; size: TokenSize }
+  /** A participant asks the host to remove a token they can operate.
+   *  Validated with `canMoveToken` like the resize request. */
+  | { t: 'tokenRemoveRequest'; tokenId: string }
 
 /** Messages a host sends to clients. */
 export type HostMessage =

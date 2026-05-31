@@ -1301,7 +1301,11 @@ export function TablePanel({
             onChangeNote={(note) =>
               session.updateGmToken(selectedToken.id, { note })
             }
-            readOnly={!canEdit}
+            // Editable when the viewer can operate the token (the GM for
+            // any token; a player for their own PC token). Otherwise
+            // read-only with a "who can operate" line. Token edits route
+            // through the host, which re-validates `canMoveToken`.
+            readOnly={!canMoveToken(selectedToken, tokenActor)}
             players={session.players}
           />
         )}

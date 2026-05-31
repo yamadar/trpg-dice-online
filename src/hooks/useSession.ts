@@ -1164,11 +1164,13 @@ export function useSession(): Session {
    */
   const removeToken = useCallback(
     (tokenId: string) => {
-      // GM-only: players are deliberately not allowed to delete their
-      // own PC tokens — they move them via drag, the GM cleans up.
-      // A client call is a silent no-op; the UI already gates the
-      // popover behind `canEdit` so this is defence-in-depth.
-      if (roleRef.current === 'client') return
+      // A non-host owner can remove a token they can operate (their own
+      // PC token): forward to the host, which validates `canMoveToken`
+      // and broadcasts the removal. The host removes any token directly.
+      if (roleRef.current === 'client') {
+        roomRef.current?.sendToHost({ t: 'tokenRemoveRequest', tokenId })
+        return
+      }
       const tokens = applyTokenRemove(tabletopRef.current.tokens, tokenId)
       if (tokens === tabletopRef.current.tokens) return
       applyTabletop({ ...tabletopRef.current, tokens })
@@ -1334,7 +1336,13 @@ export function useSession(): Session {
    */
   const setTokenSize = useCallback(
     (tokenId: string, size: TokenSize) => {
-      if (roleRef.current === 'client') return
+      // A non-host owner can resize a token they can operate (their own
+      // PC token): forward the request to the host, which validates
+      // `canMoveToken` and echoes the resized token back via tokenUpsert.
+      if (roleRef.current === 'client') {
+        roomRef.current?.sendToHost({ t: 'tokenSizeRequest', tokenId, size })
+        return
+      }
       const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
       if (!existing) return
       const snapped = snapToGridForSize(
@@ -2081,12 +2089,26 @@ export function useSession(): Session {
       tabletopRef.current,
     )
     if (plans.length === 0) return
+    // Stamp a name snapshot from the roster so a freshly-joined client
+    // renders each token's label / initial right away, before the
+    // owner's character lands in `sessionCharacters`. The portrait still
+    // resolves live; the snapshot image stays '' so it never masks a
+    // real portrait that arrives later.
+    const nameByKey = new Map(
+      roster.map((p) => [`${p.id}|${p.characterId}`, p.characterName]),
+    )
+    const stamped = plans.map((tok) => {
+      const name = nameByKey
+        .get(`${tok.ownerPlayerId}|${tok.characterId}`)
+        ?.trim()
+      return name ? { ...tok, snapshot: { name, image: '' } } : tok
+    })
     const next: TabletopState = {
       ...tabletopRef.current,
-      tokens: [...tabletopRef.current.tokens, ...plans],
+      tokens: [...tabletopRef.current.tokens, ...stamped],
     }
     applyTabletop(next)
-    for (const token of plans) {
+    for (const token of stamped) {
       roomRef.current?.broadcast({ t: 'tokenUpsert', token })
     }
   }, [applyTabletop, buildRoster])
@@ -2246,6 +2268,47 @@ export function useSession(): Session {
             x: msg.x,
             y: msg.y,
           })
+          break
+        }
+        case 'tokenSizeRequest': {
+          // Same host-authoritative ownership check as tokenMove: a
+          // client may resize only a token it can operate.
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const token = tabletopRef.current.tokens.find(
+            (t) => t.id === msg.tokenId,
+          )
+          if (!token) break
+          if (!canMoveToken(token, { playerId: sender.id, isHost: false })) break
+          const snapped = snapToGridForSize(
+            token.x,
+            token.y,
+            msg.size,
+            tabletopRef.current.grid,
+          )
+          const next: Token = {
+            ...token,
+            size: msg.size,
+            x: snapped.x,
+            y: snapped.y,
+          }
+          const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
+          applyTabletop({ ...tabletopRef.current, tokens })
+          roomRef.current?.broadcast({ t: 'tokenUpsert', token: next })
+          break
+        }
+        case 'tokenRemoveRequest': {
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const token = tabletopRef.current.tokens.find(
+            (t) => t.id === msg.tokenId,
+          )
+          if (!token) break
+          if (!canMoveToken(token, { playerId: sender.id, isHost: false })) break
+          const tokens = applyTokenRemove(tabletopRef.current.tokens, msg.tokenId)
+          if (tokens === tabletopRef.current.tokens) break
+          applyTabletop({ ...tabletopRef.current, tokens })
+          roomRef.current?.broadcast({ t: 'tokenRemove', tokenId: msg.tokenId })
           break
         }
         case 'pcTokenPlaceRequest': {
