@@ -82,6 +82,10 @@ export interface GmToken {
   image: string
   /** Optional label rendered under the token. */
   label?: string
+  /** GM-only free-text note (not rendered on the map). Copied from the
+   *  source `NpcDef.note` at placement time, then edited independently
+   *  of the library entry. Missing = no note. */
+  note?: string
   /** Token size in grid cells. Missing = default (1). */
   size?: TokenSize
 }
@@ -155,6 +159,10 @@ export interface NpcDef {
   name: string
   /** NPC token image as a base64 data URL (≤ ~200 KB). */
   image: string
+  /** GM-only free-text note. Copied onto a `GmToken.note` when the
+   *  entry is placed; the placed copy is then edited independently.
+   *  Missing = no note. */
+  note?: string
 }
 
 /**

@@ -954,6 +954,17 @@
   color: var(--text);
   font: inherit;
 }
+/* NPC library note (multi-line, vertically resizable). */
+.tabletop-toolbar-editor-note {
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+  min-height: 48px;
+}
 /* NPC edit popup layer. Like `.char-info-layer` but one notch BELOW the
    ImagePickerDialog (z-index 65) so "change image" opens its picker on
    top of this popup rather than behind it. */
@@ -1066,6 +1077,24 @@
   border-radius: 6px;
   color: var(--text);
   word-break: break-word;
+}
+/* GM/NPC token note (editable, host only). Same box as the label input
+   above, but multi-line and vertically resizable. */
+.tabletop-token-popover-note {
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+  min-height: 48px;
+}
+/* "GM and Player 1 can operate" line in the read-only token dialog. */
+.tabletop-token-popover-operators {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
 }
 
 /* --- Tabletop tools palette ---

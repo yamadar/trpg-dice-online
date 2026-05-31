@@ -275,7 +275,7 @@ export interface Session {
    */
   updateGmToken: (
     tokenId: string,
-    updates: { label?: string; image?: string },
+    updates: { label?: string; image?: string; note?: string },
   ) => void
   /** GM-only: change a token's grid size. Re-snaps the token's
    *  position to the appropriate cell anchor for the new size so
@@ -296,10 +296,10 @@ export interface Session {
     name: string,
     input?: File | string,
   ) => Promise<string | 'unreadable'>
-  /** GM-only: edit an NPC library entry's name / image. */
+  /** GM-only: edit an NPC library entry's name / image / note. */
   updateNpcDef: (
     defId: string,
-    updates: { name?: string; image?: string },
+    updates: { name?: string; image?: string; note?: string },
   ) => void
   /**
    * GM-only: remove an NPC from the library. Placed instances on the
@@ -1294,21 +1294,30 @@ export function useSession(): Session {
    * A non-GM token id is a silent no-op.
    */
   const updateGmToken = useCallback(
-    (tokenId: string, updates: { label?: string; image?: string }) => {
+    (
+      tokenId: string,
+      updates: { label?: string; image?: string; note?: string },
+    ) => {
       if (roleRef.current === 'client') return
       const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
       if (!existing || existing.kind !== 'gm') return
       const nextLabel =
         updates.label === undefined ? existing.label : updates.label.trim()
+      const nextNote =
+        updates.note === undefined ? existing.note : updates.note.trim()
       const next: Token = {
         ...existing,
         ...(updates.image !== undefined ? { image: updates.image } : {}),
         ...(nextLabel ? { label: nextLabel } : {}),
+        ...(nextNote ? { note: nextNote } : {}),
       }
-      // When label is explicitly cleared, drop it from the token shape
-      // (the renderer keys off "label is present" rather than truthy).
+      // When label / note is explicitly cleared, drop it from the token
+      // shape (the renderer / UI key off "field is present").
       if (updates.label !== undefined && !nextLabel && 'label' in next) {
         delete (next as { label?: string }).label
+      }
+      if (updates.note !== undefined && !nextNote && 'note' in next) {
+        delete (next as { note?: string }).note
       }
       const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
       applyTabletop({ ...tabletopRef.current, tokens })
@@ -1386,17 +1395,26 @@ export function useSession(): Session {
   /** GM-only: edit a library entry's name or image (does NOT touch
    *  already-placed instances). */
   const updateNpcDef = useCallback(
-    (defId: string, updates: { name?: string; image?: string }) => {
+    (
+      defId: string,
+      updates: { name?: string; image?: string; note?: string },
+    ) => {
       if (roleRef.current === 'client') return
       const existing = tabletopRef.current.npcLibrary.find((d) => d.id === defId)
       if (!existing) return
       const nextName =
         updates.name === undefined ? existing.name : updates.name.trim()
       if (!nextName) return
+      const nextNote =
+        updates.note === undefined ? existing.note : updates.note.trim()
       const next: NpcDef = {
         ...existing,
         name: nextName,
         ...(updates.image !== undefined ? { image: updates.image } : {}),
+        ...(nextNote ? { note: nextNote } : {}),
+      }
+      if (updates.note !== undefined && !nextNote && 'note' in next) {
+        delete (next as { note?: string }).note
       }
       applyTabletop({
         ...tabletopRef.current,
@@ -1686,6 +1704,9 @@ export function useSession(): Session {
         y: pos.y,
         image: def.image,
         label: def.name,
+        // Copy the library note onto the placed token. From here the two
+        // diverge — editing one does not affect the other.
+        ...(def.note?.trim() ? { note: def.note.trim() } : {}),
       }
       applyTabletop({
         ...tabletopRef.current,
