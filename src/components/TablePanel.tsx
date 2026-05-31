@@ -453,6 +453,11 @@ export function TablePanel({
       if (!(target instanceof Element)) return
       if (target.closest('.tabletop-token-popover')) return
       if (target.closest('.konvajs-content')) return
+      // The image picker is portalled to <body> (out of the popover's
+      // transformed subtree), so a click inside it would otherwise read
+      // as "outside the popover" and close it — taking the picker with
+      // it. Treat any click within the picker / gallery layer as inside.
+      if (target.closest('.map-gallery-layer')) return
       setSelectedTokenId(null)
     }
     document.addEventListener('pointerdown', onPointerDown)

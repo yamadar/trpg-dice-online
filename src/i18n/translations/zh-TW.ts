@@ -207,6 +207,7 @@ export const zhTW: Dict = {
   'tabletop.imagePicker.monsterDesc': 'Pick from the trpg-chara-image-organizer monster library',
   'tabletop.imagePicker.choose': 'Choose file…',
   'tabletop.imagePicker.applying': 'Applying…',
+  'tabletop.imagePicker.use': '使用此圖片',
   'tabletop.imagePicker.loading': 'Loading library…',
   'tabletop.imagePicker.loadFailed': 'Could not load the library.',
   'tabletop.imagePicker.fetchFailed': 'Could not fetch the image.',

@@ -70,6 +70,14 @@ interface Props {
 
 type Tab = 'upload' | 'character' | 'monster'
 
+/** A chosen-but-not-yet-applied selection. Library picks and uploads
+ *  both stage here so the footer "Use this image" button is the single
+ *  apply path (matching the map gallery): a single click only selects,
+ *  it never applies. */
+type Pending =
+  | { kind: 'library'; item: LibraryItem }
+  | { kind: 'upload'; file: File; url: string }
+
 /** Convert a remote image URL into a synthetic `File`. The Lightbox
  *  / `prepareNpcTokenImage` pipelines need a `File` to drive their
  *  data-URL conversion; fetching the bytes here also lets us bail
@@ -123,6 +131,9 @@ export function ImagePickerDialog({ open, onClose, mode, onPick }: Props) {
   )
   const [expandedCat, setExpandedCat] = useState<CharaCategory | null>(null)
   const [applying, setApplying] = useState(false)
+  // The staged selection (library item or uploaded file). Applied only
+  // when the user confirms via the footer "Use this image" button.
+  const [pending, setPending] = useState<Pending | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const closeBtnRef = useRef<HTMLButtonElement | null>(null)
@@ -194,26 +205,49 @@ export function ImagePickerDialog({ open, onClose, mode, onPick }: Props) {
     setCharaSelected(emptyCharaSelection())
     setMonsterSelected(emptyMonsterSelection())
     setExpandedCat(null)
+    setPending((prev) => {
+      if (prev?.kind === 'upload') URL.revokeObjectURL(prev.url)
+      return null
+    })
     onClose()
   }, [onClose])
 
-  /** Hand a chosen library item to the caller. Wraps the URL fetch
-   *  in the same `inFlightPickRef` cancellation pattern as the
-   *  map-gallery picker so closing mid-fetch doesn't trip a delayed
-   *  upsert. */
-  const handlePickItem = useCallback(
-    async (item: LibraryItem) => {
-      if (!manifest) return
+  /** Switch source tab, dropping any staged selection — it belonged to
+   *  the tab the user just left. */
+  const chooseTab = useCallback((next: Tab) => {
+    setTab(next)
+    setPending((prev) => {
+      if (prev?.kind === 'upload') URL.revokeObjectURL(prev.url)
+      return null
+    })
+  }, [])
+
+  /** Apply a staged selection — a library item or an uploaded file —
+   *  then close. The single apply path for every tab, driven by the
+   *  footer "Use this image" button (and double-click on a library
+   *  card). The selection is passed in (not read from `pending` via
+   *  closure) so a double-click handler can stage-and-apply in one go
+   *  without seeing a stale value. Wrapped in the same `inFlightPickRef`
+   *  cancellation pattern as the map-gallery picker so closing
+   *  mid-fetch doesn't trip a delayed upsert. */
+  const applyPending = useCallback(
+    async (sel: Pending | null) => {
+      if (!sel) return
       inFlightPickRef.current = true
       setApplying(true)
       try {
-        const file = await fetchUrlAsFile(itemUrl(item, manifest))
-        if (!inFlightPickRef.current) return
-        if (!file) {
-          setErrorKey('tabletop.imagePicker.fetchFailed')
-          return
+        if (sel.kind === 'upload') {
+          await onPick(sel.file, { fromLibrary: false })
+        } else {
+          if (!manifest) return
+          const file = await fetchUrlAsFile(itemUrl(sel.item, manifest))
+          if (!inFlightPickRef.current) return
+          if (!file) {
+            setErrorKey('tabletop.imagePicker.fetchFailed')
+            return
+          }
+          await onPick(file, { fromLibrary: true })
         }
-        await onPick(file, { fromLibrary: true })
         if (!inFlightPickRef.current) return
         handleClose()
       } finally {
@@ -225,22 +259,19 @@ export function ImagePickerDialog({ open, onClose, mode, onPick }: Props) {
   )
 
   const handleFile = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       e.target.value = ''
       if (!file) return
-      inFlightPickRef.current = true
-      setApplying(true)
-      try {
-        await onPick(file, { fromLibrary: false })
-        if (!inFlightPickRef.current) return
-        handleClose()
-      } finally {
-        setApplying(false)
-        inFlightPickRef.current = false
-      }
+      // Stage the file (with a preview URL) instead of applying — the
+      // footer "Use this image" confirms it. Revoke a prior staged
+      // upload first so we don't leak object URLs.
+      setPending((prev) => {
+        if (prev?.kind === 'upload') URL.revokeObjectURL(prev.url)
+        return { kind: 'upload', file, url: URL.createObjectURL(file) }
+      })
     },
-    [onPick, handleClose],
+    [],
   )
 
   const filteredCharacters = useMemo(() => {
@@ -365,7 +396,7 @@ export function ImagePickerDialog({ open, onClose, mode, onPick }: Props) {
             aria-label={t('tabletop.imagePicker.upload')}
             title={t('tabletop.imagePicker.upload')}
             className={`tabletop-map-source-tab${tab === 'upload' ? ' active' : ''}`}
-            onClick={() => setTab('upload')}
+            onClick={() => chooseTab('upload')}
           >
             <ImageUpIcon size={18} />
           </button>
@@ -377,7 +408,7 @@ export function ImagePickerDialog({ open, onClose, mode, onPick }: Props) {
               aria-label={t('tabletop.imagePicker.character')}
               title={t('tabletop.imagePicker.character')}
               className={`tabletop-map-source-tab${tab === 'character' ? ' active' : ''}`}
-              onClick={() => setTab('character')}
+              onClick={() => chooseTab('character')}
             >
               {/* Reuse "image-search" glyph for parity with the
                   gallery-picker tab — it's still "browse a set of
@@ -393,7 +424,7 @@ export function ImagePickerDialog({ open, onClose, mode, onPick }: Props) {
               aria-label={t('tabletop.imagePicker.monster')}
               title={t('tabletop.imagePicker.monster')}
               className={`tabletop-map-source-tab${tab === 'monster' ? ' active' : ''}`}
-              onClick={() => setTab('monster')}
+              onClick={() => chooseTab('monster')}
             >
               <MonsterTabIcon />
             </button>
@@ -436,15 +467,25 @@ export function ImagePickerDialog({ open, onClose, mode, onPick }: Props) {
                 style={{ display: 'none' }}
                 onChange={handleFile}
               />
+              {pending?.kind === 'upload' && (
+                <img
+                  src={pending.url}
+                  alt=""
+                  style={{
+                    maxWidth: 200,
+                    maxHeight: 200,
+                    borderRadius: 8,
+                    objectFit: 'contain',
+                  }}
+                />
+              )}
               <button
                 type="button"
                 className="tabletop-toolbar-button"
                 disabled={applying}
                 onClick={() => fileInputRef.current?.click()}
               >
-                {applying
-                  ? t('tabletop.imagePicker.applying')
-                  : t('tabletop.imagePicker.choose')}
+                {t('tabletop.imagePicker.choose')}
               </button>
             </div>
           </div>
@@ -562,36 +603,65 @@ export function ImagePickerDialog({ open, onClose, mode, onPick }: Props) {
             )}
 
             <div className="map-gallery-grid">
-              {activeList.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="map-gallery-item"
-                  aria-label={itemDisplayLabel(item, lang, manifest)}
-                  disabled={applying}
-                  onClick={() => void handlePickItem(item)}
-                  title={itemDisplayLabel(item, lang, manifest)}
-                  style={{ border: 'none' }}
-                >
-                  {manifest && (
-                    <img
-                      src={itemUrl(item, manifest)}
-                      alt=""
-                      loading="lazy"
-                      className="map-gallery-thumb"
-                    />
-                  )}
-                  <span className="map-gallery-item-name">
-                    {itemDisplayLabel(item, lang, manifest)}
-                  </span>
-                </button>
-              ))}
+              {activeList.map((item) => {
+                const isPicked =
+                  pending?.kind === 'library' && pending.item.id === item.id
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`map-gallery-item${isPicked ? ' picked' : ''}`}
+                    aria-label={itemDisplayLabel(item, lang, manifest)}
+                    aria-pressed={isPicked}
+                    disabled={applying}
+                    // Single click only selects; the footer "Use this
+                    // image" applies. Double-click is the power-user
+                    // shortcut (select + apply in one).
+                    onClick={() => setPending({ kind: 'library', item })}
+                    onDoubleClick={() => {
+                      const sel: Pending = { kind: 'library', item }
+                      setPending(sel)
+                      void applyPending(sel)
+                    }}
+                    title={itemDisplayLabel(item, lang, manifest)}
+                  >
+                    {manifest && (
+                      <img
+                        src={itemUrl(item, manifest)}
+                        alt=""
+                        loading="lazy"
+                        className="map-gallery-thumb"
+                      />
+                    )}
+                    <span className="map-gallery-item-name">
+                      {itemDisplayLabel(item, lang, manifest)}
+                    </span>
+                  </button>
+                )
+              })}
               {!loading && !errorKey && manifest && activeList.length === 0 && (
                 <p className="map-gallery-empty">{t('tabletop.gallery.empty')}</p>
               )}
             </div>
           </>
         )}
+        <footer className="map-gallery-footer">
+          <div className="map-gallery-actions">
+            <button type="button" onClick={handleClose}>
+              {t('tabletop.gallery.cancel')}
+            </button>
+            <button
+              type="button"
+              className="primary"
+              disabled={!pending || applying}
+              onClick={() => void applyPending(pending)}
+            >
+              {applying
+                ? t('tabletop.imagePicker.applying')
+                : t('tabletop.imagePicker.use')}
+            </button>
+          </div>
+        </footer>
       </div>
     </div>
   )
