@@ -207,6 +207,7 @@ export const ko: Dict = {
   'tabletop.imagePicker.monsterDesc': 'Pick from the trpg-chara-image-organizer monster library',
   'tabletop.imagePicker.choose': 'Choose file…',
   'tabletop.imagePicker.applying': 'Applying…',
+  'tabletop.imagePicker.use': '이 이미지 사용',
   'tabletop.imagePicker.loading': 'Loading library…',
   'tabletop.imagePicker.loadFailed': 'Could not load the library.',
   'tabletop.imagePicker.fetchFailed': 'Could not fetch the image.',

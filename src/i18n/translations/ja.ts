@@ -207,6 +207,7 @@ export const ja: Dict = {
   'tabletop.imagePicker.monsterDesc': 'trpg-chara-image-organizer のモンスター画像から選ぶ',
   'tabletop.imagePicker.choose': '画像を選ぶ…',
   'tabletop.imagePicker.applying': '適用中…',
+  'tabletop.imagePicker.use': 'この画像を使う',
   'tabletop.imagePicker.loading': '読み込み中…',
   'tabletop.imagePicker.loadFailed': 'ライブラリを読み込めませんでした',
   'tabletop.imagePicker.fetchFailed': '画像を取得できませんでした',
