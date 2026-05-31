@@ -96,6 +96,7 @@ export const id: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'Gambar NPC diperbarui',
   'tabletop.npcLibrary.edit': 'Edit NPC',
   'tabletop.npcLibrary.editTitle': 'Edit NPC',
+  'tabletop.npcLibrary.newTitle': 'NPC Baru',
   'tabletop.npcLibrary.nameLabel': 'Nama',
   'tabletop.npcLibrary.confirmDelete': 'Hapus "{name}" dari pustaka NPC?',
   'tabletop.placedTokens.title': 'Token terpasang',

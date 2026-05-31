@@ -96,6 +96,7 @@ export const zhCN: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'NPC 图片已更新',
   'tabletop.npcLibrary.edit': '编辑 NPC',
   'tabletop.npcLibrary.editTitle': '编辑 NPC',
+  'tabletop.npcLibrary.newTitle': '新建 NPC',
   'tabletop.npcLibrary.nameLabel': '名称',
   'tabletop.npcLibrary.confirmDelete': '从 NPC 库中删除「{name}」？',
   'tabletop.placedTokens.title': '已放置棋子',

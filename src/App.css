@@ -1056,6 +1056,17 @@
   color: var(--text);
   font: inherit;
 }
+/* Read-only value (PC token's character name): same box as the GM
+   label input above so the two rows read as one consistent control,
+   but static — no focus affordance. */
+.tabletop-token-popover-value {
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  word-break: break-word;
+}
 
 /* --- Tabletop tools palette ---
    Floating left-side toolbar that picks the active tool (select,

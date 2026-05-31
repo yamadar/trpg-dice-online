@@ -96,6 +96,7 @@ export const tr: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'NPC görseli güncellendi',
   'tabletop.npcLibrary.edit': 'NPC düzenle',
   'tabletop.npcLibrary.editTitle': 'NPC düzenle',
+  'tabletop.npcLibrary.newTitle': 'Yeni NPC',
   'tabletop.npcLibrary.nameLabel': 'Ad',
   'tabletop.npcLibrary.confirmDelete': '«{name}» NPC kütüphaneden silinsin mi?',
   'tabletop.placedTokens.title': 'Yerleştirilen jetonlar',

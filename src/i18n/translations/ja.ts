@@ -96,6 +96,7 @@ export const ja: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'NPC の画像を更新しました',
   'tabletop.npcLibrary.edit': 'NPC を編集',
   'tabletop.npcLibrary.editTitle': 'NPC を編集',
+  'tabletop.npcLibrary.newTitle': 'NPC を作成',
   'tabletop.npcLibrary.nameLabel': '名前',
   'tabletop.npcLibrary.confirmDelete': 'NPC ライブラリから「{name}」を削除しますか？',
   'tabletop.placedTokens.title': '配置済みトークン',

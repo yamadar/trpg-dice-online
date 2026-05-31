@@ -96,6 +96,7 @@ export const ptBR: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'Imagem do NPC atualizada',
   'tabletop.npcLibrary.edit': 'Editar NPC',
   'tabletop.npcLibrary.editTitle': 'Editar NPC',
+  'tabletop.npcLibrary.newTitle': 'Novo NPC',
   'tabletop.npcLibrary.nameLabel': 'Nome',
   'tabletop.npcLibrary.confirmDelete': 'Excluir "{name}" da biblioteca de NPCs?',
   'tabletop.placedTokens.title': 'Fichas no mapa',

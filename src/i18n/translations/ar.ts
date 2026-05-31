@@ -96,6 +96,7 @@ export const ar: Dict = {
   'tabletop.npcLibrary.imageUpdated': 'تم تحديث صورة NPC',
   'tabletop.npcLibrary.edit': 'تعديل NPC',
   'tabletop.npcLibrary.editTitle': 'تعديل NPC',
+  'tabletop.npcLibrary.newTitle': 'NPC جديد',
   'tabletop.npcLibrary.nameLabel': 'الاسم',
   'tabletop.npcLibrary.confirmDelete': 'هل تريد حذف «{name}» من مكتبة NPC؟',
   'tabletop.placedTokens.title': 'الرموز الموضوعة',
