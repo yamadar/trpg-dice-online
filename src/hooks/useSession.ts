@@ -52,6 +52,7 @@ import {
   newNpcDefId,
   newSavedTabletopId,
   newTokenId,
+  TOKEN_SIZES,
   type FogState,
   type Grid,
   type MapBackground,
@@ -275,7 +276,7 @@ export interface Session {
    */
   updateGmToken: (
     tokenId: string,
-    updates: { label?: string; image?: string },
+    updates: { label?: string; image?: string; note?: string },
   ) => void
   /** GM-only: change a token's grid size. Re-snaps the token's
    *  position to the appropriate cell anchor for the new size so
@@ -296,10 +297,10 @@ export interface Session {
     name: string,
     input?: File | string,
   ) => Promise<string | 'unreadable'>
-  /** GM-only: edit an NPC library entry's name / image. */
+  /** GM-only: edit an NPC library entry's name / image / note. */
   updateNpcDef: (
     defId: string,
-    updates: { name?: string; image?: string },
+    updates: { name?: string; image?: string; note?: string },
   ) => void
   /**
    * GM-only: remove an NPC from the library. Placed instances on the
@@ -751,6 +752,11 @@ export function useSession(): Session {
   const lastHostMsgRef = useRef(0)
   /** Host only: connected clients keyed by their PeerJS peer id. */
   const peerPlayersRef = useRef(new Map<string, Player>())
+  // PC `playerId|characterId` pairs whose token was deliberately removed
+  // (by the owner or the GM). `ensurePcTokens` skips re-adding these so a
+  // removed token does not resurrect on the next join / identity change.
+  // Cleared when the pair is explicitly (re)placed.
+  const removedPcKeysRef = useRef(new Set<string>())
   /** Host only: last time each client peer was heard from. */
   const lastSeenRef = useRef(new Map<string, number>())
   const roomRef = useRef<RoomManager | null>(null)
@@ -1164,13 +1170,23 @@ export function useSession(): Session {
    */
   const removeToken = useCallback(
     (tokenId: string) => {
-      // GM-only: players are deliberately not allowed to delete their
-      // own PC tokens — they move them via drag, the GM cleans up.
-      // A client call is a silent no-op; the UI already gates the
-      // popover behind `canEdit` so this is defence-in-depth.
-      if (roleRef.current === 'client') return
+      // A non-host owner can remove a token they can operate (their own
+      // PC token): forward to the host, which validates `canMoveToken`
+      // and broadcasts the removal. The host removes any token directly.
+      if (roleRef.current === 'client') {
+        roomRef.current?.sendToHost({ t: 'tokenRemoveRequest', tokenId })
+        return
+      }
+      const removed = tabletopRef.current.tokens.find((t) => t.id === tokenId)
       const tokens = applyTokenRemove(tabletopRef.current.tokens, tokenId)
       if (tokens === tabletopRef.current.tokens) return
+      // Tombstone a removed PC token so the auto-placer does not bring it
+      // back; GM tokens are never auto-placed, so they need no tombstone.
+      if (removed?.kind === 'pc') {
+        removedPcKeysRef.current.add(
+          `${removed.ownerPlayerId}|${removed.characterId}`,
+        )
+      }
       applyTabletop({ ...tabletopRef.current, tokens })
       roomRef.current?.broadcast({ t: 'tokenRemove', tokenId })
     },
@@ -1188,6 +1204,9 @@ export function useSession(): Session {
   const addPlayerToken = useCallback(
     (target: { id: string; characterId: string }) => {
       if (roleRef.current === 'client') return
+      // Explicit (re)placement clears any tombstone so a later removal
+      // can re-tombstone cleanly.
+      removedPcKeysRef.current.delete(`${target.id}|${target.characterId}`)
       const plans = planPcTokenAdds(
         [{ id: target.id, characterId: target.characterId }],
         tabletopRef.current.tokens,
@@ -1294,21 +1313,30 @@ export function useSession(): Session {
    * A non-GM token id is a silent no-op.
    */
   const updateGmToken = useCallback(
-    (tokenId: string, updates: { label?: string; image?: string }) => {
+    (
+      tokenId: string,
+      updates: { label?: string; image?: string; note?: string },
+    ) => {
       if (roleRef.current === 'client') return
       const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
       if (!existing || existing.kind !== 'gm') return
       const nextLabel =
         updates.label === undefined ? existing.label : updates.label.trim()
+      const nextNote =
+        updates.note === undefined ? existing.note : updates.note.trim()
       const next: Token = {
         ...existing,
         ...(updates.image !== undefined ? { image: updates.image } : {}),
         ...(nextLabel ? { label: nextLabel } : {}),
+        ...(nextNote ? { note: nextNote } : {}),
       }
-      // When label is explicitly cleared, drop it from the token shape
-      // (the renderer keys off "label is present" rather than truthy).
+      // When label / note is explicitly cleared, drop it from the token
+      // shape (the renderer / UI key off "field is present").
       if (updates.label !== undefined && !nextLabel && 'label' in next) {
         delete (next as { label?: string }).label
+      }
+      if (updates.note !== undefined && !nextNote && 'note' in next) {
+        delete (next as { note?: string }).note
       }
       const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
       applyTabletop({ ...tabletopRef.current, tokens })
@@ -1325,7 +1353,13 @@ export function useSession(): Session {
    */
   const setTokenSize = useCallback(
     (tokenId: string, size: TokenSize) => {
-      if (roleRef.current === 'client') return
+      // A non-host owner can resize a token they can operate (their own
+      // PC token): forward the request to the host, which validates
+      // `canMoveToken` and echoes the resized token back via tokenUpsert.
+      if (roleRef.current === 'client') {
+        roomRef.current?.sendToHost({ t: 'tokenSizeRequest', tokenId, size })
+        return
+      }
       const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
       if (!existing) return
       const snapped = snapToGridForSize(
@@ -1386,17 +1420,26 @@ export function useSession(): Session {
   /** GM-only: edit a library entry's name or image (does NOT touch
    *  already-placed instances). */
   const updateNpcDef = useCallback(
-    (defId: string, updates: { name?: string; image?: string }) => {
+    (
+      defId: string,
+      updates: { name?: string; image?: string; note?: string },
+    ) => {
       if (roleRef.current === 'client') return
       const existing = tabletopRef.current.npcLibrary.find((d) => d.id === defId)
       if (!existing) return
       const nextName =
         updates.name === undefined ? existing.name : updates.name.trim()
       if (!nextName) return
+      const nextNote =
+        updates.note === undefined ? existing.note : updates.note.trim()
       const next: NpcDef = {
         ...existing,
         name: nextName,
         ...(updates.image !== undefined ? { image: updates.image } : {}),
+        ...(nextNote ? { note: nextNote } : {}),
+      }
+      if (updates.note !== undefined && !nextNote && 'note' in next) {
+        delete (next as { note?: string }).note
       }
       applyTabletop({
         ...tabletopRef.current,
@@ -1686,6 +1729,9 @@ export function useSession(): Session {
         y: pos.y,
         image: def.image,
         label: def.name,
+        // Copy the library note onto the placed token. From here the two
+        // diverge — editing one does not affect the other.
+        ...(def.note?.trim() ? { note: def.note.trim() } : {}),
       }
       applyTabletop({
         ...tabletopRef.current,
@@ -2058,14 +2104,31 @@ export function useSession(): Session {
       roster,
       tabletopRef.current.tokens,
       tabletopRef.current,
+    ).filter(
+      (t) =>
+        !removedPcKeysRef.current.has(`${t.ownerPlayerId}|${t.characterId}`),
     )
     if (plans.length === 0) return
+    // Stamp a name snapshot from the roster so a freshly-joined client
+    // renders each token's label / initial right away, before the
+    // owner's character lands in `sessionCharacters`. The portrait still
+    // resolves live; the snapshot image stays '' so it never masks a
+    // real portrait that arrives later.
+    const nameByKey = new Map(
+      roster.map((p) => [`${p.id}|${p.characterId}`, p.characterName]),
+    )
+    const stamped = plans.map((tok) => {
+      const name = nameByKey
+        .get(`${tok.ownerPlayerId}|${tok.characterId}`)
+        ?.trim()
+      return name ? { ...tok, snapshot: { name, image: '' } } : tok
+    })
     const next: TabletopState = {
       ...tabletopRef.current,
-      tokens: [...tabletopRef.current.tokens, ...plans],
+      tokens: [...tabletopRef.current.tokens, ...stamped],
     }
     applyTabletop(next)
-    for (const token of plans) {
+    for (const token of stamped) {
       roomRef.current?.broadcast({ t: 'tokenUpsert', token })
     }
   }, [applyTabletop, buildRoster])
@@ -2227,6 +2290,56 @@ export function useSession(): Session {
           })
           break
         }
+        case 'tokenSizeRequest': {
+          // Same host-authoritative ownership check as tokenMove: a
+          // client may resize only a token it can operate.
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const token = tabletopRef.current.tokens.find(
+            (t) => t.id === msg.tokenId,
+          )
+          if (!token) break
+          if (!canMoveToken(token, { playerId: sender.id, isHost: false })) break
+          // `msg.size` is typed TokenSize but arrives untrusted over the
+          // wire; reject anything outside the allowed set so a bad client
+          // can't persist an out-of-spec size into authoritative state.
+          if (!(TOKEN_SIZES as ReadonlyArray<number>).includes(msg.size)) break
+          const snapped = snapToGridForSize(
+            token.x,
+            token.y,
+            msg.size,
+            tabletopRef.current.grid,
+          )
+          const next: Token = {
+            ...token,
+            size: msg.size,
+            x: snapped.x,
+            y: snapped.y,
+          }
+          const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
+          applyTabletop({ ...tabletopRef.current, tokens })
+          roomRef.current?.broadcast({ t: 'tokenUpsert', token: next })
+          break
+        }
+        case 'tokenRemoveRequest': {
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const token = tabletopRef.current.tokens.find(
+            (t) => t.id === msg.tokenId,
+          )
+          if (!token) break
+          if (!canMoveToken(token, { playerId: sender.id, isHost: false })) break
+          const tokens = applyTokenRemove(tabletopRef.current.tokens, msg.tokenId)
+          if (tokens === tabletopRef.current.tokens) break
+          if (token.kind === 'pc') {
+            removedPcKeysRef.current.add(
+              `${token.ownerPlayerId}|${token.characterId}`,
+            )
+          }
+          applyTabletop({ ...tabletopRef.current, tokens })
+          roomRef.current?.broadcast({ t: 'tokenRemove', tokenId: msg.tokenId })
+          break
+        }
         case 'pcTokenPlaceRequest': {
           // Host fills in `ownerPlayerId` from the connection's
           // identity — the client cannot spoof someone else's id.
@@ -2244,6 +2357,9 @@ export function useSession(): Session {
               t.characterId === msg.characterId,
           )
           if (has) break
+          // Explicit placement clears any tombstone so the auto-placer
+          // manages this pair again after a future removal.
+          removedPcKeysRef.current.delete(`${sender.id}|${msg.characterId}`)
           const cell = tabletop.grid.cellSize
           const index = tabletop.tokens.length
           // Shared default-placement rule (see `defaultPlacementOrigin`):

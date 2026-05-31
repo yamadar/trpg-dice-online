@@ -138,10 +138,10 @@ interface Props {
     name: string,
     input?: File | string,
   ) => Promise<string | 'unreadable'>
-  /** Edit an existing NPC's name or image. */
+  /** Edit an existing NPC's name / image / note. */
   onUpdateNpcDef: (
     defId: string,
-    updates: { name?: string; image?: string },
+    updates: { name?: string; image?: string; note?: string },
   ) => void
   onRemoveNpcDef: (defId: string) => void
   /** GM-only: reorder a library entry / placed token up (-1) or down
@@ -1360,6 +1360,7 @@ export function TableToolbar({
                     }
                     onUpdateNpcDef(def.id, { name })
                   }}
+                  onChangeNote={(note) => onUpdateNpcDef(def.id, { note })}
                   onChangeImage={() => handleSetNpcImage(def.id)}
                   onRemove={() => void handleNpcDelete(def)}
                   onClose={closeNpcEditor}
@@ -1421,6 +1422,8 @@ interface NpcInlineEditorProps {
   /** Commit a new name for the entry. Called on blur / Enter so a
    *  typing burst is a single network update. */
   onChangeName: (name: string) => void
+  /** Commit a new note (free text). Called on blur. */
+  onChangeNote: (note: string) => void
   /** Open the file picker for this NPC's portrait. The crop flow then
    *  runs through the parent's `handleCropConfirm`. */
   onChangeImage: () => void
@@ -1442,12 +1445,14 @@ function NpcInlineEditor({
   def,
   isNew,
   onChangeName,
+  onChangeNote,
   onChangeImage,
   onRemove,
   onClose,
 }: NpcInlineEditorProps) {
   const { t } = useI18n()
   const [nameDraft, setNameDraft] = useState(def.name)
+  const [noteDraft, setNoteDraft] = useState(def.note ?? '')
   const nameRef = useRef<HTMLInputElement>(null)
   // Focus (and select) the name on open so a freshly added blank NPC —
   // and any edit — is immediately ready for typing.
@@ -1462,6 +1467,10 @@ function NpcInlineEditor({
       return
     }
     if (trimmed !== def.name) onChangeName(trimmed)
+  }
+  const commitNote = () => {
+    if (noteDraft === (def.note ?? '')) return
+    onChangeNote(noteDraft)
   }
   return (
     <div className="tabletop-toolbar-editor">
@@ -1497,6 +1506,17 @@ function NpcInlineEditor({
               ;(e.target as HTMLInputElement).blur()
             }
           }}
+        />
+      </label>
+      <label className="tabletop-toolbar-editor-field">
+        <span>{t('tabletop.tokenEdit.note')}</span>
+        <textarea
+          className="tabletop-toolbar-editor-note"
+          value={noteDraft}
+          maxLength={500}
+          rows={3}
+          onChange={(e) => setNoteDraft(e.target.value)}
+          onBlur={commitNote}
         />
       </label>
       <button

@@ -96,16 +96,30 @@ function App() {
   // by `markChatRead`, fired from FeedList on auto-scroll / scroll-
   // to-bottom. `lastReadChatId` initialises to the current latest so
   // app-startup messages never appear as unread.
-  const [lastReadChatId, setLastReadChatId] = useState<string | null>(() =>
-    session.chat.length > 0 ? session.chat[session.chat.length - 1].id : null,
-  )
+  // Latest activity = the most recent of the last chat message and the
+  // last dice roll (by timestamp), so a roll lights the unread dot just
+  // like a chat does. (`lastReadChatId` keeps its name for minimal churn
+  // but now tracks chat-or-roll.)
+  const lastChatItem =
+    session.chat.length > 0 ? session.chat[session.chat.length - 1] : null
+  const lastRollItem =
+    session.history.length > 0
+      ? session.history[session.history.length - 1]
+      : null
   const latestChatId =
-    session.chat.length > 0 ? session.chat[session.chat.length - 1].id : null
+    lastChatItem && lastRollItem
+      ? lastChatItem.timestamp >= lastRollItem.timestamp
+        ? lastChatItem.id
+        : lastRollItem.id
+      : (lastChatItem ?? lastRollItem)?.id ?? null
+  const [lastReadChatId, setLastReadChatId] = useState<string | null>(
+    () => latestChatId,
+  )
   const hasUnreadChat =
     latestChatId !== null && latestChatId !== lastReadChatId
   const markChatRead = useCallback(() => {
-    setLastReadChatId(
-      (prev) => (latestChatId !== null ? latestChatId : prev),
+    setLastReadChatId((prev) =>
+      latestChatId !== null ? latestChatId : prev,
     )
   }, [latestChatId])
 
