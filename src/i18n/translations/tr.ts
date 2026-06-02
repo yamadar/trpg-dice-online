@@ -137,27 +137,27 @@ export const tr: Dict = {
   'tabletop.dock.dice': 'Zar',
   'tabletop.dock.returnToRoom': 'Odaya dön',
   'tabletop.help': 'Eğitim',
-  'tabletop.tutorial.welcome.title': 'Masaya hoş geldin',
+  'tabletop.tutorial.welcome.title': 'Oyun masasına hoş geldin',
   'tabletop.tutorial.welcome.body':
-    'Jetonları hareket ettir, işaretler çiz, savaş sisini yönet — masa, oturumunun paylaşılan tuvalidir. Hem masaüstünde hem mobilde rahat hissettirecek şekilde tasarlandı.',
-  'tabletop.tutorial.viewport.title': 'Haritayı hareket ettir ve yakınlaştır',
+    'Jetonları taşı, açıklamalar çiz, savaş sisini yönet — masa, oturumunuz için paylaşılan tuvalinizdir. Hem masaüstünde hem de mobilde çalışır.',
+  'tabletop.tutorial.viewport.title': 'Haritayı kaydır ve yakınlaştır',
   'tabletop.tutorial.viewport.body':
-    'Görüntüyü kaydırmak için boş alanı sürükle. Yakınlaştırmak için fare tekerleğini kaydır veya iki parmakla kıstır. Kimseyi rahatsız etmeden serbestçe dolaşabilirsin.',
-  'tabletop.tutorial.tools.title': 'Araç paleti (sol)',
+    'Görünümü kaydırmak için boş bir alanı sürükle. Yakınlaştırmak için fare tekerleğini kaydır ya da iki parmağınla sıkıştır (%25–%400). Görünümün bağımsızdır — başkalarının görünümünü değiştirmeden serbestçe gez.',
+  'tabletop.tutorial.tools.title': 'Araç paleti (solda)',
   'tabletop.tutorial.tools.body':
-    'Sol paletten Seç, Kalem, Metin veya Silgi’yi seç. Kalem ve Metin renk ve boyut ayarlamana izin verir. Sis fırçası (yalnız GM) GM’nin haritanın bölümlerini gizlemesine ve açmasına olanak tanır.',
-  'tabletop.tutorial.tokens.title': 'Jetonunu hareket ettir',
+    'Seç/sürükle, Kalem, Metin, Silgi. Kalem ve Metin renk ve boyut seçmene olanak tanır. Sis fırçası (yalnızca GM) hücreleri tek tek gizler veya açığa çıkarır.',
+  'tabletop.tutorial.tokens.title': 'Jetonlar — taşı, dokun, etkileşim kur',
   'tabletop.tutorial.tokens.body':
-    'Kendi karakterinin jetonunu sürükleyerek hareket ettir. Menüyü açmak için bir jetona dokun. (Yalnız GM: herhangi bir jetonu sürükle, adları ve etiketleri düzenle, haritadan jetonları kaldır.)',
+    'Kendi jetonunu taşımak için sürükle. Herhangi bir jetona dokunarak iletişim kutusunu aç: karakter bilgisini gör, paylaşılan notu oku ve yaz ve (kendi jetonun için) boyutlandır ya da kaldır. GM tüm jetonları düzenleyebilir.',
   'tabletop.tutorial.rightPanel.title': 'Sağ taraftaki panel',
   'tabletop.tutorial.rightPanel.body':
-    'Tüm harita yönetimi burada: yerleştirebileceğin jetonlar, ayrıca yalnız GM kategorileri — harita ve ızgara ayarları, sis kontrolü ve şablon / kayıt kütüphanesi.',
-  'tabletop.tutorial.dock.title': 'Alt dock',
+    '«Haritada» (vurgulamak için bir satıra tıkla) ve «Ekle / Hazırlık» (karakterini yerleştir, NPC kitaplığını yönet) görmek için jeton simgesine dokun. Yalnızca GM sekmeleri: harita ve ızgara, sis ve şablon/kayıt kitaplığı.',
+  'tabletop.tutorial.dock.title': 'Alt çubuk',
   'tabletop.tutorial.dock.body':
-    'Sohbet, karakter sayfan, zar atıcısı ve odaya geri dönüş yolu. Telefonlarda sohbet ve zar takas edilir (birer birer) — ve zar atınca sonucu görebilmen için seni sohbete geçirir.',
-  'tabletop.tutorial.help.title': 'Bu rehberi istediğin zaman yeniden aç',
+    'Sohbet, karakter sayfan ve zar atıcı. Zar atınca sohbet simgesinde okunmamış noktası belirir — hiçbir atış gözden kaçmaz. Telefonda sohbet ve zar tek yuvayı paylaşır ve zar atmak seni sohbete geçirir.',
+  'tabletop.tutorial.help.title': 'Bu kılavuzu istediğin zaman yeniden aç',
   'tabletop.tutorial.help.body':
-    'Sağ taraftaki menünün altındaki “?” düğmesi, tazeleme gerektiğinde bu turu yeniden açar.',
+    'Sağ panelin altındaki «?» düğmesi, hatırlatmaya ihtiyaç duyduğunda bu turu yeniden açar.',
   'tabletop.preset.title': 'Hazır harita',
   'tabletop.preset.choose': 'Bir hazır harita seç…',
   'tabletop.preset.load': 'Hazır haritayı yükle',

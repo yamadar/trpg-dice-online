@@ -137,27 +137,27 @@ export const fr: Dict = {
   'tabletop.dock.dice': 'Dés',
   'tabletop.dock.returnToRoom': 'Retour à la salle',
   'tabletop.help': 'Tutoriel',
-  'tabletop.tutorial.welcome.title': 'Bienvenue sur la table',
+  'tabletop.tutorial.welcome.title': 'Bienvenue sur la table de jeu',
   'tabletop.tutorial.welcome.body':
-    'Déplace les jetons, dessine des marqueurs, gère le brouillard de guerre — la table est ta toile partagée pour la session. Pensée pour bien fonctionner sur ordi comme sur mobile.',
-  'tabletop.tutorial.viewport.title': 'Bouger et zoomer la carte',
+    'Déplacez les jetons, dessinez des annotations, gérez le brouillard de guerre — la table est votre toile partagée pour la session. Fonctionne aussi bien sur ordinateur que sur mobile.',
+  'tabletop.tutorial.viewport.title': 'Déplacer et zoomer la carte',
   'tabletop.tutorial.viewport.body':
-    'Glisse un espace vide pour déplacer la vue. Utilise la molette ou pince à deux doigts pour zoomer. Tu peux explorer librement sans gêner personne.',
-  'tabletop.tutorial.tools.title': 'La palette d’outils (à gauche)',
+    'Faites glisser une zone vide pour vous déplacer. Utilisez la molette ou pincez à deux doigts pour zoomer (25 %–400 %). Votre vue est indépendante : déplacez-vous librement sans changer celle des autres.',
+  'tabletop.tutorial.tools.title': 'La palette d\'outils (à gauche)',
   'tabletop.tutorial.tools.body':
-    'Choisis Sélection, Stylo, Texte ou Gomme dans la palette de gauche. Le stylo et le texte permettent de régler couleur et taille. La brosse à brouillard (MJ uniquement) permet de cacher ou révéler des zones de la carte.',
-  'tabletop.tutorial.tokens.title': 'Déplacer ton jeton',
+    'Sélection/glisser, Stylo, Texte, Gomme. Le Stylo et le Texte vous laissent choisir la couleur et la taille. La brosse de brouillard (MJ uniquement) masque ou révèle les cases une à une.',
+  'tabletop.tutorial.tokens.title': 'Jetons — déplacer, toucher, interagir',
   'tabletop.tutorial.tokens.body':
-    'Glisse le jeton de ton personnage pour le déplacer. Touche un jeton pour ouvrir son menu. (MJ uniquement : déplace n’importe quel jeton, modifie noms et étiquettes, retire des jetons de la carte.)',
+    'Faites glisser votre propre jeton pour le déplacer. Touchez n\'importe quel jeton pour ouvrir sa boîte de dialogue : voir les infos du personnage, lire et écrire la note partagée et (pour votre propre jeton) le redimensionner ou le retirer. Le MJ peut modifier tous les jetons.',
   'tabletop.tutorial.rightPanel.title': 'Le panneau de droite',
   'tabletop.tutorial.rightPanel.body':
-    'Toute la gestion de la carte est ici : jetons à placer, plus des catégories réservées au MJ — réglages carte et grille, contrôle du brouillard, et la bibliothèque de modèles / sauvegardes.',
+    'Touchez l\'icône de jeton pour afficher « Sur la carte » (cliquez sur une ligne pour la mettre en avant) et « Ajouter / Préparer » (placez votre personnage, gérez la bibliothèque de PNJ). Onglets réservés au MJ : carte et grille, brouillard, et la bibliothèque de modèles/sauvegardes.',
   'tabletop.tutorial.dock.title': 'La barre du bas',
   'tabletop.tutorial.dock.body':
-    'Tchat, fiche de personnage, lanceur de dés, et le retour à la salle. Sur téléphone, tchat et dés alternent (un à la fois) — lancer les dés bascule sur le tchat pour voir le résultat.',
+    'Le chat, votre feuille de personnage et le lanceur de dés. Un lancer affiche un point non lu sur l\'icône du chat — aucun jet ne passe inaperçu. Sur mobile, le chat et les dés partagent un emplacement et lancer les dés vous bascule vers le chat.',
   'tabletop.tutorial.help.title': 'Rouvrir ce guide à tout moment',
   'tabletop.tutorial.help.body':
-    'Le bouton « ? » en bas du menu de droite rouvre cette visite quand tu as besoin d’un rappel.',
+    'Le bouton « ? » en bas du panneau de droite rouvre cette visite dès que vous avez besoin d\'un rappel.',
   'tabletop.preset.title': 'Carte prédéfinie',
   'tabletop.preset.choose': 'Choisir une carte prédéfinie…',
   'tabletop.preset.load': 'Charger la carte prédéfinie',

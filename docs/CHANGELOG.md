@@ -4,6 +4,75 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.97 — **Arrange placed tokens in a 4-column grid** instead of a single
+  horizontal row. Previously every new token was staggered one cell to the
+  right of the last, so a table with many participants could spread the
+  cluster far outside the visible area. Tokens now wrap to a new row after
+  four columns, keeping the cluster compact regardless of how many tokens are
+  placed.
+
+- v1.96 — **Major token panel and permission overhaul** across PRs #187–#188.
+  The token sidebar is reorganised into a "Tokens on Map" section at the top
+  (always visible, click any row to highlight that token on the canvas) and a
+  collapsible "Add / Setup" section below. Own tokens are highlighted in the
+  list with the accent colour; non-operable tokens on the canvas are rendered
+  at 0.8 opacity. Every token gains a **public shared Note** editable by all
+  participants, and GM tokens additionally carry a **private GM Note** that is
+  accent-tinted in the UI and stripped from every outgoing wire message.
+  Permissions follow a clear matrix: players can move, resize, and remove
+  their own PC tokens via host-validated requests; tapping any token opens an
+  editable dialog for the GM and a read-only dialog for non-owners. Character
+  info for another player's PC is displayed in a locked view that looks
+  identical to the editable one. The token resize no longer drifts on a
+  1 → 2 → 1 cycle (floor-anchored `snapResizeToGrid`). "Edit token" is
+  renamed "NPC token". Rolling dice now triggers the unread-activity dot on
+  the tabletop dock; a die icon animates from the roller's token position on
+  the canvas. The tutorial-button opacity is toned down to 0.5.
+
+- v1.95 — **Unify image-picker confirmation behaviour**. The picker now uses
+  the same single-click-to-select / footer-button-to-confirm flow used by the
+  map gallery ("Cancel / Use this image"). Clicking inside the portaled
+  picker overlay no longer accidentally closes it (fixed by excluding
+  `.map-gallery-layer` from the popover's outside-click handler).
+
+- v1.94 — **Token popover polish**. New NPCs created via "+" show the title
+  "New NPC"; editing an existing entry shows "Edit NPC". PC tokens display
+  the character's name in the popover. The NPC token image picker is portaled
+  to `document.body` so it is no longer clipped to the popover's 220 px
+  width.
+
+- v1.93 — **Tabletop UI improvements** (11 items): fix the speech-bubble tail
+  position on diagonal directions; add an unread dot on the tabletop dock's
+  chat icon; fix chat scrolling inside the tabletop overlay; deduplicate the
+  background-map "Replace" button and make "Clear" an icon-only action; move
+  the NPC-token "Change image" button below the size picker; widen the NPC
+  "Change image" modal; remove the NPC-library name input and make "Add" an
+  icon-only action; auto-focus the name field when creating a character;
+  add ▲▼ reorder controls to the NPC library and placed-token lists; make
+  effect rings draw around large (2+ cell) tokens rather than inside them;
+  fix a sync bug where the GM's non-active characters' placed tokens were
+  invisible to other participants after joining.
+
+- v1.92 — **Documentation update**: hex-grid and fog-of-war features fully
+  documented in `REQUIREMENTS.md` / `REQUIREMENTS.ja.md`. No feature changes.
+
+- v1.91 — **Token and NPC editor UI overhaul**: rename the token-delete
+  label; tapping a PC token opens a character-info modal directly from the
+  popover; NPC library entries open a popup editor with a name input;
+  the "Change image" action for NPC tokens is widened to a full-width modal.
+
+- v1.90 — **Fix PC token portrait lost on active-character switch**. Switching
+  the GM's operating character cleared the image of the token for the
+  previously active character. Root cause: the token-update path over-wrote
+  the token with an empty image. The fix stores each placed PC token's
+  portrait at placement time and only updates it when the matching character
+  record changes.
+
+- v1.89 — **Fix the fog-of-war brush not painting on hex grids** (same root
+  cause as v1.88 hex-fog fix, affecting the brush gesture guards). Relaxed
+  four `grid.kind === 'square'` guards so the brush works on both square and
+  hex grids while remaining a no-op on gridless maps.
+
 - v1.88 — **Fix the fog-of-war brush not painting on hex grids**. The
   fog gesture's start check and its per-cell paint were both gated on
   `grid.kind === 'square'`, so on a hex grid the "Reveal / Apply fog"

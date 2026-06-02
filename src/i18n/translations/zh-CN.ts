@@ -137,27 +137,27 @@ export const zhCN: Dict = {
   'tabletop.dock.dice': '骰子',
   'tabletop.dock.returnToRoom': '返回房间',
   'tabletop.help': '教程',
-  'tabletop.tutorial.welcome.title': '欢迎使用桌面',
+  'tabletop.tutorial.welcome.title': '欢迎来到桌面',
   'tabletop.tutorial.welcome.body':
-    '在桌面上移动棋子、绘制标记、管理战争迷雾——这是本场跑团的共享画布。无论桌面端还是手机都好用。',
-  'tabletop.tutorial.viewport.title': '移动与缩放地图',
+    '移动标记、绘制批注、管理战争迷雾——桌面是本场的共享画布。桌面端和手机端均可使用。',
+  'tabletop.tutorial.viewport.title': '移动和缩放地图',
   'tabletop.tutorial.viewport.body':
-    '拖动空白处可平移视角。滚动鼠标滚轮或双指捏合可缩放。你可以自由查看，不会打扰他人。',
-  'tabletop.tutorial.tools.title': '左侧工具面板',
+    '拖动空白处可平移。滚动鼠标滚轮或用两指捏合可缩放（25%–400%）。你的视图是独立的——可自由浏览，不会移动他人的视图。',
+  'tabletop.tutorial.tools.title': '工具面板（左侧）',
   'tabletop.tutorial.tools.body':
-    '从左侧面板选择「选择」、「画笔」、「文字」或「橡皮擦」。画笔和文字可调整颜色与大小。迷雾笔刷（仅 GM）可让 GM 隐藏或显示地图区域。',
-  'tabletop.tutorial.tokens.title': '移动你的棋子',
+    '选择/拖动、画笔、文字、橡皮擦。画笔和文字可选择颜色与大小。迷雾笔刷（仅 GM）逐格隐藏或显示格子。',
+  'tabletop.tutorial.tokens.title': '标记——移动、点按、交互',
   'tabletop.tutorial.tokens.body':
-    '拖动自己角色的棋子即可移动。点击棋子打开菜单。（GM 限定：可拖动任意棋子、编辑名称与标签、从地图移除棋子。）',
+    '拖动自己的标记即可移动。点按任意标记可打开其对话框：查看角色信息、读写共享备注，以及（对自己的标记）调整大小或移除。GM 可编辑所有标记。',
   'tabletop.tutorial.rightPanel.title': '右侧面板',
   'tabletop.tutorial.rightPanel.body':
-    '所有地图管理功能都在这里：可放置的棋子，还有 GM 限定分类——地图与网格设置、迷雾控制、模板 / 存档库。',
-  'tabletop.tutorial.dock.title': '底部操作栏',
+    '点按标记图标可查看「地图上的标记」（点击任意行可高亮）和「添加 / 准备」（放置你的角色、管理 NPC 库）。仅 GM 标签页：地图与网格、迷雾，以及模板/存档库。',
+  'tabletop.tutorial.dock.title': '底部工具坞',
   'tabletop.tutorial.dock.body':
-    '聊天、角色卡、掷骰器，以及返回房间的入口。手机上聊天与骰子互相切换（一次一个）——掷完骰会自动切到聊天好让你看到结果。',
-  'tabletop.tutorial.help.title': '随时重看本指南',
+    '聊天、你的角色卡和骰子。掷骰后聊天图标会显示未读圆点——绝不漏掉任何一次掷骰。在手机上，聊天与骰子共用一个位置，掷骰会切换到聊天。',
+  'tabletop.tutorial.help.title': '随时重新打开本指南',
   'tabletop.tutorial.help.body':
-    '右侧菜单底部的「？」按钮可随时重开本教程，需要时查阅即可。',
+    '右侧面板底部的「?」按钮可在你需要回顾时随时重新打开本导览。',
   'tabletop.preset.title': '预设地图',
   'tabletop.preset.choose': '选择预设…',
   'tabletop.preset.load': '载入预设',

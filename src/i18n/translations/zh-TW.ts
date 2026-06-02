@@ -139,25 +139,25 @@ export const zhTW: Dict = {
   'tabletop.help': '教學',
   'tabletop.tutorial.welcome.title': '歡迎來到桌面',
   'tabletop.tutorial.welcome.body':
-    '移動棋子、繪製標記、管理戰爭迷霧——桌面是這場跑團的共享畫布。在桌機與行動裝置上都能順暢操作。',
+    '移動標記、繪製註解、管理戰爭迷霧——桌面是本場的共享畫布。桌機與手機皆可使用。',
   'tabletop.tutorial.viewport.title': '移動與縮放地圖',
   'tabletop.tutorial.viewport.body':
-    '拖曳空白處可平移視角。滾動滑鼠滾輪或用兩指捏合可縮放。你可以自由探索,不會影響到其他人。',
-  'tabletop.tutorial.tools.title': '左側工具列',
+    '拖曳空白處可平移。滾動滑鼠滾輪或以兩指捏合可縮放（25%–400%）。你的檢視是獨立的——可自由瀏覽，不會移動他人的檢視。',
+  'tabletop.tutorial.tools.title': '工具面板（左側）',
   'tabletop.tutorial.tools.body':
-    '從左側工具列選擇選取、畫筆、文字或橡皮擦。畫筆與文字可調整顏色和大小。迷霧筆刷(僅 GM)可以隱藏或顯示地圖區塊。',
-  'tabletop.tutorial.tokens.title': '移動你的棋子',
+    '選取/拖曳、畫筆、文字、橡皮擦。畫筆與文字可選擇顏色與大小。迷霧筆刷（僅 GM）逐格隱藏或顯示格子。',
+  'tabletop.tutorial.tokens.title': '標記——移動、點按、互動',
   'tabletop.tutorial.tokens.body':
-    '拖曳自己角色的棋子來移動它。輕觸棋子可開啟選單。(僅 GM:可拖曳任何棋子、編輯名稱與標籤、從地圖移除棋子。)',
+    '拖曳自己的標記即可移動。點按任一標記可開啟其對話框：檢視角色資訊、讀寫共享備註，以及（對自己的標記）調整大小或移除。GM 可編輯所有標記。',
   'tabletop.tutorial.rightPanel.title': '右側面板',
   'tabletop.tutorial.rightPanel.body':
-    '所有地圖管理都集中在這裡:可放置的棋子,以及 GM 專屬分類——地圖與網格設定、迷霧控制、範本/快照圖庫。',
+    '點按標記圖示可檢視「地圖上的標記」（點按任一列可突顯）與「新增 / 準備」（放置你的角色、管理 NPC 庫）。僅 GM 分頁：地圖與網格、迷霧，以及範本/存檔庫。',
   'tabletop.tutorial.dock.title': '底部工具列',
   'tabletop.tutorial.dock.body':
-    '聊天、角色卡、擲骰器,以及回到房間的入口。手機上聊天與骰子會交替顯示(一次一個)——擲骰後會自動切換到聊天讓你看到結果。',
+    '聊天、你的角色卡與骰子。擲骰後聊天圖示會顯示未讀圓點——絕不漏掉任何一次擲骰。在手機上，聊天與骰子共用一個位置，擲骰會切換到聊天。',
   'tabletop.tutorial.help.title': '隨時重新開啟本指南',
   'tabletop.tutorial.help.body':
-    '右側選單最下方的「?」按鈕可隨時重新開啟本導覽,需要複習時很方便。',
+    '右側面板底部的「?」按鈕可在你需要複習時隨時重新開啟本導覽。',
   'tabletop.preset.title': '預設地圖',
   'tabletop.preset.choose': '選擇預設…',
   'tabletop.preset.load': '載入預設',

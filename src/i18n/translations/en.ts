@@ -139,25 +139,25 @@ export const en: Dict = {
   'tabletop.help': 'Tutorial',
   'tabletop.tutorial.welcome.title': 'Welcome to the tabletop',
   'tabletop.tutorial.welcome.body':
-    'Move tokens, draw markers, manage the fog of war — the tabletop is your shared canvas for the session. Designed to feel good on both desktop and mobile.',
+    'Move tokens, draw annotations, manage fog of war — the tabletop is your shared canvas for the session. Works on both desktop and mobile.',
   'tabletop.tutorial.viewport.title': 'Move and zoom the map',
   'tabletop.tutorial.viewport.body':
-    'Drag empty space to pan the view. Scroll the mouse wheel or pinch with two fingers to zoom. You can roam freely without disturbing anyone else.',
+    'Drag empty space to pan. Scroll the mouse wheel or pinch with two fingers to zoom (25 %–400 %). Your view is independent — roam freely without moving anyone else.',
   'tabletop.tutorial.tools.title': 'The tool palette (left)',
   'tabletop.tutorial.tools.body':
-    'Pick Select, Pen, Text, or Eraser from the left palette. Pen and Text let you set color and size. Fog brush (GM only) lets the GM hide and reveal parts of the map.',
-  'tabletop.tutorial.tokens.title': 'Move your token',
+    'Select/Drag, Pen, Text, Eraser. Pen and Text let you pick colour and size. The Fog brush (GM only) hides or reveals cells one at a time.',
+  'tabletop.tutorial.tokens.title': 'Tokens — move, tap, interact',
   'tabletop.tutorial.tokens.body':
-    'Drag your own character’s token to move it. Tap a token to open its menu. (GM only: drag any token, edit names and labels, remove tokens from the map.)',
+    'Drag your own token to move it. Tap any token to open its dialog: view character info, read and write the shared note, and (for your own token) resize or remove it. The GM can edit all tokens.',
   'tabletop.tutorial.rightPanel.title': 'The right-side panel',
   'tabletop.tutorial.rightPanel.body':
-    'All map management lives here: tokens you can place, plus GM-only categories — map & grid settings, fog control, and the template / save library.',
+    'Tap the token icon to see “Tokens on Map” (click any row to spotlight it) and “Add / Setup” (place your character, manage the NPC library). GM-only tabs: map & grid, fog, and the template / save library.',
   'tabletop.tutorial.dock.title': 'The bottom dock',
   'tabletop.tutorial.dock.body':
-    'Chat, your character sheet, the dice roller, and the way back to the room. On phones, chat and dice swap (one at a time) — and rolling the dice flips you to chat so you can see the result.',
+    'Chat, your character sheet, and the dice roller. Rolling dice shows an unread dot on the chat icon — no roll ever slips by. On phones, chat and dice share one slot and rolling flips you to chat.',
   'tabletop.tutorial.help.title': 'Re-open this guide anytime',
   'tabletop.tutorial.help.body':
-    'The “?” button at the bottom of the right-side menu re-opens this tour whenever you need a refresher.',
+    'The “?” button at the bottom of the right-side panel re-opens this tour whenever you need a refresher.',
   'tabletop.preset.title': 'Preset map',
   'tabletop.preset.choose': 'Pick a preset…',
   'tabletop.preset.load': 'Load preset',

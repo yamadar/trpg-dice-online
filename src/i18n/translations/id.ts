@@ -137,27 +137,27 @@ export const id: Dict = {
   'tabletop.dock.dice': 'Dadu',
   'tabletop.dock.returnToRoom': 'Kembali ke ruangan',
   'tabletop.help': 'Tutorial',
-  'tabletop.tutorial.welcome.title': 'Selamat datang di tabletop',
+  'tabletop.tutorial.welcome.title': 'Selamat datang di meja permainan',
   'tabletop.tutorial.welcome.body':
-    'Gerakkan token, gambar penanda, atur kabut perang — tabletop adalah kanvas bersama untuk sesi kalian. Dirancang nyaman dipakai di desktop maupun ponsel.',
-  'tabletop.tutorial.viewport.title': 'Geser dan zoom peta',
+    'Pindahkan token, gambar anotasi, kelola kabut perang — meja permainan adalah kanvas bersama untuk sesimu. Berfungsi di desktop maupun ponsel.',
+  'tabletop.tutorial.viewport.title': 'Geser dan perbesar peta',
   'tabletop.tutorial.viewport.body':
-    'Seret area kosong untuk menggeser tampilan. Putar roda mouse atau cubit dua jari untuk zoom. Kamu bisa jelajah bebas tanpa mengganggu orang lain.',
+    'Seret area kosong untuk menggeser. Gulir roda mouse atau cubit dengan dua jari untuk memperbesar (25%–400%). Tampilanmu mandiri — jelajahi dengan bebas tanpa mengubah tampilan orang lain.',
   'tabletop.tutorial.tools.title': 'Palet alat (kiri)',
   'tabletop.tutorial.tools.body':
-    'Pilih Select, Pen, Text, atau Eraser dari palet kiri. Pen dan Text bisa diatur warna dan ukurannya. Kuas kabut (khusus GM) memungkinkan GM menyembunyikan dan membuka bagian peta.',
-  'tabletop.tutorial.tokens.title': 'Gerakkan tokenmu',
+    'Pilih/seret, Pena, Teks, Penghapus. Pena dan Teks memungkinkanmu memilih warna dan ukuran. Kuas kabut (khusus GM) menyembunyikan atau membuka sel satu per satu.',
+  'tabletop.tutorial.tokens.title': 'Token — pindahkan, ketuk, berinteraksi',
   'tabletop.tutorial.tokens.body':
-    'Seret token karaktermu sendiri untuk menggerakkannya. Ketuk token untuk membuka menunya. (Khusus GM: seret token mana pun, edit nama dan label, hapus token dari peta.)',
-  'tabletop.tutorial.rightPanel.title': 'Panel sebelah kanan',
+    'Seret tokenmu sendiri untuk memindahkannya. Ketuk token mana pun untuk membuka dialognya: lihat info karakter, baca dan tulis catatan bersama, serta (untuk tokenmu sendiri) ubah ukuran atau hapus. GM dapat menyunting semua token.',
+  'tabletop.tutorial.rightPanel.title': 'Panel sisi kanan',
   'tabletop.tutorial.rightPanel.body':
-    'Semua manajemen peta ada di sini: token yang bisa ditempatkan, ditambah kategori khusus GM — pengaturan peta & grid, kontrol kabut, dan pustaka template / snapshot.',
-  'tabletop.tutorial.dock.title': 'Dock bawah',
+    'Ketuk ikon token untuk melihat «Di peta» (klik baris mana pun untuk menyorotnya) dan «Tambah / Persiapan» (tempatkan karaktermu, kelola pustaka NPC). Tab khusus GM: peta & grid, kabut, serta pustaka templat/simpanan.',
+  'tabletop.tutorial.dock.title': 'Dok bawah',
   'tabletop.tutorial.dock.body':
-    'Chat, lembar karaktermu, pelempar dadu, dan jalan kembali ke ruangan. Di ponsel, chat dan dadu berganti (satu per satu) — dan melempar dadu otomatis pindah ke chat agar kamu bisa lihat hasilnya.',
-  'tabletop.tutorial.help.title': 'Buka lagi panduan ini kapan saja',
+    'Obrolan, lembar karaktermu, dan pelempar dadu. Melempar dadu memunculkan titik belum dibaca pada ikon obrolan — tak ada lemparan yang terlewat. Di ponsel, obrolan dan dadu berbagi satu slot dan melempar dadu memindahkanmu ke obrolan.',
+  'tabletop.tutorial.help.title': 'Buka kembali panduan ini kapan saja',
   'tabletop.tutorial.help.body':
-    'Tombol "?" di bagian bawah menu kanan membuka tur ini kapan pun kamu butuh penyegaran.',
+    'Tombol «?» di bagian bawah panel sisi kanan membuka kembali tur ini setiap kali kamu perlu penyegaran.',
   'tabletop.preset.title': 'Peta preset',
   'tabletop.preset.choose': 'Pilih preset…',
   'tabletop.preset.load': 'Muat preset',

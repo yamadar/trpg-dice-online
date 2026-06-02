@@ -137,27 +137,27 @@ export const pl: Dict = {
   'tabletop.dock.dice': 'Kości',
   'tabletop.dock.returnToRoom': 'Powrót do pokoju',
   'tabletop.help': 'Samouczek',
-  'tabletop.tutorial.welcome.title': 'Witaj na mapie stołu',
+  'tabletop.tutorial.welcome.title': 'Witaj przy stole do gry',
   'tabletop.tutorial.welcome.body':
-    'Przesuwaj znaczniki, rysuj oznaczenia, zarządzaj mgłą wojny — mapa stołu to wasze wspólne płótno na sesję. Zaprojektowana z myślą zarówno o komputerze, jak i telefonie.',
+    'Przesuwaj znaczniki, rysuj adnotacje, zarządzaj mgłą wojny — stół to wspólne płótno waszej sesji. Działa zarówno na komputerze, jak i na telefonie.',
   'tabletop.tutorial.viewport.title': 'Przesuwanie i powiększanie mapy',
   'tabletop.tutorial.viewport.body':
-    'Przeciągnij puste miejsce, aby przesunąć widok. Kółko myszy lub ściśnięcie dwoma palcami powiększa i pomniejsza. Możesz swobodnie się rozglądać bez przeszkadzania innym.',
+    'Przeciągnij puste miejsce, aby przesunąć widok. Przewiń kółkiem myszy lub uszczypnij dwoma palcami, aby przybliżyć (25%–400%). Twój widok jest niezależny — przemieszczaj się swobodnie, nie zmieniając widoku innych.',
   'tabletop.tutorial.tools.title': 'Paleta narzędzi (po lewej)',
   'tabletop.tutorial.tools.body':
-    'Wybierz Zaznaczanie, Pióro, Tekst lub Gumkę z lewej palety. Pióro i Tekst pozwalają ustawić kolor i rozmiar. Pędzel mgły (tylko MG) pozwala ukrywać i odkrywać fragmenty mapy.',
-  'tabletop.tutorial.tokens.title': 'Przesuwaj swój znacznik',
+    'Zaznacz/przeciągnij, Pióro, Tekst, Gumka. Pióro i Tekst pozwalają wybrać kolor i rozmiar. Pędzel mgły (tylko MG) ukrywa lub odsłania pola pojedynczo.',
+  'tabletop.tutorial.tokens.title': 'Znaczniki — przesuwaj, dotykaj, korzystaj',
   'tabletop.tutorial.tokens.body':
-    'Przeciągnij znacznik swojej postaci, aby go przesunąć. Dotknij znacznika, aby otworzyć jego menu. (Tylko MG: przeciąga dowolny znacznik, edytuje nazwy i etykiety, usuwa znaczniki z mapy.)',
-  'tabletop.tutorial.rightPanel.title': 'Panel po prawej',
+    'Przeciągnij własny znacznik, aby go przesunąć. Dotknij dowolnego znacznika, aby otworzyć jego okno: zobacz informacje o postaci, czytaj i pisz wspólną notatkę oraz (dla własnego znacznika) zmień jego rozmiar lub usuń go. MG może edytować wszystkie znaczniki.',
+  'tabletop.tutorial.rightPanel.title': 'Panel po prawej stronie',
   'tabletop.tutorial.rightPanel.body':
-    'Tu mieści się całe zarządzanie mapą: znaczniki do umieszczenia oraz kategorie tylko dla MG — ustawienia mapy i siatki, sterowanie mgłą oraz biblioteka szablonów / zapisów.',
+    'Dotknij ikony znacznika, aby zobaczyć „Na mapie” (kliknij wiersz, aby go wyróżnić) oraz „Dodaj / Przygotowanie” (umieść swoją postać, zarządzaj biblioteką NPC). Karty tylko dla MG: mapa i siatka, mgła oraz biblioteka szablonów/zapisów.',
   'tabletop.tutorial.dock.title': 'Dolny dok',
   'tabletop.tutorial.dock.body':
-    'Czat, karta postaci, rzucanie kośćmi i droga powrotna do pokoju. Na telefonach czat i kości przełączają się (po jednym naraz) — a rzut kością przerzuca cię na czat, żebyś zobaczył wynik.',
-  'tabletop.tutorial.help.title': 'Otwórz ten przewodnik kiedy chcesz',
+    'Czat, twoja karta postaci i rzucanie kośćmi. Rzut kością pokazuje kropkę nieprzeczytanych na ikonie czatu — żaden rzut nie umknie. Na telefonie czat i kości dzielą jedno miejsce, a rzut przełącza cię na czat.',
+  'tabletop.tutorial.help.title': 'Otwórz ten przewodnik w dowolnej chwili',
   'tabletop.tutorial.help.body':
-    'Przycisk „?” na dole menu po prawej stronie otwiera ten samouczek za każdym razem, gdy potrzebujesz przypomnienia.',
+    'Przycisk „?” na dole prawego panelu ponownie otwiera ten przewodnik, gdy potrzebujesz przypomnienia.',
   'tabletop.preset.title': 'Mapa predefiniowana',
   'tabletop.preset.choose': 'Wybierz szablon…',
   'tabletop.preset.load': 'Wczytaj szablon',

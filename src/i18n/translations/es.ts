@@ -137,27 +137,27 @@ export const es: Dict = {
   'tabletop.dock.dice': 'Dados',
   'tabletop.dock.returnToRoom': 'Volver a la sala',
   'tabletop.help': 'Tutorial',
-  'tabletop.tutorial.welcome.title': 'Bienvenido a la mesa',
+  'tabletop.tutorial.welcome.title': 'Te damos la bienvenida a la mesa',
   'tabletop.tutorial.welcome.body':
-    'Mueve fichas, dibuja marcadores y gestiona la niebla de guerra — la mesa es vuestro lienzo compartido para la sesión. Diseñada para sentirse bien tanto en escritorio como en móvil.',
-  'tabletop.tutorial.viewport.title': 'Mover y acercar el mapa',
+    'Mueve fichas, dibuja anotaciones y gestiona la niebla de guerra: la mesa es tu lienzo compartido para la sesión. Funciona tanto en ordenador como en móvil.',
+  'tabletop.tutorial.viewport.title': 'Mover y ampliar el mapa',
   'tabletop.tutorial.viewport.body':
-    'Arrastra una zona vacía para desplazar la vista. Usa la rueda del ratón o pellizca con dos dedos para acercar o alejar. Puedes moverte sin molestar a nadie.',
+    'Arrastra un espacio vacío para desplazarte. Usa la rueda del ratón o pellizca con dos dedos para hacer zoom (25 %–400 %). Tu vista es independiente: muévete libremente sin afectar a la de los demás.',
   'tabletop.tutorial.tools.title': 'La paleta de herramientas (izquierda)',
   'tabletop.tutorial.tools.body':
-    'Elige Seleccionar, Lápiz, Texto o Borrador en la paleta izquierda. El lápiz y el texto permiten ajustar color y tamaño. El pincel de niebla (solo DJ) deja ocultar y revelar partes del mapa.',
-  'tabletop.tutorial.tokens.title': 'Mueve tu ficha',
+    'Seleccionar/arrastrar, Lápiz, Texto, Borrador. Con Lápiz y Texto puedes elegir color y tamaño. El pincel de niebla (solo GM) oculta o revela las celdas de una en una.',
+  'tabletop.tutorial.tokens.title': 'Fichas: mover, tocar, interactuar',
   'tabletop.tutorial.tokens.body':
-    'Arrastra la ficha de tu personaje para moverla. Toca una ficha para abrir su menú. (Solo DJ: arrastra cualquier ficha, edita nombres y etiquetas y quita fichas del mapa.)',
+    'Arrastra tu propia ficha para moverla. Toca cualquier ficha para abrir su diálogo: ver la información del personaje, leer y escribir la nota compartida y (en tu propia ficha) cambiar su tamaño o quitarla. El GM puede editar todas las fichas.',
   'tabletop.tutorial.rightPanel.title': 'El panel lateral derecho',
   'tabletop.tutorial.rightPanel.body':
-    'Toda la gestión del mapa vive aquí: las fichas que puedes colocar, además de categorías solo para el DJ — ajustes de mapa y cuadrícula, control de la niebla y la biblioteca de plantillas y guardados.',
+    'Toca el icono de ficha para ver «En el mapa» (haz clic en una fila para destacarla) y «Añadir / Preparar» (coloca tu personaje, gestiona la biblioteca de PNJ). Pestañas solo para el GM: mapa y cuadrícula, niebla, y la biblioteca de plantillas/partidas guardadas.',
   'tabletop.tutorial.dock.title': 'La barra inferior',
   'tabletop.tutorial.dock.body':
-    'Chat, tu hoja de personaje, los dados y la vuelta a la sala. En el móvil, chat y dados se alternan (uno a la vez) — y al tirar los dados se cambia al chat para que veas el resultado.',
-  'tabletop.tutorial.help.title': 'Vuelve a abrir esta guía cuando quieras',
+    'Chat, tu hoja de personaje y el lanzador de dados. Al tirar los dados aparece un punto de no leído en el icono del chat: no se te escapa ninguna tirada. En el móvil, chat y dados comparten ranura y, al tirar, pasas al chat.',
+  'tabletop.tutorial.help.title': 'Reabre esta guía cuando quieras',
   'tabletop.tutorial.help.body':
-    'El botón «?» al final del menú lateral derecho vuelve a abrir este recorrido cada vez que necesites repasarlo.',
+    'El botón «?» al pie del panel lateral derecho vuelve a abrir este recorrido siempre que necesites un repaso.',
   'tabletop.preset.title': 'Mapa predefinido',
   'tabletop.preset.choose': 'Elige uno…',
   'tabletop.preset.load': 'Cargar predefinido',

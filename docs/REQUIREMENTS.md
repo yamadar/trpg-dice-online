@@ -364,20 +364,47 @@ An SPA where players roll TRPG dice and share results with other players in real
   revealed cells and syncs host-authoritative like the rest of the table.
 - Tokens come in two kinds.
   - **PC tokens** are tied to a session character and reuse the
-    character portrait as the token image. The owning player and the
-    GM can move them. Placement is an explicit action by the owner or
-    the GM, and a single character can have multiple tokens on the
-    map (for twin / clone fiction). Only the GM removes a token.
+    character portrait as the token image. The owning player *and* the
+    GM can move, resize, and remove their own tokens; the host validates
+    `canMoveToken` for any resize or remove request that arrives from a
+    client. Placement is an explicit action by the owner or the GM, and
+    a single character can have multiple tokens on the map (for twin /
+    clone fiction).
   - **GM-only tokens** are not tied to a PC (for NPCs, monsters,
-    props). Only the GM adds, moves or removes them. Images go
-    through a dedicated pipeline (long-edge 300 px / ~200 KB).
+    props). Only the GM adds, moves, resizes, removes, or edits the
+    label and image of GM tokens. Images go through a dedicated pipeline
+    (long-edge 300 px / ~200 KB).
+- Any participant may tap a placed token to open a token dialog. The GM
+  sees the full editable view; non-owner players see a read-only view
+  that also shows who is permitted to operate the token.
+- On the canvas, tokens that the viewer cannot move or resize are
+  rendered at 0.8 opacity so players can immediately tell which tokens
+  they control. In the token list, a player's own PC tokens are
+  highlighted with the accent colour for quick identification.
+- **Token notes**: every token (PC and GM) carries a **public shared
+  note** that all participants can read and edit in the token dialog.
+  GM tokens additionally carry a **private GM note** that is stripped
+  from every outgoing `tokenUpsert` and `tabletopState` wire message,
+  so non-host clients never receive it.
+- The token sidebar is split into two sections.
+  - **Tokens on Map** (always visible, at the top): lists all currently
+    placed tokens with a type badge ([PC] / [NPC]). Clicking an entry
+    highlights the corresponding token on the canvas.
+  - **Add / Setup** (collapsible, below): contains the PC placement
+    list and the NPC library.
 - Before placing on the map the GM can curate an **NPC library**.
-  A library entry is a "name + image" template; placing it mints a
-  fresh GM token with the image copied inline, so editing the
-  library entry afterwards does not retroactively change tokens
-  already on the table.
-- Tapping a placed token opens an edit popover. The GM can rename
-  and re-image GM-only tokens, and remove either kind of token.
+  A library entry holds a name, image, and optional note. Adding a new
+  entry opens the editor with the name field focused; closing without
+  providing a name discards the provisional entry. Placing an entry
+  mints a fresh GM token with the image, label, and note copied inline
+  — so editing the library entry afterwards does not retroactively
+  change tokens already on the table. The same entry can be placed
+  multiple times.
+- New tokens are placed in a compact 4-column grid (wrapping to a new
+  row after every 4 tokens) near the default placement origin. When a
+  background map is present the origin is the map's centre; otherwise
+  it is the first grid cell. A `pcSpawn` set by a loaded template
+  overrides both.
 - Token positions are stored in pixels and snapped to the grid at
   render time (free placement when snapping is off).
 - Sync follows the existing host-authoritative / last-write-wins model.
@@ -404,6 +431,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   map image streams through the existing `mapMeta` / `mapChunk`
   path so a multi-megabyte background does not block the data
   channel.
+- Rolling dice from the tabletop triggers the unread-activity dot on
+  the chat icon, the same as a chat message. A die icon also animates
+  outward from the rolling player's character token on the canvas,
+  giving participants watching the map a visible cue.
 - On mobile the tabletop is shown as a **full-screen mode** rather
   than a Dock sheet. The Dock's tabletop icon opens it and a
   dedicated close button leaves it. To keep chat and rolls visible
@@ -588,10 +619,14 @@ Commit after each step.
 - [x] The square grid's cell size, offset, color and opacity can be configured
 - [x] A flat-top hex grid (odd-q offset) can be selected and tokens snap to the cell centre
 - [x] The GM controls visibility with per-cell fog of war; non-GM players cannot see beneath the fog
-- [x] PC tokens are generated from the session's characters and can be moved by the owner and the GM
+- [x] PC tokens are generated from the session's characters and can be moved, resized and removed by the owner and the GM
 - [x] A player can place multiple tokens of their own character at any time
-- [x] GM-only tokens can be added, moved and removed by the GM
-- [x] The GM can register NPCs in a library and place them on the map when needed
+- [x] GM-only tokens can be added, moved, resized and removed by the GM
+- [x] Tapping any token opens an editable dialog (GM) or a read-only dialog (non-owner)
+- [x] Every token has a public shared note editable by all participants; GM tokens additionally have a private GM note never broadcast to clients
+- [x] The token sidebar shows "Tokens on Map" at the top and a collapsible "Add / Setup" section below
+- [x] Own PC tokens are highlighted in the token list; non-operable tokens on the canvas are shown at reduced opacity
+- [x] The GM can register NPCs in a library (with name, image and note) and place them on the map repeatedly
 - [x] The GM can save the current tabletop as a template / snapshot and load it later
 - [x] Pan and zoom work on both touch and mouse
 - [x] The tabletop state is restored across reload

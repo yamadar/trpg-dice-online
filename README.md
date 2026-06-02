@@ -90,6 +90,12 @@ The GM can roll **hidden** — other players only see *"a hidden roll happened"*
 
 A live tabletop the GM opens alongside the dice room: PCs and NPCs as tokens, a square or hex grid, free-hand pen and text annotations, and grid-based fog of war. The background map can be picked four ways — **upload** a local image, **load by URL**, **browse the [trpg-map-organizer](https://yamadar.github.io/trpg-map-organizer/) gallery** (303+ hand-curated maps with tag filters and preview), or pick a bundled **preset**. Token positions, annotations and fog state are host-authoritative and sync to every participant in real time. Tabletop state survives a tab reload, and templates / saves let the GM prep scenes ahead of time and snap back to them mid-session.
 
+Every token carries a **shared note** any participant can edit, plus a **GM-only private note** that never leaves the host. Players move, resize and remove their own tokens (the GM moves anything); tapping a token others control opens a read-only card. The token panel keeps what's **on the map** at the top and tucks placement / the NPC library into a collapsible **Add / Setup** section.
+
+<p align="center">
+  <img src="public/images/tabletop-desktop.png" width="640" alt="The shared tabletop: tool palette on the left, a square grid, and the Tokens panel showing the on-the-map list and the collapsible Add / Setup section" />
+</p>
+
 ### Multilingual UI &amp; auto-translated chat
 
 UI in 19 languages. Optional chat auto-translation uses the on-device Chrome Translator API when available and falls back to the keyless [MyMemory](https://mymemory.translated.net/) REST API. Tap **Original** on a translated message to see exactly what was sent.

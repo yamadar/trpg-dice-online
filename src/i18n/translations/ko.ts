@@ -139,25 +139,25 @@ export const ko: Dict = {
   'tabletop.help': '튜토리얼',
   'tabletop.tutorial.welcome.title': '테이블탑에 오신 것을 환영합니다',
   'tabletop.tutorial.welcome.body':
-    '토큰을 움직이고, 마커를 그리고, 전쟁의 안개를 관리하세요 — 테이블탑은 세션을 위한 공유 캔버스입니다. 데스크톱과 모바일 모두에서 쾌적하게 작동하도록 설계되었습니다.',
-  'tabletop.tutorial.viewport.title': '맵 이동 및 확대/축소',
+    '토큰을 옮기고, 주석을 그리고, 전쟁의 안개를 관리하세요 — 테이블탑은 세션을 위한 공유 캔버스입니다. 데스크톱과 모바일 모두에서 작동합니다.',
+  'tabletop.tutorial.viewport.title': '지도 이동 및 확대/축소',
   'tabletop.tutorial.viewport.body':
-    '빈 공간을 드래그하여 시점을 이동합니다. 마우스 휠을 굴리거나 두 손가락으로 핀치하여 확대/축소할 수 있습니다. 다른 사람을 방해하지 않고 자유롭게 둘러볼 수 있습니다.',
-  'tabletop.tutorial.tools.title': '왼쪽 도구 팔레트',
+    '빈 공간을 끌어 화면을 이동하세요. 마우스 휠을 굴리거나 두 손가락으로 오므려 확대/축소하세요(25%–400%). 화면은 각자 독립적이라 다른 사람의 화면을 건드리지 않고 자유롭게 둘러볼 수 있습니다.',
+  'tabletop.tutorial.tools.title': '도구 팔레트(왼쪽)',
   'tabletop.tutorial.tools.body':
-    '왼쪽 팔레트에서 선택, 펜, 텍스트, 지우개를 고를 수 있습니다. 펜과 텍스트는 색상과 크기를 설정할 수 있습니다. 안개 브러시 (GM 전용) 로 맵의 일부를 가리거나 드러낼 수 있습니다.',
-  'tabletop.tutorial.tokens.title': '내 토큰 움직이기',
+    '선택/드래그, 펜, 텍스트, 지우개. 펜과 텍스트에서는 색과 크기를 고를 수 있습니다. 안개 브러시(GM 전용)는 칸을 하나씩 가리거나 드러냅니다.',
+  'tabletop.tutorial.tokens.title': '토큰 — 이동, 탭, 상호작용',
   'tabletop.tutorial.tokens.body':
-    '본인 캐릭터의 토큰을 드래그하여 움직입니다. 토큰을 탭하면 메뉴가 열립니다. (GM 전용: 모든 토큰을 드래그하고, 이름과 라벨을 편집하며, 맵에서 토큰을 제거할 수 있습니다.)',
+    '자신의 토큰을 끌어 옮기세요. 아무 토큰이나 탭하면 대화상자가 열립니다: 캐릭터 정보 보기, 공유 메모 읽고 쓰기, 그리고 (자신의 토큰이라면) 크기 조절이나 제거를 할 수 있습니다. GM은 모든 토큰을 편집할 수 있습니다.',
   'tabletop.tutorial.rightPanel.title': '오른쪽 패널',
   'tabletop.tutorial.rightPanel.body':
-    '모든 맵 관리는 여기에서 합니다: 배치 가능한 토큰과 GM 전용 카테고리 — 맵 & 격자 설정, 안개 제어, 템플릿 / 저장 라이브러리.',
-  'tabletop.tutorial.dock.title': '하단 도크',
+    '토큰 아이콘을 탭하면 「지도 위」(행을 클릭하면 강조 표시)와 「추가 / 준비」(캐릭터 배치, NPC 라이브러리 관리)를 볼 수 있습니다. GM 전용 탭: 지도와 격자, 안개, 그리고 템플릿/저장 라이브러리.',
+  'tabletop.tutorial.dock.title': '하단 독',
   'tabletop.tutorial.dock.body':
-    '채팅, 캐릭터 시트, 주사위 굴리기, 룸으로 돌아가기. 스마트폰에서는 채팅과 주사위가 번갈아 표시되며, 주사위를 굴리면 자동으로 채팅으로 전환되어 결과를 확인할 수 있습니다.',
-  'tabletop.tutorial.help.title': '언제든지 다시 열 수 있습니다',
+    '채팅, 캐릭터 시트, 주사위 굴림판. 주사위를 굴리면 채팅 아이콘에 읽지 않음 점이 표시되어 — 어떤 굴림도 놓치지 않습니다. 휴대폰에서는 채팅과 주사위가 한 자리를 공유하며, 주사위를 굴리면 채팅으로 전환됩니다.',
+  'tabletop.tutorial.help.title': '이 안내를 언제든 다시 열기',
   'tabletop.tutorial.help.body':
-    '오른쪽 메뉴 아래의 "?" 버튼을 누르면 이 가이드를 언제든지 다시 열 수 있습니다.',
+    '오른쪽 패널 하단의 「?」 버튼을 누르면 필요할 때마다 이 둘러보기를 다시 열 수 있습니다.',
   'tabletop.preset.title': '프리셋 맵',
   'tabletop.preset.choose': '프리셋 선택…',
   'tabletop.preset.load': '프리셋 불러오기',
