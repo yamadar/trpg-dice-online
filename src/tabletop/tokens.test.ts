@@ -6,6 +6,8 @@ import {
   canMoveToken,
   defaultPlacementOrigin,
   makeGmToken,
+  PLACEMENT_COLS,
+  placementPosition,
   planPcTokenAdds,
   recenterTokensOnMap,
   snapAllTokensToGrid,
@@ -372,5 +374,37 @@ describe('recenterTokensOnMap with grid snap', () => {
     const tokens: Token[] = [pc({ id: 'a', x: 10, y: 10 })]
     const result = recenterTokensOnMap(tokens, sampleMap, noSnap)
     expect(result[0]).toMatchObject({ x: 400, y: 300 })
+  })
+})
+
+describe('placementPosition', () => {
+  const origin = { x: 100, y: 200 }
+  const cell = 50
+
+  it('index 0 lands at the origin', () => {
+    expect(placementPosition(0, origin, cell)).toEqual({ x: 100, y: 200 })
+  })
+
+  it('indices 1..PLACEMENT_COLS-1 advance along the first row', () => {
+    for (let i = 1; i < PLACEMENT_COLS; i++) {
+      expect(placementPosition(i, origin, cell)).toEqual({
+        x: origin.x + i * cell,
+        y: origin.y,
+      })
+    }
+  })
+
+  it(`index ${PLACEMENT_COLS} wraps to column 0 of the next row`, () => {
+    expect(placementPosition(PLACEMENT_COLS, origin, cell)).toEqual({
+      x: origin.x,
+      y: origin.y + cell,
+    })
+  })
+
+  it('never spreads further right than (PLACEMENT_COLS-1) * cell from origin', () => {
+    for (let i = 0; i < 20; i++) {
+      const { x } = placementPosition(i, origin, cell)
+      expect(x - origin.x).toBeLessThanOrEqual((PLACEMENT_COLS - 1) * cell)
+    }
   })
 })

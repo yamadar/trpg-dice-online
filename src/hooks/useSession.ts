@@ -101,6 +101,7 @@ import {
   canMoveToken,
   defaultPlacementOrigin,
   makeGmToken,
+  placementPosition,
   planPcTokenAdds,
   recenterTokensOnMap,
   snapAllTokensToGrid,
@@ -1284,13 +1285,10 @@ export function useSession(): Session {
       const cell = tabletop.grid.cellSize
       const index = tabletop.tokens.length
       const origin = defaultPlacementOrigin(tabletop)
-      // Force a cell-centre snap so hex placements land on a hex
-      // cell rather than the square-stagger raw position.
-      const pos = snapPlacementToGrid(
-        origin.x + index * cell,
-        origin.y,
-        tabletop.grid,
-      )
+      // Grid layout via placementPosition — wraps to a new row every
+      // PLACEMENT_COLS tokens so the cluster stays compact.
+      const raw = placementPosition(index, origin, cell)
+      const pos = snapPlacementToGrid(raw.x, raw.y, tabletop.grid)
       const snapshot =
         characterName || image
           ? { name: characterName ?? '', image: image ?? '' }
@@ -1772,14 +1770,10 @@ export function useSession(): Session {
       const cell = tabletop.grid.cellSize
       const index = tabletop.tokens.length
       // Shared default-placement rule: pcSpawn → map centre → grid
-      // first cell. So a freshly-placed NPC lands near the middle of
-      // the loaded background rather than at the world's top-left.
+      // first cell. Grid layout wraps to a new row for compactness.
       const origin = defaultPlacementOrigin(tabletop)
-      const pos = snapPlacementToGrid(
-        origin.x + index * cell,
-        origin.y,
-        tabletop.grid,
-      )
+      const raw2 = placementPosition(index, origin, cell)
+      const pos = snapPlacementToGrid(raw2.x, raw2.y, tabletop.grid)
       const token: Token = {
         id: newTokenId(),
         kind: 'gm',
@@ -2458,11 +2452,8 @@ export function useSession(): Session {
           const name = typeof msg.characterName === 'string' ? msg.characterName : ''
           const image = typeof msg.image === 'string' ? msg.image : ''
           const snapshot = name || image ? { name, image } : undefined
-          const pos = snapPlacementToGrid(
-            origin.x + index * cell,
-            origin.y,
-            tabletop.grid,
-          )
+          const rawPos = placementPosition(index, origin, cell)
+          const pos = snapPlacementToGrid(rawPos.x, rawPos.y, tabletop.grid)
           const token: Token = {
             id: newTokenId(),
             kind: 'pc',
