@@ -104,6 +104,8 @@ export const zhTW: Dict = {
   'tabletop.npcLibrary.nameLabel': '名稱',
   'tabletop.npcLibrary.confirmDelete': '要從 NPC 圖庫刪除「{name}」嗎？',
   'tabletop.placedTokens.title': '已放置棋子',
+  'tabletop.onMap.title': '地圖上的標記',
+  'tabletop.setup.title': '新增 / 準備',
   'tabletop.placedTokens.empty': '尚未在地圖上放置棋子。',
   'tabletop.placedTokens.kindPc': 'PC',
   'tabletop.placedTokens.kindGm': 'NPC',

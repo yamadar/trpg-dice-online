@@ -104,6 +104,8 @@ export const zhCN: Dict = {
   'tabletop.npcLibrary.nameLabel': '名称',
   'tabletop.npcLibrary.confirmDelete': '从 NPC 库中删除「{name}」？',
   'tabletop.placedTokens.title': '已放置棋子',
+  'tabletop.onMap.title': '地图上的标记',
+  'tabletop.setup.title': '添加 / 准备',
   'tabletop.placedTokens.empty': '地图上还没有棋子。',
   'tabletop.placedTokens.kindPc': 'PC',
   'tabletop.placedTokens.kindGm': 'NPC',

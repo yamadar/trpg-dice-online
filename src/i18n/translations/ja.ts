@@ -104,6 +104,8 @@ export const ja: Dict = {
   'tabletop.npcLibrary.nameLabel': '名前',
   'tabletop.npcLibrary.confirmDelete': 'NPC ライブラリから「{name}」を削除しますか？',
   'tabletop.placedTokens.title': '配置済みトークン',
+  'tabletop.onMap.title': 'マップ上のトークン',
+  'tabletop.setup.title': '追加・準備',
   'tabletop.placedTokens.empty': 'まだトークンは配置されていません',
   'tabletop.placedTokens.kindPc': 'PC',
   'tabletop.placedTokens.kindGm': 'NPC',

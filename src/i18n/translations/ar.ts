@@ -104,6 +104,8 @@ export const ar: Dict = {
   'tabletop.npcLibrary.nameLabel': 'الاسم',
   'tabletop.npcLibrary.confirmDelete': 'هل تريد حذف «{name}» من مكتبة NPC؟',
   'tabletop.placedTokens.title': 'الرموز الموضوعة',
+  'tabletop.onMap.title': 'الرموز على الخريطة',
+  'tabletop.setup.title': 'إضافة وإعداد',
   'tabletop.placedTokens.empty': 'لا توجد رموز على الخريطة بعد.',
   'tabletop.placedTokens.kindPc': 'PC',
   'tabletop.placedTokens.kindGm': 'NPC',

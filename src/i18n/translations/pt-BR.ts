@@ -104,6 +104,8 @@ export const ptBR: Dict = {
   'tabletop.npcLibrary.nameLabel': 'Nome',
   'tabletop.npcLibrary.confirmDelete': 'Excluir "{name}" da biblioteca de NPCs?',
   'tabletop.placedTokens.title': 'Fichas no mapa',
+  'tabletop.onMap.title': 'No mapa',
+  'tabletop.setup.title': 'Adicionar / Preparar',
   'tabletop.placedTokens.empty': 'Nenhuma ficha no mapa ainda.',
   'tabletop.placedTokens.kindPc': 'PC',
   'tabletop.placedTokens.kindGm': 'NPC',

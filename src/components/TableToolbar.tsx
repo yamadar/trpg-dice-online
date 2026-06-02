@@ -255,6 +255,8 @@ export function TableToolbar({
   //                      cancelling an in-flight crop.
   //   `cropSrc`        - the picked image while the crop dialog is up.
   const [editingNpcId, setEditingNpcId] = useState<string | null>(null)
+  // "追加・準備" section collapse state — starts expanded on first open.
+  const [setupOpen, setSetupOpen] = useState(true)
   // An NPC created via the "+" button starts nameless; its id is parked
   // here until a non-blank name is committed (see the editor's
   // `onChangeName`). If the editor closes while the id is still parked,
@@ -940,142 +942,9 @@ export function TableToolbar({
       )}
       {expandedCategory === 'tokens' && (
         <>
+          {/* ── Section 1: マップ上のトークン ─────────────────── */}
           <h3 className="tabletop-toolbar-title">
-            {t('tabletop.playerToken.title')}
-          </h3>
-          {characters.length === 0 ? (
-            <p className="tabletop-toolbar-meta">
-              {t('tabletop.playerToken.noCharacters')}
-            </p>
-          ) : (
-            <ul className="tabletop-toolbar-list">
-              {characters.map((char) => {
-                const placed = placedCharacterIds.has(char.id)
-                return (
-                  <li key={char.id} className="tabletop-toolbar-list-item">
-                    {char.image ? (
-                      <img
-                        src={char.image}
-                        alt=""
-                        className="tabletop-toolbar-thumb"
-                      />
-                    ) : (
-                      <span className="tabletop-toolbar-thumb placeholder" />
-                    )}
-                    <span
-                      className="tabletop-toolbar-list-label"
-                      title={char.name}
-                    >
-                      {char.name}
-                    </span>
-                    <button
-                      type="button"
-                      className="tabletop-toolbar-list-action"
-                      disabled={placed}
-                      title={
-                        placed
-                          ? t('tabletop.playerToken.alreadyPlaced')
-                          : t('tabletop.playerToken.place')
-                      }
-                      onClick={() =>
-                        onPlaceMyCharacter(
-                          char.id,
-                          char.name,
-                          char.image || '',
-                        )
-                      }
-                    >
-                      {placed
-                        ? t('tabletop.playerToken.placed')
-                        : t('tabletop.playerToken.place')}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-
-          {isHost && (
-            <>
-              <hr className="tabletop-toolbar-divider" />
-              <h3 className="tabletop-toolbar-title">
-                {t('tabletop.npcLibrary.title')}
-              </h3>
-              <button
-                type="button"
-                className="icon-btn tabletop-npc-add-btn"
-                onClick={() => void handleAddNpc()}
-                aria-label={t('tabletop.npcLibrary.add')}
-                title={t('tabletop.npcLibrary.add')}
-              >
-                <PlusIcon />
-              </button>
-              {npcLibrary.length > 0 && (
-                <ul className="tabletop-toolbar-list">
-                  {npcLibrary.map((def, index) => {
-                    const isEditing = editingNpcId === def.id
-                    return (
-                      <li
-                        key={def.id}
-                        className="tabletop-toolbar-list-item"
-                      >
-                        <ReorderControls
-                          index={index}
-                          count={npcLibrary.length}
-                          onMove={(dir) => onReorderNpcDef(def.id, dir)}
-                        />
-                        {def.image ? (
-                          <img
-                            src={def.image}
-                            alt=""
-                            className="tabletop-toolbar-thumb"
-                          />
-                        ) : (
-                          <span
-                            className="tabletop-toolbar-thumb tabletop-toolbar-thumb-initial"
-                            aria-hidden="true"
-                          >
-                            {avatarInitial(def.name)}
-                          </span>
-                        )}
-                        <span
-                          className="tabletop-toolbar-list-label"
-                          title={def.name}
-                        >
-                          {def.name}
-                        </span>
-                        <button
-                          type="button"
-                          className={`icon-btn tabletop-toolbar-list-icon-btn${isEditing ? ' active' : ''}`}
-                          aria-label={t('tabletop.npcLibrary.edit')}
-                          aria-expanded={isEditing}
-                          title={t('tabletop.npcLibrary.edit')}
-                          onClick={() =>
-                            setEditingNpcId((cur) =>
-                              cur === def.id ? null : def.id,
-                            )
-                          }
-                        >
-                          <EditIcon />
-                        </button>
-                        <button
-                          type="button"
-                          className="tabletop-toolbar-list-action"
-                          onClick={() => onPlaceNpcFromLibrary(def.id)}
-                        >
-                          {t('tabletop.npcLibrary.place')}
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </>
-          )}
-
-          <hr className="tabletop-toolbar-divider" />
-          <h3 className="tabletop-toolbar-title">
-            {t('tabletop.placedTokens.title')}
+            {t('tabletop.onMap.title')}
           </h3>
           {placedTokens.length === 0 ? (
             <p className="tabletop-toolbar-meta">
@@ -1103,9 +972,6 @@ export function TableToolbar({
                       className="tabletop-toolbar-list-row"
                       title={`${displayName} · ${kindLabel}`}
                       onClick={() => {
-                        // Collapse the expanded panel so the focused
-                        // token is not hidden behind it once the camera
-                        // re-centres ("すぐ操作できるようにフォーカス").
                         setExpandedCategory(null)
                         onFocusToken(token.id)
                       }}
@@ -1144,6 +1010,155 @@ export function TableToolbar({
                 )
               })}
             </ul>
+          )}
+
+          {/* ── Section 2: 追加・準備（折り畳み可）─────────────── */}
+          <hr className="tabletop-toolbar-divider" />
+          <button
+            type="button"
+            className="tabletop-toolbar-section-btn"
+            aria-expanded={setupOpen}
+            onClick={() => setSetupOpen((v) => !v)}
+          >
+            <span className={`tabletop-toolbar-section-chevron${setupOpen ? ' open' : ''}`}>
+              <ChevronDownIcon size={14} />
+            </span>
+            {t('tabletop.setup.title')}
+          </button>
+
+          {setupOpen && (
+            <>
+              {/* PC placement */}
+              <h3 className="tabletop-toolbar-title">
+                {t('tabletop.playerToken.title')}
+              </h3>
+              {characters.length === 0 ? (
+                <p className="tabletop-toolbar-meta">
+                  {t('tabletop.playerToken.noCharacters')}
+                </p>
+              ) : (
+                <ul className="tabletop-toolbar-list">
+                  {characters.map((char) => {
+                    const placed = placedCharacterIds.has(char.id)
+                    return (
+                      <li key={char.id} className="tabletop-toolbar-list-item">
+                        {char.image ? (
+                          <img
+                            src={char.image}
+                            alt=""
+                            className="tabletop-toolbar-thumb"
+                          />
+                        ) : (
+                          <span className="tabletop-toolbar-thumb placeholder" />
+                        )}
+                        <span
+                          className="tabletop-toolbar-list-label"
+                          title={char.name}
+                        >
+                          {char.name}
+                        </span>
+                        <button
+                          type="button"
+                          className="tabletop-toolbar-list-action"
+                          disabled={placed}
+                          title={
+                            placed
+                              ? t('tabletop.playerToken.alreadyPlaced')
+                              : t('tabletop.playerToken.place')
+                          }
+                          onClick={() =>
+                            onPlaceMyCharacter(char.id, char.name, char.image || '')
+                          }
+                        >
+                          {placed
+                            ? t('tabletop.playerToken.placed')
+                            : t('tabletop.playerToken.place')}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+
+              {/* NPC Library (GM only) */}
+              {isHost && (
+                <>
+                  <hr className="tabletop-toolbar-divider" />
+                  <h3 className="tabletop-toolbar-title">
+                    {t('tabletop.npcLibrary.title')}
+                  </h3>
+                  <button
+                    type="button"
+                    className="icon-btn tabletop-npc-add-btn"
+                    onClick={() => void handleAddNpc()}
+                    aria-label={t('tabletop.npcLibrary.add')}
+                    title={t('tabletop.npcLibrary.add')}
+                  >
+                    <PlusIcon />
+                  </button>
+                  {npcLibrary.length > 0 && (
+                    <ul className="tabletop-toolbar-list">
+                      {npcLibrary.map((def, index) => {
+                        const isEditing = editingNpcId === def.id
+                        return (
+                          <li
+                            key={def.id}
+                            className="tabletop-toolbar-list-item"
+                          >
+                            <ReorderControls
+                              index={index}
+                              count={npcLibrary.length}
+                              onMove={(dir) => onReorderNpcDef(def.id, dir)}
+                            />
+                            {def.image ? (
+                              <img
+                                src={def.image}
+                                alt=""
+                                className="tabletop-toolbar-thumb"
+                              />
+                            ) : (
+                              <span
+                                className="tabletop-toolbar-thumb tabletop-toolbar-thumb-initial"
+                                aria-hidden="true"
+                              >
+                                {avatarInitial(def.name)}
+                              </span>
+                            )}
+                            <span
+                              className="tabletop-toolbar-list-label"
+                              title={def.name}
+                            >
+                              {def.name}
+                            </span>
+                            <button
+                              type="button"
+                              className={`icon-btn tabletop-toolbar-list-icon-btn${isEditing ? ' active' : ''}`}
+                              aria-label={t('tabletop.npcLibrary.edit')}
+                              aria-expanded={isEditing}
+                              title={t('tabletop.npcLibrary.edit')}
+                              onClick={() =>
+                                setEditingNpcId((cur) =>
+                                  cur === def.id ? null : def.id,
+                                )
+                              }
+                            >
+                              <EditIcon />
+                            </button>
+                            <button
+                              type="button"
+                              className="tabletop-toolbar-list-action"
+                              onClick={() => onPlaceNpcFromLibrary(def.id)}
+                            >
+                              {t('tabletop.npcLibrary.place')}
+                            </button>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+                </>
+              )}
+            </>
           )}
         </>
       )}

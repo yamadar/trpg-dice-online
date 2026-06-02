@@ -104,6 +104,8 @@ export const de: Dict = {
   'tabletop.npcLibrary.nameLabel': 'Name',
   'tabletop.npcLibrary.confirmDelete': '„{name}“ aus der NPC-Bibliothek löschen?',
   'tabletop.placedTokens.title': 'Platzierte Marker',
+  'tabletop.onMap.title': 'Auf der Karte',
+  'tabletop.setup.title': 'Hinzufügen & Vorbereiten',
   'tabletop.placedTokens.empty': 'Noch keine Marker auf der Karte.',
   'tabletop.placedTokens.kindPc': 'SC',
   'tabletop.placedTokens.kindGm': 'NPC',

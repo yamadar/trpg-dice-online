@@ -104,6 +104,8 @@ export const hi: Dict = {
   'tabletop.npcLibrary.nameLabel': 'नाम',
   'tabletop.npcLibrary.confirmDelete': 'NPC लाइब्रेरी से "{name}" हटाएँ?',
   'tabletop.placedTokens.title': 'रखे गए टोकन',
+  'tabletop.onMap.title': 'मानचित्र पर',
+  'tabletop.setup.title': 'जोड़ें / तैयारी',
   'tabletop.placedTokens.empty': 'अभी मानचित्र पर कोई टोकन नहीं है।',
   'tabletop.placedTokens.kindPc': 'PC',
   'tabletop.placedTokens.kindGm': 'NPC',

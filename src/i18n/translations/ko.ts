@@ -104,6 +104,8 @@ export const ko: Dict = {
   'tabletop.npcLibrary.nameLabel': '이름',
   'tabletop.npcLibrary.confirmDelete': 'NPC 라이브러리에서 "{name}"을(를) 삭제할까요?',
   'tabletop.placedTokens.title': '배치된 토큰',
+  'tabletop.onMap.title': '지도 위',
+  'tabletop.setup.title': '추가 / 준비',
   'tabletop.placedTokens.empty': '아직 맵에 토큰이 없습니다.',
   'tabletop.placedTokens.kindPc': 'PC',
   'tabletop.placedTokens.kindGm': 'NPC',

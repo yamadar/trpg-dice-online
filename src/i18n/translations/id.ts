@@ -104,6 +104,8 @@ export const id: Dict = {
   'tabletop.npcLibrary.nameLabel': 'Nama',
   'tabletop.npcLibrary.confirmDelete': 'Hapus "{name}" dari pustaka NPC?',
   'tabletop.placedTokens.title': 'Token terpasang',
+  'tabletop.onMap.title': 'Di peta',
+  'tabletop.setup.title': 'Tambah / Persiapan',
   'tabletop.placedTokens.empty': 'Belum ada token di peta.',
   'tabletop.placedTokens.kindPc': 'PC',
   'tabletop.placedTokens.kindGm': 'NPC',

@@ -104,6 +104,8 @@ export const tr: Dict = {
   'tabletop.npcLibrary.nameLabel': 'Ad',
   'tabletop.npcLibrary.confirmDelete': '«{name}» NPC kütüphaneden silinsin mi?',
   'tabletop.placedTokens.title': 'Yerleştirilen jetonlar',
+  'tabletop.onMap.title': 'Haritada',
+  'tabletop.setup.title': 'Ekle / Hazırlık',
   'tabletop.placedTokens.empty': 'Henüz haritada jeton yok.',
   'tabletop.placedTokens.kindPc': 'PC',
   'tabletop.placedTokens.kindGm': 'NPC',

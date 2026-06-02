@@ -104,6 +104,8 @@ export const th: Dict = {
   'tabletop.npcLibrary.nameLabel': 'ชื่อ',
   'tabletop.npcLibrary.confirmDelete': 'ลบ "{name}" จากคลัง NPC?',
   'tabletop.placedTokens.title': 'โทเคนที่วางไว้',
+  'tabletop.onMap.title': 'บนแผนที่',
+  'tabletop.setup.title': 'เพิ่ม / เตรียม',
   'tabletop.placedTokens.empty': 'ยังไม่มีโทเคนบนแผนที่',
   'tabletop.placedTokens.kindPc': 'PC',
   'tabletop.placedTokens.kindGm': 'NPC',

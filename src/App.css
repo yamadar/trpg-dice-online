@@ -734,6 +734,33 @@
   border-top: 1px solid var(--border);
   margin: 4px 0;
 }
+/* Collapsible section header inside the token panel. Full-width button
+   that toggles the section; icon chevron rotates when open. */
+.tabletop-toolbar-section-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 6px;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.tabletop-toolbar-section-btn:hover {
+  color: var(--accent);
+}
+.tabletop-toolbar-section-chevron {
+  flex-shrink: 0;
+  transition: transform 120ms ease;
+}
+.tabletop-toolbar-section-chevron.open {
+  transform: rotate(180deg);
+}
 .tabletop-toolbar-button {
   padding: 8px 12px;
   background: var(--accent-bg, rgba(192, 132, 252, 0.18));

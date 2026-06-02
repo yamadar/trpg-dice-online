@@ -104,6 +104,8 @@ export const vi: Dict = {
   'tabletop.npcLibrary.nameLabel': 'Tên',
   'tabletop.npcLibrary.confirmDelete': 'Xoá "{name}" khỏi thư viện NPC?',
   'tabletop.placedTokens.title': 'Token đã đặt',
+  'tabletop.onMap.title': 'Trên bản đồ',
+  'tabletop.setup.title': 'Thêm / Chuẩn bị',
   'tabletop.placedTokens.empty': 'Chưa có token nào trên bản đồ.',
   'tabletop.placedTokens.kindPc': 'PC',
   'tabletop.placedTokens.kindGm': 'NPC',

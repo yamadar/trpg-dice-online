@@ -104,6 +104,8 @@ export const it: Dict = {
   'tabletop.npcLibrary.nameLabel': 'Nome',
   'tabletop.npcLibrary.confirmDelete': 'Eliminare "{name}" dalla libreria PNG?',
   'tabletop.placedTokens.title': 'Segnalini posizionati',
+  'tabletop.onMap.title': 'Sulla mappa',
+  'tabletop.setup.title': 'Aggiungi / Preparazione',
   'tabletop.placedTokens.empty': 'Nessun segnalino ancora sulla mappa.',
   'tabletop.placedTokens.kindPc': 'PG',
   'tabletop.placedTokens.kindGm': 'PNG',

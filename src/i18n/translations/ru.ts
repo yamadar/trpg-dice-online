@@ -104,6 +104,8 @@ export const ru: Dict = {
   'tabletop.npcLibrary.nameLabel': 'Имя',
   'tabletop.npcLibrary.confirmDelete': 'Удалить «{name}» из библиотеки NPC?',
   'tabletop.placedTokens.title': 'Размещённые фишки',
+  'tabletop.onMap.title': 'На карте',
+  'tabletop.setup.title': 'Добавить / Подготовка',
   'tabletop.placedTokens.empty': 'На карте ещё нет фишек.',
   'tabletop.placedTokens.kindPc': 'PC',
   'tabletop.placedTokens.kindGm': 'NPC',

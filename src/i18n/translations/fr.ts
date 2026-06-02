@@ -104,6 +104,8 @@ export const fr: Dict = {
   'tabletop.npcLibrary.nameLabel': 'Nom',
   'tabletop.npcLibrary.confirmDelete': 'Supprimer « {name} » de la bibliothèque PNJ ?',
   'tabletop.placedTokens.title': 'Jetons placés',
+  'tabletop.onMap.title': 'Sur la carte',
+  'tabletop.setup.title': 'Ajouter / Préparer',
   'tabletop.placedTokens.empty': 'Aucun jeton sur la carte pour l’instant.',
   'tabletop.placedTokens.kindPc': 'PJ',
   'tabletop.placedTokens.kindGm': 'PNJ',

@@ -104,6 +104,8 @@ export const pl: Dict = {
   'tabletop.npcLibrary.nameLabel': 'Imię',
   'tabletop.npcLibrary.confirmDelete': 'Usunąć „{name}” z biblioteki NPC?',
   'tabletop.placedTokens.title': 'Umieszczone znaczniki',
+  'tabletop.onMap.title': 'Na mapie',
+  'tabletop.setup.title': 'Dodaj / Przygotowanie',
   'tabletop.placedTokens.empty': 'Brak znaczników na mapie.',
   'tabletop.placedTokens.kindPc': 'BG',
   'tabletop.placedTokens.kindGm': 'NPC',
