@@ -1075,13 +1075,10 @@
   font: inherit;
 }
 /* Read-only value (PC token's character name): same box as the GM
-   label input above so the two rows read as one consistent control,
-   but static — no focus affordance. */
+   Display-only values are rendered as plain text with no border or
+   background so they read clearly alongside editable inputs. */
 .tabletop-token-popover-value {
-  padding: 6px 8px;
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  padding: 2px 0;
   color: var(--text);
   word-break: break-word;
 }
@@ -1653,6 +1650,16 @@
 .field input,
 .field select {
   width: 100%;
+}
+
+/* Plain-text replacement for disabled/read-only form fields.
+   Matches the spacing of an input so sibling labels align, but has no
+   border or background so it reads as static content, not an input. */
+.field-readonly-value {
+  padding: 6px 0;
+  color: var(--text);
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .hint {

@@ -1760,6 +1760,14 @@ function TokenPopover({
         </label>
       )}
 
+      {/* Character info button — above size picker, all PCs */}
+      {token.kind === 'pc' && onEditCharacter && (
+        <button type="button" className="tabletop-toolbar-button outline"
+          onClick={onEditCharacter}>
+          {t('tabletop.tokenEdit.editCharacter')}
+        </button>
+      )}
+
       {/* Size: picker if canOperate, static text otherwise */}
       {canOperate ? (
         <div className="tabletop-token-popover-row">
@@ -1784,14 +1792,6 @@ function TokenPopover({
           <span>{t('tabletop.tokenEdit.size')}</span>
           <span className="tabletop-token-popover-value">{String(tokenSize(token))}</span>
         </div>
-      )}
-
-      {/* Character info button — all PCs (edit own, view-only others) */}
-      {token.kind === 'pc' && onEditCharacter && (
-        <button type="button" className="tabletop-toolbar-button outline"
-          onClick={onEditCharacter}>
-          {t('tabletop.tokenEdit.editCharacter')}
-        </button>
       )}
 
       {/* NPC: change image + delete — operator only */}

@@ -164,21 +164,24 @@ export function CharacterEditor({
       <div className="char-details">
         <label className="field">
           <span>{t('character.name')}</span>
-          <input
-            ref={nameRef}
-            type="text"
-            value={character.name}
-            maxLength={40}
-            placeholder={t('character.namePlaceholder')}
-            readOnly={readOnly}
-            disabled={readOnly}
-            onChange={(e) => {
-              if (readOnly) return
-              onUpdate({ name: e.target.value })
-              nameNotice.markChanged()
-            }}
-            onBlur={readOnly ? undefined : nameNotice.flush}
-          />
+          {readOnly ? (
+            <p className="field-readonly-value">
+              {character.name || t('character.unnamed')}
+            </p>
+          ) : (
+            <input
+              ref={nameRef}
+              type="text"
+              value={character.name}
+              maxLength={40}
+              placeholder={t('character.namePlaceholder')}
+              onChange={(e) => {
+                onUpdate({ name: e.target.value })
+                nameNotice.markChanged()
+              }}
+              onBlur={nameNotice.flush}
+            />
+          )}
         </label>
 
         <div className="field char-avatar-field">
@@ -251,20 +254,21 @@ export function CharacterEditor({
 
         <label className="field">
           <span>{t('character.background')}</span>
-          <textarea
-            rows={5}
-            value={character.background}
-            maxLength={1000}
-            placeholder={t('character.backgroundPlaceholder')}
-            readOnly={readOnly}
-            disabled={readOnly}
-            onChange={(e) => {
-              if (readOnly) return
-              onUpdate({ background: e.target.value })
-              detailNotice.markChanged()
-            }}
-            onBlur={readOnly ? undefined : detailNotice.flush}
-          />
+          {readOnly ? (
+            <p className="field-readonly-value">{character.background}</p>
+          ) : (
+            <textarea
+              rows={5}
+              value={character.background}
+              maxLength={1000}
+              placeholder={t('character.backgroundPlaceholder')}
+              onChange={(e) => {
+                onUpdate({ background: e.target.value })
+                detailNotice.markChanged()
+              }}
+              onBlur={detailNotice.flush}
+            />
+          )}
         </label>
 
         {/* Private memo — hidden in read-only mode (it's local-only data
