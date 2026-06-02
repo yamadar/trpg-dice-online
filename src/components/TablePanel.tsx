@@ -2162,7 +2162,7 @@ function TokenView({
       x={token.x}
       y={token.y}
       draggable={draggable}
-      opacity={dimmed ? 0.6 : 1}
+      opacity={dimmed ? 0.8 : 1}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
       onClick={handleSelect}
