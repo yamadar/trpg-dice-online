@@ -137,27 +137,27 @@ export const it: Dict = {
   'tabletop.dock.dice': 'Dadi',
   'tabletop.dock.returnToRoom': 'Torna alla stanza',
   'tabletop.help': 'Tutorial',
-  'tabletop.tutorial.welcome.title': 'Benvenuto nel tabletop',
+  'tabletop.tutorial.welcome.title': 'Benvenuto al tavolo da gioco',
   'tabletop.tutorial.welcome.body':
-    'Muovi segnalini, traccia segni, gestisci la nebbia di guerra — il tabletop è la tela condivisa della tua sessione. Pensato per funzionare bene sia su desktop che su mobile.',
-  'tabletop.tutorial.viewport.title': 'Sposta e zooma la mappa',
+    'Sposta i segnalini, disegna annotazioni, gestisci la nebbia di guerra — il tavolo è la tua tela condivisa per la sessione. Funziona sia su desktop sia su cellulare.',
+  'tabletop.tutorial.viewport.title': 'Spostare e ingrandire la mappa',
   'tabletop.tutorial.viewport.body':
-    'Trascina uno spazio vuoto per spostare la vista. Usa la rotellina del mouse o pizzica con due dita per zoomare. Puoi esplorare liberamente senza disturbare gli altri.',
+    'Trascina uno spazio vuoto per spostarti. Scorri la rotellina del mouse o pizzica con due dita per lo zoom (25%–400%). La tua vista è indipendente: muoviti liberamente senza alterare quella degli altri.',
   'tabletop.tutorial.tools.title': 'La palette degli strumenti (a sinistra)',
   'tabletop.tutorial.tools.body':
-    'Scegli Seleziona, Penna, Testo o Gomma dalla palette di sinistra. Penna e Testo permettono di impostare colore e dimensione. Il pennello nebbia (solo GM) consente al GM di nascondere e rivelare parti della mappa.',
-  'tabletop.tutorial.tokens.title': 'Muovi il tuo segnalino',
+    'Seleziona/trascina, Penna, Testo, Gomma. Penna e Testo ti permettono di scegliere colore e dimensione. Il pennello della nebbia (solo GM) nasconde o rivela le celle una alla volta.',
+  'tabletop.tutorial.tokens.title': 'Segnalini — sposta, tocca, interagisci',
   'tabletop.tutorial.tokens.body':
-    'Trascina il segnalino del tuo personaggio per spostarlo. Tocca un segnalino per aprire il suo menu. (Solo GM: trascina qualsiasi segnalino, modifica nomi ed etichette, rimuovi segnalini dalla mappa.)',
+    'Trascina il tuo segnalino per spostarlo. Tocca un segnalino qualsiasi per aprire la sua finestra: vedi le info del personaggio, leggi e scrivi la nota condivisa e (per il tuo segnalino) ridimensionalo o rimuovilo. Il GM può modificare tutti i segnalini.',
   'tabletop.tutorial.rightPanel.title': 'Il pannello di destra',
   'tabletop.tutorial.rightPanel.body':
-    'Tutta la gestione della mappa è qui: segnalini da posizionare, più categorie solo per GM — impostazioni mappa e griglia, controllo della nebbia e libreria modelli / salvataggi.',
-  'tabletop.tutorial.dock.title': 'Il dock in basso',
+    'Tocca l\'icona del segnalino per vedere «Sulla mappa» (clicca una riga per metterla in risalto) e «Aggiungi / Preparazione» (posiziona il tuo personaggio, gestisci la libreria dei PNG). Schede solo per il GM: mappa e griglia, nebbia, e la libreria di modelli/salvataggi.',
+  'tabletop.tutorial.dock.title': 'La barra inferiore',
   'tabletop.tutorial.dock.body':
-    'Chat, scheda del personaggio, lanciatore di dadi e ritorno alla stanza. Su telefono, chat e dadi si scambiano (uno alla volta) — e tirare i dadi ti porta in chat per vedere il risultato.',
+    'Chat, la tua scheda del personaggio e il lanciatore di dadi. Lanciando i dadi compare un punto da leggere sull\'icona della chat: nessun lancio sfugge mai. Su cellulare chat e dadi condividono uno slot e lanciare i dadi ti porta alla chat.',
   'tabletop.tutorial.help.title': 'Riapri questa guida quando vuoi',
   'tabletop.tutorial.help.body':
-    'Il pulsante “?” in fondo al menu di destra riapre questo tour ogni volta che ti serve un ripasso.',
+    'Il pulsante «?» in fondo al pannello di destra riapre questo tour ogni volta che ti serve un ripasso.',
   'tabletop.preset.title': 'Mappa predefinita',
   'tabletop.preset.choose': 'Scegli una predefinita…',
   'tabletop.preset.load': 'Carica predefinita',

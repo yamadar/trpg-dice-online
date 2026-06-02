@@ -139,25 +139,25 @@ export const de: Dict = {
   'tabletop.help': 'Tutorial',
   'tabletop.tutorial.welcome.title': 'Willkommen am Spieltisch',
   'tabletop.tutorial.welcome.body':
-    'Marker bewegen, Markierungen zeichnen, den Nebel des Krieges steuern — der Spieltisch ist deine geteilte Leinwand für die Sitzung. Funktioniert gleich gut am Desktop und am Handy.',
+    'Marker bewegen, Markierungen zeichnen, den Nebel des Krieges verwalten — der Spieltisch ist deine geteilte Leinwand für die Sitzung. Funktioniert gleich gut am Desktop und am Handy.',
   'tabletop.tutorial.viewport.title': 'Karte verschieben und zoomen',
   'tabletop.tutorial.viewport.body':
-    'Ziehe an einer leeren Stelle, um die Ansicht zu verschieben. Scrolle mit dem Mausrad oder zoome mit zwei Fingern. Du kannst dich frei bewegen, ohne andere zu stören.',
+    'Ziehe an einer leeren Stelle, um die Ansicht zu verschieben. Scrolle mit dem Mausrad oder zoome mit zwei Fingern (25 %–400 %). Deine Ansicht ist unabhängig — bewege dich frei, ohne die Ansicht der anderen zu verändern.',
   'tabletop.tutorial.tools.title': 'Die Werkzeugleiste (links)',
   'tabletop.tutorial.tools.body':
-    'Wähle Auswahl, Stift, Text oder Radierer aus der linken Leiste. Bei Stift und Text kannst du Farbe und Größe einstellen. Der Nebelpinsel (nur SL) erlaubt der SL, Bereiche der Karte zu verbergen oder aufzudecken.',
-  'tabletop.tutorial.tokens.title': 'Bewege deinen Marker',
+    'Auswahl/Ziehen, Stift, Text, Radierer. Bei Stift und Text kannst du Farbe und Größe wählen. Der Nebelpinsel (nur SL) verbirgt oder enthüllt einzelne Zellen.',
+  'tabletop.tutorial.tokens.title': 'Marker — bewegen, antippen, interagieren',
   'tabletop.tutorial.tokens.body':
-    'Ziehe den Marker deines Charakters, um ihn zu bewegen. Tippe einen Marker an, um sein Menü zu öffnen. (Nur SL: jeden Marker ziehen, Namen und Bezeichnungen bearbeiten, Marker von der Karte entfernen.)',
+    'Ziehe deinen eigenen Marker, um ihn zu bewegen. Tippe einen beliebigen Marker an, um sein Menü zu öffnen: Charakterinfo ansehen, die gemeinsame Notiz lesen und schreiben und (bei deinem eigenen Marker) ihn vergrößern/verkleinern oder entfernen. Die SL kann alle Marker bearbeiten.',
   'tabletop.tutorial.rightPanel.title': 'Das rechte Panel',
   'tabletop.tutorial.rightPanel.body':
-    'Die gesamte Kartenverwaltung findest du hier: platzierbare Marker und SL-Kategorien — Karte & Raster, Nebelsteuerung sowie die Vorlagen-/Spielstandbibliothek.',
+    'Tippe das Marker-Symbol an für „Auf der Karte“ (klicke eine Zeile an, um sie hervorzuheben) und „Hinzufügen & Vorbereiten“ (platziere deinen Charakter, verwalte die NPC-Bibliothek). Nur-SL-Tabs: Karte & Raster, Nebel sowie die Vorlagen-/Spielstandbibliothek.',
   'tabletop.tutorial.dock.title': 'Das untere Dock',
   'tabletop.tutorial.dock.body':
-    'Chat, dein Charakterbogen, der Würfler und der Weg zurück zum Raum. Auf dem Handy wechseln Chat und Würfel (jeweils einer sichtbar) — und nach dem Wurf springt die Anzeige zum Chat, damit du das Ergebnis siehst.',
+    'Chat, dein Charakterbogen und der Würfler. Ein Wurf zeigt einen Ungelesen-Punkt auf dem Chat-Symbol — kein Wurf geht je verloren. Auf dem Handy teilen sich Chat und Würfel einen Platz, und ein Wurf wechselt zum Chat.',
   'tabletop.tutorial.help.title': 'Diese Anleitung jederzeit erneut öffnen',
   'tabletop.tutorial.help.body':
-    'Die „?“-Schaltfläche unten im rechten Menü öffnet diese Tour erneut, wann immer du eine Auffrischung brauchst.',
+    'Die „?“-Schaltfläche unten im rechten Panel öffnet diese Tour erneut, wann immer du eine Auffrischung brauchst.',
   'tabletop.preset.title': 'Vorgefertigte Karte',
   'tabletop.preset.choose': 'Vorlage wählen…',
   'tabletop.preset.load': 'Vorlage laden',

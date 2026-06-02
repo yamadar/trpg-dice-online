@@ -137,27 +137,27 @@ export const vi: Dict = {
   'tabletop.dock.dice': 'Xúc xắc',
   'tabletop.dock.returnToRoom': 'Về phòng',
   'tabletop.help': 'Hướng dẫn',
-  'tabletop.tutorial.welcome.title': 'Chào mừng đến bàn chơi',
+  'tabletop.tutorial.welcome.title': 'Chào mừng đến với bàn chơi',
   'tabletop.tutorial.welcome.body':
-    'Di chuyển token, vẽ đánh dấu, quản lý sương mù chiến tranh — bàn chơi là khung vẽ chung cho cả phiên. Được thiết kế để dùng thoải mái trên cả desktop và di động.',
-  'tabletop.tutorial.viewport.title': 'Di chuyển và phóng to bản đồ',
+    'Di chuyển token, vẽ chú thích, quản lý sương mù chiến tranh — bàn chơi là khung vẽ chung cho phiên chơi của bạn. Hoạt động trên cả máy tính lẫn điện thoại.',
+  'tabletop.tutorial.viewport.title': 'Di chuyển và thu phóng bản đồ',
   'tabletop.tutorial.viewport.body':
-    'Kéo vùng trống để di chuyển khung nhìn. Lăn chuột hoặc chụm hai ngón để phóng to/thu nhỏ. Bạn có thể tự do xem mà không làm phiền ai.',
+    'Kéo vùng trống để di chuyển khung nhìn. Lăn chuột hoặc chụm hai ngón tay để thu phóng (25%–400%). Khung nhìn của bạn độc lập — tự do di chuyển mà không làm thay đổi khung nhìn của người khác.',
   'tabletop.tutorial.tools.title': 'Bảng công cụ (bên trái)',
   'tabletop.tutorial.tools.body':
-    'Chọn Chọn, Bút, Chữ, hoặc Tẩy từ bảng bên trái. Bút và Chữ cho phép đặt màu và cỡ. Cọ sương mù (chỉ GM) cho GM ẩn hoặc lộ các phần của bản đồ.',
-  'tabletop.tutorial.tokens.title': 'Di chuyển token của bạn',
+    'Chọn/kéo, Bút, Chữ, Tẩy. Bút và Chữ cho bạn chọn màu và kích thước. Cọ sương mù (chỉ GM) ẩn hoặc hiện từng ô một.',
+  'tabletop.tutorial.tokens.title': 'Token — di chuyển, chạm, tương tác',
   'tabletop.tutorial.tokens.body':
-    'Kéo token nhân vật của chính bạn để di chuyển. Chạm vào token để mở menu. (Chỉ GM: kéo bất kỳ token nào, sửa tên và nhãn, gỡ token khỏi bản đồ.)',
+    'Kéo token của bạn để di chuyển. Chạm vào token bất kỳ để mở hộp thoại của nó: xem thông tin nhân vật, đọc và viết ghi chú chung, và (với token của chính bạn) đổi kích thước hoặc gỡ bỏ. GM có thể chỉnh sửa mọi token.',
   'tabletop.tutorial.rightPanel.title': 'Bảng bên phải',
   'tabletop.tutorial.rightPanel.body':
-    'Mọi quản lý bản đồ nằm ở đây: các token có thể đặt, cùng các mục chỉ-GM — cài đặt bản đồ & lưới, điều khiển sương mù, và thư viện mẫu / ảnh chụp.',
-  'tabletop.tutorial.dock.title': 'Dock dưới cùng',
+    'Chạm biểu tượng token để xem «Trên bản đồ» (nhấp vào một hàng để làm nổi bật) và «Thêm / Chuẩn bị» (đặt nhân vật của bạn, quản lý thư viện NPC). Tab chỉ dành cho GM: bản đồ và lưới, sương mù, và thư viện mẫu/bản lưu.',
+  'tabletop.tutorial.dock.title': 'Thanh dưới cùng',
   'tabletop.tutorial.dock.body':
-    'Chat, bảng nhân vật, bộ tung xúc xắc, và đường về phòng. Trên điện thoại, chat và xúc xắc đổi qua lại (mỗi lần một) — và sau khi tung xúc xắc sẽ tự lật sang chat để bạn thấy kết quả.',
-  'tabletop.tutorial.help.title': 'Mở lại hướng dẫn bất cứ lúc nào',
+    'Trò chuyện, bảng nhân vật của bạn, và bộ tung xúc xắc. Tung xúc xắc sẽ hiện chấm chưa đọc trên biểu tượng trò chuyện — không lần tung nào bị bỏ sót. Trên điện thoại, trò chuyện và xúc xắc dùng chung một ô và việc tung xúc xắc sẽ chuyển bạn sang trò chuyện.',
+  'tabletop.tutorial.help.title': 'Mở lại hướng dẫn này bất cứ lúc nào',
   'tabletop.tutorial.help.body':
-    'Nút "?" ở cuối menu bên phải mở lại hướng dẫn này bất cứ khi nào bạn cần xem lại.',
+    'Nút «?» ở cuối bảng bên phải sẽ mở lại phần giới thiệu này mỗi khi bạn cần xem lại.',
   'tabletop.preset.title': 'Bản đồ có sẵn',
   'tabletop.preset.choose': 'Chọn một mẫu có sẵn…',
   'tabletop.preset.load': 'Tải mẫu có sẵn',

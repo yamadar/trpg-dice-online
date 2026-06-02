@@ -137,27 +137,27 @@ export const ptBR: Dict = {
   'tabletop.dock.dice': 'Dados',
   'tabletop.dock.returnToRoom': 'Voltar à sala',
   'tabletop.help': 'Tutorial',
-  'tabletop.tutorial.welcome.title': 'Boas-vindas à mesa',
+  'tabletop.tutorial.welcome.title': 'Boas-vindas à mesa de jogo',
   'tabletop.tutorial.welcome.body':
-    'Mova fichas, desenhe marcações, gerencie a névoa de guerra — a mesa é a sua tela compartilhada da sessão. Pensada para funcionar bem tanto no desktop quanto no celular.',
-  'tabletop.tutorial.viewport.title': 'Mover e ampliar o mapa',
+    'Mova fichas, desenhe anotações, gerencie a névoa de guerra — a mesa é sua tela compartilhada para a sessão. Funciona tanto no computador quanto no celular.',
+  'tabletop.tutorial.viewport.title': 'Mover e dar zoom no mapa',
   'tabletop.tutorial.viewport.body':
-    'Arraste em um espaço vazio para deslocar a visão. Use a roda do mouse ou pinça com dois dedos para ampliar. Você pode explorar à vontade sem atrapalhar os outros.',
-  'tabletop.tutorial.tools.title': 'A paleta de ferramentas (esquerda)',
+    'Arraste um espaço vazio para deslocar. Role a roda do mouse ou faça o gesto de pinça com dois dedos para dar zoom (25%–400%). Sua visão é independente — explore à vontade sem mexer na dos outros.',
+  'tabletop.tutorial.tools.title': 'A paleta de ferramentas (à esquerda)',
   'tabletop.tutorial.tools.body':
-    'Escolha Selecionar, Caneta, Texto ou Borracha na paleta à esquerda. Caneta e Texto deixam você definir cor e tamanho. O pincel de névoa (só para o mestre) permite esconder e revelar partes do mapa.',
-  'tabletop.tutorial.tokens.title': 'Mova sua ficha',
+    'Selecionar/arrastar, Caneta, Texto, Borracha. Caneta e Texto deixam você escolher cor e tamanho. O pincel de névoa (somente GM) oculta ou revela as células uma a uma.',
+  'tabletop.tutorial.tokens.title': 'Fichas — mover, tocar, interagir',
   'tabletop.tutorial.tokens.body':
-    'Arraste a ficha do seu personagem para movê-la. Toque em uma ficha para abrir o menu dela. (Só para o mestre: arrastar qualquer ficha, editar nomes e rótulos, remover fichas do mapa.)',
-  'tabletop.tutorial.rightPanel.title': 'O painel lateral direito',
+    'Arraste sua própria ficha para movê-la. Toque em qualquer ficha para abrir o diálogo dela: veja as informações do personagem, leia e escreva a nota compartilhada e (na sua própria ficha) redimensione ou remova. O GM pode editar todas as fichas.',
+  'tabletop.tutorial.rightPanel.title': 'O painel do lado direito',
   'tabletop.tutorial.rightPanel.body':
-    'Toda a gestão do mapa fica aqui: fichas que você pode posicionar, além das categorias exclusivas do mestre — configurações de mapa e grade, controle da névoa e a biblioteca de modelos e snapshots.',
+    'Toque no ícone de ficha para ver «No mapa» (clique em uma linha para destacá-la) e «Adicionar / Preparar» (posicione seu personagem, gerencie a biblioteca de NPCs). Abas só do GM: mapa e grade, névoa, e a biblioteca de modelos/salvamentos.',
   'tabletop.tutorial.dock.title': 'A barra inferior',
   'tabletop.tutorial.dock.body':
-    'Chat, ficha do seu personagem, rolador de dados e o caminho de volta à sala. No celular, chat e dados se alternam (um de cada vez) — e rolar os dados leva você ao chat para ver o resultado.',
+    'Bate-papo, sua ficha de personagem e o rolador de dados. Rolar os dados mostra um ponto de não lido no ícone do bate-papo — nenhuma rolagem passa batido. No celular, bate-papo e dados dividem um espaço e rolar os dados leva você ao bate-papo.',
   'tabletop.tutorial.help.title': 'Reabra este guia quando quiser',
   'tabletop.tutorial.help.body':
-    'O botão "?" na parte inferior do menu lateral direito reabre este tour sempre que você precisar relembrar.',
+    'O botão «?» na parte de baixo do painel direito reabre este tour sempre que você precisar de uma revisão.',
   'tabletop.preset.title': 'Mapa predefinido',
   'tabletop.preset.choose': 'Escolher predefinido…',
   'tabletop.preset.load': 'Carregar predefinido',
