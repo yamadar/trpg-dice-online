@@ -19,6 +19,36 @@ import type {
 import { newTokenId, tokenSize } from './types'
 
 /**
+ * Number of tokens per row in the compact grid used for new placements.
+ * After PLACEMENT_COLS tokens in a row the next token wraps to a new row
+ * below the origin, so the cluster stays compact rather than spreading
+ * indefinitely to the right.
+ */
+export const PLACEMENT_COLS = 4
+
+/**
+ * Convert a linear placement index to world-space (x, y) coordinates
+ * relative to the given origin, using a row-wrapping grid. Callers
+ * should still pass the result through `snapPlacementToGrid`.
+ *
+ * @example
+ * // index 0-3 → first row; 4-7 → second row, etc.
+ * placementPosition(5, origin, 50) → { x: origin.x + 1*50, y: origin.y + 1*50 }
+ */
+export function placementPosition(
+  index: number,
+  origin: { x: number; y: number },
+  cellSize: number,
+): { x: number; y: number } {
+  const col = index % PLACEMENT_COLS
+  const row = Math.floor(index / PLACEMENT_COLS)
+  return {
+    x: origin.x + col * cellSize,
+    y: origin.y + row * cellSize,
+  }
+}
+
+/**
  * Where new tokens should be placed when no `pcSpawn` is set.
  *
  * Pre-fix, every placement defaulted to the grid origin (top-left of
@@ -155,15 +185,9 @@ export function planPcTokenAdds(
     if (has) continue
     const cell = grid.cellSize
     const index = existing.length + out.length
-    // Raw stagger position assumes a square layout. For a hex grid
-    // that lands between cells, so we run the result through
-    // `snapPlacementToGrid` which forces a cell-centre snap
-    // regardless of the user's `snap` toggle (the toggle controls
-    // drag behaviour, not new-spawn placement).
-    const raw = {
-      x: origin.x + index * cell,
-      y: origin.y,
-    }
+    // Grid layout: wrap to a new row every PLACEMENT_COLS tokens so
+    // the cluster stays compact instead of spreading right indefinitely.
+    const raw = placementPosition(index, origin, cell)
     const pos = snapPlacementToGrid(raw.x, raw.y, grid)
     out.push({
       id: newTokenId(),
@@ -213,13 +237,9 @@ export function makeGmToken(
   const index = existing.length
   const origin = defaultPlacementOrigin(state)
   const label = (options.label ?? '').trim()
-  // See `planPcTokenAdds` — raw stagger then force-snap so hex grids
-  // land on a cell centre rather than between rows.
-  const pos = snapPlacementToGrid(
-    origin.x + index * cell,
-    origin.y,
-    state.grid,
-  )
+  // Same grid layout as planPcTokenAdds.
+  const raw = placementPosition(index, origin, cell)
+  const pos = snapPlacementToGrid(raw.x, raw.y, state.grid)
   return {
     id: newTokenId(),
     kind: 'gm',
