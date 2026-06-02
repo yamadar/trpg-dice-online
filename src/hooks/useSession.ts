@@ -86,14 +86,14 @@ import {
   validateMapTextUpdateRequest,
 } from '../tabletop/hostValidation'
 import { loadPresetMap } from '../tabletop/presetMaps'
-import { fillTabletopDefaults, stripMapBytesForWire } from '../tabletop/snapshot'
+import { fillTabletopDefaults, stripMapBytesForWire, tokenForWire } from '../tabletop/snapshot'
 import { loadTabletop, saveTabletop } from '../storage/tabletop'
 import {
   deleteLibraryEntry as deleteLibraryEntryStorage,
   listLibrary,
   saveLibraryEntry,
 } from '../storage/tabletopLibrary'
-import { snapPlacementToGrid, snapToGrid, snapToGridForSize } from '../tabletop/grid'
+import { snapPlacementToGrid, snapResizeToGrid, snapToGrid, snapToGridForSize } from '../tabletop/grid'
 import {
   applyTokenMove as applyTokenMoveHelper,
   applyTokenRemove,
@@ -278,6 +278,13 @@ export interface Session {
     tokenId: string,
     updates: { label?: string; image?: string; note?: string },
   ) => void
+  /** Host-only: update the GM-private note on any token. The note is
+   *  stored in local state only and never broadcast to clients. */
+  updateTokenPrivateNote: (tokenId: string, privateNote: string) => void
+  /** Any participant: update the public shared note on any token.
+   *  The host applies directly; a client sends `tokenNoteRequest` and
+   *  waits for the host echo via `tokenUpsert`. */
+  updateTokenNote: (tokenId: string, note: string) => void
   /** GM-only: change a token's grid size. Re-snaps the token's
    *  position to the appropriate cell anchor for the new size so
    *  even-integer sizes align on cell corners, odd / 0.6 sizes stay
@@ -1157,7 +1164,7 @@ export function useSession(): Session {
         ...tabletopRef.current,
         tokens: [...tabletopRef.current.tokens, token],
       })
-      roomRef.current?.broadcast({ t: 'tokenUpsert', token })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(token) })
       return 'ok'
     },
     [applyTabletop],
@@ -1218,7 +1225,7 @@ export function useSession(): Session {
         tokens: [...tabletopRef.current.tokens, ...plans],
       })
       for (const token of plans) {
-        roomRef.current?.broadcast({ t: 'tokenUpsert', token })
+        roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(token) })
       }
     },
     [applyTabletop],
@@ -1301,7 +1308,7 @@ export function useSession(): Session {
         ...tabletop,
         tokens: [...tabletop.tokens, token],
       })
-      roomRef.current?.broadcast({ t: 'tokenUpsert', token })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(token) })
     },
     [applyTabletop, playerId],
   )
@@ -1340,7 +1347,55 @@ export function useSession(): Session {
       }
       const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
       applyTabletop({ ...tabletopRef.current, tokens })
-      roomRef.current?.broadcast({ t: 'tokenUpsert', token: next })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(next) })
+    },
+    [applyTabletop],
+  )
+
+  /** Host-only: update the GM-private note on any token. Applies locally
+   *  and does NOT broadcast, so clients never see it. */
+  const updateTokenPrivateNote = useCallback(
+    (tokenId: string, privateNote: string) => {
+      if (roleRef.current === 'client') return
+      const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
+      if (!existing) return
+      const trimmed = privateNote.trim()
+      const next: Token = { ...existing }
+      if (trimmed) {
+        ;(next as Token & { privateNote?: string }).privateNote = trimmed
+      } else {
+        delete (next as Token & { privateNote?: string }).privateNote
+      }
+      applyTabletop({
+        ...tabletopRef.current,
+        tokens: applyTokenUpsert(tabletopRef.current.tokens, next),
+      })
+      // No broadcast — privateNote stays on the host only.
+    },
+    [applyTabletop],
+  )
+
+  /** Update the public shared note on any token. The host applies and
+   *  broadcasts; a client sends `tokenNoteRequest` and waits for the
+   *  host echo. */
+  const updateTokenNote = useCallback(
+    (tokenId: string, note: string) => {
+      if (roleRef.current === 'client') {
+        roomRef.current?.sendToHost({ t: 'tokenNoteRequest', tokenId, note })
+        return
+      }
+      const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
+      if (!existing) return
+      const trimmed = note.trim()
+      const next: Token = { ...existing }
+      if (trimmed) {
+        ;(next as Token & { note?: string }).note = trimmed
+      } else {
+        delete (next as Token & { note?: string }).note
+      }
+      const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
+      applyTabletop({ ...tabletopRef.current, tokens })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(next) })
     },
     [applyTabletop],
   )
@@ -1362,9 +1417,12 @@ export function useSession(): Session {
       }
       const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
       if (!existing) return
-      const snapped = snapToGridForSize(
+      // Use the non-drifting resize snap so 1→2→1 returns to the
+      // original position.
+      const snapped = snapResizeToGrid(
         existing.x,
         existing.y,
+        tokenSize(existing),
         size,
         tabletopRef.current.grid,
       )
@@ -1376,7 +1434,7 @@ export function useSession(): Session {
       }
       const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
       applyTabletop({ ...tabletopRef.current, tokens })
-      roomRef.current?.broadcast({ t: 'tokenUpsert', token: next })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(next) })
     },
     [applyTabletop],
   )
@@ -1550,7 +1608,7 @@ export function useSession(): Session {
         }
         changed = true
         const updated: Token = { ...tok, snapshot: { name, image } }
-        roomRef.current?.broadcast({ t: 'tokenUpsert', token: updated })
+        roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(updated) })
         return updated
       })
       if (changed) {
@@ -1737,7 +1795,7 @@ export function useSession(): Session {
         ...tabletopRef.current,
         tokens: [...tabletopRef.current.tokens, token],
       })
-      roomRef.current?.broadcast({ t: 'tokenUpsert', token })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(token) })
     },
     [applyTabletop],
   )
@@ -2129,7 +2187,7 @@ export function useSession(): Session {
     }
     applyTabletop(next)
     for (const token of stamped) {
-      roomRef.current?.broadcast({ t: 'tokenUpsert', token })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(token) })
     }
   }, [applyTabletop, buildRoster])
 
@@ -2304,9 +2362,10 @@ export function useSession(): Session {
           // wire; reject anything outside the allowed set so a bad client
           // can't persist an out-of-spec size into authoritative state.
           if (!(TOKEN_SIZES as ReadonlyArray<number>).includes(msg.size)) break
-          const snapped = snapToGridForSize(
+          const snapped = snapResizeToGrid(
             token.x,
             token.y,
+            tokenSize(token),
             msg.size,
             tabletopRef.current.grid,
           )
@@ -2318,7 +2377,7 @@ export function useSession(): Session {
           }
           const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
           applyTabletop({ ...tabletopRef.current, tokens })
-          roomRef.current?.broadcast({ t: 'tokenUpsert', token: next })
+          roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(next) })
           break
         }
         case 'tokenRemoveRequest': {
@@ -2338,6 +2397,32 @@ export function useSession(): Session {
           }
           applyTabletop({ ...tabletopRef.current, tokens })
           roomRef.current?.broadcast({ t: 'tokenRemove', tokenId: msg.tokenId })
+          break
+        }
+        case 'tokenNoteRequest': {
+          // Any participant can update the public note on any token — no
+          // per-token ownership check. Sender must be a known peer.
+          if (!peerPlayersRef.current.has(peerId)) break
+          const noteToken = tabletopRef.current.tokens.find(
+            (t) => t.id === msg.tokenId,
+          )
+          if (!noteToken) break
+          const trimmedNote = typeof msg.note === 'string' ? msg.note.trim() : ''
+          const nextNoteToken: Token = { ...noteToken }
+          if (trimmedNote) {
+            ;(nextNoteToken as Token & { note?: string }).note = trimmedNote
+          } else {
+            delete (nextNoteToken as Token & { note?: string }).note
+          }
+          const noteTokens = applyTokenUpsert(
+            tabletopRef.current.tokens,
+            nextNoteToken,
+          )
+          applyTabletop({ ...tabletopRef.current, tokens: noteTokens })
+          roomRef.current?.broadcast({
+            t: 'tokenUpsert',
+            token: tokenForWire(nextNoteToken),
+          })
           break
         }
         case 'pcTokenPlaceRequest': {
@@ -2391,7 +2476,7 @@ export function useSession(): Session {
             ...tabletop,
             tokens: [...tabletop.tokens, token],
           })
-          roomRef.current?.broadcast({ t: 'tokenUpsert', token })
+          roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(token) })
           break
         }
         case 'mapTextAddRequest': {
@@ -3670,6 +3755,8 @@ export function useSession(): Session {
     addPlayerToken,
     placeMyCharacterToken,
     updateGmToken,
+    updateTokenNote,
+    updateTokenPrivateNote,
     setTokenSize,
     addNpcDef,
     updateNpcDef,

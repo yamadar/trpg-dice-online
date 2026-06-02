@@ -734,6 +734,33 @@
   border-top: 1px solid var(--border);
   margin: 4px 0;
 }
+/* Collapsible section header inside the token panel. Full-width button
+   that toggles the section; icon chevron rotates when open. */
+.tabletop-toolbar-section-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 6px;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.tabletop-toolbar-section-btn:hover {
+  color: var(--accent);
+}
+.tabletop-toolbar-section-chevron {
+  flex-shrink: 0;
+  transition: transform 120ms ease;
+}
+.tabletop-toolbar-section-chevron.open {
+  transform: rotate(180deg);
+}
 .tabletop-toolbar-button {
   padding: 8px 12px;
   background: var(--accent-bg, rgba(192, 132, 252, 0.18));
@@ -1012,6 +1039,17 @@
   letter-spacing: 0.04em;
   flex-shrink: 0;
 }
+/* Own-token emphasis: accent-coloured tag + left border on the row. */
+.tabletop-toolbar-list-tag.own {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.tabletop-toolbar-list-item--own {
+  border-left: 3px solid var(--accent);
+  padding-left: 4px;
+  margin-left: -4px;
+}
 .tabletop-toolbar-list-action {
   padding: 4px 10px;
   background: var(--accent-bg, rgba(192, 132, 252, 0.18));
@@ -1066,6 +1104,16 @@
   color: var(--text-dim);
   font-size: 0.78rem;
 }
+/* Display-only values (name, label, size). The specificity of this
+   selector (2 classes) beats `.tabletop-token-popover-row > span`
+   (1 class + 1 element) so var(--text) is not overridden by the dim
+   label rule above. */
+.tabletop-token-popover-row > .token-display-value {
+  color: var(--text);
+  font-size: 1rem;
+  padding: 2px 0;
+  word-break: break-word;
+}
 .tabletop-token-popover-row > input[type='text'] {
   padding: 6px 8px;
   background: var(--panel-2);
@@ -1075,13 +1123,10 @@
   font: inherit;
 }
 /* Read-only value (PC token's character name): same box as the GM
-   label input above so the two rows read as one consistent control,
-   but static — no focus affordance. */
+   Display-only values are rendered as plain text with no border or
+   background so they read clearly alongside editable inputs. */
 .tabletop-token-popover-value {
-  padding: 6px 8px;
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  padding: 2px 0;
   color: var(--text);
   word-break: break-word;
 }
@@ -1096,6 +1141,11 @@
   font: inherit;
   resize: vertical;
   min-height: 48px;
+}
+/* GM-private note textarea — subtle tint to signal it stays on the host. */
+.tabletop-token-popover-private-note {
+  background: color-mix(in srgb, var(--panel-2) 80%, var(--accent) 20%);
+  border-color: color-mix(in srgb, var(--border) 70%, var(--accent) 30%);
 }
 /* "GM and Player 1 can operate" line in the read-only token dialog. */
 .tabletop-token-popover-operators {
@@ -1648,6 +1698,16 @@
 .field input,
 .field select {
   width: 100%;
+}
+
+/* Plain-text replacement for disabled/read-only form fields.
+   Matches the spacing of an input so sibling labels align, but has no
+   border or background so it reads as static content, not an input. */
+.field-readonly-value {
+  padding: 6px 0;
+  color: var(--text);
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .hint {
