@@ -1745,14 +1745,14 @@ function TokenPopover({
       ) : (
         <div className="tabletop-token-popover-row">
           <span>{token.kind === 'pc' ? t('character.name') : t('tabletop.tokenEdit.label')}</span>
-          <span className="tabletop-token-popover-value">{displayName}</span>
+          <span className="token-display-value">{displayName}</span>
         </div>
       )}
 
-      {/* Public Note — editable for everyone */}
+      {/* Public Note (共有メモ) — editable for everyone */}
       {canEditNote && (
         <label className="tabletop-token-popover-row">
-          <span>{t('tabletop.tokenEdit.note')}</span>
+          <span>{t('tabletop.tokenEdit.sharedNote')}</span>
           <textarea className="tabletop-token-popover-note"
             value={noteDraft} maxLength={500} rows={3}
             onChange={(e) => setNoteDraft(e.target.value)} onBlur={commitNote}
@@ -1760,7 +1760,20 @@ function TokenPopover({
         </label>
       )}
 
-      {/* Character info button — above size picker, all PCs */}
+      {/* GM-private note — directly below shared note, host only, never broadcast */}
+      {canEditPrivateNote && (
+        <label className="tabletop-token-popover-row">
+          <span>{t('tabletop.tokenEdit.privateNote')}</span>
+          <textarea
+            className="tabletop-token-popover-note tabletop-token-popover-private-note"
+            value={privateNoteDraft} maxLength={500} rows={3}
+            onChange={(e) => setPrivateNoteDraft(e.target.value)}
+            onBlur={commitPrivateNote}
+          />
+        </label>
+      )}
+
+      {/* Character info button — above size, all PCs */}
       {token.kind === 'pc' && onEditCharacter && (
         <button type="button" className="tabletop-toolbar-button outline"
           onClick={onEditCharacter}>
@@ -1768,7 +1781,7 @@ function TokenPopover({
         </button>
       )}
 
-      {/* Size: picker if canOperate, static text otherwise */}
+      {/* Size: picker if canOperate, plain text otherwise */}
       {canOperate ? (
         <div className="tabletop-token-popover-row">
           <span>{t('tabletop.tokenEdit.size')}</span>
@@ -1790,7 +1803,7 @@ function TokenPopover({
       ) : (
         <div className="tabletop-token-popover-row">
           <span>{t('tabletop.tokenEdit.size')}</span>
-          <span className="tabletop-token-popover-value">{String(tokenSize(token))}</span>
+          <span className="token-display-value">{String(tokenSize(token))}</span>
         </div>
       )}
 
@@ -1807,19 +1820,6 @@ function TokenPopover({
           <TrashIcon />
           <span>{t('tabletop.tokenEdit.remove')}</span>
         </button>
-      )}
-
-      {/* GM-private note — host only, never broadcast */}
-      {canEditPrivateNote && (
-        <label className="tabletop-token-popover-row">
-          <span>{t('tabletop.tokenEdit.privateNote')}</span>
-          <textarea
-            className="tabletop-token-popover-note tabletop-token-popover-private-note"
-            value={privateNoteDraft} maxLength={500} rows={3}
-            onChange={(e) => setPrivateNoteDraft(e.target.value)}
-            onBlur={commitPrivateNote}
-          />
-        </label>
       )}
 
       {/* Who can operate — only when this viewer cannot */}

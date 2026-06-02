@@ -76,6 +76,7 @@ export const tr: Dict = {
   'tabletop.tokenEdit.titlePc': 'PC jetonu',
   'tabletop.tokenEdit.label': 'Etiket',
   'tabletop.tokenEdit.note': 'Not',
+  'tabletop.tokenEdit.sharedNote': 'Paylaşılan not',
   'tabletop.tokenEdit.privateNote': 'GM notu (özel)',
   'tabletop.tokenEdit.changeImage': 'Görseli değiştir…',
   'tabletop.tokenEdit.size': 'Boyut',

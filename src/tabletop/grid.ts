@@ -77,6 +77,39 @@ export function snapToGridForSize(
 }
 
 /**
+ * Non-drifting snap for token RESIZE operations. Unlike `snapToGridForSize`,
+ * which rounds the centre position independently each time, this function
+ * anchors the top-left corner of the token's bounding box to the same grid
+ * cell throughout the resize cycle:
+ *
+ *   size 1 → size 2 → size 1  returns to the original position
+ *
+ * Algorithm: find the bounding-box top-left using floor (stable across sizes),
+ * then add half the new token's footprint to get the new centre.
+ */
+export function snapResizeToGrid(
+  x: number,
+  y: number,
+  currentSize: number,
+  newSize: number,
+  grid: Grid,
+): Vec2 {
+  if (grid.kind === 'none' || !grid.snap) return { x, y }
+  if (grid.kind === 'hex') return snapToHexCell(x, y, grid)
+  const cell = grid.cellSize
+  // Top-left corner of the current bounding box.
+  const tlx = x - (currentSize / 2) * cell
+  const tly = y - (currentSize / 2) * cell
+  // Floor-anchor to the grid cell that contains the top-left corner.
+  const col = Math.floor((tlx - grid.originX) / cell)
+  const row = Math.floor((tly - grid.originY) / cell)
+  return {
+    x: grid.originX + (col + newSize / 2) * cell,
+    y: grid.originY + (row + newSize / 2) * cell,
+  }
+}
+
+/**
  * Convert a world (x, y) to the integer cell (col, row) it falls in.
  * Returns null when the grid is disabled — callers should treat the
  * coordinate as gridless in that case.

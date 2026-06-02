@@ -93,7 +93,7 @@ import {
   listLibrary,
   saveLibraryEntry,
 } from '../storage/tabletopLibrary'
-import { snapPlacementToGrid, snapToGrid, snapToGridForSize } from '../tabletop/grid'
+import { snapPlacementToGrid, snapResizeToGrid, snapToGrid, snapToGridForSize } from '../tabletop/grid'
 import {
   applyTokenMove as applyTokenMoveHelper,
   applyTokenRemove,
@@ -1417,9 +1417,12 @@ export function useSession(): Session {
       }
       const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
       if (!existing) return
-      const snapped = snapToGridForSize(
+      // Use the non-drifting resize snap so 1→2→1 returns to the
+      // original position.
+      const snapped = snapResizeToGrid(
         existing.x,
         existing.y,
+        tokenSize(existing),
         size,
         tabletopRef.current.grid,
       )
@@ -2359,9 +2362,10 @@ export function useSession(): Session {
           // wire; reject anything outside the allowed set so a bad client
           // can't persist an out-of-spec size into authoritative state.
           if (!(TOKEN_SIZES as ReadonlyArray<number>).includes(msg.size)) break
-          const snapped = snapToGridForSize(
+          const snapped = snapResizeToGrid(
             token.x,
             token.y,
+            tokenSize(token),
             msg.size,
             tabletopRef.current.grid,
           )

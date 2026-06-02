@@ -1066,6 +1066,16 @@
   color: var(--text-dim);
   font-size: 0.78rem;
 }
+/* Display-only values (name, label, size). The specificity of this
+   selector (2 classes) beats `.tabletop-token-popover-row > span`
+   (1 class + 1 element) so var(--text) is not overridden by the dim
+   label rule above. */
+.tabletop-token-popover-row > .token-display-value {
+  color: var(--text);
+  font-size: 1rem;
+  padding: 2px 0;
+  word-break: break-word;
+}
 .tabletop-token-popover-row > input[type='text'] {
   padding: 6px 8px;
   background: var(--panel-2);

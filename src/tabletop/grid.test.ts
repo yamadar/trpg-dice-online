@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   cellCenterToWorld,
   cellToWorld,
+  snapResizeToGrid,
   snapToGrid,
   snapToGridForSize,
   worldToCell,
@@ -93,6 +94,43 @@ describe('snapToGridForSize', () => {
     const grid = makeGrid()
     // size 4 also uses corner-anchored snap
     expect(snapToGridForSize(45, 45, 4, grid)).toEqual({ x: 50, y: 50 })
+  })
+})
+
+describe('snapResizeToGrid', () => {
+  const grid: Grid = {
+    kind: 'square', cellSize: 50, originX: 0, originY: 0,
+    strokeColor: '#888', strokeOpacity: 0.5, snap: true,
+  }
+
+  it('returns the same position when snap is off', () => {
+    const noSnap: Grid = { ...grid, snap: false }
+    expect(snapResizeToGrid(75, 75, 2, 1, noSnap)).toEqual({ x: 75, y: 75 })
+  })
+
+  it('size 1 → 2 → 1 returns to the original position (non-drifting)', () => {
+    // Token at the centre of cell (0,0): x=25, y=25 (cell size 50)
+    const origin = { x: 25, y: 25 }
+    const after2 = snapResizeToGrid(origin.x, origin.y, 1, 2, grid)
+    const back1  = snapResizeToGrid(after2.x, after2.y, 2, 1, grid)
+    expect(back1).toEqual(origin)
+  })
+
+  it('size 1 → 2 → 1 → 2 → 1 never drifts over multiple cycles', () => {
+    let pos = { x: 25, y: 25 }
+    for (let i = 0; i < 5; i++) {
+      const s2 = snapResizeToGrid(pos.x, pos.y, 1, 2, grid)
+      pos = snapResizeToGrid(s2.x, s2.y, 2, 1, grid)
+    }
+    expect(pos).toEqual({ x: 25, y: 25 })
+  })
+
+  it('size 2 → 1 → 2 → 1 is stable when starting from a size-2 position', () => {
+    // A size-2 token naturally sits on a corner: x=100, y=100
+    const origin = { x: 100, y: 100 }
+    const s1 = snapResizeToGrid(origin.x, origin.y, 2, 1, grid)
+    const s2 = snapResizeToGrid(s1.x, s1.y, 1, 2, grid)
+    expect(s2).toEqual(origin)
   })
 })
 
