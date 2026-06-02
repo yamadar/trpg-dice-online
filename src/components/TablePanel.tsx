@@ -1538,6 +1538,7 @@ export function TablePanel({
             }))
           }}
           isHost={canEdit}
+          myPlayerId={session.playerId}
           tabletopLibrary={session.tabletopLibrary}
           onLoadPresetMap={session.setMapFromPreset}
           fog={tabletop.fog}

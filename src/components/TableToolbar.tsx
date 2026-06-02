@@ -166,6 +166,9 @@ interface Props {
   onFocusToken: (tokenId: string) => void
   /** When true, render the GM-only NPC library section. */
   isHost: boolean
+  /** The current viewer's player id, used to highlight their own
+   *  tokens in the "マップ上のトークン" list. */
+  myPlayerId: string
   /** GM-only: named templates and saves persisted globally in
    *  IndexedDB. Empty when nothing has been saved or storage is
    *  unavailable. */
@@ -229,6 +232,7 @@ export function TableToolbar({
   onRemoveToken,
   onFocusToken,
   isHost,
+  myPlayerId,
   tabletopLibrary,
   onSaveTabletopAs,
   onLoadTabletopFromLibrary,
@@ -958,8 +962,15 @@ export function TableToolbar({
                   token.kind === 'pc'
                     ? t('tabletop.placedTokens.kindPc')
                     : t('tabletop.placedTokens.kindGm')
+                // Own token = PC owned by this viewer. Visually emphasised
+                // so a player can instantly spot their character(s).
+                const isOwn =
+                  token.kind === 'pc' && token.ownerPlayerId === myPlayerId
                 return (
-                  <li key={token.id} className="tabletop-toolbar-list-item">
+                  <li
+                    key={token.id}
+                    className={`tabletop-toolbar-list-item${isOwn ? ' tabletop-toolbar-list-item--own' : ''}`}
+                  >
                     {isHost && (
                       <ReorderControls
                         index={index}
@@ -993,7 +1004,9 @@ export function TableToolbar({
                       <span className="tabletop-toolbar-list-label">
                         {displayName}
                       </span>
-                      <span className="tabletop-toolbar-list-tag">{kindLabel}</span>
+                      <span className={`tabletop-toolbar-list-tag${isOwn ? ' own' : ''}`}>
+                        {kindLabel}
+                      </span>
                     </button>
                     {isHost && (
                       <button

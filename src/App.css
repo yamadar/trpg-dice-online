@@ -1039,6 +1039,17 @@
   letter-spacing: 0.04em;
   flex-shrink: 0;
 }
+/* Own-token emphasis: accent-coloured tag + left border on the row. */
+.tabletop-toolbar-list-tag.own {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.tabletop-toolbar-list-item--own {
+  border-left: 3px solid var(--accent);
+  padding-left: 4px;
+  margin-left: -4px;
+}
 .tabletop-toolbar-list-action {
   padding: 4px 10px;
   background: var(--accent-bg, rgba(192, 132, 252, 0.18));
