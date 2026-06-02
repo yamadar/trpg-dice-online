@@ -474,6 +474,15 @@ export function TablePanel({
   // edit popover. null = closed. Resolved against `characters` at render
   // time so live edits (name / portrait) reflect immediately.
   const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null)
+  // Read-only view for another player's character (name + portrait +
+  // background from sessionCharacters, not the full CharacterEdits record).
+  const [viewingCharacterRecord, setViewingCharacterRecord] = useState<{
+    characterName: string
+    image: string
+    background: string
+    playerName: string
+    isGM: boolean
+  } | null>(null)
   // Close the popover when the user presses ANYWHERE outside the
   // popover itself and outside the Konva-rendered map area (left
   // tool palette, right toolbar, bottom dock, tutorial overlay,
@@ -1326,53 +1335,90 @@ export function TablePanel({
           </Stage>
         )}
         {selectedToken && (
-          <TokenPopover
-            // Key on token id so a selection swap remounts the popover
-            // and `useState(initialLabel)` reseeds for the new token —
-            // avoids a render-phase ref write that the React 19 lint
-            // rule forbids.
-            key={selectedToken.id}
-            token={selectedToken}
-            stageX={stageX}
-            stageY={stageY}
-            stageScale={stageScale}
-            onClose={() => setSelectedTokenId(null)}
-            onRename={(label) =>
-              session.updateGmToken(selectedToken.id, { label })
-            }
-            onChangeImage={(image) =>
-              session.updateGmToken(selectedToken.id, { image })
-            }
-            onChangeSize={(size) => session.setTokenSize(selectedToken.id, size)}
-            onRemove={() => {
-              session.removeToken(selectedToken.id)
-              setSelectedTokenId(null)
-            }}
-            onEditCharacter={
-              selectedToken.kind === 'pc' && selectedToken.characterId
-                ? () => setEditingCharacterId(selectedToken.characterId)
-                : undefined
-            }
-            characterName={
+          (() => {
+            // Per-token permission matrix:
+            // canOperate = GM (all tokens) | PL (own PC)
+            const canOperate = canMoveToken(selectedToken, tokenActor)
+            // canEditSize / canDelete: same as canOperate
+            // canEditNote (public): everyone
+            // canEditPrivateNote: host only
+            // canEditLabel (NPC label): host only
+            // canEditChar (edit): own PC
+            const isOwnPc =
+              selectedToken.kind === 'pc' &&
+              selectedToken.ownerPlayerId === session.playerId
+            const charKey =
               selectedToken.kind === 'pc'
-                ? labelForToken(selectedToken, session, characters)
-                : undefined
-            }
-            onChangeNote={(note) =>
-              session.updateGmToken(selectedToken.id, { note })
-            }
-            // Editable when the viewer can operate the token (the GM for
-            // any token; a player for their own PC token). Otherwise
-            // read-only with a "who can operate" line. Token edits route
-            // through the host, which re-validates `canMoveToken`.
-            readOnly={!canMoveToken(selectedToken, tokenActor)}
-            players={session.players}
-          />
+                ? characterImagesKey(
+                    selectedToken.ownerPlayerId,
+                    selectedToken.characterId,
+                  )
+                : null
+            const charRecord = charKey
+              ? session.sessionCharacters[charKey]
+              : null
+            return (
+              <TokenPopover
+                // Key on token id so a selection swap remounts the popover
+                // and `useState` reseeds for the new token.
+                key={selectedToken.id}
+                token={selectedToken}
+                stageX={stageX}
+                stageY={stageY}
+                stageScale={stageScale}
+                onClose={() => setSelectedTokenId(null)}
+                canOperate={canOperate}
+                canEditNote
+                canEditPrivateNote={canEdit}
+                onRename={(label) =>
+                  session.updateGmToken(selectedToken.id, { label })
+                }
+                onChangeImage={(image) =>
+                  session.updateGmToken(selectedToken.id, { image })
+                }
+                onChangeSize={(size) =>
+                  session.setTokenSize(selectedToken.id, size)
+                }
+                onRemove={() => {
+                  session.removeToken(selectedToken.id)
+                  setSelectedTokenId(null)
+                }}
+                onChangeNote={(note) =>
+                  session.updateTokenNote(selectedToken.id, note)
+                }
+                onChangePrivateNote={(note) =>
+                  session.updateTokenPrivateNote(selectedToken.id, note)
+                }
+                onEditCharacter={
+                  selectedToken.kind === 'pc' && selectedToken.characterId
+                    ? isOwnPc
+                      ? () => setEditingCharacterId(selectedToken.characterId)
+                      : () =>
+                          setViewingCharacterRecord(
+                            charRecord ?? {
+                              characterName: selectedToken.snapshot?.name ?? '',
+                              image: selectedToken.snapshot?.image ?? '',
+                              playerName: '',
+                              background: '',
+                              isGM: false,
+                            },
+                          )
+                    : undefined
+                }
+                characterName={
+                  selectedToken.kind === 'pc'
+                    ? labelForToken(selectedToken, session, characters)
+                    : undefined
+                }
+                players={session.players}
+              />
+            )
+          })()
         )}
-        {/* Character-info modal opened from a PC token's popover. Edits
-            the token's bound character directly (independent of the
-            operating character), resolved against the live `characters`
-            list so name / portrait edits reflect immediately. */}
+        {/* Character-info modal — editable for own character, read-only
+            card for others. The read-only path uses sessionCharacters so
+            the GM / other players see name + portrait + background without
+            needing the full CharacterEdits record. */}
         {editingCharacterId &&
           (() => {
             const char = characters.find((c) => c.id === editingCharacterId)
@@ -1386,6 +1432,15 @@ export function TablePanel({
               />
             )
           })()}
+        {viewingCharacterRecord && (
+          <CharacterReadOnlyModal
+            name={viewingCharacterRecord.characterName}
+            image={viewingCharacterRecord.image}
+            background={viewingCharacterRecord.background}
+            playerName={viewingCharacterRecord.playerName}
+            onClose={() => setViewingCharacterRecord(null)}
+          />
+        )}
         {textDraft && (
           <TextDraftInput
             // Key on position so a fresh click in text mode remounts
@@ -1568,29 +1623,29 @@ interface TokenPopoverProps {
   stageY: number
   stageScale: number
   onClose: () => void
-  /** GM-only: change the GM token's label. PC tokens use the character
-   *  record so the popover hides the label field for them. */
+  // --- granular permissions ---
+  /** Viewer can operate this token (GM for all; PL for own PC). Controls
+   *  whether size picker, delete, and label/image-edit are shown. */
+  canOperate: boolean
+  /** Everyone can always edit the public note. */
+  canEditNote: boolean
+  /** Only the host (GM) can see/edit the private note. */
+  canEditPrivateNote: boolean
+  // (own PC vs others is implicit: if canEditCharacter=true, onEditCharacter
+  //  points to the editable modal; otherwise it points to the read-only card.
+  //  The popover just calls onEditCharacter and doesn't need to know which.)
+  // --- callbacks ---
   onRename: (label: string) => void
-  /** GM-only: replace the GM token's image. */
   onChangeImage: (image: string) => void
-  /** GM-only: change the token's grid size. */
   onChangeSize: (size: TokenSize) => void
-  /** Remove the token. */
   onRemove: () => void
-  /** GM-only: change the GM/NPC token's free-text note. */
   onChangeNote: (note: string) => void
-  /** PC-only: open the character-info modal for the token's bound
-   *  character. Absent for GM tokens (which have no character record). */
+  onChangePrivateNote: (note: string) => void
+  /** PC tokens: fires with editable or read-only CharacterInfoModal. */
   onEditCharacter?: () => void
-  /** PC-only: the bound character's display name, shown read-only above
-   *  the size picker (mirrors the GM token's editable label row). */
+  /** PC tokens: display name from sessionCharacters / snapshot. */
   characterName?: string
-  /** Read-only mode — the viewer cannot operate the token, so name +
-   *  size are shown as plain text, the note and every action button are
-   *  hidden, and a "who can operate" line is shown instead. True for
-   *  non-host players (only the host edits tokens). */
-  readOnly: boolean
-  /** Participants, used to name who can operate the token. */
+  /** Participants, used to build the "who can operate" line. */
   players: ReadonlyArray<{ id: string; name: string; isGM: boolean }>
 }
 
@@ -1606,69 +1661,53 @@ function TokenPopover({
   stageY,
   stageScale,
   onClose,
+  canOperate,
+  canEditNote,
+  canEditPrivateNote,
   onRename,
   onChangeImage,
   onChangeSize,
   onRemove,
   onChangeNote,
+  onChangePrivateNote,
   onEditCharacter,
   characterName,
-  readOnly,
   players,
 }: TokenPopoverProps) {
   const [imagePickerOpen, setImagePickerOpen] = useState(false)
   const { t } = useI18n()
-  // Local edit buffers so the inputs stay responsive while waiting for
-  // the host commit to echo back. Commit on blur / Enter, so a typing
-  // burst is a single network update. The parent keys this component
-  // on `token.id`, so a new selection remounts and reseeds this state.
+
   const initialLabel = token.kind === 'gm' ? token.label ?? '' : ''
   const [labelDraft, setLabelDraft] = useState(initialLabel)
-  const initialNote = token.kind === 'gm' ? token.note ?? '' : ''
+  const initialNote = token.note ?? ''
   const [noteDraft, setNoteDraft] = useState(initialNote)
+  const initialPrivateNote =
+    (token as Token & { privateNote?: string }).privateNote ?? ''
+  const [privateNoteDraft, setPrivateNoteDraft] = useState(initialPrivateNote)
 
-  // Display name shown in both modes (read-only text and the editable
-  // header context): the character name for PC tokens, the label for
-  // GM / NPC tokens.
   const displayName =
     (token.kind === 'pc' ? characterName : token.label)?.trim() ||
     t('tabletop.placedTokens.unnamed')
 
-  // Who can operate this token, for the read-only line. The GM can
-  // always operate; a PC token adds its (non-GM) owner. Built from the
-  // live participant roster so a left-the-room owner simply drops off.
   const operatorNames = useMemo(() => {
     const gm = t('room.gmBadge')
     const names = [gm]
     if (token.kind === 'pc' && token.ownerPlayerId) {
       const owner = players.find((p) => p.id === token.ownerPlayerId)
-      if (owner && !owner.isGM && owner.name.trim()) {
-        names.push(owner.name.trim())
-      }
+      if (owner && !owner.isGM && owner.name.trim()) names.push(owner.name.trim())
     }
     return names.join(', ')
   }, [token, players, t])
 
-  // Anchor: 12 px to the right of the token's right edge in screen
-  // space. The radius lookup matches the renderer's `cellSize / 2 - 2`
-  // shape (with the 8 px floor) so the popover sits flush with the
-  // outer ring.
   const screenX = token.x * stageScale + stageX
   const screenY = token.y * stageScale + stageY
 
-  const commitLabel = () => {
-    if (labelDraft === initialLabel) return
-    onRename(labelDraft)
-  }
-  const commitNote = () => {
-    if (noteDraft === initialNote) return
-    onChangeNote(noteDraft)
+  const commitLabel = () => { if (labelDraft !== initialLabel) onRename(labelDraft) }
+  const commitNote = () => { if (noteDraft !== initialNote) onChangeNote(noteDraft) }
+  const commitPrivateNote = () => {
+    if (privateNoteDraft !== initialPrivateNote) onChangePrivateNote(privateNoteDraft)
   }
 
-  /** ImagePickerDialog result handler. GM tokens never went through
-   *  a crop step (they always used the raw upload), so neither the
-   *  upload nor library paths need one here — both can flow
-   *  straight into `prepareNpcTokenImage`. */
   const handleImagePicked = async (file: File) => {
     setImagePickerOpen(false)
     const next = await prepareNpcTokenImage(file)
@@ -1678,10 +1717,7 @@ function TokenPopover({
   return (
     <div
       className="tabletop-token-popover"
-      style={{
-        left: `${Math.round(screenX)}px`,
-        top: `${Math.round(screenY)}px`,
-      }}
+      style={{ left: `${Math.round(screenX)}px`, top: `${Math.round(screenY)}px` }}
     >
       <header className="tabletop-token-popover-header">
         <span className="tabletop-token-popover-title">
@@ -1689,151 +1725,169 @@ function TokenPopover({
             ? t('tabletop.tokenEdit.titleGm')
             : t('tabletop.tokenEdit.titlePc')}
         </span>
-        <button
-          type="button"
-          className="icon-btn"
-          aria-label={t('tabletop.tokenEdit.close')}
-          onClick={onClose}
-        >
+        <button type="button" className="icon-btn"
+          aria-label={t('tabletop.tokenEdit.close')} onClick={onClose}>
           <CloseIcon size={14} />
         </button>
       </header>
-      {readOnly ? (
-        <>
-          {/* Read-only (viewer can't operate this token): name + size as
-              text, who-can-operate line. No note, no edit controls. */}
-          <div className="tabletop-token-popover-row">
-            <span>
-              {token.kind === 'pc'
-                ? t('character.name')
-                : t('tabletop.tokenEdit.label')}
-            </span>
-            <span className="tabletop-token-popover-value">{displayName}</span>
-          </div>
-          <div className="tabletop-token-popover-row">
-            <span>{t('tabletop.tokenEdit.size')}</span>
-            <span className="tabletop-token-popover-value">
-              {String(tokenSize(token))}
-            </span>
-          </div>
-          <p className="tabletop-token-popover-operators">
-            {t('tabletop.tokenEdit.canOperate', { names: operatorNames })}
-          </p>
-        </>
+
+      {/* Name / Label row: editable only if canOperate + GM token */}
+      {token.kind === 'gm' && canOperate ? (
+        <label className="tabletop-token-popover-row">
+          <span>{t('tabletop.tokenEdit.label')}</span>
+          <input type="text" value={labelDraft} maxLength={32}
+            onChange={(e) => setLabelDraft(e.target.value)}
+            onBlur={commitLabel}
+            onKeyDown={(e) => { if (e.key === 'Enter') { commitLabel(); (e.target as HTMLInputElement).blur() } }}
+          />
+        </label>
       ) : (
-        <>
-          {token.kind === 'gm' && (
-            <label className="tabletop-token-popover-row">
-              <span>{t('tabletop.tokenEdit.label')}</span>
-              <input
-                type="text"
-                value={labelDraft}
-                maxLength={32}
-                onChange={(e) => setLabelDraft(e.target.value)}
-                onBlur={commitLabel}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    commitLabel()
-                    ;(e.target as HTMLInputElement).blur()
-                  }
-                }}
-              />
-            </label>
-          )}
-          {token.kind === 'pc' && (
-            <div className="tabletop-token-popover-row">
-              <span>{t('character.name')}</span>
-              <span className="tabletop-token-popover-value">
-                {displayName}
-              </span>
-            </div>
-          )}
-          {token.kind === 'gm' && (
-            <label className="tabletop-token-popover-row">
-              <span>{t('tabletop.tokenEdit.note')}</span>
-              <textarea
-                className="tabletop-token-popover-note"
-                value={noteDraft}
-                maxLength={500}
-                rows={3}
-                onChange={(e) => setNoteDraft(e.target.value)}
-                onBlur={commitNote}
-              />
-            </label>
-          )}
-          <div className="tabletop-token-popover-row">
-            <span>{t('tabletop.tokenEdit.size')}</span>
-            <div
-              className="tabletop-token-size-group"
-              role="radiogroup"
-              aria-label={t('tabletop.tokenEdit.size')}
-            >
-              {TOKEN_SIZES.map((s) => {
-                const active = tokenSize(token) === s
-                return (
-                  <button
-                    key={s}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    tabIndex={active ? 0 : -1}
-                    className={`tabletop-token-size-btn${active ? ' active' : ''}`}
-                    onClick={() => onChangeSize(s)}
-                  >
-                    {String(s)}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-          {/* Action buttons below the size picker — same placement for GM
-              (change image) and PC (character info) tokens. */}
-          {token.kind === 'gm' && (
-            <button
-              type="button"
-              className="tabletop-toolbar-button outline"
-              onClick={() => setImagePickerOpen(true)}
-            >
-              {t('tabletop.tokenEdit.changeImage')}
-            </button>
-          )}
-          {token.kind === 'pc' && onEditCharacter && (
-            <button
-              type="button"
-              className="tabletop-toolbar-button outline"
-              onClick={onEditCharacter}
-            >
-              {t('tabletop.tokenEdit.editCharacter')}
-            </button>
-          )}
-          <button
-            type="button"
-            className="tabletop-toolbar-button outline danger"
-            onClick={onRemove}
-          >
-            <TrashIcon />
-            <span>{t('tabletop.tokenEdit.remove')}</span>
-          </button>
-        </>
+        <div className="tabletop-token-popover-row">
+          <span>{token.kind === 'pc' ? t('character.name') : t('tabletop.tokenEdit.label')}</span>
+          <span className="tabletop-token-popover-value">{displayName}</span>
+        </div>
       )}
-      {/* Portalled to <body>: this popover sets `transform`, which would
-          otherwise become the containing block for the dialog's
-          position:fixed layer and shrink it to the popover's 220px width.
-          Rendering at the document root restores the full-screen size,
-          matching the NPC-library editor's picker. */}
+
+      {/* Public Note — editable for everyone */}
+      {canEditNote && (
+        <label className="tabletop-token-popover-row">
+          <span>{t('tabletop.tokenEdit.note')}</span>
+          <textarea className="tabletop-token-popover-note"
+            value={noteDraft} maxLength={500} rows={3}
+            onChange={(e) => setNoteDraft(e.target.value)} onBlur={commitNote}
+          />
+        </label>
+      )}
+
+      {/* Size: picker if canOperate, static text otherwise */}
+      {canOperate ? (
+        <div className="tabletop-token-popover-row">
+          <span>{t('tabletop.tokenEdit.size')}</span>
+          <div className="tabletop-token-size-group" role="radiogroup"
+            aria-label={t('tabletop.tokenEdit.size')}>
+            {TOKEN_SIZES.map((s) => {
+              const active = tokenSize(token) === s
+              return (
+                <button key={s} type="button" role="radio"
+                  aria-checked={active} tabIndex={active ? 0 : -1}
+                  className={`tabletop-token-size-btn${active ? ' active' : ''}`}
+                  onClick={() => onChangeSize(s)}>
+                  {String(s)}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="tabletop-token-popover-row">
+          <span>{t('tabletop.tokenEdit.size')}</span>
+          <span className="tabletop-token-popover-value">{String(tokenSize(token))}</span>
+        </div>
+      )}
+
+      {/* Character info button — all PCs (edit own, view-only others) */}
+      {token.kind === 'pc' && onEditCharacter && (
+        <button type="button" className="tabletop-toolbar-button outline"
+          onClick={onEditCharacter}>
+          {t('tabletop.tokenEdit.editCharacter')}
+        </button>
+      )}
+
+      {/* NPC: change image + delete — operator only */}
+      {token.kind === 'gm' && canOperate && (
+        <button type="button" className="tabletop-toolbar-button outline"
+          onClick={() => setImagePickerOpen(true)}>
+          {t('tabletop.tokenEdit.changeImage')}
+        </button>
+      )}
+      {canOperate && (
+        <button type="button" className="tabletop-toolbar-button outline danger"
+          onClick={onRemove}>
+          <TrashIcon />
+          <span>{t('tabletop.tokenEdit.remove')}</span>
+        </button>
+      )}
+
+      {/* GM-private note — host only, never broadcast */}
+      {canEditPrivateNote && (
+        <label className="tabletop-token-popover-row">
+          <span>{t('tabletop.tokenEdit.privateNote')}</span>
+          <textarea
+            className="tabletop-token-popover-note tabletop-token-popover-private-note"
+            value={privateNoteDraft} maxLength={500} rows={3}
+            onChange={(e) => setPrivateNoteDraft(e.target.value)}
+            onBlur={commitPrivateNote}
+          />
+        </label>
+      )}
+
+      {/* Who can operate — only when this viewer cannot */}
+      {!canOperate && (
+        <p className="tabletop-token-popover-operators">
+          {t('tabletop.tokenEdit.canOperate', { names: operatorNames })}
+        </p>
+      )}
+
       {token.kind === 'gm' &&
         createPortal(
-          <ImagePickerDialog
-            open={imagePickerOpen}
+          <ImagePickerDialog open={imagePickerOpen}
             onClose={() => setImagePickerOpen(false)}
-            // GM tokens are usually monsters / props, so default the
-            // tab to monster — but keep characters available too in
-            // case the GM is staging an NPC.
-            mode="both"
-            onPick={(file) => handleImagePicked(file)}
-          />,
+            mode="both" onPick={(file) => handleImagePicked(file)} />,
           document.body,
         )}
+    </div>
+  )
+}
+
+/** Lightweight read-only card for viewing another player's character.
+ *  Uses the sessionCharacters snapshot (name + portrait + background)
+ *  rather than the full CharacterEdits record. */
+function CharacterReadOnlyModal({
+  name, image, background, playerName, onClose,
+}: {
+  name: string; image: string; background: string
+  playerName: string; onClose: () => void
+}) {
+  const { t } = useI18n()
+  return (
+    <div className="char-info-layer" role="presentation">
+      <div className="char-info-backdrop" onClick={onClose} aria-hidden="true" />
+      <div className="char-info-popup" role="dialog" aria-modal="true">
+        <header className="char-info-header">
+          <span className="char-info-title">{t('tabletop.tokenEdit.editCharacter')}</span>
+          <button type="button" className="icon-btn"
+            aria-label={t('tabletop.tokenEdit.close')} onClick={onClose}>
+            <CloseIcon size={16} />
+          </button>
+        </header>
+        <div className="char-info-body">
+          <div className="char-info-card" style={{ gap: 12, padding: 12 }}>
+            {image ? (
+              <img src={image} alt={name}
+                style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+            ) : (
+              <div style={{
+                width: 80, height: 80, borderRadius: 8, background: 'var(--panel-2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 32, flexShrink: 0,
+              }}>
+                {avatarInitial(name)}
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <p style={{ fontWeight: 600, fontSize: '1.05rem' }}>
+                {name || t('tabletop.placedTokens.unnamed')}
+              </p>
+              {playerName && (
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>{playerName}</p>
+              )}
+              {background && (
+                <p style={{ fontSize: '0.85rem', marginTop: 4 }}>{background}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

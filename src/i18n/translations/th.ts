@@ -76,6 +76,7 @@ export const th: Dict = {
   'tabletop.tokenEdit.titlePc': 'โทเคน PC',
   'tabletop.tokenEdit.label': 'ป้ายชื่อ',
   'tabletop.tokenEdit.note': 'บันทึก',
+  'tabletop.tokenEdit.privateNote': 'บันทึก GM (ส่วนตัว)',
   'tabletop.tokenEdit.changeImage': 'เปลี่ยนรูป…',
   'tabletop.tokenEdit.size': 'ขนาด',
   'tabletop.tokenEdit.remove': 'ลบโทเคน',

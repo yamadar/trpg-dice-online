@@ -1097,6 +1097,11 @@
   resize: vertical;
   min-height: 48px;
 }
+/* GM-private note textarea — subtle tint to signal it stays on the host. */
+.tabletop-token-popover-private-note {
+  background: color-mix(in srgb, var(--panel-2) 80%, var(--accent) 20%);
+  border-color: color-mix(in srgb, var(--border) 70%, var(--accent) 30%);
+}
 /* "GM and Player 1 can operate" line in the read-only token dialog. */
 .tabletop-token-popover-operators {
   margin: 2px 0 0;

@@ -76,6 +76,7 @@ export const hi: Dict = {
   'tabletop.tokenEdit.titlePc': 'PC टोकन',
   'tabletop.tokenEdit.label': 'लेबल',
   'tabletop.tokenEdit.note': 'नोट',
+  'tabletop.tokenEdit.privateNote': 'GM नोट (निजी)',
   'tabletop.tokenEdit.changeImage': 'छवि बदलें…',
   'tabletop.tokenEdit.size': 'आकार',
   'tabletop.tokenEdit.remove': 'टोकन हटाएँ',

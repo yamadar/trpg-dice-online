@@ -76,6 +76,7 @@ export const zhTW: Dict = {
   'tabletop.tokenEdit.titlePc': 'PC 棋子',
   'tabletop.tokenEdit.label': '標籤',
   'tabletop.tokenEdit.note': '備註',
+  'tabletop.tokenEdit.privateNote': 'GM備註（私密）',
   'tabletop.tokenEdit.changeImage': '更換圖片…',
   'tabletop.tokenEdit.size': '尺寸',
   'tabletop.tokenEdit.remove': '移除棋子',

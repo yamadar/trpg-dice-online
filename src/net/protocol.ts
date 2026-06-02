@@ -175,6 +175,11 @@ export type ClientMessage =
   /** A participant asks the host to remove a token they can operate.
    *  Validated with `canMoveToken` like the resize request. */
   | { t: 'tokenRemoveRequest'; tokenId: string }
+  /** Any participant asks the host to update the public shared note on any
+   *  token. The host validates that the sender is a known participant (no
+   *  per-token ownership check — the note is intentionally writable by
+   *  everyone) and broadcasts the updated token WITHOUT the privateNote. */
+  | { t: 'tokenNoteRequest'; tokenId: string; note: string }
 
 /** Messages a host sends to clients. */
 export type HostMessage =

@@ -76,6 +76,7 @@ export const en: Dict = {
   'tabletop.tokenEdit.titlePc': 'PC token',
   'tabletop.tokenEdit.label': 'Label',
   'tabletop.tokenEdit.note': 'Note',
+  'tabletop.tokenEdit.privateNote': 'GM note (private)',
   'tabletop.tokenEdit.changeImage': 'Change image…',
   'tabletop.tokenEdit.size': 'Size',
   'tabletop.tokenEdit.remove': 'Remove token',

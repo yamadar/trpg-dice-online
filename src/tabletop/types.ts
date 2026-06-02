@@ -64,6 +64,10 @@ export interface PcToken {
   /** Character name + portrait at placement time, used when the live
    *  `sessionCharacters` record is absent. */
   snapshot?: { name: string; image: string }
+  /** Public shared note visible and editable by all participants. */
+  note?: string
+  /** GM-only note, never broadcast to non-host clients. */
+  privateNote?: string
   /** Token size in grid cells. Missing = default (1). */
   size?: TokenSize
 }

@@ -76,6 +76,7 @@ export const de: Dict = {
   'tabletop.tokenEdit.titlePc': 'SC-Marker',
   'tabletop.tokenEdit.label': 'Bezeichnung',
   'tabletop.tokenEdit.note': 'Notiz',
+  'tabletop.tokenEdit.privateNote': 'GM-Notiz (privat)',
   'tabletop.tokenEdit.changeImage': 'Bild ändern…',
   'tabletop.tokenEdit.size': 'Größe',
   'tabletop.tokenEdit.remove': 'Marker entfernen',

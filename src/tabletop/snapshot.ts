@@ -18,21 +18,38 @@
  * be unit-tested without React or PeerJS in the loop.
  */
 
-import { DEFAULT_FOG, type TabletopState } from './types'
+import { DEFAULT_FOG, type TabletopState, type Token } from './types'
+
+/**
+ * Strip the GM-only `privateNote` field from a token before it leaves
+ * the host. Every broadcast path that sends a `tokenUpsert` or includes
+ * tokens in a `tabletopState` / welcome snapshot must pass the token
+ * through this helper so non-host clients never receive private notes.
+ * The input is never mutated; returns the same reference if no stripping
+ * is needed.
+ */
+export function tokenForWire(token: Token): Token {
+  if (!('privateNote' in token) || token.privateNote === undefined)
+    return token
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { privateNote: _, ...rest } = token as Token & { privateNote?: string }
+  return rest as Token
+}
 
 /**
  * Produce the version of a tabletop state that goes onto the wire as
  * part of a welcome or `tabletopState` message. The map's `dataUrl`
  * is replaced with an empty string because a separate chunked
- * transfer is responsible for the actual bytes. The input is never
- * mutated.
+ * transfer is responsible for the actual bytes. All tokens have their
+ * GM-private `privateNote` stripped so non-host clients never see it.
+ * The input is never mutated.
  */
 export function stripMapBytesForWire(state: TabletopState): TabletopState {
-  if (!state.map) return state
-  return {
-    ...state,
-    map: { ...state.map, dataUrl: '' },
-  }
+  const strippedTokens = state.tokens.map(tokenForWire)
+  const tokensChanged = strippedTokens.some((t, i) => t !== state.tokens[i])
+  const base = tokensChanged ? { ...state, tokens: strippedTokens } : state
+  if (!base.map) return base
+  return { ...base, map: { ...base.map, dataUrl: '' } }
 }
 
 /**
