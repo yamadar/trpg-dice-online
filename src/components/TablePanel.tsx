@@ -44,6 +44,7 @@ import {
 } from '../tabletop/hexGrid'
 import type { Character, CharacterEdits } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
+import { CharacterEditor } from './CharacterEditor'
 import { CharacterInfoModal } from './CharacterInfoModal'
 import { ChatIcon, CloseIcon, DiceIcon, TrashIcon } from './icons'
 import { ImagePickerDialog } from './ImagePickerDialog'
@@ -1842,50 +1843,75 @@ function TokenPopover({
 /** Lightweight read-only card for viewing another player's character.
  *  Uses the sessionCharacters snapshot (name + portrait + background)
  *  rather than the full CharacterEdits record. */
+/** Read-only version of CharacterInfoModal — same layout as the editable
+ *  modal but all fields are disabled, the image-edit button is hidden, and
+ *  the private memo field is omitted. Uses `CharacterEditor readOnly` so
+ *  the appearance stays in sync automatically. */
 function CharacterReadOnlyModal({
-  name, image, background, playerName, onClose,
+  name, image, background, onClose,
 }: {
   name: string; image: string; background: string
   playerName: string; onClose: () => void
 }) {
   const { t } = useI18n()
+
+  // Escape closes without reaching the tabletop Escape handler.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [onClose])
+
+  // Build a minimal Character shape from the available sessionCharacters
+  // data. memo and patterns are empty — memo is hidden in readOnly mode
+  // (it's private local data the owner never broadcasts).
+  const character = useMemo(
+    () => ({
+      id: 'view-only',
+      name,
+      background,
+      image: image || undefined,
+      memo: '',
+      patterns: [],
+      lang: 'ja' as const,
+    }),
+    [name, background, image],
+  )
+
   return (
     <div className="char-info-layer" role="presentation">
       <div className="char-info-backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="char-info-popup" role="dialog" aria-modal="true">
+      <div
+        className="char-info-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('tabletop.tokenEdit.editCharacter')}
+        onClick={(e) => e.stopPropagation()}
+      >
         <header className="char-info-header">
-          <span className="char-info-title">{t('tabletop.tokenEdit.editCharacter')}</span>
-          <button type="button" className="icon-btn"
-            aria-label={t('tabletop.tokenEdit.close')} onClick={onClose}>
-            <CloseIcon size={16} />
+          <h2>{t('tabletop.tokenEdit.editCharacter')}</h2>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={t('tabletop.tokenEdit.close')}
+            onClick={onClose}
+          >
+            <CloseIcon />
           </button>
         </header>
         <div className="char-info-body">
-          <div className="char-info-card" style={{ gap: 12, padding: 12 }}>
-            {image ? (
-              <img src={image} alt={name}
-                style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
-            ) : (
-              <div style={{
-                width: 80, height: 80, borderRadius: 8, background: 'var(--panel-2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 32, flexShrink: 0,
-              }}>
-                {avatarInitial(name)}
-              </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <p style={{ fontWeight: 600, fontSize: '1.05rem' }}>
-                {name || t('tabletop.placedTokens.unnamed')}
-              </p>
-              {playerName && (
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>{playerName}</p>
-              )}
-              {background && (
-                <p style={{ fontSize: '0.85rem', marginTop: 4 }}>{background}</p>
-              )}
-            </div>
-          </div>
+          <CharacterEditor
+            character={character}
+            onUpdate={() => {}}
+            onNotice={() => {}}
+            readOnly
+          />
         </div>
       </div>
     </div>

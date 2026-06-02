@@ -16,6 +16,10 @@ interface Props {
   /** Bump this to focus the name field — used when a brand-new
    *  character is created so the user can type its name right away. */
   autoFocusSignal?: number
+  /** When true: all fields are read-only, the image-edit button and the
+   *  private memo field are hidden. Used for viewing another player's
+   *  character info without the ability to change anything. */
+  readOnly?: boolean
 }
 
 /**
@@ -32,6 +36,7 @@ export function CharacterEditor({
   onUpdate,
   onNotice,
   autoFocusSignal,
+  readOnly = false,
 }: Props) {
   const { t } = useI18n()
   const nameRef = useRef<HTMLInputElement>(null)
@@ -165,19 +170,19 @@ export function CharacterEditor({
             value={character.name}
             maxLength={40}
             placeholder={t('character.namePlaceholder')}
+            readOnly={readOnly}
+            disabled={readOnly}
             onChange={(e) => {
+              if (readOnly) return
               onUpdate({ name: e.target.value })
               nameNotice.markChanged()
             }}
-            onBlur={nameNotice.flush}
+            onBlur={readOnly ? undefined : nameNotice.flush}
           />
         </label>
 
         <div className="field char-avatar-field">
           <span>{t('character.image')}</span>
-          {/* GitHub-style portrait: a large circular avatar with an
-              "Edit" pill button overlaid that opens a small popover
-              offering upload (and remove, if present). */}
           <div className="char-avatar-area">
             {character.image ? (
               <button
@@ -196,38 +201,38 @@ export function CharacterEditor({
                 </span>
               </div>
             )}
-            <div className="char-avatar-edit" ref={imageMenuRef}>
-              <button
-                type="button"
-                className="char-avatar-edit-trigger"
-                aria-haspopup="true"
-                aria-expanded={imageMenuOpen}
-                disabled={imageBusy}
-                onClick={() => setImageMenuOpen((v) => !v)}
-              >
-                <span aria-hidden="true">
-                  <EditIcon />
-                </span>
-                {t('character.imageEdit')}
-              </button>
-              {imageMenuOpen && (
-                // No `role="menu"` — the contents are a simple list of
-                // buttons. A real ARIA menu would require full keyboard
-                // navigation this lightweight popover does not implement.
-                <div className="char-avatar-edit-menu">
-                  <button type="button" onClick={handlePickImage}>
-                    {character.image
-                      ? t('character.imageChange')
-                      : t('character.imageAdd')}
-                  </button>
-                  {character.image && (
-                    <button type="button" className="danger" onClick={handleRemoveImage}>
-                      {t('character.imageRemove')}
+            {/* Edit button hidden in read-only mode */}
+            {!readOnly && (
+              <div className="char-avatar-edit" ref={imageMenuRef}>
+                <button
+                  type="button"
+                  className="char-avatar-edit-trigger"
+                  aria-haspopup="true"
+                  aria-expanded={imageMenuOpen}
+                  disabled={imageBusy}
+                  onClick={() => setImageMenuOpen((v) => !v)}
+                >
+                  <span aria-hidden="true">
+                    <EditIcon />
+                  </span>
+                  {t('character.imageEdit')}
+                </button>
+                {imageMenuOpen && (
+                  <div className="char-avatar-edit-menu">
+                    <button type="button" onClick={handlePickImage}>
+                      {character.image
+                        ? t('character.imageChange')
+                        : t('character.imageAdd')}
                     </button>
-                  )}
-                </div>
-              )}
-            </div>
+                    {character.image && (
+                      <button type="button" className="danger" onClick={handleRemoveImage}>
+                        {t('character.imageRemove')}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           {imageBusy && <p className="hint">{t('character.imageProcessing')}</p>}
           {imageError && (
@@ -251,28 +256,35 @@ export function CharacterEditor({
             value={character.background}
             maxLength={1000}
             placeholder={t('character.backgroundPlaceholder')}
+            readOnly={readOnly}
+            disabled={readOnly}
             onChange={(e) => {
+              if (readOnly) return
               onUpdate({ background: e.target.value })
               detailNotice.markChanged()
             }}
-            onBlur={detailNotice.flush}
+            onBlur={readOnly ? undefined : detailNotice.flush}
           />
         </label>
 
-        <label className="field">
-          <span>{t('character.memo')}</span>
-          <textarea
-            rows={5}
-            value={character.memo}
-            maxLength={2000}
-            placeholder={t('character.memoPlaceholder')}
-            onChange={(e) => {
-              onUpdate({ memo: e.target.value })
-              detailNotice.markChanged()
-            }}
-            onBlur={detailNotice.flush}
-          />
-        </label>
+        {/* Private memo — hidden in read-only mode (it's local-only data
+            that other players never see, so showing '' would be misleading) */}
+        {!readOnly && (
+          <label className="field">
+            <span>{t('character.memo')}</span>
+            <textarea
+              rows={5}
+              value={character.memo}
+              maxLength={2000}
+              placeholder={t('character.memoPlaceholder')}
+              onChange={(e) => {
+                onUpdate({ memo: e.target.value })
+                detailNotice.markChanged()
+              }}
+              onBlur={detailNotice.flush}
+            />
+          </label>
+        )}
       </div>
 
       {lightboxOpen && character.image && (
