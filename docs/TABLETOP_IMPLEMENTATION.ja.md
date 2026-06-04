@@ -1,230 +1,351 @@
-# テーブルマップ実装プラン
+# テーブルマップ実装
 
 [English](TABLETOP_IMPLEMENTATION.md)
 
 > 機能仕様は [`REQUIREMENTS.ja.md` §3.15](REQUIREMENTS.ja.md) を参照。
-> 本書は実装の進め方（PR 分割・リスク・テスト方針）に焦点を置く。
+> 本書は **as-built（実装済みの実体）** を記述するコンパニオン文書で、
+> モジュール構成・ワイヤプロトコル・ホスト権威のデータフロー・永続化・
+> Konva 描画ツリー・実装履歴・テスト一覧をまとめる。
+>
+> 本機能は PR #134〜#190（以降も継続）で段階的に実装された。本書は元々
+> 7 PR の計画書だったが、実際に着地した内容に合わせて書き直している。
+> 実装は当初スコープを大きく超え、ヘックスグリッド・フォグ・フリーハンド
+> 描画 / テキストラベル・マップギャラリーピッカー・NPC ライブラリ・GM の
+> テーブルライブラリは、いずれも当初「Phase 2 以降」に置いていたものである。
 
 ## 1. スコープ
 
-- **対象**: スクエアグリッド + PC トークン + GM 専用トークン + 背景画像 1 枚 +
-  リロード復元 + ルームエクスポート / インポート対応
-- **対象外（Phase 2 以降）**: ヘックスグリッド、ルーラー、ピング、サイズ違い
-  トークン、向き、HP バー、フォグ・オブ・ウォー、フリーハンドドロー、複数
-  マップ、ミニマップ、キーボード移動
+### 実装済み
 
-## 2. アーキテクチャの変更点
+- **グリッド**: `none` / `square` / フラットトップ **hex**（odd-q オフセット）。
+  セルサイズ・原点オフセット・線色・線の不透明度・スナップ切替。
+- **背景マップ**: 1 シーン 1 枚。**ファイル** / **URL** / アプリ内
+  **ギャラリー**ピッカー（[trpg-map-organizer](https://yamadar.github.io/trpg-map-organizer/)、
+  約 303 枚）/ 同梱**プリセット**（`public/maps/`）の 4 経路。すべて同一の
+  縮小＋チャンク配信パイプラインに合流。「背景なし」（グリッドのみ）も可。
+- **トークン**: PC トークン（セッションキャラに紐づきポートレートを再利用）と
+  GM 専用トークン（NPC / モンスター / 小物）。配置・ドラッグ・サイズ変更
+  （`0.6 / 1 / 2 / 3 / 4`）・削除・ラベル変更。1 キャラが複数トークンを持てる。
+  トークンごとに**公開メモ**（全員編集可）と GM 専用の**非公開メモ**
+  （ブロードキャストしない）。
+- **NPC ライブラリ**: GM が用意する名前付き NPC 定義（名前 + 画像 + メモ）の
+  ストック。何度でも配置でき、配置時に画像 / ラベル / メモをインラインに
+  コピーするため、後からライブラリを編集しても配置済みトークンは変わらない。
+- **テーブルライブラリ**: 名前付きの**テンプレート**（PC トークンを除去し
+  `pcSpawn` を退避）と完全**スナップショット**。セッション横断（per-session
+  でない）でグローバル保存されるので、GM が事前にシーンを準備して任意の
+  ルームに読み込める。
+- **注釈レイヤ**: フリーテキスト**ラベル**・フリーハンド**ペン描画**・
+  グリッドセル単位の**フォグ・オブ・ウォー**（GM が塗る / プレイヤーには不透明）。
+- **リアルタイム**: ホスト権威 / last-write-wins、約 20Hz の drag throttle、
+  遅参者への welcome snapshot 同梱、IndexedDB によるリロード復元、
+  ルームのエクスポート / インポート。
+- **表示**: 全画面モード（モバイル + デスクトップ）と下部ドック、チャット /
+  ダイスの差し替えオーバーレイ、未読チャットドット、ロール元トークンから
+  飛ぶ**ダイス演出**、発言者トークン上の**吹き出し**、初回チュートリアル、
+  描画クラッシュ用の**エラーバウンダリ**。
 
-### 新規ファイル
+### 対象外（Phase 2 以降）
+
+ルーラー（マス距離測定）、ピング（「ここ見て」）、トークンの向き、HP バー /
+状態アイコン、1 セッション複数マップ（シーン一覧）、ミニマップ、キーボード
+移動の完全対応。§9 参照。
+
+## 2. モジュール構成
+
+### `src/tabletop/` — 純粋ロジック（単体テスト済み・React / Konva / DOM 非依存）
 
 | ファイル | 役割 |
 |---|---|
-| `src/tabletop/types.ts` | `TabletopState`, `Token`, `Grid` の型定義 |
-| `src/tabletop/grid.ts` | グリッド計算・スナップの純粋関数 |
-| `src/tabletop/imageChunk.ts` | 大きな画像のチャンク分割・再構築 |
-| `src/components/TablePanel.tsx` | Konva ベースのテーブル画面（全画面モード） |
-| `src/components/TableFeedSheet.tsx` | 全画面時の swipe-up bottom sheet フィード |
-| `src/components/TableToolbar.tsx` | グリッド設定・マップ設定・GM トークン管理 UI |
-| `src/storage/tabletop.ts` | IndexedDB の `sessionTable` ストア操作 |
+| `types.ts` | `TabletopState`・`Token`（`PcToken` / `GmToken`）・`Grid`・`MapBackground`・`NpcDef`・`MapText`・`DrawStroke`・`FogState`・`SavedTabletop`、各種上限定数、id 採番、`cellFromWorld`（square/hex 振り分け） |
+| `grid.ts` | スクエアのスナップ・座標変換。サイズ対応スナップ（偶数サイズ→セル角、奇数 / サブセル→中心）、非ドリフトな `snapResizeToGrid`、`kind === 'hex'` 時は `hexGrid.ts` へ委譲 |
+| `hexGrid.ts` | フラットトップ hex 計算（odd-q）: 中心 / 多角形 / pixel→cell / ビューポート走査。redblobgames 方式 |
+| `tokens.ts` | PC トークンのライフサイクル・権限: `planPcTokenAdds`・`makeGmToken`・`canMoveToken`・`applyTokenMove/Upsert/Remove`・`defaultPlacementOrigin`（マップ中心→グリッド原点→`pcSpawn`）・4 列折り返しの `placementPosition`・`recenterTokensOnMap`・`snapAllTokensToGrid` |
+| `annotations.ts` | テキスト / ストローク / フォグの適用＋権限判定（`canEditMapText`・`canEraseStroke`）、`setFogCells`・`isCellRevealed`・`nearestRevealedCellCenter`（フォグへ落としたトークンの救済） |
+| `hostValidation.ts` | 受信した注釈リクエストのホスト側バリデータ（純粋関数）。`ownerPlayerId` を信頼できる接続元から再付与し、なりすましを防ぐ |
+| `snapshot.ts` | ワイヤ用ヘルパー: `tokenForWire` / `stripMapBytesForWire`（送信前に `privateNote` とマップ `dataUrl` を除去）、`fillTabletopDefaults`（PR-12 以前のホストの欠落フィールドを補完） |
+| `imageChunk.ts` | `chunkString` ＋ `ChunkBuffer`: data URL を 256KB チャンクに分割し、順不同到着でも再構築（進捗・長さ検査つき） |
+| `imageBackground.ts` | マップ縮小（長辺 3000px、PNG は >6MB のとき JPEG q0.85、入力 ≤8MB）。`readMapBackground`・`fetchMapBlob` / `readMapBackgroundFromUrl`・`parseHttpUrl`、構造化エラータグ（`invalidUrl` / `fetchFailed` / `notImage` / `tooLarge` / `unreadable`） |
+| `mapGallery.ts` | trpg-map-organizer の I/O: マニフェスト＋タグ辞書のパース、`originalUrl`（WebP）/ `thumbUrl`、`filterMaps`（4 分類・AND/OR）、`searchMaps`、`tagLabel`（言語対応） |
+| `presetMaps.ts` | 同梱プリセットのローダ（`public/maps/manifest.json`）。`readMapBackground` を再利用 |
 
-### 既存への変更
+### `src/storage/` — 永続化
+
+| ファイル | 役割 |
+|---|---|
+| `tabletop.ts` | セッション単位の `sessionTable`（DB v7+）: `saveTabletop` / `loadTabletop` / `deleteTabletopForSession` ＋ `sanitizeStoredTabletop`（任意の保存データを正当な state に矯正） |
+| `tabletopLibrary.ts` | グローバルな `tabletopLibrary`（DB v8+）: `saveLibraryEntry` / `listLibrary` / `getLibraryEntry` / `deleteLibraryEntry` |
+| `tabletopTutorial.ts` | localStorage フラグ `trpg-dice.tabletopTutorialSeen`（本体チュートリアルと別管理） |
+
+### `src/components/` — UI
+
+| ファイル | 役割 |
+|---|---|
+| `TablePanel.tsx` | 全画面の Konva レンダラ: Stage ＋各レイヤ、pan/zoom、トークン drag、描画 / テキスト / フォグのジェスチャ、トークン popover、ダイス演出・吹き出し、チャット / ダイスオーバーレイ。約 2,000 行 |
+| `TableToolbar.tsx` | 右端のアイコンカテゴリパネル: **マップ＆グリッド**（グリッド設定＋4 タブのマップソース）・**フォグ**・**トークン**（マップ上＋追加・準備）・**ライブラリ** |
+| `TableTools.tsx` | 左端のフローティングツールパレット: `select` / `text` / `pen` / `eraser` / `fog-reveal` / `fog-conceal` ＋色 / ペン幅 / 文字サイズの popover |
+| `MapGalleryDialog.tsx` | ギャラリーピッカー: タグチップ（4 分類・AND/OR）・検索・サムネイルグリッド・選択と同期する `Lightbox` プレビュー（前後送り＋スワイプ） |
+| `TabletopDock.tsx` | 全画面モード用の下部ドック: `chat` / `character` / `dice` / `returnToRoom`（＋未読チャットドット） |
+| `TabletopTutorial.tsx` | 初回 7 ステップのチュートリアル（本体チュートリアルの装飾を流用） |
+| `DiceRollAnimation.tsx` | キャンバス上でサイコロが上方へ回転して飛ぶ演出（単体） |
+
+`Lightbox.tsx` は共用（テーブル専用ではない）。共通の画像ピッカー
+（`ImagePickerDialog`）は NPC / キャラのトークン画像に
+[trpg-chara-image-organizer](https://yamadar.github.io/trpg-chara-image-organizer/)
+ギャラリー連携を提供する。
+
+### 既存ファイルの変更
 
 | ファイル | 変更内容 |
 |---|---|
-| `src/net/protocol.ts` | メッセージ型追加（`tableState` / `tokenMove` / `tokenUpsert` / `tokenRemove` / `mapMeta` / `mapChunk` / `gridChange`）、`Snapshot` に `tabletopState` |
-| `src/hooks/useSession.ts` | `tabletopState` の host 権威同期、`tableActions` API、welcome snapshot 拡張 |
-| `src/storage/roomLog.ts` | `DB_VERSION` 6→7、`sessionTable` ストア新設 + マイグレーション |
-| `src/storage/roomExport.ts` / `roomImport.ts` | マニフェスト v6 へ。`table.json` と `attachments/maps/*` を入出力（v5 以前互換） |
-| `src/components/Dock.tsx` | テーブルマップアイコンと `SheetId` 追加 |
-| `src/App.tsx` | テーブルマップは Dock のシートではなく全画面モードで起動。`showTable` state を新設 |
-| `src/i18n/translations/*.ts`（19 言語） | `tabletop.*` キー追加（パリティテストで担保） |
-| `package.json` | `react-konva`, `konva` を依存に追加 |
+| `src/net/protocol.ts` | テーブルマップのメッセージ群（§3.3）、`Snapshot.tabletop?`、`MapMeta` |
+| `src/hooks/useSession.ts` | ホスト権威の `tabletop` state ＋全アクション群（§3.2）、クライアント要求のバリデーション、チャンクマップ転送、フォグ落下救済、IndexedDB 永続化、ライブラリ load/save |
+| `src/storage/roomLog.ts` | `DB_VERSION` → **8**。v7 で `sessionTable`、v8 で `tabletopLibrary`（`byUpdatedAt` index）を追加。`deleteSession` / `deleteAllSessions` は `sessionTable` も clear |
+| `src/storage/roomExport.ts` / `roomImport.ts` | マニフェスト **v6**: `table.json` ＋ `attachments/maps/*`。旧書庫は table 空で import |
+| `src/components/Dock.tsx` | `tabletop` `DockId` ＋ `TabletopIcon`（trailing スロット）。全画面モードを開く |
+| `src/App.tsx` | `tabletopOpen` 全画面モード、エラーバウンダリ内での `TablePanel` の mount/unmount、チャット / ダイスオーバーレイ配線、未読チャット追跡 |
+| `src/i18n/translations/*.ts`（19 言語） | `tabletop.*` キー（パリティテストで 19 言語を担保） |
+| `package.json` | `konva` `^10.3.0`、`react-konva` `^19.2.4` |
 
-### データフロー
+## 3. 状態・同期・永続化
 
-**トークン同期（ホスト権威 / last-write-wins）**:
-1. クライアントが drag → ローカル即時表示 + 約 20Hz で `tokenMove` 送信
-2. ホストが受信 → `tabletopState.tokens` を更新 → 全員に `tokenMove`
-   ブロードキャスト
-3. 各クライアントは host 経由の更新を「正」として上書き
-4. 同一トークンの drag 競合は host の後勝ち（last-write-wins）
+### 3.1 モデル
 
-**背景画像のチャンク分割転送**:
-1. GM がアップロード → ホストで長辺 3000px に縮小 + PNG/JPEG 化
-2. 3MB 以下なら `mapMeta` 1 通で送信。超過時は `mapChunk(seq, total, bytes)`
-   で分割
-3. クライアントは受信中「読み込み中」表示、揃ったら data URL に再構築
-4. IndexedDB の `sessionTable.background` に保存（送信元・受信先とも）
+`TabletopState = { map?, grid, tokens[], npcLibrary[], pcSpawn?, texts[], strokes[], fog }`。
+GM（P2P ホスト）が正本の state を保持し、各クライアントは welcome snapshot ＋
+差分メッセージから複製する。トークン位置はトークン中心の**ピクセル**座標で、
+描画時にグリッドへスナップする。よって将来のグリッド変更でワイヤ形式の
+マイグレーションは不要。
 
-## 3. PR 分割
+### 3.2 `useSession` のアクション面
 
-各 PR は **実装 → 単体テスト → セルフレビュー → コメント整備 → commit →
-push → PR 作成 → Copilot レビュー対応 → マージ** の順で進める（`CLAUDE.md`
-規定）。ブランチは `feature/tabletop-{step}` を基本とし、PR は base = `main`
-で出す。
+`useSession` は live な `tabletop` / `tabletopLibrary` state と、（ネスト
+されない）フラットなアクション群を公開する。分類:
 
-### PR 1: 型・プロトコル・純粋ユーティリティ
+- **グリッド / マップ**: `updateGrid`・`setMapBackground(file)`・
+  `setMapBackgroundFromUrl(input)`・`setMapFromPreset(preset)`・
+  `clearMapBackground`。
+- **トークン**: `placeMyCharacterToken`・`addPlayerToken`・`addGmToken`・
+  `moveTokenLive` / `moveTokenCommit`・`setTokenSize`・`removeToken`・
+  `updateGmToken`・`updateTokenNote`・`updateTokenPrivateNote`・
+  `reorderToken`・`syncOwnTokenSnapshots`。
+- **NPC ライブラリ**: `addNpcDef`・`updateNpcDef`・`removeNpcDef`・
+  `reorderNpcDef`・`placeNpcFromLibrary`。
+- **テーブルライブラリ**: `saveTabletopAs(name, kind)`・
+  `loadTabletopFromLibrary(id)`・`deleteTabletopFromLibrary(id)`。
+- **注釈**: `addMapText` / `updateMapText` / `removeMapText`・
+  `addDrawStroke` / `removeDrawStroke`・`setFogEnabled`・`paintFog`・
+  `commitFog`・`setFog`。
 
-**目的**: 基礎の型と純粋関数の整備。UI なし。
+マップ読み込み系は `'ok'` か `MapImageError` を返し、ツールバーが具体的な
+メッセージを出せるようにしている。ホストは全 state 変更を `applyTabletop(next)`
+1 か所に通し、ref 更新・setState・`saveTabletop` の fire-and-forget を行う。
 
-- `src/tabletop/types.ts`
-- `src/tabletop/grid.ts`: `snapToGrid`, `worldToCell`, etc.
-- `src/tabletop/imageChunk.ts`: `chunkBytes`, `reassembleChunks`
-- `src/net/protocol.ts`: メッセージ型を追加、`Snapshot` に `tabletopState`
-- Vitest 単体テスト（スナップ計算・チャンク往復・型ガード）
+### 3.3 ワイヤプロトコル（`net/protocol.ts`）
 
-**受け入れ**: `npm run build`, `npm test`, `npm run lint` がすべて通る。
+**クライアント → ホスト**（いずれも反映前にホスト側で検証）:
+`tokenMove`・`pcTokenPlaceRequest`・`tokenSizeRequest`・
+`tokenRemoveRequest`・`tokenNoteRequest`・`mapTextAddRequest`・
+`mapTextUpdateRequest`・`mapTextRemoveRequest`・`drawStrokeAddRequest`・
+`drawStrokeRemoveRequest`。
 
-### PR 2: IndexedDB v7 + ストレージ層
+**ホスト → クライアント**（権威）: `tokenMove`・`tokenUpsert`・
+`tokenRemove`・`gridChange`・`mapMeta`・`mapChunk`・`mapCleared`・
+`npcDefUpsert`・`npcDefRemove`・`tabletopState`（全置換。ライブラリ読込で
+使用）・`mapTextUpsert`・`mapTextRemove`・`drawStrokeAdd`・
+`drawStrokeRemove`・`fogSet`。welcome `Snapshot` は任意の `tabletop` を
+同梱する（マップ `dataUrl` は除去。§3.5）。
 
-**目的**: テーブル状態の永続化基盤。
+### 3.4 トークン同期（ホスト権威 / last-write-wins）
 
-- `src/storage/roomLog.ts`: `DB_VERSION` 6→7、`sessionTable` ストア新設
-- `src/storage/tabletop.ts`: `saveTabletop` / `loadTabletop` /
-  `deleteTabletopForSession`
-- `deleteSession` / `deleteAllSessions` で `sessionTable` も clear
-- 単体テスト（fake-indexeddb）
+1. クライアントが drag → ローカル即時表示、約 20Hz で `tokenMove` 送信。
+2. ホストが `canMoveToken`（PC: オーナーか host / GM トークン: host）を検証し、
+   `tokens` を更新して `tokenMove` をブロードキャスト。
+3. クライアントは host の echo を「正」とみなす。同一トークンの drag 競合は
+   後勝ち（last-write-wins）。
+4. drag 終了時、非 GM が自分のトークンを（自分には見えない）フォグセルへ落と
+   した場合、commit は `nearestRevealedCellCenter` へ寄せ、フォグ下で見失わない
+   ようにする。
 
-**受け入れ**: 既存の永続化テストが通る + 新規ストアの保存・取得が動く。
+サイズ変更（`tokenSizeRequest`）・削除（`tokenRemoveRequest`）も同じ
+「検証 → ブロードキャスト」経路。`tokenNoteRequest`（公開メモ）は**全参加者**
+が書ける設計で、ホストは送信者が既知かだけ確認し、`privateNote` を**外して**
+トークンをブロードキャストする。
 
-### PR 3: TablePanel + Konva 基盤（トークンなし）
+### 3.5 背景マップ転送
 
-**目的**: Stage・グリッド描画・pan / zoom の骨格。
+`file` / `URL` / `gallery` / `preset` はすべて `readMapBackground` に合流し、
+縮小済み data URL を得る。続いてホストは:
 
-- 依存追加: `react-konva`, `konva`
-- `useSession`: `tabletopState` を host 権威で保持、メッセージ受信処理、
-  welcome snapshot に同梱、変更時の broadcast。トークンはまだ空配列のまま
-- `src/components/TablePanel.tsx`: Konva Stage、グリッドレイヤ（square のみ）
-- pan: タッチ 2 本指 / マウス右ドラッグ / Space + ドラッグ
-- zoom: ピンチ / マウスホイール（25%〜400%）
-- `src/components/TableToolbar.tsx`: グリッド設定 UI（セルサイズ・原点
-  オフセット・線色・透明度・スナップ）
-- `src/components/Dock.tsx`: テーブルマップアイコン追加（Lucide `Grid2X2` 採用案）
-- `src/App.tsx`: 全画面モードの開閉 state
-- i18n: `tabletop.title` / `tabletop.grid.*` を ja/en のみ追加（残り 17 言語は PR 7）
+1. `mapMeta`（id・名前・寸法・`ChunkSpec`）をブロードキャスト;
+2. data URL を 256KB の順序つき `mapChunk` で送信（`chunkString`）。小さな
+   マップは 1 チャンク;
+3. 受信側は `ChunkBuffer`（順不同許容・長さ検査）で再構築し、揃うまで読み込み
+   中表示、完了後に永続化＋描画。
 
-**受け入れ**: GM がテーブルマップを開き、グリッドを設定でき、pan/zoom が動作する。
+マップ `dataUrl` は welcome snapshot と `tabletopState` から**除去**
+（`stripMapBytesForWire`）し、数 MB の画像が制御フレームにインライン同梱され
+ないようにする（チャンク転送が別途追従）。`clearMapBackground` → `mapCleared`。
 
-### PR 4: PC トークン
+### 3.6 `privateNote` の機密性
 
-**目的**: セッションキャラから PC トークン生成・ドラッグ・同期。
+送信経路（`tokenUpsert`・snapshot のトークン・`tabletopState`）はすべて
+トークンを `tokenForWire` に通し、GM 専用の `privateNote` を除去する。よって
+非ホストには決して届かない。これは設計上ホスト限定の唯一のフィールド。
 
-- `useSession`: トークン CRUD reducer + 約 20Hz throttled drag broadcaster
-- `TablePanel`: トークンレイヤ（円形 + ポートレート画像）、ドラッグ
-- PC トークン自動追加: キャラがセッション参加時に未配置位置で生成
-- 権限: PC トークンはオーナーと GM のみドラッグ可
-- ピンチとドラッグの混在禁止（pointerCount で分岐）
-- 単体テスト: throttle、権限判定、スナップ
-- 結合テスト: 2 タブで last-write-wins を確認
+### 3.7 永続化
 
-**受け入れ**: 2 タブで PC トークンを動かしあえ、drag 中も滑らかで release 後の
-最終位置が双方で一致する。
+- **セッション単位**: 変更のたび `saveTabletop(sessionId, state)` が
+  `sessionTable` を upsert。リロード / 復帰時に `loadTabletop` が
+  `sanitizeStoredTabletop` を通して復元し、任意の保存形（PR-10/11/12 以前の
+  レコードを含む）を完全で正当な state に矯正する。
+- **グローバルライブラリ**: `tabletopLibrary`（DB v8）が `SavedTabletop` の
+  テンプレート＋スナップショットを `updatedAt` 順で保持。
+- **エクスポート / インポート**: ルーム ZIP はマニフェスト **v6**。テーブルは
+  `table.json` に入り、マップ画像は `attachments/maps/{id}.{ext}` に分離
+  （チャット添付と同様）。v5 以前の書庫は table 空で読み込む。
 
-### PR 5: 背景マップアップロード + チャンク転送
+> **既知のギャップ**: `sanitizeStoredTabletop`（リロード経路）は現状トークンの
+> `size` / `note` / `privateNote` を往復させない。これらは live 同期では生き
+> 残るが、ホストが IndexedDB から再読込すると失われる（本書とは別に追跡）。
 
-**目的**: 背景画像の配置と大画像対応。
+## 4. 描画 & UI
 
-- `TableToolbar`: 「マップを設定」ボタン・ドロップエリア（GM のみ）
-- 新規 `src/tabletop/imageBackground.ts`（長辺 3000px、PNG/JPEG、最大 8MB 入力）
-- 3MB 超のチャンク送信: `mapMeta` で総バイト・チャンク数予告 →
-  `mapChunk(seq, bytes)` で順次送信 → 完了検知で確定
-- クライアント側: 受信中は loading 表示、揃ったら IndexedDB 保存 + 描画
-- 原点オフセット調整 UI（背景内部のグリッドと論理グリッドの位置合わせ）
-- 単体テスト: チャンク round-trip
+### 4.1 Konva レイヤ（`TablePanel`）
 
-**受け入れ**: 3000×2000px / 5MB の PNG を投げて参加者全員に届く。背景なし
-モードも維持。
+`scale` / `position` が pan & zoom を駆動する `<Stage>` が 1 つ。z 順
+（下 → 上）:
 
-### PR 6: GM 専用トークン
+1. **背景** — ワールド原点のマップ画像（非インタラクティブ）。
+2. **グリッド** — スクエアの走査線または hex 多角形。ビューポートでカリングし、
+   線幅 `1 / scale` でどのズームでも約 1 デバイス px。
+3. **ストローク** — ペン線（＋描画中のライブプレビュー）。eraser 時のみ listen。
+4. **トークン** — 円形ポートレート（クリップ・"cover" フィット）または頭文字
+   つきカラー円。サイズ連動の半径、下にラベル。`draggable` はツールが `select`
+   かつ `canMoveToken` が真のときのみ。操作不可トークンは opacity 0.8。
+5. **フォーカスパルス** — マップ上トークン一覧でクリックした際の一発リング。
+6. **吹き出し** — 発言者トークン上に浮かぶチャット文。重なりを避けて自動配置、
+   TTL 約 6 秒。
+7. **ダイス演出** — ロール元トークンからサイコロが上方へ回転（`DiceRollAnimation`、
+   約 1.1 秒）。
+8. **テキストラベル** — マップ上テキスト（eraser 時のみ listen）。
+9. **フォグ** — 未公開セル。GM は opacity 0.5、非 GM は 1.0（下の hit-test も
+   遮断）。hex フォグは共有辺の二重描画を避けるため単一 `<Shape>` パス。
 
-**目的**: NPC / モンスター用の独立トークン。
+**pan**: 2 本指タッチ / 右ドラッグ / Space + 左ドラッグ。**zoom**: ホイール
+（×1.1）/ ピンチ。0.25〜4 倍にクランプし、カーソル位置を基準にする。ピンチと
+ドラッグは同一ジェスチャで併用しない。
 
-- `TableToolbar`: 「GM トークンを追加」ボタン → 画像アップロードダイアログ
-  （`prepareCharacterImage` を流用、長辺 2560px / 約 2MB）
-- ラベル入力（任意）
-- 配置・移動・削除（GM のみ）、削除確認は既存 `useConfirm()` を流用
-- 権限: 非 GM は UI を出さず、メッセージも無視
+### 4.2 トークン popover
 
-**受け入れ**: GM のみが GM トークンを追加・移動・削除できる。非 GM タブでは
-追加 UI が出ない。
+トークンをタップすると、その画面位置にアンカーした DOM popover が開く。GM
+（または PC トークンのオーナー）は編集ビュー: 名前 / ラベル（GM トークン）・
+公開メモ・サイズ選択・NPC 画像変更・削除、加えて**非公開 GM メモ**（host のみ）と
+「Character info」起動。非オーナーは読み取り専用ビューで、操作を許された者
+（GM とオーナー）も併記される。
 
-### PR 7: モバイル UX、エクスポート、i18n、仕上げ
+### 4.3 ツールバー & ツール
 
-**目的**: 完成度を上げる仕上げ作業。
+`TableToolbar` は右端のアイコンカテゴリ（同時に開くのは 1 つ）:
+**マップ＆グリッド**（GM）— グリッドの種別 / サイズ / 原点 / 色 / 不透明度 /
+スナップ＋4 タブのマップソース（Upload / Gallery / URL / Preset）と独立した
+Replace/Clear; **フォグ**（GM）— 有効化＋全面化 / 全公開＋左ブラシへの案内;
+**トークン**（全員）—『マップ上のトークン』（種別バッジ・クリックでフォーカス・
+自分の PC をアクセント強調・GM の並び替え / 削除）と折りたたみ式『追加・準備』
+（PC 配置リスト＋NPC ライブラリ編集）; **ライブラリ**（GM）— テンプレート /
+スナップショット保存と読み込み / 削除。
 
-- 全画面モードの仕上げ: モバイルでヘッダ・Dock を隠す、safe-area 対応、
-  専用閉じるボタン
-- `TableFeedSheet`: 画面下から swipe-up する高さ可変フィード（つまみで調整、
-  最小=ヘッダのみ・最大=半分、本体は既存 FeedList 再利用）
-- 自分の最新発言の短時間トースト（最小高さでも気付けるよう）
-- デスクトップでも全画面モード（同じ実装）
-- `roomExport.ts` / `roomImport.ts`: マニフェスト v6、`table.json` /
-  `attachments/maps/*`。v5 以前は table 空で読み込み
-- i18n: `tabletop.*` を全 19 言語に追加（`translations.test.ts` のパリティで担保）
-- チュートリアル: テーブルマップ紹介ステップ追加
-- 多トークン時の再描画調整（`<Layer>` 分離・`batchDraw`）
-- バグ修正
+`TableTools` は左端パレットで、左マウス / シングルタッチのジェスチャモードを
+切り替える。ツール別の色 / ペン幅 / 文字サイズは、そのツールが使わないときは
+自動的に隠れる。
 
-**受け入れ**: REQUIREMENTS §8 の Tabletop 項目すべてにチェックが入る。
+### 4.4 全画面モード
 
-## 4. リスクと対策
+`App` が `tabletopOpen` を切り替え、テーブルが画面を占有する（Dock のテーブル
+ボタンで入り、`returnToRoom` で出る）。`TablePanel` は共通の**`ErrorBoundary`**
+（`components/ErrorBoundary.tsx`）内に `TabletopErrorFallback` 復旧カードつきで
+mount され、Konva の描画クラッシュ時には空白ではなく再試行 / マップ消去 /
+閉じるを出す。チャットとダイスは差し替えオーバーレイ
+（モバイルは `Sheet`、デスクトップはフローティング aside）で、`TabletopDock`
+が駆動する。チャット非表示時は未読ドットがチャットアイコンに付く。専用の
+`TableFeedSheet` コンポーネントは**存在しない** — 計画していた swipe-up フィードは
+既存の `Sheet` ＋オーバーレイ方式で実現した。
 
-| リスク | 対策 |
+## 5. 実装履歴
+
+約 40 本の PR（#134〜#190）で実装。テーマ別:
+
+| フェーズ | PR | 主な内容 |
+|---|---|---|
+| 基盤 | #134–#141 | 仕様、型 / プロトコル、ストレージ（DB v7）、Konva 基盤＋pan/zoom、PC トークン、チャンク背景転送、GM トークン、ツールバー / 編集メニュー |
+| ロスター＆ライブラリ | #142–#147 | PC 名ラベル、NPC 画像 300px/200KB、パネルトグル、手持ち / 配置の分離＋PC マルチトークン＋NPC ライブラリ、PC 削除の host 限定、テーブルライブラリ（テンプレ / セーブ、DB v8） |
+| 注釈＆堅牢化 | #148–#155 | 配置起点→マップ中心、テキスト / ペン / フォグレイヤ、描画**エラーバウンダリ**、フォグ落下トークン救済、ダイス＋パターンのパネル統合 |
+| Hex＆UI 再編 | #156–#167 | **ヘックスグリッド**、下部ドック再編、右ツールバーのアイコンカテゴリ化、左ツールのフォーカス時テキスト、内容高さフィット、吹き出し＋未読ドット、チュートリアル、フォグ案内文、中心配置 |
+| マップソース | #171–#177 | URL 読込、**ギャラリーピッカー**、トークンサイズ＋マップ変更時スナップ。後にギャラリーを mid-JPEG → original WebP へ切替 |
+| トークン UX＆メモ | #181–#190 | hex フォグブラシ修正、トークン / NPC 編集刷新、操作キャラ切替のポートレート消失修正、公開＋非公開**メモ**＆権限マトリクス、ダイス通知ドット＋キャンバスのダイス演出、トークンパネル 2 セクション化、自分の PC 強調、グリッド折り返し配置、ドキュメント |
+
+## 6. リスクと対処
+
+| リスク | 対処 |
 |---|---|
-| WebRTC データチャネルが drag 連発で詰まる | 20Hz throttle、必要なら unreliable mode の検討 |
-| Konva 多トークン時の再描画コスト | `<Layer>` を背景・グリッド・トークンで分離、token 更新時は token layer のみ `batchDraw` |
-| IndexedDB マイグレーション失敗 | v6→v7 は `onupgradeneeded` 同期内に空ストア追加するだけ。既存データは触らない |
-| 背景画像のチャンク欠落 | 受信側で 5 秒以上 chunk が来なければ `tableState` を再要求するリカバリパス |
-| モバイル Safari のジェスチャ干渉 | Stage コンテナに `touch-action: none`、`Konva.hitOnDragEnabled = true` |
-| GM トークン削除時の race | tokenId ベースの idempotent 操作（未知 id は no-op） |
-| 既存エクスポート書庫互換 | `fileVersion` 判定で v5 以前は table 空として import |
-| Vitest で Konva が動かない | Canvas を必要としないロジックは `src/tabletop/*` の pure functions に集約してユニットテスト、Konva 連携は手動結合テスト |
+| drag 連発でデータチャネルが詰まる | drag 中は約 20Hz throttle、終了時に最終位置を送信 |
+| Konva の再描画コスト | レイヤ分離、グリッド / フォグのビューポートカリング、hex フォグを単一パス化、受動レイヤは `listening={false}`、派生 state のメモ化 |
+| 数 MB マップがチャネルを塞ぐ | 256KB チャンク転送。snapshot/state から `dataUrl` を外し別送 |
+| 背景画像チャンクの欠落 | `ChunkBuffer` が順不同を許容、重複 / 別 id を破棄し、再構築を長さ検査 |
+| `privateNote` 漏洩 | `tokenForWire` で全送信経路から除去。`snapshot.test.ts` で担保 |
+| 注釈 / トークン要求の所有権なりすまし | ホストが `ownerPlayerId` を再付与し、`canMoveToken` / `canEditMapText` / `canEraseStroke` を再チェック（`hostValidation.ts`） |
+| 自分のトークンをフォグ下に落として見失う | drag 終了 commit で `nearestRevealedCellCenter` 救済 |
+| URL / ギャラリー読込の失敗種別 | 個別エラータグ（`invalidUrl` / `fetchFailed` / `notImage` / `tooLarge` / `unreadable`）→ ツールバーの具体的メッセージ |
+| ギャラリーのマニフェスト変化（mid 廃止） | `mid` を任意化し WebP `originalUrl` へフォールバック。不正行は除去、id は parse 時に重複排除 |
+| Konva 描画クラッシュでアプリが空白に | 共通 `ErrorBoundary` ＋ `TabletopErrorFallback`（再試行 / マップ消去 / 閉じる） |
+| IndexedDB マイグレーション | v6→v7→v8 は `onupgradeneeded` でストアを*追加*するのみ。既存行は不変 |
+| 旧エクスポート書庫 | マニフェスト版数で分岐。v5 以前は table 空で import |
+| Vitest で Konva が動かない（`environment: 'node'`） | Canvas 非依存ロジックは `src/tabletop/*` 純粋モジュールに集約して単体テスト。Konva 連携は 2 タブで手動確認 |
 
-## 5. テスト戦略
+## 7. テスト戦略
 
-### 単体テスト（Vitest）
+### 単体（Vitest・`environment: 'node'`）
 
-- グリッドスナップ・座標変換（`tabletop/grid.ts`）
-- チャンク分割・再構築の round-trip（`tabletop/imageChunk.ts`）
-- 権限判定（誰がどの token を動かせるか）
-- throttle 関数（fake timer）
-- ストレージ層（fake-indexeddb）
-- メッセージ型ガード
+`src/tabletop/`: `grid`・`hexGrid`・`tokens`・`annotations`・
+`hostValidation`・`snapshot`・`imageChunk`・`imageBackground`（URL 検証 /
+fetch ガード。テストは `imageBackgroundUrl.test.ts`）・`mapGallery`・
+`presetMaps`。
+`src/storage/`: `tabletop`（sanitize ＋ round-trip、fake-indexeddb）・
+`roomExport`・`roomImport`（`table.json` 入りのマニフェスト v6）。
 
-`CLAUDE.md` 既定方針通り、`environment: 'node'` で Canvas が必要なロジックは
-切り出さず純粋関数に保つ。Konva 連携は手動結合テストでカバー。
+Canvas に依存する描画は意図的に単体テスト対象外。上記の純粋モジュールが、
+カバーすべきロジックを担う。
 
-### 結合テスト（手動・2 タブ）
+### 結合（手動・2 タブ）
 
-- 2 タブで PC トークンを同時に動かして last-write-wins が成立する
-- GM タブで GM トークンを追加・移動・削除して非 GM 側に正しく反映される
-- 背景画像（3000×2000px / 5MB）が両側に届く、読み込み中の表示が出る
-- リロード後の復元（GM タブの再ホスト・非 GM タブの再参加）
-- エクスポート ZIP → 別ブラウザで import → 状態が復元される
-- モバイル（実機 / DevTools のレスポンシブモード）でピンチ / ドラッグ /
-  フィードシートの動作
+同一 PC トークンを両タブから drag（last-write-wins）; GM の追加 / 移動 /
+サイズ変更 / 削除と NPC ライブラリ配置が非 GM タブに反映; 数 MB マップが
+読み込み中表示つきで両側に届く; hex グリッドのスナップ; フォグの可視性
+（プレイヤーは下が見えない）; テキスト / ペン / 消しゴムの所有権; リロード復元
+（host 再ホスト・プレイヤー再参加）; 別ブラウザでのエクスポート → インポート;
+テンプレート vs スナップショットの読込; モバイルのピンチ / drag / オーバーレイ。
 
-### 公開後の動作確認（`CLAUDE.md` 既定）
+### 公開後（`CLAUDE.md` 既定）
 
-- `main` マージ後の GitHub Actions デプロイ完了を待つ
-- 公開 URL でゴールデンパス確認
+マージ後の GitHub Actions デプロイ完了を待ち、公開 URL
+<https://yamadar.github.io/trpg-dice-online/> でゴールデンパスを確認。
 
-## 6. Phase 2 以降の候補
+## 8. Phase 2 以降の候補
 
-優先度順：
+おおよその優先度順（実装済みは除外）:
 
-1. ヘックスグリッド対応（pointy / flat、honeycomb-grid 採用）
-2. ルーラー（マス数距離測定）
-3. 複数マップ管理（シーン切替）
-4. ピング（一時的な「ここ見て」マーカー）
-5. トークンサイズ違い（1×1, 2×2, 4×4 ...）
-6. トークンの向き（facing）
-7. HP バー / 状態アイコン
-8. フリーハンドドロー
-9. フォグ・オブ・ウォー
-10. ミニマップ
-11. キーボード操作完全対応
+1. ルーラー（マス距離測定）
+2. ピング（一時的な「ここ見て」マーカー）
+3. トークンの向き（facing）
+4. HP バー / 状態アイコン
+5. 1 セッション複数マップ（シーン一覧 / 切替）
+6. ミニマップ
+7. キーボード移動・ショートカットの完全対応
 
-## 7. 改訂
+## 9. 改訂
 
-- v0.1 — 初版（PR 分割・リスク・テスト方針）
+- v0.1 — 初版（前向きの 7 PR 計画書。PR #134）。
+- v1.0 — 実装済みコードを精査して as-built 仕様に書き直し（PR #134〜#190）:
+  完全なモジュール構成・ワイヤプロトコル・データフロー・永続化（DB v8 /
+  エクスポート v6）・Konva 描画ツリー・実装履歴、リスク / テスト / Phase 2
+  一覧の更新。
