@@ -95,8 +95,8 @@ full keyboard movement. See §9.
 
 `Lightbox.tsx` is reused (not tabletop-specific). The shared image picker
 (`ImagePickerDialog`) integrates the
-[trpg-chara-image-organizer](https://github.com/) galleries for NPC /
-character token art.
+[trpg-chara-image-organizer](https://yamadar.github.io/trpg-chara-image-organizer/)
+galleries for NPC / character token art.
 
 ### Existing files changed
 
@@ -322,8 +322,9 @@ Implemented across ~40 PRs (#134–#190). Grouped by theme:
 ### Unit (Vitest, `environment: 'node'`)
 
 `src/tabletop/`: `grid` · `hexGrid` · `tokens` · `annotations` ·
-`hostValidation` · `snapshot` · `imageChunk` · `imageBackgroundUrl`
-(URL validation / fetch guards) · `mapGallery` · `presetMaps`.
+`hostValidation` · `snapshot` · `imageChunk` · `imageBackground` (URL
+validation / fetch guards, covered by `imageBackgroundUrl.test.ts`) ·
+`mapGallery` · `presetMaps`.
 `src/storage/`: `tabletop` (sanitize + round-trip, fake-indexeddb) ·
 `roomExport` · `roomImport` (manifest v6 with `table.json`).
 

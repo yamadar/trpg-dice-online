@@ -91,7 +91,8 @@
 
 `Lightbox.tsx` は共用（テーブル専用ではない）。共通の画像ピッカー
 （`ImagePickerDialog`）は NPC / キャラのトークン画像に
-[trpg-chara-image-organizer](https://github.com/) ギャラリー連携を提供する。
+[trpg-chara-image-organizer](https://yamadar.github.io/trpg-chara-image-organizer/)
+ギャラリー連携を提供する。
 
 ### 既存ファイルの変更
 
@@ -306,8 +307,9 @@ mount され、Konva の描画クラッシュ時には空白ではなく再試�
 ### 単体（Vitest・`environment: 'node'`）
 
 `src/tabletop/`: `grid`・`hexGrid`・`tokens`・`annotations`・
-`hostValidation`・`snapshot`・`imageChunk`・`imageBackgroundUrl`
-（URL 検証 / fetch ガード）・`mapGallery`・`presetMaps`。
+`hostValidation`・`snapshot`・`imageChunk`・`imageBackground`（URL 検証 /
+fetch ガード。テストは `imageBackgroundUrl.test.ts`）・`mapGallery`・
+`presetMaps`。
 `src/storage/`: `tabletop`（sanitize ＋ round-trip、fake-indexeddb）・
 `roomExport`・`roomImport`（`table.json` 入りのマニフェスト v6）。
 
