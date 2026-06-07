@@ -1151,6 +1151,19 @@
   transform: translate(12px, -50%);
   pointer-events: auto;
 }
+/* Mobile: float the panel in the centre of the canvas area (above the
+   dock) rather than anchored to the token. Inline left/top are omitted in
+   this mode, so positioning comes purely from here. Caps the height and
+   scrolls so a tall panel (notes + attributes) stays usable on a phone. */
+.tabletop-token-popover-centered {
+  left: 50%;
+  top: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  max-width: calc(100vw - 32px);
+  max-height: 80vh;
+  overflow-y: auto;
+}
 .tabletop-token-popover-header {
   display: flex;
   align-items: center;

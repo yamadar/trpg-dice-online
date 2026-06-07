@@ -307,7 +307,10 @@ Pinch and drag are never combined in one gesture.
 
 ### 4.2 Token popover
 
-Tapping a token opens a DOM popover anchored to its screen position. For
+Tapping a token opens a DOM popover anchored to its screen position (on
+mobile, ≤ 720 px, it is instead centred in the canvas — height-capped and
+scrollable — since a token-anchored panel is often under a finger / off
+the small screen). For
 a **PC token** the identity row is a *miniaturized character card*
 (round portrait + name) that opens the character info on tap — an accent
 hint + info icon signal the affordance (this replaced the old name row
