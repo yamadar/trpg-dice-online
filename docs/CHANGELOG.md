@@ -4,6 +4,20 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.105 — **Minimap crash fix + ping awareness**. Dragging the minimap
+  on a map-less scene could fling the camera away (and lock the tab):
+  the minimap's world frame included the live viewport, so each recenter
+  moved the frame, which mapped the same pointer position to an
+  ever-farther point — a runaway. The frame is now pan-invariant (map
+  bounds → token bounding box → an origin-centred, viewport-sized
+  fallback), so dragging is stable; `recenterOn` also ignores
+  non-finite targets. Pings are now visible on the minimap, and a ping
+  that lands outside your viewport shows a colored arrow at the screen
+  edge pointing toward it (tap to jump) so it is impossible to miss. New
+  pure helpers: `offscreenEdgePosition` (`tabletop/ping.ts`) and the
+  rewritten `minimapWorldBounds` (`tabletop/minimap.ts`), both
+  unit-tested.
+
 - v1.104 — **Clearer scenes vs. library**. Once scenes existed, the
   tabletop library and the scene switcher overlapped confusingly, so
   saving and loading are now explicit. Saving picks a **scope** — *this

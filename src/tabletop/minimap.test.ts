@@ -56,7 +56,7 @@ describe('minimapWorldBounds', () => {
     })
     expect(b).toEqual({ x: 0, y: 0, width: 800, height: 600 })
   })
-  it('unions tokens and viewport (with padding) when there is no map', () => {
+  it('uses the token bounding box (with padding), independent of viewport position, when there is no map', () => {
     const b = minimapWorldBounds({
       tokens: [
         { x: 0, y: 0 },
@@ -64,18 +64,35 @@ describe('minimapWorldBounds', () => {
       ],
       viewport: { x: 0, y: 0, width: 50, height: 50 },
     })
-    // Bounding box of tokens+viewport is 0..100 × 0..200; padded by 10%.
-    expect(b.x).toBeLessThan(0)
-    expect(b.y).toBeLessThan(0)
-    expect(b.width).toBeGreaterThan(100)
-    expect(b.height).toBeGreaterThan(200)
+    // Bounding box of tokens is 0..100 × 0..200; padded by 10% each side.
+    expect(b).toEqual({ x: -10, y: -20, width: 120, height: 240 })
   })
-  it('falls back to a padded viewport with no map and no tokens', () => {
+  it('is pan-invariant: the same tokens yield the same frame regardless of where the camera looks', () => {
+    const tokens = [
+      { x: 0, y: 0 },
+      { x: 100, y: 200 },
+    ]
+    const near = minimapWorldBounds({ tokens, viewport: { x: 0, y: 0, width: 50, height: 50 } })
+    const far = minimapWorldBounds({ tokens, viewport: { x: 99999, y: 99999, width: 50, height: 50 } })
+    // The runaway-feedback regression: a far viewport must NOT enlarge the
+    // frame (which would map the same minimap click to an ever-farther
+    // world point and fling the camera away).
+    expect(far).toEqual(near)
+  })
+  it('falls back to an origin-centred, viewport-sized frame with no map and no tokens', () => {
     const b = minimapWorldBounds({
       tokens: [],
-      viewport: { x: 10, y: 10, width: 100, height: 100 },
+      viewport: { x: 9999, y: 9999, width: 1000, height: 800 },
     })
-    expect(b.width).toBeGreaterThan(100)
-    expect(b.height).toBeGreaterThan(100)
+    // Centred on the world origin, sized to the viewport — and crucially
+    // independent of the viewport's position (9999 here).
+    expect(b).toEqual({ x: -500, y: -400, width: 1000, height: 800 })
+  })
+  it('floors the empty-scene frame so a deep zoom-in stays usable', () => {
+    const b = minimapWorldBounds({
+      tokens: [],
+      viewport: { x: 0, y: 0, width: 30, height: 20 },
+    })
+    expect(b).toEqual({ x: -100, y: -100, width: 200, height: 200 })
   })
 })

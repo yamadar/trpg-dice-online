@@ -98,3 +98,31 @@ export function pingDotOpacity(progress: number): number {
   if (progress <= fadeStart) return 1
   return 1 - (progress - fadeStart) / (1 - fadeStart)
 }
+
+/**
+ * Where to draw an off-screen indicator for a ping the camera is not
+ * currently showing, so a participant can notice (and jump to) a ping
+ * that landed outside their viewport.
+ *
+ * Given the ping's *screen* position (already projected through the stage
+ * transform) and the canvas size, returns the clamped edge position
+ * (inset by `margin` so the marker is fully visible) plus the angle, in
+ * degrees, from the screen centre toward the ping — so the caller can
+ * rotate an arrow to point at it. Returns `null` when the ping is on
+ * screen (no indicator needed).
+ */
+export function offscreenEdgePosition(
+  screenX: number,
+  screenY: number,
+  width: number,
+  height: number,
+  margin: number,
+): { x: number; y: number; angle: number } | null {
+  const onX = screenX >= margin && screenX <= width - margin
+  const onY = screenY >= margin && screenY <= height - margin
+  if (onX && onY) return null
+  const x = Math.min(width - margin, Math.max(margin, screenX))
+  const y = Math.min(height - margin, Math.max(margin, screenY))
+  const angle = (Math.atan2(screenY - height / 2, screenX - width / 2) * 180) / Math.PI
+  return { x, y, angle }
+}

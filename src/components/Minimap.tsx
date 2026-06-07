@@ -18,6 +18,9 @@ const BOX_H = 120
 interface Props {
   map?: MapBackground
   tokens: ReadonlyArray<Token>
+  /** Active (un-expired) pings, shown as colored markers so a ping
+   *  anywhere on the scene is visible even when off the main viewport. */
+  pings: ReadonlyArray<{ key: string; x: number; y: number; playerId: string }>
   /** Current visible world rectangle (from the stage transform). */
   viewport: Rect
   /** Recenter the camera on a world point (minimap click / drag). */
@@ -32,7 +35,7 @@ interface Props {
  * dragging recenters the camera. Plain DOM (positioned over the canvas),
  * with the geometry handled by the pure `tabletop/minimap.ts`.
  */
-export function Minimap({ map, tokens, viewport, onRecenter, onCollapse }: Props) {
+export function Minimap({ map, tokens, pings, viewport, onRecenter, onCollapse }: Props) {
   const { t } = useI18n()
   const boxRef = useRef<HTMLDivElement | null>(null)
   const world = minimapWorldBounds({
@@ -100,6 +103,20 @@ export function Minimap({ map, tokens, viewport, onRecenter, onCollapse }: Props
               key={tok.id}
               className="tabletop-minimap-dot"
               style={{ left: `${p.x}px`, top: `${p.y}px`, background: color }}
+            />
+          )
+        })}
+        {pings.map((pg) => {
+          const p = worldToMinimap(pg.x, pg.y, world, tr)
+          return (
+            <span
+              key={pg.key}
+              className="tabletop-minimap-ping"
+              style={{
+                left: `${p.x}px`,
+                top: `${p.y}px`,
+                color: playerColor(pg.playerId),
+              }}
             />
           )
         })}

@@ -259,6 +259,7 @@ export const de: Dict = {
   'tabletop.tools.eraser': 'Radierer',
   'tabletop.tools.ping': 'Ping',
   'tabletop.tools.pingHint': 'Tippe auf die Karte für einen „Hier“-Ping',
+  'tabletop.tools.pingOffscreen': 'Ping von {name}',
   'tabletop.shortcuts.title': 'Tastenkürzel',
   'tabletop.shortcuts.move': 'Ausgewähltes Token bewegen',
   'tabletop.shortcuts.cycle': 'Vorheriges / nächstes Token',

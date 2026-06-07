@@ -476,7 +476,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   state, so it is not persisted, not part of the welcome snapshot, and
   not exported. The host stamps the sender's id (a client cannot spoof
   another player's colour) and validates the coordinates before
-  re-broadcasting.
+  re-broadcasting. A ping that lands outside a participant's current
+  viewport is surfaced two ways so it is not missed: as a marker on the
+  minimap, and as a colored arrow pinned to the screen edge pointing
+  toward it (tap to jump the camera there).
 - Rolling dice from the tabletop triggers the unread-activity dot on
   the chat icon, the same as a chat message. A die icon also animates
   outward from the rolling player's character token on the canvas,
@@ -500,9 +503,11 @@ An SPA where players roll TRPG dice and share results with other players in real
   and `?` toggles an on-screen shortcuts cheat sheet. Movement obeys the
   same `canMoveToken` permission as dragging.
 - **Minimap**: a collapsible corner overview shows the whole current
-  scene — the background map (or a fitted blank region), a dot per token
-  and a rectangle marking the current viewport. Clicking or dragging the
-  minimap recenters the camera on that part of the scene.
+  scene — the background map (or a fitted blank region), a dot per token,
+  a marker per active ping, and a rectangle marking the current viewport.
+  Clicking or dragging the minimap recenters the camera on that part of
+  the scene. Its frame is anchored to the scene content (not the moving
+  camera), so dragging it is stable even on a map-less scene.
 
 ## 4. Non-functional
 

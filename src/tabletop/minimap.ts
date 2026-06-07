@@ -85,10 +85,22 @@ export function minimapToWorld(
 
 /**
  * The world region the minimap should display: the map bounds when a
- * background is present, otherwise the union of the token positions and
- * the current viewport (with padding so dots aren't flush against the
- * edge). A scene with neither a map nor tokens falls back to the padded
- * viewport, so the minimap always shows "where you are looking".
+ * background is present, otherwise the bounding box of the token
+ * positions (with padding so dots aren't flush against the edge), and as
+ * a last resort a region centred on the world origin sized to the current
+ * zoom.
+ *
+ * The frame deliberately does NOT include the live viewport's *position*.
+ * It used to (so the minimap "always shows where you are looking"), but
+ * that coupled the frame to the camera: recentering via the minimap moved
+ * the viewport, which moved the frame, which mapped the same pointer
+ * position to an ever-farther world point — a feedback loop that flung
+ * the camera into the void (and pinned the main thread re-rendering) on a
+ * no-map scene. Every input here is now pan-invariant (map size, token
+ * positions, and the viewport's *size* only), so dragging the minimap is
+ * stable. The viewport *rectangle* is still drawn over this frame by the
+ * component and simply clips to the edge when the camera is outside the
+ * content — a "you have wandered off; click to come back" cue.
  */
 export function minimapWorldBounds(opts: {
   map?: { width: number; height: number }
@@ -99,22 +111,30 @@ export function minimapWorldBounds(opts: {
   if (map && map.width > 0 && map.height > 0) {
     return { x: 0, y: 0, width: map.width, height: map.height }
   }
-  let minX = viewport.x
-  let minY = viewport.y
-  let maxX = viewport.x + viewport.width
-  let maxY = viewport.y + viewport.height
-  for (const t of tokens) {
-    if (t.x < minX) minX = t.x
-    if (t.y < minY) minY = t.y
-    if (t.x > maxX) maxX = t.x
-    if (t.y > maxY) maxY = t.y
+  if (tokens.length > 0) {
+    let minX = tokens[0].x
+    let minY = tokens[0].y
+    let maxX = tokens[0].x
+    let maxY = tokens[0].y
+    for (const t of tokens) {
+      if (t.x < minX) minX = t.x
+      if (t.y < minY) minY = t.y
+      if (t.x > maxX) maxX = t.x
+      if (t.y > maxY) maxY = t.y
+    }
+    const padX = (maxX - minX) * 0.1 || 50
+    const padY = (maxY - minY) * 0.1 || 50
+    return {
+      x: minX - padX,
+      y: minY - padY,
+      width: maxX - minX + padX * 2,
+      height: maxY - minY + padY * 2,
+    }
   }
-  const padX = (maxX - minX) * 0.1 || 50
-  const padY = (maxY - minY) * 0.1 || 50
-  return {
-    x: minX - padX,
-    y: minY - padY,
-    width: maxX - minX + padX * 2,
-    height: maxY - minY + padY * 2,
-  }
+  // No map, no tokens: a region centred on the world origin, sized to the
+  // current zoom (viewport size is pan-invariant). Floor the size so a
+  // deep zoom-in still yields a usable frame.
+  const w = Math.max(viewport.width, 200)
+  const h = Math.max(viewport.height, 200)
+  return { x: -w / 2, y: -h / 2, width: w, height: h }
 }

@@ -68,6 +68,7 @@ import { ImagePickerDialog } from './ImagePickerDialog'
 import { Sheet } from './Sheet'
 import { DiceRollAnimation } from './DiceRollAnimation'
 import { PingMarker } from './PingMarker'
+import { OffscreenPingIndicators } from './OffscreenPingIndicators'
 import { SpeechBubble } from './SpeechBubble'
 import { TabletopDock } from './TabletopDock'
 import { TabletopTutorial } from './TabletopTutorial'
@@ -144,6 +145,9 @@ interface PinchState {
 const MIN_SCALE = 0.25
 const MAX_SCALE = 4
 const WHEEL_ZOOM_FACTOR = 1.1
+/** Inset (device px) for the off-screen ping edge arrows, so they stay
+ *  fully visible against the canvas border. */
+const OFFSCREEN_PING_MARGIN = 30
 
 /**
  * The tabletop full-screen mode.
@@ -1206,6 +1210,18 @@ export function TablePanel({
     [stageX, stageY, stageScale, size.width, size.height],
   )
 
+  /** Center the camera on a world point (minimap click, off-screen ping
+   *  jump). Non-finite inputs are ignored so a degenerate transform can
+   *  never push the stage to NaN/Infinity. */
+  const recenterOn = useCallback(
+    (wx: number, wy: number) => {
+      if (!Number.isFinite(wx) || !Number.isFinite(wy)) return
+      setStageX(size.width / 2 - wx * stageScale)
+      setStageY(size.height / 2 - wy * stageScale)
+    },
+    [size.width, size.height, stageScale],
+  )
+
   /**
    * Character ids the local player has already placed on the map. The
    * toolbar uses this to disable per-character "place" buttons so the
@@ -1734,11 +1750,9 @@ export function TablePanel({
         <Minimap
           map={tabletop.map}
           tokens={tabletop.tokens}
+          pings={pings}
           viewport={viewport}
-          onRecenter={(wx, wy) => {
-            setStageX(size.width / 2 - wx * stageScale)
-            setStageY(size.height / 2 - wy * stageScale)
-          }}
+          onRecenter={recenterOn}
           onCollapse={() => setShowMinimap(false)}
         />
       ) : (
@@ -1752,6 +1766,20 @@ export function TablePanel({
           <MinimapIcon size={18} />
         </button>
       )}
+      {/* Off-screen ping indicators — edge arrows pointing toward pings
+          outside the current viewport so they are noticed. Non-interactive
+          (see component): navigation is via the minimap, which also shows
+          the ping. They expire with the pings themselves. */}
+      <OffscreenPingIndicators
+        pings={pings}
+        players={session.players}
+        stageX={stageX}
+        stageY={stageY}
+        stageScale={stageScale}
+        width={size.width}
+        height={size.height}
+        margin={OFFSCREEN_PING_MARGIN}
+      />
       {/* Map ops toolbar is always rendered now (the old top-header
           toggle is gone). Its right-edge icon strip is reachable at
           all times, and only the optional side-expanding panel
@@ -1781,11 +1809,9 @@ export function TablePanel({
           onFocusToken={(tokenId) => {
             const tok = tabletop.tokens.find((t) => t.id === tokenId)
             if (!tok) return
-            // Centre the viewport on the token without changing the
-            // current zoom — same formula the render-phase "centre on
-            // map" path uses (size/2 - worldCoord * scale).
-            setStageX(size.width / 2 - tok.x * stageScale)
-            setStageY(size.height / 2 - tok.y * stageScale)
+            // Centre the viewport on the token (shared, finite-guarded
+            // camera helper) without changing the current zoom.
+            recenterOn(tok.x, tok.y)
             // Trigger a brief pulse ring at the token's position so the
             // user can spot which token the list row referred to.
             // Intentionally does NOT set `selectedTokenId` — the edit

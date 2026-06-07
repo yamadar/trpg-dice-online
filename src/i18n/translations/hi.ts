@@ -259,6 +259,7 @@ export const hi: Dict = {
   'tabletop.tools.eraser': 'इरेज़र',
   'tabletop.tools.ping': 'पिंग',
   'tabletop.tools.pingHint': 'मानचित्र पर टैप करके "यहाँ देखें" पिंग भेजें',
+  'tabletop.tools.pingOffscreen': '{name} का पिंग',
   'tabletop.shortcuts.title': 'कीबोर्ड शॉर्टकट',
   'tabletop.shortcuts.move': 'चयनित टोकन हिलाएँ',
   'tabletop.shortcuts.cycle': 'पिछला / अगला टोकन',

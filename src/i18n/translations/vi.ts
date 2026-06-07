@@ -259,6 +259,7 @@ export const vi: Dict = {
   'tabletop.tools.eraser': 'Tẩy',
   'tabletop.tools.ping': 'Ping',
   'tabletop.tools.pingHint': 'Chạm vào bản đồ để thả ping "nhìn đây"',
+  'tabletop.tools.pingOffscreen': 'Ping từ {name}',
   'tabletop.shortcuts.title': 'Phím tắt',
   'tabletop.shortcuts.move': 'Di chuyển token đã chọn',
   'tabletop.shortcuts.cycle': 'Token trước / sau',

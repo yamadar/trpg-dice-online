@@ -259,6 +259,7 @@ export const tr: Dict = {
   'tabletop.tools.eraser': 'Silgi',
   'tabletop.tools.ping': 'Ping',
   'tabletop.tools.pingHint': 'Haritaya dokunarak "buraya bak" pingi bırak',
+  'tabletop.tools.pingOffscreen': '{name} kişisinden ping',
   'tabletop.shortcuts.title': 'Klavye kısayolları',
   'tabletop.shortcuts.move': 'Seçili jetonu taşı',
   'tabletop.shortcuts.cycle': 'Önceki / sonraki jeton',
