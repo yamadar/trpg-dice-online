@@ -36,6 +36,7 @@ import {
   FogIcon,
   HelpIcon,
   LibraryIcon,
+  ScenesIcon,
   TabletopIcon,
   type IconProps,
 } from './icons'
@@ -47,7 +48,7 @@ import type { ComponentType } from 'react'
 /** Right-side toolbar categories. Each maps to an icon button in the
  *  vertical strip plus the body rendered in the side-expanding panel.
  *  Order = display order in the strip. */
-type CategoryId = 'mapGrid' | 'fog' | 'tokens' | 'library'
+type CategoryId = 'mapGrid' | 'fog' | 'tokens' | 'scenes' | 'library'
 
 /** Background-map source tabs. Defined at module level so the array
  *  identity is stable across renders and the icon components are
@@ -197,6 +198,18 @@ interface Props {
   /** Open the tabletop tutorial overlay (re-show from the "?" button at
    *  the bottom of the icon strip). */
   onOpenTutorial: () => void
+  // --- Scenes (multiple maps per session; GM-only) ---
+  /** All scenes (current + inactive), current first. */
+  scenes: ReadonlyArray<{
+    id: string
+    name: string
+    ord: number
+    current: boolean
+  }>
+  onAddScene: () => void
+  onSwitchScene: (id: string) => void
+  onRenameScene: (id: string, name: string) => void
+  onDeleteScene: (id: string) => void
 }
 
 /**
@@ -243,10 +256,20 @@ export function TableToolbar({
   onFogReplace,
   onNotice,
   onOpenTutorial,
+  scenes,
+  onAddScene,
+  onSwitchScene,
+  onRenameScene,
+  onDeleteScene,
 }: Props) {
   const { t } = useI18n()
   const confirm = useConfirm()
   const mapInputRef = useRef<HTMLInputElement | null>(null)
+  // Inline scene rename: which scene id is being edited, and its draft.
+  const [editingSceneId, setEditingSceneId] = useState<string | null>(null)
+  const [sceneNameDraft, setSceneNameDraft] = useState('')
+  // Set by Escape so the blur it triggers cancels instead of committing.
+  const sceneRenameCancelRef = useRef(false)
   // NPC add flow state: just the name. The portrait is attached after
   // the NPC has been added through the per-row "edit" button so a GM
   // can register a stack of NPCs first and worry about art later.
@@ -604,6 +627,7 @@ export function TableToolbar({
   }
   categories.push({ id: 'tokens', Icon: CharacterIcon, labelKey: 'tabletop.panel.tokens' })
   if (isHost) {
+    categories.push({ id: 'scenes', Icon: ScenesIcon, labelKey: 'tabletop.scenes.title' })
     categories.push({ id: 'library', Icon: LibraryIcon, labelKey: 'tabletop.library.title' })
   }
   // If the user just lost the GM bit while a host-only category was
@@ -1173,6 +1197,101 @@ export function TableToolbar({
               )}
             </>
           )}
+        </>
+      )}
+      {expandedCategory === 'scenes' && isHost && (
+        <>
+          <p className="tabletop-toolbar-hint">{t('tabletop.scenes.hint')}</p>
+          <ul className="tabletop-scene-list">
+            {scenes.map((sc) => {
+              const display = sc.name.trim() || t('tabletop.scenes.defaultName', { n: sc.ord })
+              const editing = editingSceneId === sc.id
+              const commit = () => {
+                // Escape sets the cancel flag before blurring, so the
+                // blur this fires must not rename — "cancel", not "save".
+                if (sceneRenameCancelRef.current) {
+                  sceneRenameCancelRef.current = false
+                  setEditingSceneId(null)
+                  return
+                }
+                onRenameScene(sc.id, sceneNameDraft)
+                setEditingSceneId(null)
+              }
+              return (
+                <li
+                  key={sc.id}
+                  className={`tabletop-scene-row${sc.current ? ' current' : ''}`}
+                >
+                  {editing ? (
+                    <input
+                      type="text"
+                      className="tabletop-scene-name-input"
+                      value={sceneNameDraft}
+                      maxLength={40}
+                      autoFocus
+                      aria-label={t('tabletop.scenes.rename')}
+                      onChange={(e) => setSceneNameDraft(e.target.value)}
+                      onBlur={commit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                        else if (e.key === 'Escape') {
+                          sceneRenameCancelRef.current = true
+                          ;(e.target as HTMLInputElement).blur()
+                        }
+                      }}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className="tabletop-scene-switch"
+                      aria-current={sc.current}
+                      disabled={sc.current}
+                      title={t('tabletop.scenes.switch')}
+                      onClick={() => onSwitchScene(sc.id)}
+                    >
+                      {sc.current ? `▶ ${display}` : display}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    aria-label={t('tabletop.scenes.rename')}
+                    title={t('tabletop.scenes.rename')}
+                    onClick={() => {
+                      setSceneNameDraft(sc.name)
+                      setEditingSceneId(sc.id)
+                    }}
+                  >
+                    <EditIcon />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    aria-label={t('tabletop.scenes.delete')}
+                    title={t('tabletop.scenes.delete')}
+                    disabled={scenes.length <= 1}
+                    onClick={async () => {
+                      const ok = await confirm({
+                        message: t('tabletop.scenes.deleteConfirm', { name: display }),
+                        destructive: true,
+                      })
+                      if (ok) onDeleteScene(sc.id)
+                    }}
+                  >
+                    <TrashIcon />
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+          <button
+            type="button"
+            className="tabletop-toolbar-button"
+            onClick={() => onAddScene()}
+          >
+            <PlusIcon />
+            <span>{t('tabletop.scenes.add')}</span>
+          </button>
         </>
       )}
       {expandedCategory === 'library' && isHost && (

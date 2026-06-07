@@ -3,12 +3,21 @@ import { sanitizeStoredTabletop } from './tabletop'
 import {
   DEFAULT_FOG,
   DEFAULT_GRID,
+  INITIAL_SCENE_ID,
   MAX_CELL_SIZE,
   MIN_CELL_SIZE,
   type TabletopState,
 } from '../tabletop/types'
 
-const EMPTY_EXTRAS = { texts: [], strokes: [], fog: { ...DEFAULT_FOG } }
+const EMPTY_EXTRAS = {
+  texts: [],
+  strokes: [],
+  fog: { ...DEFAULT_FOG },
+  sceneId: INITIAL_SCENE_ID,
+  sceneName: '',
+  sceneOrd: 1,
+  scenes: [],
+}
 
 describe('sanitizeStoredTabletop', () => {
   it('falls back to an empty table for non-object input', () => {
@@ -60,8 +69,68 @@ describe('sanitizeStoredTabletop', () => {
       texts: [],
       strokes: [],
       fog: { ...DEFAULT_FOG },
+      sceneId: INITIAL_SCENE_ID,
+      sceneName: '',
+      sceneOrd: 1,
+      scenes: [],
     }
     expect(sanitizeStoredTabletop(input)).toEqual(input)
+  })
+
+  it('migrates a legacy state (no sceneId) to a single implicit scene', () => {
+    const result = sanitizeStoredTabletop({ grid: { kind: 'square' } })
+    expect(result.sceneId).toBe(INITIAL_SCENE_ID)
+    expect(result.sceneName).toBe('')
+    expect(result.scenes).toEqual([])
+  })
+
+  it('round-trips inactive scenes and drops malformed / colliding ones', () => {
+    const result = sanitizeStoredTabletop({
+      grid: { kind: 'square' },
+      sceneId: 'scn-cur',
+      sceneName: 'Current',
+      scenes: [
+        {
+          id: 'scn-a',
+          name: 'Cave',
+          grid: { kind: 'hex' },
+          tokens: [{ id: 't', kind: 'gm', x: 1, y: 2, image: '' }],
+          texts: [],
+          strokes: [],
+          fog: { enabled: false, revealed: [] },
+        },
+        { name: 'no id — dropped' },
+        { id: 'scn-cur', name: 'collides with current — dropped' },
+        { id: 'scn-a', name: 'duplicate id — dropped' },
+      ],
+    })
+    expect(result.sceneId).toBe('scn-cur')
+    expect(result.scenes).toHaveLength(1)
+    expect(result.scenes![0]).toMatchObject({ id: 'scn-a', name: 'Cave' })
+    expect(result.scenes![0].grid.kind).toBe('hex')
+    expect(result.scenes![0].tokens).toHaveLength(1)
+  })
+
+  it('clamps non-positive / fractional scene ordinals', () => {
+    const result = sanitizeStoredTabletop({
+      sceneOrd: 0,
+      sceneId: 'cur',
+      scenes: [
+        {
+          id: 'a',
+          name: '',
+          ord: -5,
+          grid: { kind: 'square' },
+          tokens: [],
+          texts: [],
+          strokes: [],
+          fog: { enabled: false, revealed: [] },
+        },
+      ],
+    })
+    expect(result.sceneOrd).toBe(1) // 0 → clamped to 1
+    // A negative scene ord is dropped (display then falls back to 1).
+    expect('ord' in result.scenes![0]).toBe(false)
   })
 
   it('round-trips a token\'s optional size / note / privateNote / facing', () => {

@@ -4739,6 +4739,55 @@ button.char-avatar-large:disabled {
   white-space: nowrap;
 }
 
+/* Scene switcher (multiple maps per session, GM-only toolbar panel). */
+.tabletop-toolbar-hint {
+  margin: 0 0 8px;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.tabletop-scene-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tabletop-scene-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tabletop-scene-switch {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: var(--text);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tabletop-scene-row.current .tabletop-scene-switch {
+  border-color: var(--accent);
+  color: var(--accent);
+  cursor: default;
+}
+.tabletop-scene-name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  color: var(--text);
+}
+
 /* Character-info modal: a compact dialog wrapping the shared
    CharacterEditor, opened from a placed PC token's edit popover. Styled
    like a narrow centred dialog rather than the wide map gallery. */

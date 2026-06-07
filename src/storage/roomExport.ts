@@ -20,6 +20,7 @@ import type {
   DrawStroke,
   FogState,
   Grid,
+  MapBackground,
   MapText,
   NpcDef,
   TabletopState,
@@ -227,6 +228,20 @@ export interface ExportTabletopMap {
  * at ~200 KB by the upload pipeline; only the multi-megabyte map
  * background is worth splitting out.
  */
+/** One inactive scene in the manifest, with its map externalized the
+ *  same way the current scene's map is. */
+export interface ExportScene {
+  id: string
+  name: string
+  ord?: number
+  map?: ExportTabletopMap
+  grid: Grid
+  tokens: Token[]
+  texts: MapText[]
+  strokes: DrawStroke[]
+  fog: FogState
+}
+
 export interface ExportTabletop {
   map?: ExportTabletopMap
   grid: Grid
@@ -236,6 +251,10 @@ export interface ExportTabletop {
   texts: MapText[]
   strokes: DrawStroke[]
   fog: FogState
+  sceneId?: string
+  sceneName?: string
+  sceneOrd?: number
+  scenes?: ExportScene[]
 }
 
 /**
@@ -246,29 +265,48 @@ export interface ExportTabletop {
  * through a sync) the export drops the map entirely instead of writing
  * a record that points at a missing path.
  */
+/** Externalize one map's bytes into `files` and return its manifest
+ *  record, or undefined when the data URL is missing / unparseable. */
+function externalizeMap(
+  map: MapBackground,
+  files: Record<string, Uint8Array>,
+): ExportTabletopMap | undefined {
+  const parsed = map.dataUrl ? parseImageDataUrl(map.dataUrl) : null
+  if (!parsed) return undefined
+  const path = `attachments/maps/${encodeURIComponent(map.id)}.${imageExt(parsed.type)}`
+  files[path] = parsed.bytes
+  return {
+    id: map.id,
+    name: map.name,
+    width: map.width,
+    height: map.height,
+    imagePath: path,
+    imageType: parsed.type,
+  }
+}
+
 function extractTabletop(state: TabletopState): {
   tabletop: ExportTabletop
   files: Record<string, Uint8Array>
 } {
   const files: Record<string, Uint8Array> = {}
-  let map: ExportTabletopMap | undefined
-  if (state.map) {
-    const parsed = state.map.dataUrl
-      ? parseImageDataUrl(state.map.dataUrl)
-      : null
-    if (parsed) {
-      const path = `attachments/maps/${encodeURIComponent(state.map.id)}.${imageExt(parsed.type)}`
-      files[path] = parsed.bytes
-      map = {
-        id: state.map.id,
-        name: state.map.name,
-        width: state.map.width,
-        height: state.map.height,
-        imagePath: path,
-        imageType: parsed.type,
-      }
+  const map = state.map ? externalizeMap(state.map, files) : undefined
+  // Externalize every inactive scene's map too, so a multi-scene table
+  // round-trips through the archive.
+  const scenes: ExportScene[] = (state.scenes ?? []).map((sc) => {
+    const sceneMap = sc.map ? externalizeMap(sc.map, files) : undefined
+    return {
+      id: sc.id,
+      name: sc.name,
+      ...(sc.ord !== undefined ? { ord: sc.ord } : {}),
+      ...(sceneMap ? { map: sceneMap } : {}),
+      grid: sc.grid,
+      tokens: sc.tokens,
+      texts: sc.texts,
+      strokes: sc.strokes,
+      fog: sc.fog,
     }
-  }
+  })
   return {
     tabletop: {
       ...(map ? { map } : {}),
@@ -279,6 +317,10 @@ function extractTabletop(state: TabletopState): {
       texts: state.texts,
       strokes: state.strokes,
       fog: state.fog,
+      ...(state.sceneId ? { sceneId: state.sceneId } : {}),
+      ...(state.sceneName ? { sceneName: state.sceneName } : {}),
+      ...(state.sceneOrd !== undefined ? { sceneOrd: state.sceneOrd } : {}),
+      ...(scenes.length > 0 ? { scenes } : {}),
     },
     files,
   }

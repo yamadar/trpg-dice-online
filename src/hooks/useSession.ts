@@ -51,6 +51,7 @@ import {
   newMapId,
   newNpcDefId,
   newSavedTabletopId,
+  newSceneId,
   newTokenId,
   TOKEN_SIZES,
   type FogState,
@@ -89,6 +90,12 @@ import { loadPresetMap } from '../tabletop/presetMaps'
 import { isValidPingPoint, newPingId, type Ping } from '../tabletop/ping'
 import { isValidFacing, normalizeFacing } from '../tabletop/facing'
 import { clampHp, isValidHp, sanitizeStatuses } from '../tabletop/vitals'
+import {
+  addScene as addSceneToState,
+  deleteScene as deleteSceneInState,
+  renameScene as renameSceneInState,
+  switchScene as switchSceneInState,
+} from '../tabletop/scenes'
 import { fillTabletopDefaults, stripMapBytesForWire, tokenForWire } from '../tabletop/snapshot'
 import { loadTabletop, saveTabletop } from '../storage/tabletop'
 import {
@@ -442,6 +449,15 @@ export interface Session {
    * so the toolbar can surface one error message.
    */
   setMapFromPreset: (preset: PresetMap) => Promise<'ok' | MapImageError>
+  /** GM-only: add a new blank scene (its own map/grid/tokens/annotations)
+   *  and switch to it. Optional name; '' shows a localized placeholder. */
+  addScene: (name?: string) => void
+  /** GM-only: switch the active scene to the given id. */
+  switchScene: (id: string) => void
+  /** GM-only: rename a scene (current or inactive). */
+  renameScene: (id: string, name: string) => void
+  /** GM-only: delete a scene; refuses to remove the only one. */
+  deleteScene: (id: string) => void
   /**
    * The most recent transient "look here" ping, or null before any has
    * fired. Set whenever the local player drops one or one arrives over
@@ -1718,6 +1734,65 @@ export function useSession(): Session {
       if (state.map?.dataUrl) broadcastMapAsChunks(state.map)
     },
     [applyTabletop, broadcastMapAsChunks],
+  )
+
+  /**
+   * GM-only: apply a scene operation. When it changes the *current*
+   * scene (add / switch / delete-current — detected by a changed
+   * `sceneId`) it broadcasts the new state and re-streams the current
+   * map so clients converge on the new scene. Rename and delete of an
+   * *inactive* scene keep the same `sceneId`, so they are host-local
+   * (persisted, but nothing changes for clients, who never receive the
+   * inactive `scenes` list).
+   */
+  const applySceneOp = useCallback(
+    (next: TabletopState) => {
+      const prev = tabletopRef.current
+      if (next === prev) return
+      const currentChanged = next.sceneId !== prev.sceneId
+      applyTabletop(next)
+      if (currentChanged) {
+        roomRef.current?.broadcast({
+          t: 'tabletopState',
+          state: stripMapBytesForWire(next),
+        })
+        if (next.map?.dataUrl) broadcastMapAsChunks(next.map)
+      }
+    },
+    [applyTabletop, broadcastMapAsChunks],
+  )
+  /** GM-only: add a new blank scene and switch to it. */
+  const addScene = useCallback(
+    (name?: string) => {
+      if (roleRef.current === 'client') return
+      const clean = typeof name === 'string' ? name.trim() : ''
+      applySceneOp(addSceneToState(tabletopRef.current, newSceneId(), clean))
+    },
+    [applySceneOp],
+  )
+  /** GM-only: switch the active scene. */
+  const switchScene = useCallback(
+    (id: string) => {
+      if (roleRef.current === 'client') return
+      applySceneOp(switchSceneInState(tabletopRef.current, id))
+    },
+    [applySceneOp],
+  )
+  /** GM-only: rename a scene (current or inactive). */
+  const renameScene = useCallback(
+    (id: string, name: string) => {
+      if (roleRef.current === 'client') return
+      applySceneOp(renameSceneInState(tabletopRef.current, id, name.trim()))
+    },
+    [applySceneOp],
+  )
+  /** GM-only: delete a scene (refuses the last one). */
+  const deleteScene = useCallback(
+    (id: string) => {
+      if (roleRef.current === 'client') return
+      applySceneOp(deleteSceneInState(tabletopRef.current, id))
+    },
+    [applySceneOp],
   )
 
   /**
@@ -4004,6 +4079,10 @@ export function useSession(): Session {
     commitFog,
     setFog,
     setMapFromPreset,
+    addScene,
+    switchScene,
+    renameScene,
+    deleteScene,
     lastPing,
     sendPing,
   }

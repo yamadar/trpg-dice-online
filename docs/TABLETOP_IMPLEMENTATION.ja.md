@@ -41,6 +41,12 @@
   ルームに読み込める。
 - **注釈レイヤ**: フリーテキスト**ラベル**・フリーハンド**ペン描画**・
   グリッドセル単位の**フォグ・オブ・ウォー**（GM が塗る / プレイヤーには不透明）。
+- **シーン（1 セッション複数マップ）**: GM は複数のシーン（各自のマップ /
+  グリッド / トークン / 注釈 / フォグ）を持ち、一覧からアクティブを切り替え
+  られる。シーンはワイヤ上**ホスト専用**で（非アクティブな `scenes` 配列は
+  ブロードキャスト前に除去）、クライアントは常に現在のシーンのみを写す —
+  切替は新しい `tabletopState` の配信とマップの再ストリームだけ。`npcLibrary`
+  / `pcSpawn` はセッション共通のまま。純粋ロジックは `tabletop/scenes.ts`。
 - **リアルタイム**: ホスト権威 / last-write-wins、約 20Hz の drag throttle、
   遅参者への welcome snapshot 同梱、IndexedDB によるリロード復元、
   ルームのエクスポート / インポート。
@@ -60,9 +66,7 @@
 
 ### 対象外（Phase 2 以降）
 
-ルーラー（マス距離測定）、1 セッション複数マップ（シーン一覧）、
-ミニマップ。
-§9 参照。
+ルーラー（マス距離測定）、ミニマップ。§9 参照。
 
 ## 2. モジュール構成
 
@@ -75,6 +79,7 @@
 | `hexGrid.ts` | フラットトップ hex 計算（odd-q）: 中心 / 多角形 / pixel→cell / ビューポート走査。redblobgames 方式 |
 | `tokens.ts` | PC トークンのライフサイクル・権限: `planPcTokenAdds`・`makeGmToken`・`canMoveToken`・`applyTokenMove/Upsert/Remove`・`defaultPlacementOrigin`（マップ中心→グリッド原点→`pcSpawn`）・4 列折り返しの `placementPosition`・`recenterTokensOnMap`・`snapAllTokensToGrid` |
 | `annotations.ts` | テキスト / ストローク / フォグの適用＋権限判定（`canEditMapText`・`canEraseStroke`）、`setFogCells`・`isCellRevealed`・`nearestRevealedCellCenter`（フォグへ落としたトークンの救済） |
+| `scenes.ts` | 1 セッション複数マップ: `addScene` / `switchScene` / `renameScene` / `deleteScene` / `listScenes`（現在シーンを top-level に置くモデル、単調増加する序数命名つき） |
 | `hostValidation.ts` | 受信した注釈リクエストのホスト側バリデータ（純粋関数）。`ownerPlayerId` を信頼できる接続元から再付与し、なりすましを防ぐ |
 | `snapshot.ts` | ワイヤ用ヘルパー: `tokenForWire` / `stripMapBytesForWire`（送信前に `privateNote` とマップ `dataUrl` を除去）、`fillTabletopDefaults`（PR-12 以前のホストの欠落フィールドを補完） |
 | `imageChunk.ts` | `chunkString` ＋ `ChunkBuffer`: data URL を 256KB チャンクに分割し、順不同到着でも再構築（進捗・長さ検査つき） |
@@ -336,9 +341,11 @@ fetch ガード。テストは `imageBackgroundUrl.test.ts`）・`mapGallery`・
 `facing`（角度の正規化・画面空間の方向ベクトル・矢じりの幾何）・
 `vitals`（HP のクランプ / 比率 / バー色と状態カタログのサニタイズ）・
 `keymap`（キー → ツール / 矢印デルタ / ズーム / 選択ステップの意図と
-編集対象ガード）。
-`src/storage/`: `tabletop`（sanitize ＋ round-trip、fake-indexeddb）・
-`roomExport`・`roomImport`（`table.json` 入りのマニフェスト v6）。
+編集対象ガード）・`scenes`（追加 / 切替 / 改名 / 削除と単調序数命名、
+単一情報源の不変条件）。
+`src/storage/`: `tabletop`（sanitize ＋ round-trip（シーン含む）、
+fake-indexeddb）・`roomExport`・`roomImport`（`table.json` 入りの
+マニフェスト v6、シーンのマップは `attachments/maps/` に外部化）。
 
 Canvas に依存する描画は意図的に単体テスト対象外。上記の純粋モジュールが、
 カバーすべきロジックを担う。
@@ -362,8 +369,7 @@ Canvas に依存する描画は意図的に単体テスト対象外。上記の�
 おおよその優先度順（実装済みは除外）:
 
 1. ルーラー（マス距離測定）
-2. 1 セッション複数マップ（シーン一覧 / 切替）
-3. ミニマップ
+2. ミニマップ
 
 ## 9. 改訂
 
@@ -394,3 +400,11 @@ Canvas に依存する描画は意図的に単体テスト対象外。上記の�
   `+`/`-`/`0` ズーム、`f` センタリング、`[`/`]` 選択巡回、`Delete`、
   `Esc`（選択解除→閉じる）、`?` の `ShortcutsOverlay` 早見表を実装。
   入力フィールド編集中はすべて抑制する。
+- v1.5 — Phase 2: **1 セッション複数マップ（シーン）**。`TabletopState` に
+  `scenes` / `sceneId` / `sceneName` / `sceneOrd` を追加。現在シーンは
+  top-level のライブフィールドのまま、`scenes` が残りを保持する（単一情報源、
+  `tabletop/scenes.ts`）。ワイヤ上はホスト専用（`stripMapBytesForWire` が
+  `scenes` 配列を除去）で、シーン操作は `tabletopState` 配信 ＋ マップ
+  チャンク再ストリームを再利用。GM の「シーン」ツールバーカテゴリで
+  切替 / 追加 / 改名 / 削除。`sanitizeStoredTabletop` とルームの
+  エクスポート / インポートが各シーンとそのマップを往復する。

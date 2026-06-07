@@ -13,6 +13,7 @@ import {
   Hand,
   HelpCircle,
   History,
+  Images,
   Info,
   Languages,
   Layers,
@@ -465,6 +466,19 @@ export function EraserIcon({ size = 16 }: IconProps) {
 export function PingIcon({ size = 16 }: IconProps) {
   return (
     <Crosshair
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Stacked images for the scenes (multiple maps) category. */
+export function ScenesIcon({ size = 16 }: IconProps) {
+  return (
+    <Images
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}
