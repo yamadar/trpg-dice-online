@@ -259,7 +259,7 @@ export const ja: Dict = {
   'tabletop.tools.eraser': '消しゴム',
   'tabletop.tools.ping': 'ピン',
   'tabletop.tools.pingHint': 'マップをタップして「ここ！」ピンを送る',
-  'tabletop.tools.pingOffscreen': '{name} のピン — タップで移動',
+  'tabletop.tools.pingOffscreen': '{name} のピン',
   'tabletop.shortcuts.title': 'キーボードショートカット',
   'tabletop.shortcuts.move': '選択トークンを移動',
   'tabletop.shortcuts.cycle': '前 / 次のトークン',

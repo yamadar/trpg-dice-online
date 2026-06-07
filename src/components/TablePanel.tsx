@@ -68,7 +68,7 @@ import { ImagePickerDialog } from './ImagePickerDialog'
 import { Sheet } from './Sheet'
 import { DiceRollAnimation } from './DiceRollAnimation'
 import { PingMarker } from './PingMarker'
-import { offscreenEdgePosition } from '../tabletop/ping'
+import { OffscreenPingIndicators } from './OffscreenPingIndicators'
 import { SpeechBubble } from './SpeechBubble'
 import { TabletopDock } from './TabletopDock'
 import { TabletopTutorial } from './TabletopTutorial'
@@ -1766,45 +1766,20 @@ export function TablePanel({
           <MinimapIcon size={18} />
         </button>
       )}
-      {/* Off-screen ping indicators — when a ping lands outside the
-          current viewport, an arrow at the screen edge points toward it
-          (in the pinger's color) so everyone notices it; tapping jumps
-          the camera there. The ping markers themselves expire on their
-          own, removing the arrow with them. */}
-      {pings.map((p) => {
-        const screenX = p.x * stageScale + stageX
-        const screenY = p.y * stageScale + stageY
-        const edge = offscreenEdgePosition(
-          screenX,
-          screenY,
-          size.width,
-          size.height,
-          OFFSCREEN_PING_MARGIN,
-        )
-        if (!edge) return null
-        const pinger = session.players.find((pl) => pl.id === p.playerId)
-        const name = pinger
-          ? composeName(pinger.name, pinger.characterName)
-          : ''
-        return (
-          <button
-            key={`off-${p.key}`}
-            type="button"
-            className="tabletop-ping-offscreen"
-            style={{
-              left: `${edge.x}px`,
-              top: `${edge.y}px`,
-              color: playerColor(p.playerId),
-              transform: `translate(-50%, -50%) rotate(${edge.angle}deg)`,
-            }}
-            aria-label={t('tabletop.tools.pingOffscreen', { name })}
-            title={t('tabletop.tools.pingOffscreen', { name })}
-            onClick={() => recenterOn(p.x, p.y)}
-          >
-            <span className="tabletop-ping-offscreen-arrow" />
-          </button>
-        )
-      })}
+      {/* Off-screen ping indicators — edge arrows pointing toward pings
+          outside the current viewport so they are noticed. Non-interactive
+          (see component): navigation is via the minimap, which also shows
+          the ping. They expire with the pings themselves. */}
+      <OffscreenPingIndicators
+        pings={pings}
+        players={session.players}
+        stageX={stageX}
+        stageY={stageY}
+        stageScale={stageScale}
+        width={size.width}
+        height={size.height}
+        margin={OFFSCREEN_PING_MARGIN}
+      />
       {/* Map ops toolbar is always rendered now (the old top-header
           toggle is gone). Its right-edge icon strip is reachable at
           all times, and only the optional side-expanding panel
@@ -1834,11 +1809,9 @@ export function TablePanel({
           onFocusToken={(tokenId) => {
             const tok = tabletop.tokens.find((t) => t.id === tokenId)
             if (!tok) return
-            // Centre the viewport on the token without changing the
-            // current zoom — same formula the render-phase "centre on
-            // map" path uses (size/2 - worldCoord * scale).
-            setStageX(size.width / 2 - tok.x * stageScale)
-            setStageY(size.height / 2 - tok.y * stageScale)
+            // Centre the viewport on the token (shared, finite-guarded
+            // camera helper) without changing the current zoom.
+            recenterOn(tok.x, tok.y)
             // Trigger a brief pulse ring at the token's position so the
             // user can spot which token the list row referred to.
             // Intentionally does NOT set `selectedTokenId` — the edit

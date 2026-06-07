@@ -114,4 +114,16 @@ describe('offscreenEdgePosition', () => {
     expect(r.x).toBe(500)
     expect(r.angle).toBeCloseTo(90, 5)
   })
+  it('clamps to the left inset and points west for a ping off the left', () => {
+    const r = offscreenEdgePosition(-5000, 300, W, H, M)!
+    expect(r.x).toBe(M)
+    expect(r.y).toBe(300)
+    expect(Math.abs(r.angle)).toBeCloseTo(180, 5) // due west (±180°)
+  })
+  it('clamps to the top inset and points north for a ping above', () => {
+    const r = offscreenEdgePosition(500, -5000, W, H, M)!
+    expect(r.y).toBe(M)
+    expect(r.x).toBe(500)
+    expect(r.angle).toBeCloseTo(-90, 5)
+  })
 })

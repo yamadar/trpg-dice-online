@@ -259,7 +259,7 @@ export const zhTW: Dict = {
   'tabletop.tools.eraser': '橡皮擦',
   'tabletop.tools.ping': '標記',
   'tabletop.tools.pingHint': '點按地圖放置「看這裡」標記',
-  'tabletop.tools.pingOffscreen': '{name} 的 Ping — 點按跳轉',
+  'tabletop.tools.pingOffscreen': '{name} 的 Ping',
   'tabletop.shortcuts.title': '鍵盤快速鍵',
   'tabletop.shortcuts.move': '移動選取的標記物',
   'tabletop.shortcuts.cycle': '上一個 / 下一個',

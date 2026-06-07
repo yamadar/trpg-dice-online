@@ -4947,16 +4947,14 @@ button.char-avatar-large:disabled {
   z-index: 7;
   width: 30px;
   height: 30px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  /* The button itself carries the inline translate + rotate (to aim at
-     the ping); the pulse animates only the inner arrow so it does not
+  /* A visual cue only — never intercept clicks from the toolbars /
+     minimap it may overlap (navigation is via the minimap). */
+  pointer-events: none;
+  /* The wrapper carries the inline translate + rotate (to aim at the
+     ping); the pulse animates only the inner arrow so it does not
      clobber that rotation. */
 }
 .tabletop-ping-offscreen-arrow {
