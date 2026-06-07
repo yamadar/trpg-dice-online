@@ -319,6 +319,10 @@ export function TableToolbar({
   const [libraryName, setLibraryName] = useState('')
   /** Save scope: only the current scene, or every scene on the table. */
   const [saveScope, setSaveScope] = useState<'scene' | 'table'>('scene')
+  /** Whether the library's explanatory help text is expanded. Collapsed
+   *  by default so the panel leads with controls + the saved list, not a
+   *  wall of grey prose. */
+  const [showLibraryHelp, setShowLibraryHelp] = useState(false)
   const [presets, setPresets] = useState<ReadonlyArray<PresetMap>>([])
   const [selectedPreset, setSelectedPreset] = useState('')
   const [loadingPreset, setLoadingPreset] = useState(false)
@@ -1319,12 +1323,34 @@ export function TableToolbar({
       )}
       {expandedCategory === 'library' && isHost && (
         <>
-            <p className="tabletop-toolbar-meta wrap tabletop-library-scope-note">
-              {t('tabletop.library.scopeNote')}
-            </p>
-            <h3 className="tabletop-toolbar-title">
-              {t('tabletop.library.saveCurrent')}
-            </h3>
+            {/* The explanatory text (what the library is + how save/load
+                work) is collapsed behind this toggle so the panel leads
+                with controls and the saved list, not a wall of prose. */}
+            <div className="tabletop-toolbar-heading-row">
+              <h3 className="tabletop-toolbar-title">
+                {t('tabletop.library.saveCurrent')}
+              </h3>
+              <button
+                type="button"
+                className={`icon-btn tabletop-library-help-toggle${showLibraryHelp ? ' active' : ''}`}
+                aria-label={t('tabletop.library.help')}
+                aria-expanded={showLibraryHelp}
+                title={t('tabletop.library.help')}
+                onClick={() => setShowLibraryHelp((v) => !v)}
+              >
+                <HelpIcon size={16} />
+              </button>
+            </div>
+            {showLibraryHelp && (
+              <div className="tabletop-library-help">
+                <p className="tabletop-toolbar-meta wrap">
+                  {t('tabletop.library.scopeNote')}
+                </p>
+                <p className="tabletop-toolbar-meta wrap">
+                  {t('tabletop.library.saveHint')}
+                </p>
+              </div>
+            )}
             <input
               type="text"
               className="tabletop-toolbar-input"
@@ -1374,17 +1400,11 @@ export function TableToolbar({
             >
               {t('tabletop.library.saveAsSave')}
             </button>
-            <p className="tabletop-toolbar-meta wrap">
-              {t('tabletop.library.saveHint')}
-            </p>
 
             <hr className="tabletop-toolbar-divider" />
             <h3 className="tabletop-toolbar-title">
               {t('tabletop.library.templates')}
             </h3>
-            <p className="tabletop-toolbar-meta">
-              {t('tabletop.library.templateMeaning')}
-            </p>
             <LibraryList
               entries={templates}
               emptyLabel={t('tabletop.library.emptyTemplates')}
@@ -1397,9 +1417,6 @@ export function TableToolbar({
             <h3 className="tabletop-toolbar-title">
               {t('tabletop.library.saves')}
             </h3>
-            <p className="tabletop-toolbar-meta">
-              {t('tabletop.library.snapshotMeaning')}
-            </p>
             <LibraryList
               entries={saves}
               emptyLabel={t('tabletop.library.emptySaves')}
@@ -1744,9 +1761,13 @@ function LibraryList({
               </button>
             </div>
             <div className="tabletop-library-entry-actions">
+              {/* Both actions are equal, quiet outline buttons — neither
+                  the (near-destructive) replace nor add-as-scene should
+                  shout, and a repeated filled button was the main source
+                  of visual noise in the list. */}
               <button
                 type="button"
-                className="tabletop-toolbar-list-action"
+                className="tabletop-toolbar-list-action outline"
                 onClick={() => onReplace(entry.id)}
               >
                 {t('tabletop.library.loadReplace')}
