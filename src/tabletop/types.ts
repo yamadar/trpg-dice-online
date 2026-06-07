@@ -73,6 +73,13 @@ export interface PcToken {
   /** Facing direction in degrees clockwise from up (north): 0=N, 90=E,
    *  180=S, 270=W. Missing = no facing indicator. See `tabletop/facing.ts`. */
   facing?: number
+  /** Optional HP pool drawn as a bar under the token. Missing = no bar.
+   *  Structurally `TokenHp` from `tabletop/vitals.ts`; inlined here so
+   *  the type module stays dependency-free. */
+  hp?: { current: number; max: number }
+  /** Status-condition keys (from `STATUS_CATALOG`) drawn as emoji badges
+   *  above the token. Missing / empty = none. See `tabletop/vitals.ts`. */
+  statuses?: string[]
 }
 
 /**
@@ -98,6 +105,13 @@ export interface GmToken {
   /** Facing direction in degrees clockwise from up (north): 0=N, 90=E,
    *  180=S, 270=W. Missing = no facing indicator. See `tabletop/facing.ts`. */
   facing?: number
+  /** Optional HP pool drawn as a bar under the token. Missing = no bar.
+   *  Structurally `TokenHp` from `tabletop/vitals.ts`; inlined here so
+   *  the type module stays dependency-free. */
+  hp?: { current: number; max: number }
+  /** Status-condition keys (from `STATUS_CATALOG`) drawn as emoji badges
+   *  above the token. Missing / empty = none. See `tabletop/vitals.ts`. */
+  statuses?: string[]
 }
 
 export type Token = PcToken | GmToken

@@ -23,6 +23,13 @@ import { canEditMapText, canEraseStroke, isCellRevealed } from '../tabletop/anno
 import { canMoveToken } from '../tabletop/tokens'
 import { facingArrowPoints, isValidFacing, normalizeFacing } from '../tabletop/facing'
 import {
+  STATUS_CATALOG,
+  hpBarColor,
+  hpRatio,
+  isValidHp,
+  statusGlyph,
+} from '../tabletop/vitals'
+import {
   DEFAULT_PEN_COLOR,
   DEFAULT_PEN_WIDTH,
   DEFAULT_TEXT_FONT_SIZE,
@@ -1448,6 +1455,10 @@ export function TablePanel({
                 onChangeFacing={(facing) =>
                   session.setTokenFacing(selectedToken.id, facing)
                 }
+                onChangeHp={(hp) => session.setTokenHp(selectedToken.id, hp)}
+                onChangeStatuses={(statuses) =>
+                  session.setTokenStatuses(selectedToken.id, statuses)
+                }
                 onRemove={() => {
                   session.removeToken(selectedToken.id)
                   setSelectedTokenId(null)
@@ -1731,6 +1742,10 @@ interface TokenPopoverProps {
   onChangeSize: (size: TokenSize) => void
   /** Set (degrees clockwise from north) or clear (`null`) the facing. */
   onChangeFacing: (facing: number | null) => void
+  /** Set (or clear with `null`) the token's HP pool. */
+  onChangeHp: (hp: { current: number; max: number } | null) => void
+  /** Replace the token's status-condition list (catalog keys). */
+  onChangeStatuses: (statuses: string[]) => void
   onRemove: () => void
   onChangeNote: (note: string) => void
   onChangePrivateNote: (note: string) => void
@@ -1761,6 +1776,8 @@ function TokenPopover({
   onChangeImage,
   onChangeSize,
   onChangeFacing,
+  onChangeHp,
+  onChangeStatuses,
   onRemove,
   onChangeNote,
   onChangePrivateNote,
@@ -1778,6 +1795,34 @@ function TokenPopover({
   const initialPrivateNote =
     (token as Token & { privateNote?: string }).privateNote ?? ''
   const [privateNoteDraft, setPrivateNoteDraft] = useState(initialPrivateNote)
+  // HP drafts as strings so the inputs can be cleared mid-edit. Seeded
+  // from the token; the popover is keyed by token id so a selection swap
+  // reseeds them.
+  const tokenHp = (token as Token & { hp?: { current: number; max: number } }).hp
+  const [hpCurDraft, setHpCurDraft] = useState(
+    tokenHp ? String(tokenHp.current) : '',
+  )
+  const [hpMaxDraft, setHpMaxDraft] = useState(
+    tokenHp ? String(tokenHp.max) : '',
+  )
+  const commitHp = () => {
+    const cur = hpCurDraft.trim()
+    const max = hpMaxDraft.trim()
+    // Both blank → clear the HP pool. Otherwise send the pair (missing
+    // side defaults to 0); the host clamps current into [0, max].
+    if (cur === '' && max === '') {
+      onChangeHp(null)
+      return
+    }
+    onChangeHp({ current: Number(cur) || 0, max: Number(max) || 0 })
+  }
+  const activeStatuses = (token as Token & { statuses?: string[] }).statuses ?? []
+  const toggleStatus = (key: string) => {
+    const next = activeStatuses.includes(key)
+      ? activeStatuses.filter((k) => k !== key)
+      : [...activeStatuses, key]
+    onChangeStatuses(next)
+  }
 
   const displayName =
     (token.kind === 'pc' ? characterName : token.label)?.trim() ||
@@ -1933,6 +1978,83 @@ function TokenPopover({
                   onClick={() => onChangeFacing(cell.dir)}
                 >
                   {cell.glyph}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* HP: current / max number inputs + clear (operator only) */}
+      {canOperate && (
+        <div className="tabletop-token-popover-row">
+          <span>{t('tabletop.tokenEdit.hp')}</span>
+          <div className="tabletop-token-hp-inputs">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={hpCurDraft}
+              aria-label={t('tabletop.tokenEdit.hpCurrent')}
+              onChange={(e) => setHpCurDraft(e.target.value)}
+              onBlur={commitHp}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+              }}
+            />
+            <span aria-hidden="true">/</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={hpMaxDraft}
+              aria-label={t('tabletop.tokenEdit.hpMax')}
+              onChange={(e) => setHpMaxDraft(e.target.value)}
+              onBlur={commitHp}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+              }}
+            />
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label={t('tabletop.tokenEdit.hpClear')}
+              title={t('tabletop.tokenEdit.hpClear')}
+              onClick={() => {
+                setHpCurDraft('')
+                setHpMaxDraft('')
+                onChangeHp(null)
+              }}
+            >
+              <CloseIcon size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Status conditions: toggle chips (operator only) */}
+      {canOperate && (
+        <div className="tabletop-token-popover-row">
+          <span>{t('tabletop.tokenEdit.statuses')}</span>
+          <div
+            className="tabletop-token-status-grid"
+            role="group"
+            aria-label={t('tabletop.tokenEdit.statuses')}
+          >
+            {STATUS_CATALOG.map((s) => {
+              const active = activeStatuses.includes(s.key)
+              const label = t(`tabletop.status.${s.key}`)
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  aria-pressed={active}
+                  aria-label={label}
+                  title={label}
+                  className={`tabletop-token-status-btn${active ? ' active' : ''}`}
+                  onClick={() => toggleStatus(s.key)}
+                >
+                  {s.glyph}
                 </button>
               )
             })}
@@ -2289,6 +2411,23 @@ function TokenView({
   // the glyph against the disc.
   const initial = !portrait ? avatarInitial(label) : ''
   const initialFontSize = radius * 1.05
+  // --- Vitals: HP bar (below the disc) + status badges (above it) ---
+  // Narrow to a local (the type guard does not flow through a separate
+  // boolean) so `hpRatio` sees a defined `TokenHp`.
+  const hp = isValidHp(token.hp) ? token.hp : null
+  const ratio = hp ? hpRatio(hp) : 0
+  const hpBarH = 5 / scale
+  const hpBarW = Math.max(radius * 1.7, 26 / scale)
+  const hpBarY = radius + 5 / scale
+  // Push the name label below the HP bar when one is present so they
+  // don't overlap.
+  const labelY = radius + labelGap + (hp ? hpBarH + 5 / scale : 0)
+  const statuses = token.statuses ?? []
+  const badgeSize = Math.max(11 / scale, radius * 0.5)
+  const badgeGap = badgeSize * 0.2
+  const badgeRowW =
+    statuses.length * badgeSize + Math.max(0, statuses.length - 1) * badgeGap
+  const badgeY = -(radius + badgeSize + 3 / scale)
   return (
     <Group
       x={token.x}
@@ -2340,11 +2479,68 @@ function TokenView({
           listening={false}
         />
       )}
+      {hp && (
+        // HP bar just below the disc: a dark rounded track with a
+        // colour-graded fill proportional to remaining HP. Numbers are
+        // shown in the popover, not on the canvas.
+        <Group y={hpBarY} listening={false}>
+          <Rect
+            x={-hpBarW / 2}
+            y={0}
+            width={hpBarW}
+            height={hpBarH}
+            cornerRadius={hpBarH / 2}
+            fill="rgba(0,0,0,0.6)"
+            stroke="#000"
+            strokeWidth={0.5 / scale}
+          />
+          {ratio > 0 && (
+            <Rect
+              x={-hpBarW / 2}
+              y={0}
+              width={hpBarW * ratio}
+              height={hpBarH}
+              cornerRadius={hpBarH / 2}
+              fill={hpBarColor(ratio)}
+            />
+          )}
+        </Group>
+      )}
+      {statuses.length > 0 && (
+        // Status badges in a centred row above the token. Each emoji
+        // sits on a small translucent chip so it stays legible over any
+        // map.
+        <Group listening={false}>
+          {statuses.map((key, i) => {
+            const glyph = statusGlyph(key)
+            if (!glyph) return null
+            const x = -badgeRowW / 2 + i * (badgeSize + badgeGap)
+            return (
+              <Group key={key} x={x} y={badgeY}>
+                <Rect
+                  width={badgeSize}
+                  height={badgeSize}
+                  cornerRadius={badgeSize * 0.25}
+                  fill="rgba(0,0,0,0.5)"
+                />
+                <Text
+                  text={glyph}
+                  width={badgeSize}
+                  height={badgeSize}
+                  align="center"
+                  verticalAlign="middle"
+                  fontSize={badgeSize * 0.8}
+                />
+              </Group>
+            )
+          })}
+        </Group>
+      )}
       {label && (
         <Text
           text={label}
           x={-labelWidth / 2}
-          y={radius + labelGap}
+          y={labelY}
           width={labelWidth}
           align="center"
           fontSize={labelFontSize}
