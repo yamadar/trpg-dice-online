@@ -36,7 +36,8 @@ describe('worldToMinimap / minimapToWorld', () => {
     expect(p.y).toBeCloseTo(t.offsetY, 6)
   })
   it('round-trips a point', () => {
-    const back = minimapToWorld(...Object.values(worldToMinimap(120, 10, world, t)) as [number, number], world, t)
+    const mm = worldToMinimap(120, 10, world, t)
+    const back = minimapToWorld(mm.x, mm.y, world, t)
     expect(back.x).toBeCloseTo(120, 6)
     expect(back.y).toBeCloseTo(10, 6)
   })

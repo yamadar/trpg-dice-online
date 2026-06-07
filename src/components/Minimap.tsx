@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { playerColor } from '../players/colors'
 import type { MapBackground, Token } from '../tabletop/types'
@@ -42,7 +42,7 @@ export function Minimap({ map, tokens, viewport, onRecenter, onCollapse }: Props
   })
   const tr = fitRect(world, { width: BOX_W, height: BOX_H })
 
-  const recenterFromEvent = (e: React.PointerEvent) => {
+  const recenterFromEvent = (e: ReactPointerEvent) => {
     const el = boxRef.current
     if (!el) return
     const r = el.getBoundingClientRect()
@@ -59,7 +59,8 @@ export function Minimap({ map, tokens, viewport, onRecenter, onCollapse }: Props
       <div
         ref={boxRef}
         className="tabletop-minimap-canvas"
-        role="img"
+        role="button"
+        tabIndex={0}
         aria-label={t('tabletop.minimap.label')}
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId)
@@ -67,6 +68,14 @@ export function Minimap({ map, tokens, viewport, onRecenter, onCollapse }: Props
         }}
         onPointerMove={(e) => {
           if (e.buttons) recenterFromEvent(e)
+        }}
+        onKeyDown={(e) => {
+          // Keyboard affordance: Enter / Space recenters on the scene
+          // centre, so the minimap is operable without a pointer.
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onRecenter(world.x + world.width / 2, world.y + world.height / 2)
+          }
         }}
       >
         {map?.dataUrl && (
