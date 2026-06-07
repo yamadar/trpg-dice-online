@@ -259,6 +259,7 @@ export const zhCN: Dict = {
   'tabletop.tools.eraser': '橡皮擦',
   'tabletop.tools.ping': '标记',
   'tabletop.tools.pingHint': '点按地图放置“看这里”标记',
+  'tabletop.tools.pingOffscreen': '{name} 的 Ping — 点按跳转',
   'tabletop.shortcuts.title': '键盘快捷键',
   'tabletop.shortcuts.move': '移动选中标记物',
   'tabletop.shortcuts.cycle': '上一个 / 下一个',

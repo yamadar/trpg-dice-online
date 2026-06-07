@@ -259,6 +259,7 @@ export const ptBR: Dict = {
   'tabletop.tools.eraser': 'Borracha',
   'tabletop.tools.ping': 'Ping',
   'tabletop.tools.pingHint': 'Toque no mapa para soltar um ping "olhe aqui"',
+  'tabletop.tools.pingOffscreen': 'Ping de {name} — toque para ir',
   'tabletop.shortcuts.title': 'Atalhos de teclado',
   'tabletop.shortcuts.move': 'Mover token selecionado',
   'tabletop.shortcuts.cycle': 'Token anterior / próximo',

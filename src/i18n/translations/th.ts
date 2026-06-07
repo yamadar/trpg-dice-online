@@ -259,6 +259,7 @@ export const th: Dict = {
   'tabletop.tools.eraser': 'ยางลบ',
   'tabletop.tools.ping': 'ปิง',
   'tabletop.tools.pingHint': 'แตะแผนที่เพื่อปักหมุด "ดูตรงนี้"',
+  'tabletop.tools.pingOffscreen': 'พิงจาก {name} — แตะเพื่อไป',
   'tabletop.shortcuts.title': 'ปุ่มลัดคีย์บอร์ด',
   'tabletop.shortcuts.move': 'ย้ายโทเค็นที่เลือก',
   'tabletop.shortcuts.cycle': 'โทเค็นก่อนหน้า / ถัดไป',

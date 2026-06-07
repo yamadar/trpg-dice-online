@@ -259,6 +259,7 @@ export const pl: Dict = {
   'tabletop.tools.eraser': 'Gumka',
   'tabletop.tools.ping': 'Ping',
   'tabletop.tools.pingHint': 'Dotknij mapy, aby wysłać ping „spójrz tutaj”',
+  'tabletop.tools.pingOffscreen': 'Ping od {name} — dotknij, aby przejść',
   'tabletop.shortcuts.title': 'Skróty klawiszowe',
   'tabletop.shortcuts.move': 'Przesuń wybrany żeton',
   'tabletop.shortcuts.cycle': 'Poprzedni / następny żeton',

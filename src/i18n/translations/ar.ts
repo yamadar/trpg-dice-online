@@ -259,6 +259,7 @@ export const ar: Dict = {
   'tabletop.tools.eraser': 'ممحاة',
   'tabletop.tools.ping': 'تنبيه',
   'tabletop.tools.pingHint': 'انقر على الخريطة لوضع تنبيه "انظر هنا"',
+  'tabletop.tools.pingOffscreen': 'تنبيه من {name} — انقر للانتقال',
   'tabletop.shortcuts.title': 'اختصارات لوحة المفاتيح',
   'tabletop.shortcuts.move': 'تحريك الرمز المحدد',
   'tabletop.shortcuts.cycle': 'الرمز السابق / التالي',

@@ -4,6 +4,7 @@ import {
   PING_TTL_MS,
   isValidPingPoint,
   newPingId,
+  offscreenEdgePosition,
   pingDotOpacity,
   pingProgress,
   pingRingStyle,
@@ -80,5 +81,37 @@ describe('pingDotOpacity', () => {
     expect(pingDotOpacity(0.8)).toBe(1)
     expect(pingDotOpacity(0.9)).toBeCloseTo(0.5, 5)
     expect(pingDotOpacity(1)).toBe(0)
+  })
+})
+
+describe('offscreenEdgePosition', () => {
+  const W = 1000
+  const H = 600
+  const M = 24
+  it('returns null when the ping is on screen', () => {
+    expect(offscreenEdgePosition(500, 300, W, H, M)).toBeNull()
+    // Inside the inset margin band still counts as on-screen.
+    expect(offscreenEdgePosition(M, M, W, H, M)).toBeNull()
+  })
+  it('clamps to the inset edge and points toward a ping off the right', () => {
+    const r = offscreenEdgePosition(5000, 300, W, H, M)!
+    expect(r).not.toBeNull()
+    expect(r.x).toBe(W - M) // clamped to right inset
+    expect(r.y).toBe(300)
+    expect(r.angle).toBeCloseTo(0, 5) // due east of centre
+  })
+  it('clamps a top-left off-screen ping into the corner with a diagonal angle', () => {
+    const r = offscreenEdgePosition(-500, -500, W, H, M)!
+    expect(r.x).toBe(M)
+    expect(r.y).toBe(M)
+    // Up-left of centre → angle in the third quadrant (negative, < -90°).
+    expect(r.angle).toBeLessThan(-90)
+    expect(r.angle).toBeGreaterThan(-180)
+  })
+  it('points straight down for a ping below the viewport', () => {
+    const r = offscreenEdgePosition(500, 5000, W, H, M)!
+    expect(r.y).toBe(H - M)
+    expect(r.x).toBe(500)
+    expect(r.angle).toBeCloseTo(90, 5)
   })
 })

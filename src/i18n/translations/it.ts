@@ -259,6 +259,7 @@ export const it: Dict = {
   'tabletop.tools.eraser': 'Gomma',
   'tabletop.tools.ping': 'Ping',
   'tabletop.tools.pingHint': 'Tocca la mappa per lanciare un ping "guarda qui"',
+  'tabletop.tools.pingOffscreen': 'Ping di {name} — tocca per andare',
   'tabletop.shortcuts.title': 'Scorciatoie da tastiera',
   'tabletop.shortcuts.move': 'Sposta il token selezionato',
   'tabletop.shortcuts.cycle': 'Token precedente / successivo',

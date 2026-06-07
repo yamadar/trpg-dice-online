@@ -68,9 +68,15 @@
   →閉じる、`?` でショートカット早見表をトグル。キー→意図の対応は純粋な
   `tabletop/keymap.ts`。
 - **ミニマップ**: 現在シーンの折り畳み可能な隅の俯瞰図 — マップ（または
-  フィットした空領域）・トークンごとのドット・現在ビューポートの矩形。
-  クリック / ドラッグでカメラをセンタリングできる。ワールド↔ミニマップの
-  幾何は純粋な `tabletop/minimap.ts`。
+  フィットした空領域）・トークンごとのドット・アクティブなピンごとのマーカー・
+  現在ビューポートの矩形。クリック / ドラッグでカメラをセンタリングできる。
+  ワールド↔ミニマップの幾何は純粋な `tabletop/minimap.ts`。世界フレームは
+  **パン不変**（マップ範囲 → トークンの bbox → 原点中心・ビューポート*サイズ*の
+  フォールバック）にする必要がある。ビューポートの*位置*に依存させると、
+  リセンターがフレームに帰還してマップ無しシーンでカメラが暴走する。
+- **ピンの気づきやすさ**: ピンはミニマップにも表示され、現在ビューポート外の
+  ピンには方向を指す色付きの端矢印（タップで移動）を出す。純粋関数
+  `offscreenEdgePosition`（`tabletop/ping.ts`）による。
 
 ### 対象外（Phase 2 以降）
 
@@ -88,7 +94,7 @@
 | `tokens.ts` | PC トークンのライフサイクル・権限: `planPcTokenAdds`・`makeGmToken`・`canMoveToken`・`applyTokenMove/Upsert/Remove`・`defaultPlacementOrigin`（マップ中心→グリッド原点→`pcSpawn`）・4 列折り返しの `placementPosition`・`recenterTokensOnMap`・`snapAllTokensToGrid` |
 | `annotations.ts` | テキスト / ストローク / フォグの適用＋権限判定（`canEditMapText`・`canEraseStroke`）、`setFogCells`・`isCellRevealed`・`nearestRevealedCellCenter`（フォグへ落としたトークンの救済） |
 | `scenes.ts` | 1 セッション複数マップ: `addScene` / `switchScene` / `renameScene` / `deleteScene` / `listScenes`（現在シーンを top-level に置くモデル、単調増加する序数命名つき）。加えてライブラリ橋渡し `allScenes` / `currentSceneOnly` / `stripTemplateScenes`（全シーンの PC＋ペン除去）/ `appendScenes` |
-| `minimap.ts` | ミニマップ幾何: `fitRect`（ワールド矩形をボックスへフィット）・`worldToMinimap` / `minimapToWorld`・`minimapWorldBounds`（マップ境界、なければトークン＋ビューポートの和） |
+| `minimap.ts` | ミニマップ幾何: `fitRect`（ワールド矩形をボックスへフィット）・`worldToMinimap` / `minimapToWorld`・`minimapWorldBounds`（パン不変: マップ境界 → トークン bbox → 原点中心・ビューポートサイズのフォールバック） |
 | `hostValidation.ts` | 受信した注釈リクエストのホスト側バリデータ（純粋関数）。`ownerPlayerId` を信頼できる接続元から再付与し、なりすましを防ぐ |
 | `snapshot.ts` | ワイヤ用ヘルパー: `tokenForWire` / `stripMapBytesForWire`（送信前に `privateNote` とマップ `dataUrl` を除去）、`fillTabletopDefaults`（PR-12 以前のホストの欠落フィールドを補完） |
 | `imageChunk.ts` | `chunkString` ＋ `ChunkBuffer`: data URL を 256KB チャンクに分割し、順不同到着でも再構築（進捗・長さ検査つき） |

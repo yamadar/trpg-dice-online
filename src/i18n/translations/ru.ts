@@ -259,6 +259,7 @@ export const ru: Dict = {
   'tabletop.tools.eraser': 'Ластик',
   'tabletop.tools.ping': 'Пинг',
   'tabletop.tools.pingHint': 'Коснитесь карты, чтобы поставить пинг «смотрите сюда»',
+  'tabletop.tools.pingOffscreen': 'Пинг от {name} — нажмите, чтобы перейти',
   'tabletop.shortcuts.title': 'Горячие клавиши',
   'tabletop.shortcuts.move': 'Переместить выбранный токен',
   'tabletop.shortcuts.cycle': 'Предыдущий / следующий токен',

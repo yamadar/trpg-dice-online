@@ -259,6 +259,7 @@ export const id: Dict = {
   'tabletop.tools.eraser': 'Penghapus',
   'tabletop.tools.ping': 'Ping',
   'tabletop.tools.pingHint': 'Ketuk peta untuk menjatuhkan ping "lihat sini"',
+  'tabletop.tools.pingOffscreen': 'Ping dari {name} — ketuk untuk menuju',
   'tabletop.shortcuts.title': 'Pintasan keyboard',
   'tabletop.shortcuts.move': 'Pindahkan token terpilih',
   'tabletop.shortcuts.cycle': 'Token sebelumnya / berikutnya',

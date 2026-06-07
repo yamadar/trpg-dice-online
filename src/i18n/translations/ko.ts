@@ -259,6 +259,7 @@ export const ko: Dict = {
   'tabletop.tools.eraser': '지우개',
   'tabletop.tools.ping': '핑',
   'tabletop.tools.pingHint': '지도를 탭하여 "여기 봐" 핑 보내기',
+  'tabletop.tools.pingOffscreen': '{name}의 핑 — 탭하여 이동',
   'tabletop.shortcuts.title': '키보드 단축키',
   'tabletop.shortcuts.move': '선택한 토큰 이동',
   'tabletop.shortcuts.cycle': '이전 / 다음 토큰',

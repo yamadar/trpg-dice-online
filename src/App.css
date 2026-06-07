@@ -4874,6 +4874,30 @@ button.char-avatar-large:disabled {
   border: 1px solid rgba(0, 0, 0, 0.6);
   pointer-events: none;
 }
+/* Ping marker on the minimap — a colored ring (currentColor) that
+   pulses so an active ping reads as "live" vs. the static token dots. */
+.tabletop-minimap-ping {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid currentColor;
+  box-shadow: 0 0 4px currentColor;
+  pointer-events: none;
+  animation: ping-pulse-dot 1s ease-in-out infinite;
+}
+@keyframes ping-pulse-dot {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.4);
+    opacity: 0.55;
+  }
+}
 .tabletop-minimap-viewport {
   position: absolute;
   border: 1px solid var(--accent);
@@ -4911,6 +4935,49 @@ button.char-avatar-large:disabled {
   color: var(--text);
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Off-screen ping indicator — a colored arrow pinned to the canvas edge
+   pointing toward a ping outside the current view; tap to jump there.
+   `color` is set inline to the pinger's color; the arrow + glow read it
+   via currentColor. The element is rotated to aim at the ping, so the
+   triangle is authored pointing east (rotate(0deg) = due right). */
+.tabletop-ping-offscreen {
+  position: absolute;
+  z-index: 7;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  /* The button itself carries the inline translate + rotate (to aim at
+     the ping); the pulse animates only the inner arrow so it does not
+     clobber that rotation. */
+}
+.tabletop-ping-offscreen-arrow {
+  width: 0;
+  height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 15px solid currentColor;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.7));
+  animation: ping-pulse-scale 1s ease-in-out infinite;
+}
+@keyframes ping-pulse-scale {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0.6;
+  }
 }
 
 /* Character-info modal: a compact dialog wrapping the shared

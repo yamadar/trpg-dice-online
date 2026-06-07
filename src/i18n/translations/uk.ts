@@ -259,6 +259,7 @@ export const uk: Dict = {
   'tabletop.tools.eraser': 'Гумка',
   'tabletop.tools.ping': 'Пінг',
   'tabletop.tools.pingHint': 'Торкніться карти, щоб поставити пінг «дивіться сюди»',
+  'tabletop.tools.pingOffscreen': 'Пінг від {name} — торкніться, щоб перейти',
   'tabletop.shortcuts.title': 'Гарячі клавіші',
   'tabletop.shortcuts.move': 'Перемістити вибраний токен',
   'tabletop.shortcuts.cycle': 'Попередній / наступний токен',

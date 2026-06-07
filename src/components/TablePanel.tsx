@@ -68,6 +68,7 @@ import { ImagePickerDialog } from './ImagePickerDialog'
 import { Sheet } from './Sheet'
 import { DiceRollAnimation } from './DiceRollAnimation'
 import { PingMarker } from './PingMarker'
+import { offscreenEdgePosition } from '../tabletop/ping'
 import { SpeechBubble } from './SpeechBubble'
 import { TabletopDock } from './TabletopDock'
 import { TabletopTutorial } from './TabletopTutorial'
@@ -144,6 +145,9 @@ interface PinchState {
 const MIN_SCALE = 0.25
 const MAX_SCALE = 4
 const WHEEL_ZOOM_FACTOR = 1.1
+/** Inset (device px) for the off-screen ping edge arrows, so they stay
+ *  fully visible against the canvas border. */
+const OFFSCREEN_PING_MARGIN = 30
 
 /**
  * The tabletop full-screen mode.
@@ -1206,6 +1210,18 @@ export function TablePanel({
     [stageX, stageY, stageScale, size.width, size.height],
   )
 
+  /** Center the camera on a world point (minimap click, off-screen ping
+   *  jump). Non-finite inputs are ignored so a degenerate transform can
+   *  never push the stage to NaN/Infinity. */
+  const recenterOn = useCallback(
+    (wx: number, wy: number) => {
+      if (!Number.isFinite(wx) || !Number.isFinite(wy)) return
+      setStageX(size.width / 2 - wx * stageScale)
+      setStageY(size.height / 2 - wy * stageScale)
+    },
+    [size.width, size.height, stageScale],
+  )
+
   /**
    * Character ids the local player has already placed on the map. The
    * toolbar uses this to disable per-character "place" buttons so the
@@ -1734,11 +1750,9 @@ export function TablePanel({
         <Minimap
           map={tabletop.map}
           tokens={tabletop.tokens}
+          pings={pings}
           viewport={viewport}
-          onRecenter={(wx, wy) => {
-            setStageX(size.width / 2 - wx * stageScale)
-            setStageY(size.height / 2 - wy * stageScale)
-          }}
+          onRecenter={recenterOn}
           onCollapse={() => setShowMinimap(false)}
         />
       ) : (
@@ -1752,6 +1766,45 @@ export function TablePanel({
           <MinimapIcon size={18} />
         </button>
       )}
+      {/* Off-screen ping indicators — when a ping lands outside the
+          current viewport, an arrow at the screen edge points toward it
+          (in the pinger's color) so everyone notices it; tapping jumps
+          the camera there. The ping markers themselves expire on their
+          own, removing the arrow with them. */}
+      {pings.map((p) => {
+        const screenX = p.x * stageScale + stageX
+        const screenY = p.y * stageScale + stageY
+        const edge = offscreenEdgePosition(
+          screenX,
+          screenY,
+          size.width,
+          size.height,
+          OFFSCREEN_PING_MARGIN,
+        )
+        if (!edge) return null
+        const pinger = session.players.find((pl) => pl.id === p.playerId)
+        const name = pinger
+          ? composeName(pinger.name, pinger.characterName)
+          : ''
+        return (
+          <button
+            key={`off-${p.key}`}
+            type="button"
+            className="tabletop-ping-offscreen"
+            style={{
+              left: `${edge.x}px`,
+              top: `${edge.y}px`,
+              color: playerColor(p.playerId),
+              transform: `translate(-50%, -50%) rotate(${edge.angle}deg)`,
+            }}
+            aria-label={t('tabletop.tools.pingOffscreen', { name })}
+            title={t('tabletop.tools.pingOffscreen', { name })}
+            onClick={() => recenterOn(p.x, p.y)}
+          >
+            <span className="tabletop-ping-offscreen-arrow" />
+          </button>
+        )
+      })}
       {/* Map ops toolbar is always rendered now (the old top-header
           toggle is gone). Its right-edge icon strip is reachable at
           all times, and only the optional side-expanding panel
