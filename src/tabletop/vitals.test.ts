@@ -86,4 +86,12 @@ describe('sanitizeStatuses', () => {
     // De-duped, so it equals the catalog (already <= MAX_STATUSES).
     expect(out).toEqual([...STATUS_KEYS])
   })
+  it('bounds its scan against a hostile oversized array', () => {
+    // A huge array of junk is rejected without scanning all of it; a
+    // valid key buried past the scan cap is intentionally not reached.
+    const junk = new Array(100_000).fill('bogus')
+    expect(sanitizeStatuses(junk)).toEqual([])
+    const buried = [...new Array(300).fill('bogus'), 'poison']
+    expect(sanitizeStatuses(buried)).toEqual([])
+  })
 })

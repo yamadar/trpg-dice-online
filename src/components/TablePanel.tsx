@@ -1805,6 +1805,19 @@ function TokenPopover({
   const [hpMaxDraft, setHpMaxDraft] = useState(
     tokenHp ? String(tokenHp.max) : '',
   )
+  // Re-seed the drafts whenever the *authoritative* HP changes — e.g.
+  // after the host clamps a committed value (current > max, an oversized
+  // number) or a remote edit lands. Keyed on the hp signature so this
+  // fires only on a real value change, never on the user's own
+  // mid-typing keystrokes (which don't touch token.hp). Render-phase
+  // derived state, the React-recommended escape hatch.
+  const hpSig = tokenHp ? `${tokenHp.current}/${tokenHp.max}` : ''
+  const [lastHpSig, setLastHpSig] = useState(hpSig)
+  if (hpSig !== lastHpSig) {
+    setLastHpSig(hpSig)
+    setHpCurDraft(tokenHp ? String(tokenHp.current) : '')
+    setHpMaxDraft(tokenHp ? String(tokenHp.max) : '')
+  }
   const commitHp = () => {
     const cur = hpCurDraft.trim()
     const max = hpMaxDraft.trim()

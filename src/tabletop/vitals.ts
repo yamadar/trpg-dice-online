@@ -98,8 +98,16 @@ export const STATUS_CATALOG: ReadonlyArray<{ key: string; glyph: string }> = [
 /** Stable set of catalog keys, for validation. */
 export const STATUS_KEYS: ReadonlyArray<string> = STATUS_CATALOG.map((s) => s.key)
 
+/** O(1) membership set for `sanitizeStatuses`. */
+const STATUS_KEY_SET = new Set(STATUS_KEYS)
+
 /** Largest number of status badges kept on a token (avoids clutter). */
 export const MAX_STATUSES = STATUS_CATALOG.length
+
+/** Hard cap on how many input elements `sanitizeStatuses` will scan, so
+ *  a hostile / corrupt array of mostly-invalid values cannot force
+ *  unbounded work before the (much smaller) output cap is reached. */
+const STATUS_SCAN_CAP = 256
 
 /** The emoji for a status key, or undefined when the key is unknown. */
 export function statusGlyph(key: string): string | undefined {
@@ -117,9 +125,13 @@ export function sanitizeStatuses(raw: unknown): string[] {
   if (!Array.isArray(raw)) return []
   const out: string[] = []
   const seen = new Set<string>()
-  for (const v of raw) {
+  // Scan at most STATUS_SCAN_CAP elements: O(1) membership via the Set,
+  // and a bounded loop so a giant mostly-invalid array is cheap to reject.
+  const limit = Math.min(raw.length, STATUS_SCAN_CAP)
+  for (let i = 0; i < limit; i++) {
+    const v = raw[i]
     if (typeof v !== 'string') continue
-    if (!STATUS_KEYS.includes(v)) continue
+    if (!STATUS_KEY_SET.has(v)) continue
     if (seen.has(v)) continue
     seen.add(v)
     out.push(v)
