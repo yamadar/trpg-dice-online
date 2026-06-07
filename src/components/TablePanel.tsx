@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Circle,
@@ -2117,18 +2117,28 @@ function TokenPopover({
   const [openSection, setOpenSection] = useState<
     'size' | 'facing' | 'hp' | 'status' | null
   >(null)
+  // Facing summary: snap to the nearest compass cell so ANY valid angle
+  // (incl. non-cardinal values from a future free-angle dial / import,
+  // for which the token still draws an arrow) shows a directional glyph
+  // rather than "—".
   const facingDeg = isValidFacing(token.facing)
     ? normalizeFacing(token.facing)
     : null
   const facingCell =
     facingDeg !== null
-      ? FACING_COMPASS.find((c) => c.dir === facingDeg)
+      ? FACING_COMPASS.find(
+          (c) => c.dir === (Math.round(facingDeg / 45) * 45) % 360,
+        )
       : undefined
-  const statusSummary = activeStatuses.length
-    ? activeStatuses
-        .slice(0, 6)
-        .map((k) => STATUS_CATALOG.find((s) => s.key === k)?.glyph ?? '')
-        .join('') + (activeStatuses.length > 6 ? '…' : '')
+  // Status summary: known glyphs only (an unknown key from a newer/older
+  // client contributes nothing); show up to four then "+N" so the count
+  // is never lost to a bare ellipsis.
+  const statusGlyphs = activeStatuses
+    .map((k) => STATUS_CATALOG.find((s) => s.key === k)?.glyph)
+    .filter((g): g is string => !!g)
+  const statusSummary = statusGlyphs.length
+    ? statusGlyphs.slice(0, 4).join('') +
+      (statusGlyphs.length > 4 ? `+${statusGlyphs.length - 4}` : '')
     : '—'
 
   const displayName =
@@ -2160,29 +2170,21 @@ function TokenPopover({
     if (next) onChangeImage(next)
   }
 
-  /** One collapsible attribute row: a head showing the label + current
-   *  value, expanding to its editor when tapped (one open at a time). */
+  /** One collapsible attribute row (size / facing / HP / status). */
   const section = (
     key: 'size' | 'facing' | 'hp' | 'status',
     label: string,
     summary: ReactNode,
     body: ReactNode,
   ) => (
-    <div className="tabletop-token-accordion">
-      <button
-        type="button"
-        className="tabletop-token-accordion-head"
-        aria-expanded={openSection === key}
-        onClick={() => setOpenSection((cur) => (cur === key ? null : key))}
-      >
-        <span className="tabletop-token-accordion-label">{label}</span>
-        <span className="tabletop-token-accordion-value">{summary}</span>
-        <span className="tabletop-token-accordion-caret" aria-hidden="true" />
-      </button>
-      {openSection === key && (
-        <div className="tabletop-token-accordion-body">{body}</div>
-      )}
-    </div>
+    <TokenAttrSection
+      label={label}
+      summary={summary}
+      open={openSection === key}
+      onToggle={() => setOpenSection((cur) => (cur === key ? null : key))}
+    >
+      {body}
+    </TokenAttrSection>
   )
 
   return (
@@ -2431,6 +2433,47 @@ function TokenPopover({
             mode="both" onPick={(file) => handleImagePicked(file)} />,
           document.body,
         )}
+    </div>
+  )
+}
+
+/**
+ * One collapsible attribute row in the token popover (size / facing / HP
+ * / status): a head showing the label + current value that expands to its
+ * editor on tap. A real component (not an inline factory) so it can mint
+ * a `useId` for the `aria-controls` ↔ body linkage; the body is always
+ * rendered and `hidden` when collapsed so that association stays valid.
+ */
+function TokenAttrSection({
+  label,
+  summary,
+  open,
+  onToggle,
+  children,
+}: {
+  label: string
+  summary: ReactNode
+  open: boolean
+  onToggle: () => void
+  children: ReactNode
+}) {
+  const bodyId = useId()
+  return (
+    <div className="tabletop-token-accordion">
+      <button
+        type="button"
+        className="tabletop-token-accordion-head"
+        aria-expanded={open}
+        aria-controls={bodyId}
+        onClick={onToggle}
+      >
+        <span className="tabletop-token-accordion-label">{label}</span>
+        <span className="tabletop-token-accordion-value">{summary}</span>
+        <span className="tabletop-token-accordion-caret" aria-hidden="true" />
+      </button>
+      <div id={bodyId} className="tabletop-token-accordion-body" hidden={!open}>
+        {children}
+      </div>
     </div>
   )
 }
