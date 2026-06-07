@@ -1113,25 +1113,74 @@
 }
 
 /* --- Library entry (Templates / Snapshots) ---------- */
-/* Each entry stacks a head row (name + scene badge + delete) over an
-   actions row (Replace table / Add as scene), so the two distinct loads
-   are not cramped onto the same line as the name. */
+/* Each entry is a single tap-target row (name + scene badge + caret).
+   Tapping it opens a popup menu with the per-entry actions (Replace
+   table / Add as scene / Overwrite / Delete) instead of laying every
+   button out permanently. `position: relative` anchors that popup. */
 .tabletop-library-entry {
-  flex-direction: column;
+  position: relative;
   align-items: stretch;
-  gap: 4px;
 }
-.tabletop-library-entry-head {
+.tabletop-library-entry-row {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
 }
-.tabletop-library-entry-actions {
+.tabletop-library-entry-caret {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+/* Popup menu of per-entry actions. Anchored under the row; a fixed,
+   transparent backdrop sits behind it so a tap anywhere off the menu
+   dismisses it (same idea as the SettingsMenu backdrop). */
+.tabletop-library-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.tabletop-library-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 41;
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
-.tabletop-library-entry-actions .tabletop-toolbar-list-action {
-  flex: 1;
+.tabletop-library-menu-item {
+  width: 100%;
+  padding: 9px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+}
+.tabletop-library-menu-item:hover {
+  background: var(--panel-2);
+}
+.tabletop-library-menu-item.danger {
+  color: var(--danger);
 }
 /* Scene-count chip shown only for multi-scene entries. */
 .tabletop-library-scene-count {
