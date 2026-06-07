@@ -92,8 +92,12 @@ import { isValidFacing, normalizeFacing } from '../tabletop/facing'
 import { clampHp, isValidHp, sanitizeStatuses } from '../tabletop/vitals'
 import {
   addScene as addSceneToState,
+  appendScenes as appendScenesToState,
+  currentSceneOnly,
   deleteScene as deleteSceneInState,
   renameScene as renameSceneInState,
+  sceneCount,
+  stripTemplateScenes,
   switchScene as switchSceneInState,
 } from '../tabletop/scenes'
 import { fillTabletopDefaults, stripMapBytesForWire, tokenForWire } from '../tabletop/snapshot'
@@ -373,13 +377,19 @@ export interface Session {
     name: string,
     kind: TabletopLibraryKind,
     viewportCenter?: { x: number; y: number },
+    /** `'scene'` saves only the current scene; `'table'` (default) saves
+     *  every scene. */
+    scope?: 'scene' | 'table',
   ) => Promise<'ok' | 'invalid'>
   /**
-   * GM-only: replace the current tabletop with a saved one.
+   * GM-only: replace the WHOLE table (all scenes) with a saved one.
    * Template loads transplant the GM's existing PCs to the new
    * `pcSpawn`. Save loads restore exactly what was saved.
    */
   loadTabletopFromLibrary: (id: string) => Promise<'ok' | 'missing'>
+  /** GM-only: splice a saved entry's scene(s) into the current session
+   *  as new scenes (keeps existing scenes; switches to the first added). */
+  addLibraryAsScenes: (id: string) => Promise<'ok' | 'missing'>
   /** GM-only: drop an entry from the library. */
   deleteTabletopFromLibrary: (id: string) => Promise<void>
   /**
@@ -1864,40 +1874,40 @@ export function useSession(): Session {
   }, [])
 
   /**
-   * GM-only: save the current tabletop. Templates strip PC tokens and
-   * stash the supplied viewport centre as `pcSpawn`; saves keep
-   * everything verbatim.
+   * GM-only: save the current tabletop to the global library.
+   *
+   * Two orthogonal choices:
+   *  - `scope`: `'scene'` saves only the current scene (the common
+   *    "save this map" intent); `'table'` saves every scene. Before
+   *    scenes existed a save always captured the whole state, which
+   *    silently embedded every other scene — `scope` makes the unit
+   *    explicit.
+   *  - `kind`: `'template'` strips PC tokens + pen strokes from EVERY
+   *    saved scene (the initial layout; PCs re-place on load) and
+   *    stashes the viewport centre as `pcSpawn`; `'save'` keeps
+   *    everything verbatim.
    */
   const saveTabletopAs = useCallback(
     async (
       name: string,
       kind: TabletopLibraryKind,
       viewportCenter?: { x: number; y: number },
+      scope: 'scene' | 'table' = 'table',
     ): Promise<'ok' | 'invalid'> => {
       if (roleRef.current === 'client') return 'invalid'
       const trimmed = name.trim()
       if (!trimmed) return 'invalid'
-      const source = tabletopRef.current
-      let state: TabletopState
-      if (kind === 'template') {
-        // Strip PC tokens — templates describe the *initial* layout
-        // and PCs re-place themselves at the spawn point on load.
-        // Also drop pen strokes (typically session-specific GM /
-        // player markings) so a saved scenario starts with a clean
-        // sketch surface. Text labels and fog are kept on purpose:
-        // labels often carry GM hints ("door here") and fog is
-        // frequently part of the scenario setup (unexplored rooms).
-        const tokens = source.tokens.filter((t) => t.kind !== 'pc')
-        state = {
-          ...source,
-          tokens,
-          strokes: [],
-          ...(viewportCenter ? { pcSpawn: viewportCenter } : {}),
-        }
-      } else {
-        // Save: snapshot the whole state, including PC tokens.
-        // pcSpawn is preserved if previously set by a loaded template.
-        state = { ...source }
+      // Narrow to the current scene first when the GM asked for "this
+      // scene", then apply the template strip across whatever scenes
+      // remain (one for 'scene', all for 'table').
+      const scoped =
+        scope === 'scene'
+          ? currentSceneOnly(tabletopRef.current)
+          : tabletopRef.current
+      let state: TabletopState =
+        kind === 'template' ? stripTemplateScenes(scoped) : { ...scoped }
+      if (kind === 'template' && viewportCenter) {
+        state = { ...state, pcSpawn: viewportCenter }
       }
       const now = Date.now()
       const entry: SavedTabletop = {
@@ -1916,11 +1926,13 @@ export function useSession(): Session {
   )
 
   /**
-   * GM-only: replace the current tabletop with a saved one. The full
-   * state replacement is broadcast to clients via `tabletopState`;
-   * the map's `dataUrl` is stripped on the wire and then streamed
-   * through the existing chunked-map path so a multi-megabyte
-   * background does not block the data channel.
+   * GM-only: replace the WHOLE table with a saved one — every existing
+   * scene is discarded and the entry's scene(s) take over (use
+   * `addLibraryAsScenes` to splice an entry in without losing the
+   * current scenes). The full state replacement is broadcast to clients
+   * via `tabletopState`; the map's `dataUrl` is stripped on the wire and
+   * then streamed through the existing chunked-map path so a
+   * multi-megabyte background does not block the data channel.
    */
   const loadTabletopFromLibrary = useCallback(
     async (id: string): Promise<'ok' | 'missing'> => {
@@ -1962,6 +1974,28 @@ export function useSession(): Session {
       return 'ok'
     },
     [applyTabletop, broadcastMapAsChunks, tabletopLibrary],
+  )
+
+  /**
+   * GM-only: splice a saved entry's scene(s) into the CURRENT session as
+   * new scenes (and switch to the first), keeping the GM's existing
+   * scenes — the additive alternative to `loadTabletopFromLibrary`'s
+   * whole-table replace. Reuses the scene-switch broadcast path: the
+   * fresh current scene goes out as `tabletopState` + a streamed map.
+   * Session-global `npcLibrary` / `pcSpawn` are left as they are.
+   */
+  const addLibraryAsScenes = useCallback(
+    async (id: string): Promise<'ok' | 'missing'> => {
+      if (roleRef.current === 'client') return 'missing'
+      const entry = tabletopLibrary.find((e) => e.id === id)
+      if (!entry) return 'missing'
+      const count = sceneCount(entry.state)
+      const newIds = Array.from({ length: count }, () => newSceneId())
+      const next = appendScenesToState(tabletopRef.current, entry.state, newIds)
+      applySceneOp(next)
+      return 'ok'
+    },
+    [applySceneOp, tabletopLibrary],
   )
 
   /** GM-only: drop a saved entry from the library. The current
@@ -4068,6 +4102,7 @@ export function useSession(): Session {
     tabletopLibrary,
     saveTabletopAs,
     loadTabletopFromLibrary,
+    addLibraryAsScenes,
     deleteTabletopFromLibrary,
     addMapText,
     updateMapText,

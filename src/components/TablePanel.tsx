@@ -1804,7 +1804,7 @@ export function TablePanel({
           fog={tabletop.fog}
           onFogEnabledChange={session.setFogEnabled}
           onFogReplace={session.setFog}
-          onSaveTabletopAs={(name, kind: TabletopLibraryKind) => {
+          onSaveTabletopAs={(name, kind: TabletopLibraryKind, scope) => {
             // Templates need a PC spawn point — pass the world-space
             // centre of the current viewport so a load drops PCs where
             // the GM is currently looking. Saves do not use it.
@@ -1815,9 +1815,10 @@ export function TablePanel({
                     y: -stageY / stageScale + size.height / 2 / stageScale,
                   }
                 : undefined
-            return session.saveTabletopAs(name, kind, viewportCenter)
+            return session.saveTabletopAs(name, kind, viewportCenter, scope)
           }}
           onLoadTabletopFromLibrary={session.loadTabletopFromLibrary}
+          onAddLibraryAsScenes={session.addLibraryAsScenes}
           onDeleteTabletopFromLibrary={session.deleteTabletopFromLibrary}
           onNotice={onNotice}
           onOpenTutorial={() => setShowTutorial(true)}

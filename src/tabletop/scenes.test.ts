@@ -1,11 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import {
   addScene,
+  allScenes,
+  appendScenes,
+  currentSceneOnly,
   deleteScene,
   ensureScenes,
   listScenes,
   renameScene,
   sceneCount,
+  stripTemplateScenes,
   switchScene,
 } from './scenes'
 import {
@@ -13,8 +17,20 @@ import {
   DEFAULT_GRID,
   INITIAL_SCENE_ID,
   type MapBackground,
+  type PcToken,
+  type GmToken,
   type TabletopState,
 } from './types'
+
+const pc = (id: string): PcToken => ({
+  id,
+  kind: 'pc',
+  x: 0,
+  y: 0,
+  ownerPlayerId: 'p1',
+  characterId: 'c1',
+})
+const gm = (id: string): GmToken => ({ id, kind: 'gm', x: 0, y: 0, image: '' })
 
 function baseState(over: Partial<TabletopState> = {}): TabletopState {
   return {
@@ -157,5 +173,83 @@ describe('deleteScene', () => {
   it('refuses to delete the only scene', () => {
     const s = baseState()
     expect(deleteScene(s, INITIAL_SCENE_ID)).toBe(s)
+  })
+})
+
+describe('allScenes', () => {
+  it('returns the current scene first, then the inactive ones', () => {
+    const s = baseState({ sceneName: 'A', map: aMap })
+    const two = addScene(s, 'scn-2', 'B') // B current, A stashed
+    const scenes = allScenes(two)
+    expect(scenes.map((sc) => sc.name)).toEqual(['B', 'A'])
+    expect(scenes.find((sc) => sc.name === 'A')?.map).toEqual(aMap)
+  })
+})
+
+describe('currentSceneOnly', () => {
+  it('drops inactive scenes but keeps the current one + session globals', () => {
+    const s = baseState({
+      sceneName: 'A',
+      tokens: [gm('g1')],
+      npcLibrary: [{ id: 'n1', name: 'Goblin', image: '' }],
+      pcSpawn: { x: 5, y: 6 },
+    })
+    const two = addScene(s, 'scn-2', 'B') // B current, A stashed
+    const only = currentSceneOnly(two)
+    expect(only.scenes).toEqual([])
+    expect(only.sceneName).toBe('B')
+    // Session-global stash + spawn survive (they are not per-scene).
+    expect(only.npcLibrary).toHaveLength(1)
+    expect(only.pcSpawn).toEqual({ x: 5, y: 6 })
+  })
+})
+
+describe('stripTemplateScenes', () => {
+  it('removes PC tokens and strokes from current AND inactive scenes', () => {
+    // Scene A has a PC + a GM token + a stroke; switch away so it becomes
+    // inactive, then the current scene B also gets a PC.
+    const a = baseState({
+      sceneName: 'A',
+      tokens: [pc('a-pc'), gm('a-gm')],
+      strokes: [{ id: 's1', points: [0, 0, 1, 1], color: '#f00', width: 2, ownerPlayerId: 'p1' }],
+    })
+    const b = addScene(a, 'scn-2', 'B')
+    const withPc = { ...b, tokens: [pc('b-pc'), gm('b-gm')] }
+    const stripped = stripTemplateScenes(withPc)
+    // Current scene (B): PC gone, GM kept, strokes cleared.
+    expect(stripped.tokens.map((t) => t.id)).toEqual(['b-gm'])
+    expect(stripped.strokes).toEqual([])
+    // Inactive scene (A): PC gone, GM kept, strokes cleared (the bug fix).
+    const inactive = stripped.scenes!.find((sc) => sc.name === 'A')!
+    expect(inactive.tokens.map((t) => t.id)).toEqual(['a-gm'])
+    expect(inactive.strokes).toEqual([])
+  })
+})
+
+describe('appendScenes', () => {
+  it('splices a saved entry’s scenes in as new scenes and switches to the first', () => {
+    const live = baseState({ sceneName: 'Live', tokens: [gm('live-gm')] })
+    // A two-scene saved entry: current "X" (+ inactive "Y").
+    const savedX = baseState({ sceneName: 'X', map: aMap, sceneId: 'old-x', sceneOrd: 1 })
+    const saved = addScene(savedX, 'old-y', 'Y') // now Y current, X stashed
+    const result = appendScenes(live, saved, ['new-1', 'new-2'])
+    // First appended scene becomes current with a fresh id.
+    expect(result.sceneId).toBe('new-1')
+    expect(result.sceneName).toBe('Y')
+    // The GM's original "Live" scene is preserved (stashed), plus the
+    // other imported scene — three scenes total, all unique ids/ords.
+    expect(sceneCount(result)).toBe(3)
+    const names = listScenes(result).map((r) => r.name).sort()
+    expect(names).toEqual(['Live', 'X', 'Y'])
+    const ords = listScenes(result).map((r) => r.ord)
+    expect(new Set(ords).size).toBe(3)
+    const ids = listScenes(result).map((r) => r.id)
+    expect(new Set(ids).size).toBe(3)
+  })
+  it('keeps the live session globals, not the source’s', () => {
+    const live = baseState({ npcLibrary: [{ id: 'keep', name: 'Keep', image: '' }] })
+    const saved = baseState({ npcLibrary: [{ id: 'drop', name: 'Drop', image: '' }] })
+    const result = appendScenes(live, saved, ['new-1'])
+    expect(result.npcLibrary.map((n) => n.id)).toEqual(['keep'])
   })
 })

@@ -14,6 +14,7 @@ import {
   type TabletopLibraryKind,
   type Token,
 } from '../tabletop/types'
+import { sceneCount } from '../tabletop/scenes'
 import type { MapImageError } from '../tabletop/imageBackground'
 import { loadPresetMapManifest } from '../tabletop/presetMaps'
 import type { Character } from '../characters/types'
@@ -175,14 +176,19 @@ interface Props {
    *  unavailable. */
   tabletopLibrary: ReadonlyArray<SavedTabletop>
   /** GM-only: snapshot the current tabletop under the given name.
-   *  Templates strip PC tokens and stash a viewport centre as the PC
-   *  spawn point; saves keep everything. */
+   *  `scope` chooses this scene vs the whole table; templates strip PC
+   *  tokens + strokes and stash a viewport centre as the PC spawn point;
+   *  saves keep everything. */
   onSaveTabletopAs: (
     name: string,
     kind: TabletopLibraryKind,
+    scope: 'scene' | 'table',
   ) => Promise<'ok' | 'invalid'>
-  /** GM-only: replace the current tabletop with a saved one. */
+  /** GM-only: replace the WHOLE table (all scenes) with a saved one. */
   onLoadTabletopFromLibrary: (id: string) => Promise<'ok' | 'missing'>
+  /** GM-only: splice a saved entry's scene(s) into the current session
+   *  as new scenes (keeps existing scenes). */
+  onAddLibraryAsScenes: (id: string) => Promise<'ok' | 'missing'>
   /** GM-only: drop one entry from the library. */
   onDeleteTabletopFromLibrary: (id: string) => Promise<void>
   /** GM-only: load a bundled preset map from `public/maps/`. */
@@ -249,6 +255,7 @@ export function TableToolbar({
   tabletopLibrary,
   onSaveTabletopAs,
   onLoadTabletopFromLibrary,
+  onAddLibraryAsScenes,
   onDeleteTabletopFromLibrary,
   onLoadPresetMap,
   fog,
@@ -310,6 +317,8 @@ export function TableToolbar({
   // Library save flow state: a single name input feeds both save
   // flavours; the buttons differ only in `kind`.
   const [libraryName, setLibraryName] = useState('')
+  /** Save scope: only the current scene, or every scene on the table. */
+  const [saveScope, setSaveScope] = useState<'scene' | 'table'>('scene')
   const [presets, setPresets] = useState<ReadonlyArray<PresetMap>>([])
   const [selectedPreset, setSelectedPreset] = useState('')
   const [loadingPreset, setLoadingPreset] = useState(false)
@@ -424,7 +433,7 @@ export function TableToolbar({
       onNotice?.(t('tabletop.library.needName'), 'error')
       return
     }
-    const result = await onSaveTabletopAs(libraryName, kind)
+    const result = await onSaveTabletopAs(libraryName, kind, saveScope)
     if (result === 'ok') {
       onNotice?.(
         t(
@@ -444,6 +453,15 @@ export function TableToolbar({
     const result = await onLoadTabletopFromLibrary(id)
     if (result === 'ok') {
       onNotice?.(t('tabletop.library.loaded'), 'success')
+    } else {
+      onNotice?.(t('tabletop.library.loadFailed'), 'error')
+    }
+  }
+
+  const handleAddAsScenes = async (id: string) => {
+    const result = await onAddLibraryAsScenes(id)
+    if (result === 'ok') {
+      onNotice?.(t('tabletop.library.addedAsScenes'), 'success')
     } else {
       onNotice?.(t('tabletop.library.loadFailed'), 'error')
     }
@@ -1296,6 +1314,9 @@ export function TableToolbar({
       )}
       {expandedCategory === 'library' && isHost && (
         <>
+            <p className="tabletop-toolbar-meta wrap tabletop-library-scope-note">
+              {t('tabletop.library.scopeNote')}
+            </p>
             <h3 className="tabletop-toolbar-title">
               {t('tabletop.library.saveCurrent')}
             </h3>
@@ -1307,6 +1328,33 @@ export function TableToolbar({
               onChange={(e) => setLibraryName(e.target.value)}
               maxLength={48}
             />
+            {/* Scope: this scene vs every scene on the table. */}
+            <div
+              className="tabletop-toolbar-row"
+              role="radiogroup"
+              aria-label={t('tabletop.library.scope')}
+            >
+              <span>{t('tabletop.library.scope')}</span>
+              <div className="tabletop-token-size-group">
+                {(['scene', 'table'] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    role="radio"
+                    aria-checked={saveScope === s}
+                    tabIndex={saveScope === s ? 0 : -1}
+                    className={`tabletop-token-size-btn${saveScope === s ? ' active' : ''}`}
+                    onClick={() => setSaveScope(s)}
+                  >
+                    {t(
+                      s === 'scene'
+                        ? 'tabletop.library.scopeScene'
+                        : 'tabletop.library.scopeTable',
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
             <button
               type="button"
               className="tabletop-toolbar-button"
@@ -1329,79 +1377,31 @@ export function TableToolbar({
             <h3 className="tabletop-toolbar-title">
               {t('tabletop.library.templates')}
             </h3>
-            {templates.length === 0 ? (
-              <p className="tabletop-toolbar-meta">
-                {t('tabletop.library.emptyTemplates')}
-              </p>
-            ) : (
-              <ul className="tabletop-toolbar-list">
-                {templates.map((entry) => (
-                  <li key={entry.id} className="tabletop-toolbar-list-item">
-                    <span
-                      className="tabletop-toolbar-list-label"
-                      title={entry.name}
-                    >
-                      {entry.name}
-                    </span>
-                    <button
-                      type="button"
-                      className="tabletop-toolbar-list-action"
-                      onClick={() => void handleLoad(entry.id)}
-                    >
-                      {t('tabletop.library.load')}
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-btn tabletop-toolbar-list-remove"
-                      aria-label={t('tabletop.library.delete')}
-                      title={t('tabletop.library.delete')}
-                      onClick={() => void handleDelete(entry.id, entry.name)}
-                    >
-                      <TrashIcon />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <p className="tabletop-toolbar-meta">
+              {t('tabletop.library.templateMeaning')}
+            </p>
+            <LibraryList
+              entries={templates}
+              emptyLabel={t('tabletop.library.emptyTemplates')}
+              onReplace={(id) => void handleLoad(id)}
+              onAddScenes={(id) => void handleAddAsScenes(id)}
+              onDelete={(id, name) => void handleDelete(id, name)}
+            />
 
             <hr className="tabletop-toolbar-divider" />
             <h3 className="tabletop-toolbar-title">
               {t('tabletop.library.saves')}
             </h3>
-            {saves.length === 0 ? (
-              <p className="tabletop-toolbar-meta">
-                {t('tabletop.library.emptySaves')}
-              </p>
-            ) : (
-              <ul className="tabletop-toolbar-list">
-                {saves.map((entry) => (
-                  <li key={entry.id} className="tabletop-toolbar-list-item">
-                    <span
-                      className="tabletop-toolbar-list-label"
-                      title={entry.name}
-                    >
-                      {entry.name}
-                    </span>
-                    <button
-                      type="button"
-                      className="tabletop-toolbar-list-action"
-                      onClick={() => void handleLoad(entry.id)}
-                    >
-                      {t('tabletop.library.load')}
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-btn tabletop-toolbar-list-remove"
-                      aria-label={t('tabletop.library.delete')}
-                      title={t('tabletop.library.delete')}
-                      onClick={() => void handleDelete(entry.id, entry.name)}
-                    >
-                      <TrashIcon />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <p className="tabletop-toolbar-meta">
+              {t('tabletop.library.snapshotMeaning')}
+            </p>
+            <LibraryList
+              entries={saves}
+              emptyLabel={t('tabletop.library.emptySaves')}
+              onReplace={(id) => void handleLoad(id)}
+              onAddScenes={(id) => void handleAddAsScenes(id)}
+              onDelete={(id, name) => void handleDelete(id, name)}
+            />
         </>
       )}
           </div>
@@ -1682,5 +1682,81 @@ function NpcInlineEditor({
         <span>{t('tabletop.npcLibrary.remove')}</span>
       </button>
     </div>
+  )
+}
+
+/**
+ * One library section's entry list (shared by Templates and Snapshots).
+ * Each row shows the name, a scene-count badge for multi-scene entries,
+ * a delete button, and the two distinct load actions: "Replace table"
+ * (swap the whole table) and "Add as scene" (splice into the current
+ * session's scenes). Factored out so the two sections do not duplicate
+ * the markup.
+ */
+function LibraryList({
+  entries,
+  emptyLabel,
+  onReplace,
+  onAddScenes,
+  onDelete,
+}: {
+  entries: ReadonlyArray<SavedTabletop>
+  emptyLabel: string
+  onReplace: (id: string) => void
+  onAddScenes: (id: string) => void
+  onDelete: (id: string, name: string) => void
+}) {
+  const { t } = useI18n()
+  if (entries.length === 0) {
+    return <p className="tabletop-toolbar-meta">{emptyLabel}</p>
+  }
+  return (
+    <ul className="tabletop-toolbar-list">
+      {entries.map((entry) => {
+        const n = sceneCount(entry.state)
+        return (
+          <li
+            key={entry.id}
+            className="tabletop-toolbar-list-item tabletop-library-entry"
+          >
+            <div className="tabletop-library-entry-head">
+              <span className="tabletop-toolbar-list-label" title={entry.name}>
+                {entry.name}
+              </span>
+              {n > 1 && (
+                <span className="tabletop-library-scene-count">
+                  {t('tabletop.library.sceneCountBadge', { n: String(n) })}
+                </span>
+              )}
+              <button
+                type="button"
+                className="icon-btn tabletop-toolbar-list-remove"
+                aria-label={t('tabletop.library.delete')}
+                title={t('tabletop.library.delete')}
+                onClick={() => onDelete(entry.id, entry.name)}
+              >
+                <TrashIcon />
+              </button>
+            </div>
+            <div className="tabletop-library-entry-actions">
+              <button
+                type="button"
+                className="tabletop-toolbar-list-action"
+                onClick={() => onReplace(entry.id)}
+              >
+                {t('tabletop.library.loadReplace')}
+              </button>
+              <button
+                type="button"
+                className="tabletop-toolbar-list-action outline"
+                onClick={() => onAddScenes(entry.id)}
+              >
+                {t('tabletop.library.loadAsScenes')}
+              </button>
+            </div>
+          </li>
+        )
+      })}
+    </ul>
   )
 }

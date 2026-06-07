@@ -1064,6 +1064,50 @@
 .tabletop-toolbar-list-action:hover {
   filter: brightness(1.1);
 }
+/* "Add as scene" is the lighter, additive action — outline it so it
+   reads as secondary next to the heavier "Replace table". */
+.tabletop-toolbar-list-action.outline {
+  background: transparent;
+  color: var(--text);
+}
+
+/* --- Library entry (Templates / Snapshots): a two-line card ---------- */
+/* Note above the save controls clarifying library = device-wide / reusable
+   vs scenes = this game only. */
+.tabletop-library-scope-note {
+  color: var(--text-dim);
+}
+/* Each entry stacks a head row (name + scene badge + delete) over an
+   actions row (Replace table / Add as scene), so the two distinct loads
+   are not cramped onto the same line as the name. */
+.tabletop-library-entry {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.tabletop-library-entry-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tabletop-library-entry-actions {
+  display: flex;
+  gap: 6px;
+}
+.tabletop-library-entry-actions .tabletop-toolbar-list-action {
+  flex: 1;
+}
+/* Scene-count chip shown only for multi-scene entries. */
+.tabletop-library-scene-count {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
 
 /* --- Selected-token edit popover ---
    Floats next to the token's screen-space centre. The position is
