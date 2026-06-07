@@ -70,10 +70,14 @@
   `f` centres on the selection, `[`/`]` cycle operable tokens, `Delete`
   removes, `Esc` deselects then closes, and `?` toggles a shortcuts
   cheat sheet. Key→intent mapping is the pure `tabletop/keymap.ts`.
+- **Minimap**: a collapsible corner overview of the current scene — the
+  map (or a fitted blank region), a dot per token, and a rectangle for
+  the current viewport; click / drag it to recenter the camera. The
+  world↔minimap geometry is the pure `tabletop/minimap.ts`.
 
 ### Out of scope (Phase 2+)
 
-Ruler / cell-distance measurement, minimap. See §9.
+Ruler / cell-distance measurement. See §9.
 
 ## 2. Module map
 
@@ -87,6 +91,7 @@ Ruler / cell-distance measurement, minimap. See §9.
 | `tokens.ts` | PC-token lifecycle & permissions: `planPcTokenAdds`, `makeGmToken`, `canMoveToken`, `applyTokenMove/Upsert/Remove`, `defaultPlacementOrigin` (map centre → grid origin → `pcSpawn`), grid-wrapping `placementPosition` (4 cols), `recenterTokensOnMap`, `snapAllTokensToGrid` |
 | `annotations.ts` | Text / stroke / fog apply + permission helpers (`canEditMapText`, `canEraseStroke`), `setFogCells`, `isCellRevealed`, and `nearestRevealedCellCenter` (the "dropped a token into fog" rescue) |
 | `scenes.ts` | Multiple maps per session: `addScene` / `switchScene` / `renameScene` / `deleteScene` / `listScenes` over the current-scene-at-top-level model, with monotonic scene ordinals |
+| `minimap.ts` | Minimap geometry: `fitRect` (fit world rect into the box), `worldToMinimap` / `minimapToWorld`, and `minimapWorldBounds` (map bounds, else token + viewport union) |
 | `hostValidation.ts` | Pure host-side validators for inbound annotation requests; re-stamps `ownerPlayerId` from the trusted connection so a client can't spoof ownership |
 | `snapshot.ts` | Wire helpers: `tokenForWire` / `stripMapBytesForWire` (strip `privateNote` and the map `dataUrl` before broadcast) and `fillTabletopDefaults` (back-fill annotation fields from a pre-PR-12 host) |
 | `imageChunk.ts` | `chunkString` + `ChunkBuffer`: split a data URL into 256 KB chunks and reassemble out-of-order, with progress and a length check |
@@ -361,7 +366,8 @@ screen-space direction vector, and the arrowhead geometry) · `vitals`
 (HP clamp / ratio / bar colour and the status-catalog sanitiser) ·
 `keymap` (key → tool / arrow-delta / zoom / select-step intents + the
 editable-target guard) · `scenes` (add / switch / rename / delete and the
-monotonic-ordinal naming, with the single-source-of-truth invariant).
+monotonic-ordinal naming, with the single-source-of-truth invariant) ·
+`minimap` (fit-rect transform, world↔minimap mapping, world-bounds).
 `src/storage/`: `tabletop` (sanitize + round-trip incl. scenes,
 fake-indexeddb) · `roomExport` · `roomImport` (manifest v6 with
 `table.json`, scene maps externalized to `attachments/maps/`).
@@ -389,7 +395,6 @@ on <https://yamadar.github.io/trpg-dice-online/>.
 Ordered by rough priority (shipped items removed):
 
 1. Ruler / cell-distance measurement
-2. Minimap
 
 ## 9. Revisions
 
@@ -430,3 +435,9 @@ Ordered by rough priority (shipped items removed):
   `tabletopState` broadcast + map-chunk stream. A GM "Scenes" toolbar
   category switches / adds / renames / deletes. `sanitizeStoredTabletop`
   and the room export / import round-trip every scene and its map.
+- v1.6 — Phase 2: **minimap**. A collapsible corner overview (`Minimap`)
+  of the current scene — map, token dots and the viewport rectangle —
+  with click / drag to recenter the camera. Pure geometry in
+  `tabletop/minimap.ts` (`fitRect` / `worldToMinimap` / `minimapToWorld`
+  / `minimapWorldBounds`) + tests. Completes the original Phase-2 list
+  except the ruler.

@@ -18,6 +18,7 @@ import {
   Languages,
   Layers,
   Library,
+  Map as MapGlyph,
   MessageCircleMore,
   MousePointer2,
   Paperclip,
@@ -479,6 +480,19 @@ export function PingIcon({ size = 16 }: IconProps) {
 export function ScenesIcon({ size = 16 }: IconProps) {
   return (
     <Images
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Folded map for the minimap re-show button. */
+export function MinimapIcon({ size = 16 }: IconProps) {
+  return (
+    <MapGlyph
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}

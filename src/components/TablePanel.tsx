@@ -37,6 +37,7 @@ import {
   zoomActionForKey,
 } from '../tabletop/keymap'
 import { listScenes } from '../tabletop/scenes'
+import { Minimap } from './Minimap'
 import {
   DEFAULT_PEN_COLOR,
   DEFAULT_PEN_WIDTH,
@@ -62,7 +63,7 @@ import type { Character, CharacterEdits } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
 import { CharacterEditor } from './CharacterEditor'
 import { CharacterInfoModal } from './CharacterInfoModal'
-import { ChatIcon, CloseIcon, DiceIcon, TrashIcon } from './icons'
+import { ChatIcon, CloseIcon, DiceIcon, MinimapIcon, TrashIcon } from './icons'
 import { ImagePickerDialog } from './ImagePickerDialog'
 import { Sheet } from './Sheet'
 import { DiceRollAnimation } from './DiceRollAnimation'
@@ -601,6 +602,9 @@ export function TablePanel({
 
   /** Scene list (current + inactive) for the GM's scene switcher. */
   const sceneList = useMemo(() => listScenes(tabletop), [tabletop])
+
+  /** Whether the corner minimap is shown (collapsible). */
+  const [showMinimap, setShowMinimap] = useState(true)
 
   /** Whether the first-paint centring step has already fired this
    *  mount. State (not a ref) so the React 19 lint rule that forbids
@@ -1724,6 +1728,30 @@ export function TablePanel({
         // 'none', so this single flag covers both cases in practice.
         fogPaintReady={tabletop.fog.enabled}
       />
+      {/* Corner minimap — scene overview + viewport rect, click to
+          recenter. Collapsible to a small button. */}
+      {showMinimap ? (
+        <Minimap
+          map={tabletop.map}
+          tokens={tabletop.tokens}
+          viewport={viewport}
+          onRecenter={(wx, wy) => {
+            setStageX(size.width / 2 - wx * stageScale)
+            setStageY(size.height / 2 - wy * stageScale)
+          }}
+          onCollapse={() => setShowMinimap(false)}
+        />
+      ) : (
+        <button
+          type="button"
+          className="tabletop-minimap-show icon-btn"
+          aria-label={t('tabletop.minimap.show')}
+          title={t('tabletop.minimap.show')}
+          onClick={() => setShowMinimap(true)}
+        >
+          <MinimapIcon size={18} />
+        </button>
+      )}
       {/* Map ops toolbar is always rendered now (the old top-header
           toggle is gone). Its right-edge icon strip is reachable at
           all times, and only the optional side-expanding panel

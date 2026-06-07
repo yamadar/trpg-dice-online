@@ -63,10 +63,14 @@
   `[`/`]` で操作可能トークンを巡回、`Delete` で削除、`Esc` で選択解除
   →閉じる、`?` でショートカット早見表をトグル。キー→意図の対応は純粋な
   `tabletop/keymap.ts`。
+- **ミニマップ**: 現在シーンの折り畳み可能な隅の俯瞰図 — マップ（または
+  フィットした空領域）・トークンごとのドット・現在ビューポートの矩形。
+  クリック / ドラッグでカメラをセンタリングできる。ワールド↔ミニマップの
+  幾何は純粋な `tabletop/minimap.ts`。
 
 ### 対象外（Phase 2 以降）
 
-ルーラー（マス距離測定）、ミニマップ。§9 参照。
+ルーラー（マス距離測定）。§9 参照。
 
 ## 2. モジュール構成
 
@@ -80,6 +84,7 @@
 | `tokens.ts` | PC トークンのライフサイクル・権限: `planPcTokenAdds`・`makeGmToken`・`canMoveToken`・`applyTokenMove/Upsert/Remove`・`defaultPlacementOrigin`（マップ中心→グリッド原点→`pcSpawn`）・4 列折り返しの `placementPosition`・`recenterTokensOnMap`・`snapAllTokensToGrid` |
 | `annotations.ts` | テキスト / ストローク / フォグの適用＋権限判定（`canEditMapText`・`canEraseStroke`）、`setFogCells`・`isCellRevealed`・`nearestRevealedCellCenter`（フォグへ落としたトークンの救済） |
 | `scenes.ts` | 1 セッション複数マップ: `addScene` / `switchScene` / `renameScene` / `deleteScene` / `listScenes`（現在シーンを top-level に置くモデル、単調増加する序数命名つき） |
+| `minimap.ts` | ミニマップ幾何: `fitRect`（ワールド矩形をボックスへフィット）・`worldToMinimap` / `minimapToWorld`・`minimapWorldBounds`（マップ境界、なければトークン＋ビューポートの和） |
 | `hostValidation.ts` | 受信した注釈リクエストのホスト側バリデータ（純粋関数）。`ownerPlayerId` を信頼できる接続元から再付与し、なりすましを防ぐ |
 | `snapshot.ts` | ワイヤ用ヘルパー: `tokenForWire` / `stripMapBytesForWire`（送信前に `privateNote` とマップ `dataUrl` を除去）、`fillTabletopDefaults`（PR-12 以前のホストの欠落フィールドを補完） |
 | `imageChunk.ts` | `chunkString` ＋ `ChunkBuffer`: data URL を 256KB チャンクに分割し、順不同到着でも再構築（進捗・長さ検査つき） |
@@ -342,7 +347,8 @@ fetch ガード。テストは `imageBackgroundUrl.test.ts`）・`mapGallery`・
 `vitals`（HP のクランプ / 比率 / バー色と状態カタログのサニタイズ）・
 `keymap`（キー → ツール / 矢印デルタ / ズーム / 選択ステップの意図と
 編集対象ガード）・`scenes`（追加 / 切替 / 改名 / 削除と単調序数命名、
-単一情報源の不変条件）。
+単一情報源の不変条件）・`minimap`（fit-rect 変換・ワールド↔ミニマップ
+写像・ワールド境界）。
 `src/storage/`: `tabletop`（sanitize ＋ round-trip（シーン含む）、
 fake-indexeddb）・`roomExport`・`roomImport`（`table.json` 入りの
 マニフェスト v6、シーンのマップは `attachments/maps/` に外部化）。
@@ -369,7 +375,6 @@ Canvas に依存する描画は意図的に単体テスト対象外。上記の�
 おおよその優先度順（実装済みは除外）:
 
 1. ルーラー（マス距離測定）
-2. ミニマップ
 
 ## 9. 改訂
 
@@ -408,3 +413,8 @@ Canvas に依存する描画は意図的に単体テスト対象外。上記の�
   チャンク再ストリームを再利用。GM の「シーン」ツールバーカテゴリで
   切替 / 追加 / 改名 / 削除。`sanitizeStoredTabletop` とルームの
   エクスポート / インポートが各シーンとそのマップを往復する。
+- v1.6 — Phase 2: **ミニマップ**。現在シーンの折り畳み可能な隅の俯瞰図
+  （`Minimap`）— マップ・トークンドット・ビューポート矩形 — で、
+  クリック / ドラッグによりカメラをセンタリングできる。幾何は純粋な
+  `tabletop/minimap.ts`（`fitRect` / `worldToMinimap` / `minimapToWorld`
+  / `minimapWorldBounds`）＋テスト。当初の Phase 2 一覧はルーラーを除き完了。

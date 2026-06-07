@@ -4,6 +4,15 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.103 — **Minimap**. A collapsible corner overview of the current
+  scene — the background map (or a fitted blank region), a dot per token,
+  and a rectangle marking the current viewport. Clicking or dragging the
+  minimap recenters the camera on that part of the scene. The geometry
+  (fitting the world rectangle into the box, the world↔minimap mapping,
+  and the world-bounds choice) is the pure, unit-tested
+  `tabletop/minimap.ts`. This completes the original Phase-2 tabletop
+  list except the ruler.
+
 - v1.102 — **Multiple maps per session (scenes)**. The GM can keep
   several scenes — each its own map, grid, tokens, annotations and fog —
   and switch the active one from a new "Scenes" toolbar category (add /
