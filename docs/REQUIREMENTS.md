@@ -507,7 +507,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   a marker per active ping, and a rectangle marking the current viewport.
   Clicking or dragging the minimap recenters the camera on that part of
   the scene. Its frame is anchored to the scene content (not the moving
-  camera), so dragging it is stable even on a map-less scene.
+  camera), so dragging it is stable even on a map-less scene. The minimap
+  honours fog of war: for non-GM viewers the fogged terrain is covered and
+  tokens / pings in fogged cells are hidden, so the overview never spoils a
+  GM-hidden area (the GM sees the fog at reduced opacity, as on the table).
 
 ## 4. Non-functional
 
