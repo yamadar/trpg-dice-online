@@ -63,7 +63,6 @@ export const ar: Dict = {
   'tabletop.gmToken.unreadable': 'تعذرت قراءة هذه الصورة.',
   'tabletop.gmToken.unlabeled': '(بدون تسمية)',
   'tabletop.panel.title': 'تحكم خريطة الطاولة',
-  'tabletop.panel.mapGrid': 'الخريطة والشبكة',
   'tabletop.panel.tokens': 'الرموز',
   'tabletop.panel.nav': 'فئات شريط الأدوات',
   'tabletop.panel.close': 'إغلاق اللوحة',

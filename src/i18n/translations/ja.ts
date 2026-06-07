@@ -63,7 +63,6 @@ export const ja: Dict = {
   'tabletop.gmToken.unreadable': '画像を読み込めませんでした',
   'tabletop.gmToken.unlabeled': '（ラベルなし）',
   'tabletop.panel.title': 'テーブル操作',
-  'tabletop.panel.mapGrid': 'マップとグリッド',
   'tabletop.panel.tokens': 'トークン',
   'tabletop.panel.nav': 'ツールバーのカテゴリ',
   'tabletop.panel.close': 'パネルを閉じる',

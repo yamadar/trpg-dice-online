@@ -63,7 +63,6 @@ export const en: Dict = {
   'tabletop.gmToken.unreadable': 'Could not read that image.',
   'tabletop.gmToken.unlabeled': '(no label)',
   'tabletop.panel.title': 'Tabletop controls',
-  'tabletop.panel.mapGrid': 'Map & grid',
   'tabletop.panel.tokens': 'Tokens',
   'tabletop.panel.nav': 'Toolbar categories',
   'tabletop.panel.close': 'Close panel',

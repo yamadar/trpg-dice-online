@@ -63,7 +63,6 @@ export const ptBR: Dict = {
   'tabletop.gmToken.unreadable': 'Não foi possível ler essa imagem.',
   'tabletop.gmToken.unlabeled': '(sem rótulo)',
   'tabletop.panel.title': 'Controles da mesa',
-  'tabletop.panel.mapGrid': 'Mapa e grade',
   'tabletop.panel.tokens': 'Fichas',
   'tabletop.panel.nav': 'Categorias da barra',
   'tabletop.panel.close': 'Fechar painel',

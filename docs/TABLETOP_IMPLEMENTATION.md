@@ -128,7 +128,7 @@ Ruler / cell-distance measurement. See §9.
 | File | Role |
 |---|---|
 | `TablePanel.tsx` | The full-screen Konva renderer: Stage + layers, pan/zoom, token drag, draw/text/fog gestures, the token popover, dice animation & speech bubbles, chat/dice overlays. ~2,000 lines. |
-| `TableToolbar.tsx` | Right-edge icon-category panel: **Map & Grid** (grid config + four-tab map source), **Fog**, **Tokens** (Tokens-on-Map + Add/Setup), **Library**. |
+| `TableToolbar.tsx` | Right-edge icon-category panel: **Background map** (four-tab map source) and **Grid** (grid config) as separate entries, **Fog**, **Tokens** (Tokens-on-Map + Add/Setup), **Scenes**, **Library**. |
 | `TableTools.tsx` | Left-edge floating tool palette: `select` / `text` / `pen` / `eraser` / `fog-reveal` / `fog-conceal` + color / pen-width / text-size popovers. |
 | `MapGalleryDialog.tsx` | The gallery picker: tag chips (4 taxonomies, AND/OR), search, thumbnail grid, and a `Lightbox` preview with prev/next + swipe synced to the selection. |
 | `TabletopDock.tsx` | Bottom dock for full-screen mode: `chat` / `character` / `dice` / `returnToRoom` (+ the unread-chat dot). |
@@ -327,9 +327,11 @@ names who is permitted to operate the token.
 ### 4.3 Toolbar & tools
 
 `TableToolbar` is a right-edge strip of icon categories (one panel open
-at a time): **Map & Grid** (GM) — grid kind/size/origin/color/opacity/
-snap + the four-tab map source (Upload / Gallery / URL / Preset) with a
-separate Replace/Clear; **Fog** (GM) — enable + cover-all / reveal-all +
+at a time), ordered by the setup flow: **Background map** (GM) — the
+four-tab map source (Upload / Gallery / URL / Preset) + current-map
+clear, a top-level entry so it is discoverable rather than buried under
+the grid form; **Grid** (GM) — grid kind/size/origin/color/opacity/snap;
+**Fog** (GM) — enable + cover-all / reveal-all +
 a pointer to the left brush; **Tokens** (everyone) — *Tokens on Map*
 (type badge, click-to-focus, own-PC accent, GM reorder/remove) and a
 collapsible *Add / Setup* (PC placement list + NPC library editor);

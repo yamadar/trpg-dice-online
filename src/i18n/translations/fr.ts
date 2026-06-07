@@ -63,7 +63,6 @@ export const fr: Dict = {
   'tabletop.gmToken.unreadable': 'Impossible de lire cette image.',
   'tabletop.gmToken.unlabeled': '(sans étiquette)',
   'tabletop.panel.title': 'Commandes de la table',
-  'tabletop.panel.mapGrid': 'Carte et grille',
   'tabletop.panel.tokens': 'Jetons',
   'tabletop.panel.nav': 'Catégories de la barre d’outils',
   'tabletop.panel.close': 'Fermer le panneau',

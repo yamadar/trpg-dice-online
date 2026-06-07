@@ -63,7 +63,6 @@ export const ru: Dict = {
   'tabletop.gmToken.unreadable': 'Не удалось прочитать изображение.',
   'tabletop.gmToken.unlabeled': '(без подписи)',
   'tabletop.panel.title': 'Управление столом',
-  'tabletop.panel.mapGrid': 'Карта и сетка',
   'tabletop.panel.tokens': 'Фишки',
   'tabletop.panel.nav': 'Категории панели',
   'tabletop.panel.close': 'Закрыть панель',

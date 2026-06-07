@@ -63,7 +63,6 @@ export const uk: Dict = {
   'tabletop.gmToken.unreadable': 'Не вдалося прочитати це зображення.',
   'tabletop.gmToken.unlabeled': '(без підпису)',
   'tabletop.panel.title': 'Керування столом',
-  'tabletop.panel.mapGrid': 'Карта та сітка',
   'tabletop.panel.tokens': 'Фішки',
   'tabletop.panel.nav': 'Категорії панелі',
   'tabletop.panel.close': 'Закрити панель',

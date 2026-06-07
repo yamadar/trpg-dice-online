@@ -63,7 +63,6 @@ export const vi: Dict = {
   'tabletop.gmToken.unreadable': 'Không đọc được ảnh đó.',
   'tabletop.gmToken.unlabeled': '(không nhãn)',
   'tabletop.panel.title': 'Điều khiển bàn chơi',
-  'tabletop.panel.mapGrid': 'Bản đồ & lưới',
   'tabletop.panel.tokens': 'Token',
   'tabletop.panel.nav': 'Mục thanh công cụ',
   'tabletop.panel.close': 'Đóng bảng',

@@ -13,6 +13,7 @@ import {
   Hand,
   HelpCircle,
   History,
+  Image as ImageGlyph,
   Images,
   Info,
   Languages,
@@ -480,6 +481,20 @@ export function PingIcon({ size = 16 }: IconProps) {
 export function ScenesIcon({ size = 16 }: IconProps) {
   return (
     <Images
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Landscape image — the "background map" toolbar category (distinct
+ *  from the folded-map minimap icon and the stacked-images scenes icon). */
+export function BackgroundMapIcon({ size = 22 }: IconProps) {
+  return (
+    <ImageGlyph
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}

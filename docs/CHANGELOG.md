@@ -4,6 +4,15 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.112 — **Split "Map & grid" into two toolbar entries**. A design
+  critique found the background-map picker was buried under seven grid
+  controls in the combined panel, so it was hard to discover you could
+  set a map at all. Map and Grid are now separate top-level categories:
+  **Background map** (its own landscape icon, leading the strip) opens
+  straight to the four sources (upload / gallery / URL / preset);
+  **Grid** holds the grid form. Strip order follows the setup flow —
+  Map → Grid → Fog → Tokens → Scenes → Library.
+
 - v1.111 — **Decluttered the tabletop library panel**. A design critique
   found the panel led with ~8 lines of low-contrast explanatory text and
   a filled "Replace table" button repeated on every entry — burying the
