@@ -58,11 +58,16 @@
   **dice-roll animation** launching from the roller's token, chat
   **speech bubbles** over the speaker's token, a first-run tutorial and
   a render-crash **error boundary**.
+- **Keyboard control**: arrow keys move the selected token a cell at a
+  time, `1`–`5` (and letter aliases) switch tools, `+`/`-`/`0` zoom,
+  `f` centres on the selection, `[`/`]` cycle operable tokens, `Delete`
+  removes, `Esc` deselects then closes, and `?` toggles a shortcuts
+  cheat sheet. Key→intent mapping is the pure `tabletop/keymap.ts`.
 
 ### Out of scope (Phase 2+)
 
 Ruler / cell-distance measurement, multiple maps per session (scene
-list), minimap, full keyboard movement. See §9.
+list), minimap. See §9.
 
 ## 2. Module map
 
@@ -346,7 +351,9 @@ validation / fetch guards, covered by `imageBackgroundUrl.test.ts`) ·
 `mapGallery` · `presetMaps` · `ping` (coordinate validation + the
 expanding-ring animation curve) · `facing` (angle normalisation, the
 screen-space direction vector, and the arrowhead geometry) · `vitals`
-(HP clamp / ratio / bar colour and the status-catalog sanitiser).
+(HP clamp / ratio / bar colour and the status-catalog sanitiser) ·
+`keymap` (key → tool / arrow-delta / zoom / select-step intents + the
+editable-target guard).
 `src/storage/`: `tabletop` (sanitize + round-trip, fake-indexeddb) ·
 `roomExport` · `roomImport` (manifest v6 with `table.json`).
 
@@ -375,7 +382,6 @@ Ordered by rough priority (shipped items removed):
 1. Ruler / cell-distance measurement
 2. Multiple maps per session (scene list / switcher)
 3. Minimap
-4. Full keyboard movement & shortcuts
 
 ## 9. Revisions
 
@@ -402,3 +408,9 @@ Ordered by rough priority (shipped items removed):
   status badges on `TokenView`, and HP inputs + a status chip grid in the
   popover. `tabletop/vitals.ts` pure module + tests; the reload sanitiser
   round-trips both.
+- v1.4 — Phase 2: **full keyboard movement & shortcuts**. A single
+  keydown handler in `TablePanel` (driven by the pure `tabletop/keymap.ts`
+  + tests) does arrow-key cell movement of the selected token, `1`–`5` /
+  letter tool switches, `+`/`-`/`0` zoom, `f` centre, `[`/`]` selection
+  cycling, `Delete`, an `Esc` deselect→close, and a `?` `ShortcutsOverlay`
+  cheat sheet — all suppressed while typing in a field.

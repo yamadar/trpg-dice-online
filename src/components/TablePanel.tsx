@@ -30,6 +30,13 @@ import {
   statusGlyph,
 } from '../tabletop/vitals'
 import {
+  arrowDelta,
+  isEditableTarget,
+  selectStepForKey,
+  toolForKey,
+  zoomActionForKey,
+} from '../tabletop/keymap'
+import {
   DEFAULT_PEN_COLOR,
   DEFAULT_PEN_WIDTH,
   DEFAULT_TEXT_FONT_SIZE,
@@ -247,6 +254,7 @@ export function TablePanel({
     paintFog,
     commitFog,
     sendPing,
+    removeToken,
   } = session
   // Grid editing is GM-only when in a room, but always available when
   // offline so a player can experiment with the table on their own —
@@ -587,6 +595,9 @@ export function TablePanel({
     [selectedTokenId, tabletop.tokens],
   )
 
+  /** Whether the keyboard-shortcuts cheat sheet is open (toggled by `?`). */
+  const [showShortcuts, setShowShortcuts] = useState(false)
+
   /** Whether the first-paint centring step has already fired this
    *  mount. State (not a ref) so the React 19 lint rule that forbids
    *  ref writes during render is honoured; once flipped, the
@@ -676,14 +687,152 @@ export function TablePanel({
     }
   }, [])
 
-  // Escape closes the panel — matches the Sheet convention.
+  // Everything the keyboard handler needs, mirrored into a ref so the
+  // keydown listener can bind ONCE (below) instead of re-binding on every
+  // pan / zoom / token move — pan alone updates stageX/stageY dozens of
+  // times a second during a drag, which would otherwise churn
+  // add/removeEventListener. The ref is written in an effect (after
+  // render), honouring the React 19 no-ref-writes-during-render rule.
+  const kbRef = useRef({
+    selectedTokenId,
+    selectedToken,
+    tokens: tabletop.tokens,
+    cellSize: tabletop.grid.cellSize,
+    map: tabletop.map,
+    tokenActor,
+    stageX,
+    stageY,
+    stageScale,
+    width: size.width,
+    height: size.height,
+    showShortcuts,
+    onClose,
+  })
+  useEffect(() => {
+    kbRef.current = {
+      selectedTokenId,
+      selectedToken,
+      tokens: tabletop.tokens,
+      cellSize: tabletop.grid.cellSize,
+      map: tabletop.map,
+      tokenActor,
+      stageX,
+      stageY,
+      stageScale,
+      width: size.width,
+      height: size.height,
+      showShortcuts,
+      onClose,
+    }
+  })
+
+  // Keyboard shortcuts: token movement, tool / zoom / selection
+  // shortcuts, delete, the help overlay, and Escape (deselect → close).
+  // Pure key→intent mapping lives in `tabletop/keymap.ts`; this handler
+  // applies the intent against the live selection / camera / session read
+  // from `kbRef`. Bound once — all state setters are stable.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      const k = kbRef.current
+      // Never steal keys while the user is typing in a field (note,
+      // HP input, chat, text-placement). Their own handlers take over.
+      const ae = document.activeElement as HTMLElement | null
+      const tag = ae?.tagName
+      if (isEditableTarget(tag, !!ae?.isContentEditable)) return
+      // Leave browser/OS chords (copy, devtools, etc.) alone.
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+
+      // Escape / ? are safe regardless of which control holds focus.
+      if (e.key === 'Escape') {
+        if (k.showShortcuts) setShowShortcuts(false)
+        else if (k.selectedTokenId) setSelectedTokenId(null)
+        else k.onClose()
+        e.preventDefault()
+        return
+      }
+      if (e.key === '?') {
+        setShowShortcuts((s) => !s)
+        e.preventDefault()
+        return
+      }
+      // The movement / tool / zoom shortcuts apply only when the tabletop
+      // canvas (not a focused toolbar / dock button or link) has focus, so
+      // a focused control can't trigger an accidental token move / delete.
+      const upper = tag?.toUpperCase()
+      if (upper === 'BUTTON' || upper === 'A') return
+
+      const tool = toolForKey(e.key)
+      if (tool) {
+        setTool(tool)
+        e.preventDefault()
+        return
+      }
+      const zoom = zoomActionForKey(e.key)
+      if (zoom) {
+        const cx = k.width / 2
+        const cy = k.height / 2
+        const target =
+          zoom === 'reset'
+            ? 1
+            : Math.max(
+                MIN_SCALE,
+                Math.min(MAX_SCALE, k.stageScale * (zoom === 'in' ? 1.2 : 1 / 1.2)),
+              )
+        const worldX = (cx - k.stageX) / k.stageScale
+        const worldY = (cy - k.stageY) / k.stageScale
+        setStageScale(target)
+        setStageX(cx - worldX * target)
+        setStageY(cy - worldY * target)
+        e.preventDefault()
+        return
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        const fx = k.selectedToken ? k.selectedToken.x : k.map ? k.map.width / 2 : 0
+        const fy = k.selectedToken ? k.selectedToken.y : k.map ? k.map.height / 2 : 0
+        setStageX(k.width / 2 - fx * k.stageScale)
+        setStageY(k.height / 2 - fy * k.stageScale)
+        e.preventDefault()
+        return
+      }
+      const step = selectStepForKey(e.key)
+      if (step) {
+        const ops = k.tokens.filter((tk) => canMoveToken(tk, k.tokenActor))
+        if (ops.length > 0) {
+          const cur = ops.findIndex((tk) => tk.id === k.selectedTokenId)
+          const nextIdx =
+            cur < 0
+              ? step > 0
+                ? 0
+                : ops.length - 1
+              : (cur + step + ops.length) % ops.length
+          const next = ops[nextIdx]
+          setSelectedTokenId(next.id)
+          setStageX(k.width / 2 - next.x * k.stageScale)
+          setStageY(k.height / 2 - next.y * k.stageScale)
+        }
+        e.preventDefault()
+        return
+      }
+      // The rest needs a selected token the viewer can operate.
+      if (!k.selectedToken || !canMoveToken(k.selectedToken, k.tokenActor)) return
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        removeToken(k.selectedToken.id)
+        setSelectedTokenId(null)
+        e.preventDefault()
+        return
+      }
+      // Arrow movement: one grid cell per press (commit snaps when the
+      // grid's snap is on, so the token lands cleanly on the next cell).
+      const cell = k.cellSize > 0 ? k.cellSize : 50
+      const d = arrowDelta(e.key, cell)
+      if (d) {
+        moveTokenCommit(k.selectedToken.id, k.selectedToken.x + d.dx, k.selectedToken.y + d.dy)
+        e.preventDefault()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [moveTokenCommit, removeToken])
 
   // Auto-revert the active tool to 'select' during render whenever
   // the fog brush's pre-conditions disappear — a non-GM viewer or
@@ -1694,7 +1843,68 @@ export function TablePanel({
           }}
         />
       )}
+      {showShortcuts && (
+        <ShortcutsOverlay onClose={() => setShowShortcuts(false)} />
+      )}
     </div>
+  )
+}
+
+/**
+ * A cheat sheet of the tabletop's keyboard shortcuts, toggled by `?`.
+ * Plain DOM (portalled to body) over the canvas. The key glyphs are
+ * language-neutral; only the descriptions are translated.
+ */
+function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n()
+  const rows: Array<{ id: string; keys: string; desc: string }> = [
+    { id: 'move', keys: '← ↑ → ↓', desc: t('tabletop.shortcuts.move') },
+    { id: 'cycle', keys: '[  ]', desc: t('tabletop.shortcuts.cycle') },
+    { id: 'tools', keys: '1 – 5', desc: t('tabletop.shortcuts.tools') },
+    { id: 'zoom', keys: '+ − 0', desc: t('tabletop.shortcuts.zoom') },
+    { id: 'center', keys: 'F', desc: t('tabletop.shortcuts.center') },
+    { id: 'remove', keys: 'Del', desc: t('tabletop.shortcuts.remove') },
+    { id: 'escape', keys: 'Esc', desc: t('tabletop.shortcuts.escape') },
+    { id: 'help', keys: '?', desc: t('tabletop.shortcuts.help') },
+  ]
+  return createPortal(
+    <div
+      className="tabletop-shortcuts-layer"
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
+      {/* role=dialog without aria-modal: TablePanel is already the
+          aria-modal dialog, and nesting two confuses assistive tech. */}
+      <div
+        className="tabletop-shortcuts-dialog"
+        role="dialog"
+        aria-label={t('tabletop.shortcuts.title')}
+      >
+        <header className="tabletop-shortcuts-header">
+          <span>{t('tabletop.shortcuts.title')}</span>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={t('tabletop.tokenEdit.close')}
+            onClick={onClose}
+          >
+            <CloseIcon size={14} />
+          </button>
+        </header>
+        <dl className="tabletop-shortcuts-list">
+          {rows.map((r) => (
+            <div key={r.id} className="tabletop-shortcuts-row">
+              <dt>
+                <kbd>{r.keys}</kbd>
+              </dt>
+              <dd>{r.desc}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </div>,
+    document.body,
   )
 }
 

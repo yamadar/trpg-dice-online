@@ -4,6 +4,16 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.101 — **Full keyboard movement & shortcuts**. With the tabletop
+  focused (and no field being edited): arrow keys move the selected token
+  one grid cell at a time; `1`–`5` (and V/T/P/E/G) switch tools;
+  `+` / `-` / `0` zoom in / out / reset; `f` centres on the selection;
+  `[` / `]` cycle the operable tokens; `Delete` removes the selected
+  token; `Esc` deselects then closes; and `?` toggles an on-screen
+  shortcuts cheat sheet. Movement obeys the same `canMoveToken`
+  permission as dragging. The key→intent mapping is the pure, unit-tested
+  `tabletop/keymap.ts`.
+
 - v1.100 — **HP bar & status conditions**. Tokens can carry an optional
   HP pool (current / max) drawn as a colour-graded bar under the token
   (green → amber → red), and a set of status conditions from a fixed
