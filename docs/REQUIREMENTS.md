@@ -487,6 +487,10 @@ An SPA where players roll TRPG dice and share results with other players in real
   `Delete` removes the selected token; `Esc` deselects (then closes);
   and `?` toggles an on-screen shortcuts cheat sheet. Movement obeys the
   same `canMoveToken` permission as dragging.
+- **Minimap**: a collapsible corner overview shows the whole current
+  scene — the background map (or a fitted blank region), a dot per token
+  and a rectangle marking the current viewport. Clicking or dragging the
+  minimap recenters the camera on that part of the scene.
 
 ## 4. Non-functional
 
@@ -676,6 +680,7 @@ Commit after each step.
 - [x] Any participant can drop a transient "look here" ping that broadcasts to everyone and fades out
 - [x] Pan and zoom work on both touch and mouse
 - [x] Keyboard shortcuts move the selected token, switch tools, zoom, delete, and show a cheat sheet (?)
+- [x] A corner minimap shows the scene, tokens and viewport, and clicking it recenters the camera
 - [x] The tabletop state is restored across reload
 - [ ] On mobile, the tabletop is shown full-screen with a swipe-up bottom sheet for the feed
 - [ ] The exported ZIP carries the tabletop state and importing restores it
