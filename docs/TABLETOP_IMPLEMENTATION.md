@@ -82,7 +82,10 @@
   `tabletop/minimap.ts`. Its world frame is **pan-invariant** (map bounds
   → token bbox → origin-centred, viewport-*sized* fallback); it must not
   depend on the viewport's *position*, or recentering feeds back into the
-  frame and the camera runs away on a map-less scene.
+  frame and the camera runs away on a map-less scene. It also honours fog
+  of war: a sampled overlay canvas tints unrevealed cells (opaque for
+  non-GM, 0.5 for the GM) and fogged token / ping dots are dropped for
+  non-GM — the reveal test is the pure `fogHidesWorldPoint`.
 - **Ping awareness**: pings render on the minimap, and a ping outside the
   current viewport shows a colored edge arrow pointing toward it (tap to
   jump) via the pure `offscreenEdgePosition` (`tabletop/ping.ts`).
@@ -103,7 +106,7 @@ Ruler / cell-distance measurement. See §9.
 | `tokens.ts` | PC-token lifecycle & permissions: `planPcTokenAdds`, `makeGmToken`, `canMoveToken`, `applyTokenMove/Upsert/Remove`, `defaultPlacementOrigin` (map centre → grid origin → `pcSpawn`), grid-wrapping `placementPosition` (4 cols), `recenterTokensOnMap`, `snapAllTokensToGrid` |
 | `annotations.ts` | Text / stroke / fog apply + permission helpers (`canEditMapText`, `canEraseStroke`), `setFogCells`, `isCellRevealed`, and `nearestRevealedCellCenter` (the "dropped a token into fog" rescue) |
 | `scenes.ts` | Multiple maps per session: `addScene` / `switchScene` / `renameScene` / `deleteScene` / `listScenes` over the current-scene-at-top-level model, with monotonic scene ordinals; plus the library-bridge helpers `allScenes` / `currentSceneOnly` / `stripTemplateScenes` (PC+stroke strip across all scenes) / `appendScenes` |
-| `minimap.ts` | Minimap geometry: `fitRect` (fit world rect into the box), `worldToMinimap` / `minimapToWorld`, and `minimapWorldBounds` (pan-invariant: map bounds → token bbox → origin-centred viewport-sized fallback) |
+| `minimap.ts` | Minimap geometry: `fitRect` (fit world rect into the box), `worldToMinimap` / `minimapToWorld`, `minimapWorldBounds` (pan-invariant: map bounds → token bbox → origin-centred viewport-sized fallback), and `fogHidesWorldPoint` (fog-of-war reveal test for the overview) |
 | `hostValidation.ts` | Pure host-side validators for inbound annotation requests; re-stamps `ownerPlayerId` from the trusted connection so a client can't spoof ownership |
 | `snapshot.ts` | Wire helpers: `tokenForWire` / `stripMapBytesForWire` (strip `privateNote` and the map `dataUrl` before broadcast) and `fillTabletopDefaults` (back-fill annotation fields from a pre-PR-12 host) |
 | `imageChunk.ts` | `chunkString` + `ChunkBuffer`: split a data URL into 256 KB chunks and reassemble out-of-order, with progress and a length check |

@@ -1752,6 +1752,9 @@ export function TablePanel({
           tokens={tabletop.tokens}
           pings={pings}
           viewport={viewport}
+          grid={tabletop.grid}
+          fog={tabletop.fog}
+          isGM={canEdit}
           onRecenter={recenterOn}
           onCollapse={() => setShowMinimap(false)}
         />

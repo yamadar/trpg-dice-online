@@ -4,6 +4,15 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.107 — **Minimap honours fog of war**. The minimap showed the whole
+  map and every token even under fog, spoiling GM-hidden areas for
+  players. It now paints fog over unrevealed cells (opaque for players,
+  semi-transparent for the GM, matching the main canvas) and drops token
+  / ping dots that sit in fogged cells for non-GM viewers. The overlay is
+  a small sampled canvas so square and hex grids share one path; the
+  reveal test is the pure, unit-tested `fogHidesWorldPoint`
+  (`tabletop/minimap.ts`).
+
 - v1.106 — **Compact token popover**. Adding facing, HP and status
   conditions had made the token edit popover very tall (an always-open
   3×3 facing compass plus a 12-chip status grid). Size, facing, HP and

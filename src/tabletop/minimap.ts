@@ -9,6 +9,27 @@
  * decision can be unit-tested without the DOM.
  */
 
+import { cellFromWorld, type FogState, type Grid } from './types'
+import { isCellRevealed } from './annotations'
+
+/**
+ * Whether fog of war hides the world point `(wx, wy)` — i.e. the cell it
+ * falls in is not revealed. Used by the minimap to cover fogged terrain
+ * and drop token / ping dots in fogged cells for non-GM viewers, so a
+ * GM-hidden area is not spoiled by the overview. Returns false when fog
+ * is off or the grid is cell-less (`'none'`), matching the main canvas.
+ */
+export function fogHidesWorldPoint(
+  fog: FogState,
+  grid: Grid,
+  wx: number,
+  wy: number,
+): boolean {
+  if (!fog.enabled || grid.kind === 'none') return false
+  const { col, row } = cellFromWorld(wx, wy, grid)
+  return !isCellRevealed(fog, col, row)
+}
+
 export interface Rect {
   x: number
   y: number

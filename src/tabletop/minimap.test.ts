@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import {
   fitRect,
+  fogHidesWorldPoint,
   minimapToWorld,
   minimapWorldBounds,
   worldToMinimap,
 } from './minimap'
+import { DEFAULT_GRID, type FogState, type Grid } from './types'
 
 describe('fitRect', () => {
   it('fits a wide world into a box, letterboxing vertically', () => {
@@ -94,5 +96,23 @@ describe('minimapWorldBounds', () => {
       viewport: { x: 0, y: 0, width: 30, height: 20 },
     })
     expect(b).toEqual({ x: -100, y: -100, width: 200, height: 200 })
+  })
+})
+
+describe('fogHidesWorldPoint', () => {
+  // 50px square grid at origin: cell (col,row) = floor(x/50), floor(y/50).
+  const grid: Grid = { ...DEFAULT_GRID, kind: 'square', cellSize: 50 }
+  const fog: FogState = { enabled: true, revealed: ['0,0'] } // only the top-left cell revealed
+  it('hides a point in an unrevealed cell', () => {
+    expect(fogHidesWorldPoint(fog, grid, 120, 80)).toBe(true) // cell (2,1) — fogged
+  })
+  it('does not hide a point in a revealed cell', () => {
+    expect(fogHidesWorldPoint(fog, grid, 10, 10)).toBe(false) // cell (0,0) — revealed
+  })
+  it('hides nothing when fog is disabled', () => {
+    expect(fogHidesWorldPoint({ enabled: false, revealed: [] }, grid, 9999, 9999)).toBe(false)
+  })
+  it('hides nothing on a grid-less scene', () => {
+    expect(fogHidesWorldPoint(fog, { ...grid, kind: 'none' }, 120, 80)).toBe(false)
   })
 })

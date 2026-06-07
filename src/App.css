@@ -4930,6 +4930,17 @@ button.char-avatar-large:disabled {
   border: 1px solid rgba(0, 0, 0, 0.6);
   pointer-events: none;
 }
+/* Fog overlay on the minimap — sits above the map image, below the
+   dots. Tinted via the canvas (opaque for non-GM so fogged terrain is
+   hidden; semi-transparent for the GM). */
+.tabletop-minimap-fog {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
 /* Ping marker on the minimap — a colored ring (currentColor) that
    pulses so an active ping reads as "live" vs. the static token dots. */
 .tabletop-minimap-ping {
