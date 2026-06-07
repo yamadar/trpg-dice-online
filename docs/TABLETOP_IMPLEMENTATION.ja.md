@@ -27,7 +27,8 @@
   GM 専用トークン（NPC / モンスター / 小物）。配置・ドラッグ・サイズ変更
   （`0.6 / 1 / 2 / 3 / 4`）・削除・ラベル変更。1 キャラが複数トークンを持てる。
   トークンごとに**公開メモ**（全員編集可）と GM 専用の**非公開メモ**
-  （ブロードキャストしない）。
+  （ブロードキャストしない）。任意の**向き（facing）**: ポップオーバーの
+  8 方位コンパスでトークンに方向矢印を描く（移動と同じ権限＝オーナー / GM）。
 - **NPC ライブラリ**: GM が用意する名前付き NPC 定義（名前 + 画像 + メモ）の
   ストック。何度でも配置でき、配置時に画像 / ラベル / メモをインラインに
   コピーするため、後からライブラリを編集しても配置済みトークンは変わらない。
@@ -51,7 +52,7 @@
 
 ### 対象外（Phase 2 以降）
 
-ルーラー（マス距離測定）、トークンの向き、HP バー / 状態アイコン、
+ルーラー（マス距離測定）、HP バー / 状態アイコン、
 1 セッション複数マップ（シーン一覧）、ミニマップ、キーボード移動の完全対応。
 §9 参照。
 
@@ -149,9 +150,9 @@ GM（P2P ホスト）が正本の state を保持し、各クライアントは 
 
 **クライアント → ホスト**（いずれも反映前にホスト側で検証）:
 `tokenMove`・`pcTokenPlaceRequest`・`tokenSizeRequest`・
-`tokenRemoveRequest`・`tokenNoteRequest`・`mapTextAddRequest`・
-`mapTextUpdateRequest`・`mapTextRemoveRequest`・`drawStrokeAddRequest`・
-`drawStrokeRemoveRequest`・`pingRequest`。
+`tokenRemoveRequest`・`tokenFacingRequest`・`tokenNoteRequest`・
+`mapTextAddRequest`・`mapTextUpdateRequest`・`mapTextRemoveRequest`・
+`drawStrokeAddRequest`・`drawStrokeRemoveRequest`・`pingRequest`。
 
 **ホスト → クライアント**（権威）: `tokenMove`・`tokenUpsert`・
 `tokenRemove`・`gridChange`・`mapMeta`・`mapChunk`・`mapCleared`・
@@ -217,9 +218,10 @@ GM（P2P ホスト）が正本の state を保持し、各クライアントは 
   `table.json` に入り、マップ画像は `attachments/maps/{id}.{ext}` に分離
   （チャット添付と同様）。v5 以前の書庫は table 空で読み込む。
 
-> **既知のギャップ**: `sanitizeStoredTabletop`（リロード経路）は現状トークンの
-> `size` / `note` / `privateNote` を往復させない。これらは live 同期では生き
-> 残るが、ホストが IndexedDB から再読込すると失われる（本書とは別に追跡）。
+> **解消（トークン向き PR）**: `sanitizeStoredTabletop`（リロード経路）は
+> 共有ヘルパ `sanitizeTokenCommon` を通じてトークンの `size` / `note` /
+> `privateNote` ＋ 新規 `facing` を往復させるようになった。従来これらは
+> live 同期では生き残るが、ホストが IndexedDB から再読込すると失われていた。
 
 ## 4. 描画 & UI
 
@@ -321,7 +323,8 @@ mount され、Konva の描画クラッシュ時には空白ではなく再試�
 `src/tabletop/`: `grid`・`hexGrid`・`tokens`・`annotations`・
 `hostValidation`・`snapshot`・`imageChunk`・`imageBackground`（URL 検証 /
 fetch ガード。テストは `imageBackgroundUrl.test.ts`）・`mapGallery`・
-`presetMaps`・`ping`（座標検証 ＋ さざ波アニメーションのカーブ）。
+`presetMaps`・`ping`（座標検証 ＋ さざ波アニメーションのカーブ）・
+`facing`（角度の正規化・画面空間の方向ベクトル・矢じりの幾何）。
 `src/storage/`: `tabletop`（sanitize ＋ round-trip、fake-indexeddb）・
 `roomExport`・`roomImport`（`table.json` 入りのマニフェスト v6）。
 
@@ -347,11 +350,10 @@ Canvas に依存する描画は意図的に単体テスト対象外。上記の�
 おおよその優先度順（実装済みは除外）:
 
 1. ルーラー（マス距離測定）
-2. トークンの向き（facing）
-3. HP バー / 状態アイコン
-4. 1 セッション複数マップ（シーン一覧 / 切替）
-5. ミニマップ
-6. キーボード移動・ショートカットの完全対応
+2. HP バー / 状態アイコン
+3. 1 セッション複数マップ（シーン一覧 / 切替）
+4. ミニマップ
+5. キーボード移動・ショートカットの完全対応
 
 ## 9. 改訂
 
@@ -364,3 +366,9 @@ Canvas に依存する描画は意図的に単体テスト対象外。上記の�
   `pingRequest` / `ping` ワイヤペア、`tabletop/ping.ts` 純粋モジュール ＋
   テスト、左パレットの `ping` ツール、自己アニメーションする `PingMarker`
   描画レイヤを追加。対象外 / Phase 2 一覧から削除。
+- v1.2 — Phase 2: **トークンの向き（facing）**。両トークン種別に任意の
+  `facing`（北から時計回りの度数）、`tokenFacingRequest` ワイヤメッセージ
+  （`canMoveToken` で検証）、ポップオーバーの 8 方位コンパス、`TokenView` の
+  方向矢印を追加。`tabletop/facing.ts` 純粋モジュール ＋ テスト。あわせて
+  §3.7 のリロードギャップも解消（`sanitizeStoredTabletop` が `size` /
+  `note` / `privateNote` / `facing` を往復）。

@@ -386,6 +386,12 @@ An SPA where players roll TRPG dice and share results with other players in real
   GM tokens additionally carry a **private GM note** that is stripped
   from every outgoing `tokenUpsert` and `tabletopState` wire message,
   so non-host clients never receive it.
+- **Token facing**: a token can carry an optional facing direction. The
+  token dialog offers an 8-way compass (plus a clear option) and the
+  canvas draws a small direction arrow just outside the token in the
+  chosen direction. Facing is operable by the same people who can move
+  the token (the owner of a PC token, or the GM), enforced host-side via
+  the same `canMoveToken` check as move / resize. It survives reload.
 - The token sidebar is split into two sections.
   - **Tokens on Map** (always visible, at the top): lists all currently
     placed tokens with a type badge ([PC] / [NPC]). Clicking an entry
@@ -633,6 +639,7 @@ Commit after each step.
 - [x] GM-only tokens can be added, moved, resized and removed by the GM
 - [x] Tapping any token opens an editable dialog (GM) or a read-only dialog (non-owner)
 - [x] Every token has a public shared note editable by all participants; GM tokens additionally have a private GM note never broadcast to clients
+- [x] A token can be given a facing direction (8-way compass) that draws a direction arrow and survives reload
 - [x] The token sidebar shows "Tokens on Map" at the top and a collapsible "Add / Setup" section below
 - [x] Own PC tokens are highlighted in the token list; non-operable tokens on the canvas are shown at reduced opacity
 - [x] The GM can register NPCs in a library (with name, image and note) and place them on the map repeatedly

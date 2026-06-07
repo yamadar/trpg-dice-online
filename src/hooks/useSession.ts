@@ -87,6 +87,7 @@ import {
 } from '../tabletop/hostValidation'
 import { loadPresetMap } from '../tabletop/presetMaps'
 import { isValidPingPoint, newPingId, type Ping } from '../tabletop/ping'
+import { isValidFacing, normalizeFacing } from '../tabletop/facing'
 import { fillTabletopDefaults, stripMapBytesForWire, tokenForWire } from '../tabletop/snapshot'
 import { loadTabletop, saveTabletop } from '../storage/tabletop'
 import {
@@ -292,6 +293,11 @@ export interface Session {
    *  even-integer sizes align on cell corners, odd / 0.6 sizes stay
    *  on centres. */
   setTokenSize: (tokenId: string, size: TokenSize) => void
+  /** Set or clear (`null`) a token's facing direction (degrees clockwise
+   *  from north). Permission follows `canMoveToken` (own PC or GM): the
+   *  host applies directly; a client sends `tokenFacingRequest` and the
+   *  host echoes the result via `tokenUpsert`. */
+  setTokenFacing: (tokenId: string, facing: number | null) => void
   /**
    * GM-only: add an NPC to the library (host-side stash that can be
    * placed on the map repeatedly). The image is optional at add-time
@@ -1477,6 +1483,34 @@ export function useSession(): Session {
   )
 
   /**
+   * Set or clear a token's facing direction. Permission is the same as
+   * move / resize (`canMoveToken`): a non-host owner forwards the request
+   * to the host and waits for the `tokenUpsert` echo; the host applies
+   * directly. `null` (or a non-finite angle) clears the indicator;
+   * otherwise the angle is normalised into [0, 360).
+   */
+  const setTokenFacing = useCallback(
+    (tokenId: string, facing: number | null) => {
+      if (roleRef.current === 'client') {
+        roomRef.current?.sendToHost({ t: 'tokenFacingRequest', tokenId, facing })
+        return
+      }
+      const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
+      if (!existing) return
+      const next: Token = { ...existing }
+      if (facing === null || !isValidFacing(facing)) {
+        delete (next as Token & { facing?: number }).facing
+      } else {
+        ;(next as Token & { facing?: number }).facing = normalizeFacing(facing)
+      }
+      const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
+      applyTabletop({ ...tabletopRef.current, tokens })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(next) })
+    },
+    [applyTabletop],
+  )
+
+  /**
    * GM-only: add an NPC to the library. The image is downscaled via
    * the same pipeline as in-place NPC tokens. The library entry is
    * NOT placed on the map — it sits in `tabletop.npcLibrary` until
@@ -2430,6 +2464,29 @@ export function useSession(): Session {
           }
           applyTabletop({ ...tabletopRef.current, tokens })
           roomRef.current?.broadcast({ t: 'tokenRemove', tokenId: msg.tokenId })
+          break
+        }
+        case 'tokenFacingRequest': {
+          // Same ownership check as move / resize. `null` (or a non-finite
+          // angle) clears the indicator; otherwise normalise into [0,360).
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const token = tabletopRef.current.tokens.find(
+            (t) => t.id === msg.tokenId,
+          )
+          if (!token) break
+          if (!canMoveToken(token, { playerId: sender.id, isHost: false })) break
+          const next: Token = { ...token }
+          if (msg.facing === null || !isValidFacing(msg.facing)) {
+            delete (next as Token & { facing?: number }).facing
+          } else {
+            ;(next as Token & { facing?: number }).facing = normalizeFacing(
+              msg.facing,
+            )
+          }
+          const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
+          applyTabletop({ ...tabletopRef.current, tokens })
+          roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(next) })
           break
         }
         case 'tokenNoteRequest': {
@@ -3814,6 +3871,7 @@ export function useSession(): Session {
     updateTokenNote,
     updateTokenPrivateNote,
     setTokenSize,
+    setTokenFacing,
     addNpcDef,
     updateNpcDef,
     removeNpcDef,

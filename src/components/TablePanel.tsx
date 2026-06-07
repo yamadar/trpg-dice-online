@@ -21,6 +21,7 @@ import { avatarInitial, composeName } from '../players/identity'
 import { characterImagesKey } from '../storage/roomLog'
 import { canEditMapText, canEraseStroke, isCellRevealed } from '../tabletop/annotations'
 import { canMoveToken } from '../tabletop/tokens'
+import { facingArrowPoints, isValidFacing, normalizeFacing } from '../tabletop/facing'
 import {
   DEFAULT_PEN_COLOR,
   DEFAULT_PEN_WIDTH,
@@ -1444,6 +1445,9 @@ export function TablePanel({
                 onChangeSize={(size) =>
                   session.setTokenSize(selectedToken.id, size)
                 }
+                onChangeFacing={(facing) =>
+                  session.setTokenFacing(selectedToken.id, facing)
+                }
                 onRemove={() => {
                   session.removeToken(selectedToken.id)
                   setSelectedTokenId(null)
@@ -1683,6 +1687,27 @@ export function TablePanel({
   )
 }
 
+/**
+ * The eight compass directions plus a centre "clear" cell, laid out in
+ * the 3×3 grid the facing picker renders (row-major). `dir` is degrees
+ * clockwise from north, or `null` for the clear cell.
+ */
+const FACING_COMPASS: ReadonlyArray<{
+  dir: number | null
+  glyph: string
+  key: string
+}> = [
+  { dir: 315, glyph: '↖', key: 'nw' },
+  { dir: 0, glyph: '↑', key: 'n' },
+  { dir: 45, glyph: '↗', key: 'ne' },
+  { dir: 270, glyph: '←', key: 'w' },
+  { dir: null, glyph: '✕', key: 'none' },
+  { dir: 90, glyph: '→', key: 'e' },
+  { dir: 225, glyph: '↙', key: 'sw' },
+  { dir: 180, glyph: '↓', key: 's' },
+  { dir: 135, glyph: '↘', key: 'se' },
+]
+
 interface TokenPopoverProps {
   token: Token
   stageX: number
@@ -1704,6 +1729,8 @@ interface TokenPopoverProps {
   onRename: (label: string) => void
   onChangeImage: (image: string) => void
   onChangeSize: (size: TokenSize) => void
+  /** Set (degrees clockwise from north) or clear (`null`) the facing. */
+  onChangeFacing: (facing: number | null) => void
   onRemove: () => void
   onChangeNote: (note: string) => void
   onChangePrivateNote: (note: string) => void
@@ -1733,6 +1760,7 @@ function TokenPopover({
   onRename,
   onChangeImage,
   onChangeSize,
+  onChangeFacing,
   onRemove,
   onChangeNote,
   onChangePrivateNote,
@@ -1869,6 +1897,46 @@ function TokenPopover({
         <div className="tabletop-token-popover-row">
           <span>{t('tabletop.tokenEdit.size')}</span>
           <span className="token-display-value">{String(tokenSize(token))}</span>
+        </div>
+      )}
+
+      {/* Facing: a 3×3 compass (operator only). The centre cell clears
+          the indicator; the eight outer cells set a direction. */}
+      {canOperate && (
+        <div className="tabletop-token-popover-row">
+          <span>{t('tabletop.tokenEdit.facing')}</span>
+          <div
+            className="tabletop-token-facing-grid"
+            role="group"
+            aria-label={t('tabletop.tokenEdit.facing')}
+          >
+            {FACING_COMPASS.map((cell) => {
+              const active =
+                cell.dir === null
+                  ? !isValidFacing(token.facing)
+                  : isValidFacing(token.facing) &&
+                    normalizeFacing(token.facing) === cell.dir
+              const label =
+                cell.dir === null
+                  ? t('tabletop.tokenEdit.facingNone')
+                  : t('tabletop.tokenEdit.facingDir', { deg: cell.dir })
+              return (
+                <button
+                  key={cell.key}
+                  type="button"
+                  aria-pressed={active}
+                  aria-label={label}
+                  title={label}
+                  className={`tabletop-token-facing-btn${
+                    cell.dir === null ? ' clear' : ''
+                  }${active ? ' active' : ''}`}
+                  onClick={() => onChangeFacing(cell.dir)}
+                >
+                  {cell.glyph}
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -2253,6 +2321,25 @@ function TokenView({
         />
       )}
       <Circle radius={radius} stroke={fallback} strokeWidth={strokeWidth} />
+      {isValidFacing(token.facing) && (
+        // A filled triangle just outside the ring, pointing in the
+        // token's facing direction. White fill + dark outline so it
+        // stays legible over any portrait or map. Counter-scaled like
+        // the rest of the token so it is a constant on-screen size.
+        <Line
+          points={facingArrowPoints(
+            token.facing,
+            radius,
+            Math.max(7 / scale, radius * 0.42),
+            2 / scale,
+          )}
+          closed
+          fill="#ffffff"
+          stroke="#1a1a1a"
+          strokeWidth={1.5 / scale}
+          listening={false}
+        />
+      )}
       {label && (
         <Text
           text={label}
