@@ -40,6 +40,10 @@
 - **リアルタイム**: ホスト権威 / last-write-wins、約 20Hz の drag throttle、
   遅参者への welcome snapshot 同梱、IndexedDB によるリロード復元、
   ルームのエクスポート / インポート。
+- **ピング**: 参加者全員が一時的な「ここ見て」マーカーを置ける。本人の
+  プレイヤー色のさざ波 + 名前ラベルで全員にブロードキャストされ、約 2.6 秒で
+  消える。設計上**揮発性**で、永続化・スナップショット・エクスポートのいずれも
+  されないため、点灯前から在室していない遅参者には見えない。
 - **表示**: 全画面モード（モバイル + デスクトップ）と下部ドック、チャット /
   ダイスの差し替えオーバーレイ、未読チャットドット、ロール元トークンから
   飛ぶ**ダイス演出**、発言者トークン上の**吹き出し**、初回チュートリアル、
@@ -47,9 +51,9 @@
 
 ### 対象外（Phase 2 以降）
 
-ルーラー（マス距離測定）、ピング（「ここ見て」）、トークンの向き、HP バー /
-状態アイコン、1 セッション複数マップ（シーン一覧）、ミニマップ、キーボード
-移動の完全対応。§9 参照。
+ルーラー（マス距離測定）、トークンの向き、HP バー / 状態アイコン、
+1 セッション複数マップ（シーン一覧）、ミニマップ、キーボード移動の完全対応。
+§9 参照。
 
 ## 2. モジュール構成
 
@@ -147,14 +151,22 @@ GM（P2P ホスト）が正本の state を保持し、各クライアントは 
 `tokenMove`・`pcTokenPlaceRequest`・`tokenSizeRequest`・
 `tokenRemoveRequest`・`tokenNoteRequest`・`mapTextAddRequest`・
 `mapTextUpdateRequest`・`mapTextRemoveRequest`・`drawStrokeAddRequest`・
-`drawStrokeRemoveRequest`。
+`drawStrokeRemoveRequest`・`pingRequest`。
 
 **ホスト → クライアント**（権威）: `tokenMove`・`tokenUpsert`・
 `tokenRemove`・`gridChange`・`mapMeta`・`mapChunk`・`mapCleared`・
 `npcDefUpsert`・`npcDefRemove`・`tabletopState`（全置換。ライブラリ読込で
 使用）・`mapTextUpsert`・`mapTextRemove`・`drawStrokeAdd`・
-`drawStrokeRemove`・`fogSet`。welcome `Snapshot` は任意の `tabletop` を
-同梱する（マップ `dataUrl` は除去。§3.5）。
+`drawStrokeRemove`・`fogSet`・`ping`。welcome `Snapshot` は任意の `tabletop`
+を同梱する（マップ `dataUrl` は除去。§3.5）。
+
+`ping` のペアだけは唯一の**揮発性**メッセージである。クライアントの
+`pingRequest`（ワールド座標）をホストが検証（送信者が既知・座標が有限）し、
+送信者 id を押し直して `ping` としてブロードキャストする。`TabletopState`
+には一切触れないため、スナップショット・IndexedDB・エクスポート archive の
+いずれにも現れない — マーカーは `useSession` の一時的な `lastPing` と描画側の
+短命なアニメーションにのみ存在する。純粋なアニメーション / 検証計算は
+`tabletop/ping.ts` にある。
 
 ### 3.4 トークン同期（ホスト権威 / last-write-wins）
 
@@ -309,7 +321,7 @@ mount され、Konva の描画クラッシュ時には空白ではなく再試�
 `src/tabletop/`: `grid`・`hexGrid`・`tokens`・`annotations`・
 `hostValidation`・`snapshot`・`imageChunk`・`imageBackground`（URL 検証 /
 fetch ガード。テストは `imageBackgroundUrl.test.ts`）・`mapGallery`・
-`presetMaps`。
+`presetMaps`・`ping`（座標検証 ＋ さざ波アニメーションのカーブ）。
 `src/storage/`: `tabletop`（sanitize ＋ round-trip、fake-indexeddb）・
 `roomExport`・`roomImport`（`table.json` 入りのマニフェスト v6）。
 
@@ -335,12 +347,11 @@ Canvas に依存する描画は意図的に単体テスト対象外。上記の�
 おおよその優先度順（実装済みは除外）:
 
 1. ルーラー（マス距離測定）
-2. ピング（一時的な「ここ見て」マーカー）
-3. トークンの向き（facing）
-4. HP バー / 状態アイコン
-5. 1 セッション複数マップ（シーン一覧 / 切替）
-6. ミニマップ
-7. キーボード移動・ショートカットの完全対応
+2. トークンの向き（facing）
+3. HP バー / 状態アイコン
+4. 1 セッション複数マップ（シーン一覧 / 切替）
+5. ミニマップ
+6. キーボード移動・ショートカットの完全対応
 
 ## 9. 改訂
 
@@ -349,3 +360,7 @@ Canvas に依存する描画は意図的に単体テスト対象外。上記の�
   完全なモジュール構成・ワイヤプロトコル・データフロー・永続化（DB v8 /
   エクスポート v6）・Konva 描画ツリー・実装履歴、リスク / テスト / Phase 2
   一覧の更新。
+- v1.1 — Phase 2: **ピング**（一時的な「ここ見て」マーカー）。揮発性の
+  `pingRequest` / `ping` ワイヤペア、`tabletop/ping.ts` 純粋モジュール ＋
+  テスト、左パレットの `ping` ツール、自己アニメーションする `PingMarker`
+  描画レイヤを追加。対象外 / Phase 2 一覧から削除。

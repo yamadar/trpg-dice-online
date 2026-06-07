@@ -227,6 +227,8 @@ export const uk: Dict = {
   'tabletop.tools.text': 'Текст',
   'tabletop.tools.pen': 'Олівець',
   'tabletop.tools.eraser': 'Гумка',
+  'tabletop.tools.ping': 'Пінг',
+  'tabletop.tools.pingHint': 'Торкніться карти, щоб поставити пінг «дивіться сюди»',
   'tabletop.tools.fogReveal': 'Туман: відкрити',
   'tabletop.tools.fogConceal': 'Туман: приховати',
   'tabletop.tools.fogDisabled': 'Спершу увімкни туман війни з панелі.',

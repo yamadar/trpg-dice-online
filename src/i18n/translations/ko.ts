@@ -227,6 +227,8 @@ export const ko: Dict = {
   'tabletop.tools.text': '텍스트',
   'tabletop.tools.pen': '펜',
   'tabletop.tools.eraser': '지우개',
+  'tabletop.tools.ping': '핑',
+  'tabletop.tools.pingHint': '지도를 탭하여 "여기 봐" 핑 보내기',
   'tabletop.tools.fogReveal': '안개: 걷어내기',
   'tabletop.tools.fogConceal': '안개: 덮기',
   'tabletop.tools.fogDisabled': '먼저 툴바에서 전쟁의 안개를 활성화하세요.',

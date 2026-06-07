@@ -227,6 +227,8 @@ export const de: Dict = {
   'tabletop.tools.text': 'Text',
   'tabletop.tools.pen': 'Stift',
   'tabletop.tools.eraser': 'Radierer',
+  'tabletop.tools.ping': 'Ping',
+  'tabletop.tools.pingHint': 'Tippe auf die Karte für einen „Hier“-Ping',
   'tabletop.tools.fogReveal': 'Nebel: aufdecken',
   'tabletop.tools.fogConceal': 'Nebel: verdecken',
   'tabletop.tools.fogDisabled': 'Aktiviere zuerst den Nebel des Krieges in der Werkzeugleiste.',

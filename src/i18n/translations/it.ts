@@ -227,6 +227,8 @@ export const it: Dict = {
   'tabletop.tools.text': 'Testo',
   'tabletop.tools.pen': 'Penna',
   'tabletop.tools.eraser': 'Gomma',
+  'tabletop.tools.ping': 'Ping',
+  'tabletop.tools.pingHint': 'Tocca la mappa per lanciare un ping "guarda qui"',
   'tabletop.tools.fogReveal': 'Nebbia: rivela',
   'tabletop.tools.fogConceal': 'Nebbia: copri',
   'tabletop.tools.fogDisabled': 'Attiva prima la nebbia di guerra dalla barra strumenti.',

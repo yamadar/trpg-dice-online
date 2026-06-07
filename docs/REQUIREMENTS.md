@@ -431,6 +431,15 @@ An SPA where players roll TRPG dice and share results with other players in real
   map image streams through the existing `mapMeta` / `mapChunk`
   path so a multi-megabyte background does not block the data
   channel.
+- **Ping ("look here")**: any participant can pick the ping tool and tap
+  the map to drop a transient attention marker — an expanding ripple in
+  their player colour with their name beneath — that is broadcast to
+  everyone and fades after a couple of seconds. A ping is *ephemeral*:
+  unlike tokens and annotations it is never written to the tabletop
+  state, so it is not persisted, not part of the welcome snapshot, and
+  not exported. The host stamps the sender's id (a client cannot spoof
+  another player's colour) and validates the coordinates before
+  re-broadcasting.
 - Rolling dice from the tabletop triggers the unread-activity dot on
   the chat icon, the same as a chat message. A die icon also animates
   outward from the rolling player's character token on the canvas,
@@ -628,6 +637,7 @@ Commit after each step.
 - [x] Own PC tokens are highlighted in the token list; non-operable tokens on the canvas are shown at reduced opacity
 - [x] The GM can register NPCs in a library (with name, image and note) and place them on the map repeatedly
 - [x] The GM can save the current tabletop as a template / snapshot and load it later
+- [x] Any participant can drop a transient "look here" ping that broadcasts to everyone and fades out
 - [x] Pan and zoom work on both touch and mouse
 - [x] The tabletop state is restored across reload
 - [ ] On mobile, the tabletop is shown full-screen with a swipe-up bottom sheet for the feed

@@ -227,6 +227,8 @@ export const tr: Dict = {
   'tabletop.tools.text': 'Metin',
   'tabletop.tools.pen': 'Kalem',
   'tabletop.tools.eraser': 'Silgi',
+  'tabletop.tools.ping': 'Ping',
+  'tabletop.tools.pingHint': 'Haritaya dokunarak "buraya bak" pingi bırak',
   'tabletop.tools.fogReveal': 'Sis: aç',
   'tabletop.tools.fogConceal': 'Sis: ört',
   'tabletop.tools.fogDisabled': 'Önce araç çubuğundan savaş sisini etkinleştir.',

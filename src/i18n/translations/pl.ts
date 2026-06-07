@@ -227,6 +227,8 @@ export const pl: Dict = {
   'tabletop.tools.text': 'Tekst',
   'tabletop.tools.pen': 'Pióro',
   'tabletop.tools.eraser': 'Gumka',
+  'tabletop.tools.ping': 'Ping',
+  'tabletop.tools.pingHint': 'Dotknij mapy, aby wysłać ping „spójrz tutaj”',
   'tabletop.tools.fogReveal': 'Mgła: odkryj',
   'tabletop.tools.fogConceal': 'Mgła: zakryj',
   'tabletop.tools.fogDisabled': 'Najpierw włącz mgłę wojny w pasku narzędzi.',

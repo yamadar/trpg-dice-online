@@ -227,6 +227,8 @@ export const ptBR: Dict = {
   'tabletop.tools.text': 'Texto',
   'tabletop.tools.pen': 'Caneta',
   'tabletop.tools.eraser': 'Borracha',
+  'tabletop.tools.ping': 'Ping',
+  'tabletop.tools.pingHint': 'Toque no mapa para soltar um ping "olhe aqui"',
   'tabletop.tools.fogReveal': 'Névoa: revelar',
   'tabletop.tools.fogConceal': 'Névoa: ocultar',
   'tabletop.tools.fogDisabled': 'Ative a névoa de guerra pela barra de ferramentas primeiro.',

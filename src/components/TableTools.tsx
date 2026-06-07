@@ -6,6 +6,7 @@ import {
   FogIcon,
   FontSizeIcon,
   PenIcon,
+  PingIcon,
   PointerIcon,
   RulerIcon,
   TextIcon,
@@ -19,6 +20,8 @@ import {
  *   - `pen`: drag draws a free-hand stroke; commit on pointer up.
  *   - `eraser`: tapping a stroke removes it (owner / host only).
  *   - `text`: clicking the stage drops a floating text input.
+ *   - `ping`: clicking the stage drops a transient "look here" marker
+ *     that is broadcast to everyone and fades out (any participant).
  *   - `fog-reveal` / `fog-conceal`: drag paints grid cells (GM only).
  *
  * `eraser` is shared between strokes and text labels — the underlying
@@ -29,6 +32,7 @@ export type TableTool =
   | 'pen'
   | 'eraser'
   | 'text'
+  | 'ping'
   | 'fog-reveal'
   | 'fog-conceal'
 
@@ -183,6 +187,14 @@ export function TableTools({
         label={t('tabletop.tools.eraser')}
         icon={<EraserIcon size={18} />}
         active={tool === 'eraser'}
+        onSelect={onToolChange}
+      />
+      <ToolButton
+        name="ping"
+        label={t('tabletop.tools.ping')}
+        icon={<PingIcon size={18} />}
+        active={tool === 'ping'}
+        title={t('tabletop.tools.pingHint')}
         onSelect={onToolChange}
       />
       {canEditFog && (

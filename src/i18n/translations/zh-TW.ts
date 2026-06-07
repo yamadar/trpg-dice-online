@@ -227,6 +227,8 @@ export const zhTW: Dict = {
   'tabletop.tools.text': '文字',
   'tabletop.tools.pen': '畫筆',
   'tabletop.tools.eraser': '橡皮擦',
+  'tabletop.tools.ping': '標記',
+  'tabletop.tools.pingHint': '點按地圖放置「看這裡」標記',
   'tabletop.tools.fogReveal': '迷霧:揭開',
   'tabletop.tools.fogConceal': '迷霧:遮蓋',
   'tabletop.tools.fogDisabled': '請先從工具列啟用戰爭迷霧。',

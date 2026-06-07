@@ -227,6 +227,8 @@ export const th: Dict = {
   'tabletop.tools.text': 'ข้อความ',
   'tabletop.tools.pen': 'ปากกา',
   'tabletop.tools.eraser': 'ยางลบ',
+  'tabletop.tools.ping': 'ปิง',
+  'tabletop.tools.pingHint': 'แตะแผนที่เพื่อปักหมุด "ดูตรงนี้"',
   'tabletop.tools.fogReveal': 'หมอก: เปิด',
   'tabletop.tools.fogConceal': 'หมอก: ปิด',
   'tabletop.tools.fogDisabled': 'เปิดใช้งานหมอกแห่งสงครามจากทูลบาร์ก่อน',

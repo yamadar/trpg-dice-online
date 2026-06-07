@@ -227,6 +227,8 @@ export const ar: Dict = {
   'tabletop.tools.text': 'نص',
   'tabletop.tools.pen': 'قلم',
   'tabletop.tools.eraser': 'ممحاة',
+  'tabletop.tools.ping': 'تنبيه',
+  'tabletop.tools.pingHint': 'انقر على الخريطة لوضع تنبيه "انظر هنا"',
   'tabletop.tools.fogReveal': 'الضباب: كشف',
   'tabletop.tools.fogConceal': 'الضباب: إخفاء',
   'tabletop.tools.fogDisabled': 'فعّل ضباب الحرب من شريط الأدوات أولًا.',

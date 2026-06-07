@@ -17,7 +17,7 @@ import useImage from 'use-image'
 import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
 import { playerColor } from '../players/colors'
-import { avatarInitial } from '../players/identity'
+import { avatarInitial, composeName } from '../players/identity'
 import { characterImagesKey } from '../storage/roomLog'
 import { canEditMapText, canEraseStroke, isCellRevealed } from '../tabletop/annotations'
 import { canMoveToken } from '../tabletop/tokens'
@@ -50,6 +50,7 @@ import { ChatIcon, CloseIcon, DiceIcon, TrashIcon } from './icons'
 import { ImagePickerDialog } from './ImagePickerDialog'
 import { Sheet } from './Sheet'
 import { DiceRollAnimation } from './DiceRollAnimation'
+import { PingMarker } from './PingMarker'
 import { SpeechBubble } from './SpeechBubble'
 import { TabletopDock } from './TabletopDock'
 import { TabletopTutorial } from './TabletopTutorial'
@@ -237,6 +238,7 @@ export function TablePanel({
     removeDrawStroke,
     paintFog,
     commitFog,
+    sendPing,
   } = session
   // Grid editing is GM-only when in a room, but always available when
   // offline so a player can experiment with the table on their own —
@@ -452,6 +454,32 @@ export function TablePanel({
         ])
       }
     }
+  }
+  // --- Pings ("look here") ---
+  // Each fresh `session.lastPing` becomes an animated marker. Same
+  // render-phase derived-state pattern as bubbles / dice rolls: track the
+  // last id we acted on and append a new entry when a different one shows
+  // up. Each `PingMarker` self-animates and removes itself via `onDone`,
+  // so no removal timer is needed here. Initialised to the current ping
+  // id so re-opening the tabletop does not replay a stale ping.
+  const [pings, setPings] = useState<
+    Array<{ key: string; x: number; y: number; playerId: string }>
+  >([])
+  const [lastSeenPingId, setLastSeenPingId] = useState<string | null>(
+    () => session.lastPing?.id ?? null,
+  )
+  const incomingPing = session.lastPing
+  if (incomingPing && incomingPing.id !== lastSeenPingId) {
+    setLastSeenPingId(incomingPing.id)
+    setPings((prev) => [
+      ...prev,
+      {
+        key: incomingPing.id,
+        x: incomingPing.x,
+        y: incomingPing.y,
+        playerId: incomingPing.playerId,
+      },
+    ])
   }
   // Mirrors the wire-level permission: a non-host can drag their own
   // PC tokens; a host (or offline sandbox) can drag anything. Wrapped
@@ -807,6 +835,10 @@ export function TablePanel({
       } else if (tool === 'text') {
         if (isHiddenByFog(w)) return
         setTextDraft({ x: w.x, y: w.y })
+      } else if (tool === 'ping') {
+        // A ping is a one-shot tap (no drag). Any participant can drop
+        // one; the tool stays active so several can be dropped in a row.
+        sendPing(w.x, w.y)
       } else if (tool === 'fog-reveal' || tool === 'fog-conceal') {
         if (!canEdit) return
         // Fog is cell-based, so a gridless ('none') scene cannot
@@ -831,6 +863,7 @@ export function TablePanel({
       startDrawing,
       paintFogAt,
       isHiddenByFog,
+      sendPing,
     ],
   )
 
@@ -914,6 +947,8 @@ export function TablePanel({
       } else if (tool === 'text') {
         if (isHiddenByFog(w)) return
         setTextDraft({ x: w.x, y: w.y })
+      } else if (tool === 'ping') {
+        sendPing(w.x, w.y)
       } else if (tool === 'fog-reveal' || tool === 'fog-conceal') {
         if (!canEdit) return
         // See handleMouseDown: only a gridless scene blocks fog paint.
@@ -935,6 +970,7 @@ export function TablePanel({
       paintFogAt,
       isHiddenByFog,
       commitFog,
+      sendPing,
     ],
   )
 
@@ -1331,6 +1367,34 @@ export function TablePanel({
                   viewport={viewport}
                   isGM={canEdit}
                 />
+              </Layer>
+            )}
+            {/* Pings — the topmost layer, so a "look here" marker stays
+                visible even over fog. listening=false so it never
+                intercepts pointer events. */}
+            {pings.length > 0 && (
+              <Layer listening={false}>
+                {pings.map((p) => {
+                  const player = session.players.find(
+                    (pl) => pl.id === p.playerId,
+                  )
+                  const name = player
+                    ? composeName(player.name, player.characterName)
+                    : ''
+                  return (
+                    <PingMarker
+                      key={p.key}
+                      x={p.x}
+                      y={p.y}
+                      color={playerColor(p.playerId)}
+                      name={name}
+                      scale={stageScale}
+                      onDone={() =>
+                        setPings((prev) => prev.filter((q) => q.key !== p.key))
+                      }
+                    />
+                  )
+                })}
               </Layer>
             )}
           </Stage>
