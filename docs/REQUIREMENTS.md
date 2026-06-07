@@ -470,6 +470,14 @@ An SPA where players roll TRPG dice and share results with other players in real
   Space + drag), zoom (pinch / mouse wheel, 25% – 400%), token drag
   (single-tap + drag). Pinch and drag are never combined in the same
   gesture (Konva-recommended pattern).
+- **Keyboard control**: when the tabletop has focus (and no text field
+  is being edited), the arrow keys move the selected token one grid cell
+  at a time; `1`–`5` (and the letter aliases V/T/P/E/G) switch tools;
+  `+` / `-` / `0` zoom in / out / reset; `f` centres the view on the
+  selection; `[` / `]` select the previous / next operable token;
+  `Delete` removes the selected token; `Esc` deselects (then closes);
+  and `?` toggles an on-screen shortcuts cheat sheet. Movement obeys the
+  same `canMoveToken` permission as dragging.
 
 ## 4. Non-functional
 
@@ -657,6 +665,7 @@ Commit after each step.
 - [x] The GM can save the current tabletop as a template / snapshot and load it later
 - [x] Any participant can drop a transient "look here" ping that broadcasts to everyone and fades out
 - [x] Pan and zoom work on both touch and mouse
+- [x] Keyboard shortcuts move the selected token, switch tools, zoom, delete, and show a cheat sheet (?)
 - [x] The tabletop state is restored across reload
 - [ ] On mobile, the tabletop is shown full-screen with a swipe-up bottom sheet for the feed
 - [ ] The exported ZIP carries the tabletop state and importing restores it
