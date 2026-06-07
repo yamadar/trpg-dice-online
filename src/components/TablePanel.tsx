@@ -63,7 +63,7 @@ import type { Character, CharacterEdits } from '../characters/types'
 import { prepareNpcTokenImage } from '../characters/image'
 import { CharacterEditor } from './CharacterEditor'
 import { CharacterInfoModal } from './CharacterInfoModal'
-import { ChatIcon, CloseIcon, DiceIcon, MinimapIcon, TrashIcon } from './icons'
+import { ChatIcon, CloseIcon, DiceIcon, InfoIcon, MinimapIcon, TrashIcon } from './icons'
 import { ImagePickerDialog } from './ImagePickerDialog'
 import { Sheet } from './Sheet'
 import { DiceRollAnimation } from './DiceRollAnimation'
@@ -1663,6 +1663,7 @@ export function TablePanel({
                     ? labelForToken(selectedToken, session, characters)
                     : undefined
                 }
+                portrait={portraitForToken(selectedToken, session, characters)}
                 players={session.players}
               />
             )
@@ -2030,6 +2031,9 @@ interface TokenPopoverProps {
   onEditCharacter?: () => void
   /** PC tokens: display name from sessionCharacters / snapshot. */
   characterName?: string
+  /** PC tokens: resolved portrait for the mini character card (''/undefined
+   *  falls back to a coloured initial). */
+  portrait?: string
   /** Participants, used to build the "who can operate" line. */
   players: ReadonlyArray<{ id: string; name: string; isGM: boolean }>
 }
@@ -2060,6 +2064,7 @@ function TokenPopover({
   onChangePrivateNote,
   onEditCharacter,
   characterName,
+  portrait,
   players,
 }: TokenPopoverProps) {
   const [imagePickerOpen, setImagePickerOpen] = useState(false)
@@ -2207,20 +2212,80 @@ function TokenPopover({
         </button>
       </header>
 
-      {/* Name / Label row: editable only if canOperate + GM token */}
-      {token.kind === 'gm' && canOperate ? (
-        <label className="tabletop-token-popover-row">
-          <span>{t('tabletop.tokenEdit.label')}</span>
-          <input type="text" value={labelDraft} maxLength={32}
-            onChange={(e) => setLabelDraft(e.target.value)}
-            onBlur={commitLabel}
-            onKeyDown={(e) => { if (e.key === 'Enter') { commitLabel(); (e.target as HTMLInputElement).blur() } }}
-          />
-        </label>
+      {/* Identity row.
+          - GM token, operator: an editable label input.
+          - GM token, viewer: the label as plain text.
+          - PC token: a mini character card (avatar + name) that opens the
+            character info on tap — replacing both the old name row and the
+            separate "character info" button. A tap hint + info icon make
+            the affordance obvious. When there is no character to open
+            (e.g. a token placed "as the player"), it falls back to a
+            static, non-interactive card. */}
+      {token.kind === 'gm' ? (
+        canOperate ? (
+          <label className="tabletop-token-popover-row">
+            <span>{t('tabletop.tokenEdit.label')}</span>
+            <input type="text" value={labelDraft} maxLength={32}
+              onChange={(e) => setLabelDraft(e.target.value)}
+              onBlur={commitLabel}
+              onKeyDown={(e) => { if (e.key === 'Enter') { commitLabel(); (e.target as HTMLInputElement).blur() } }}
+            />
+          </label>
+        ) : (
+          <div className="tabletop-token-popover-row">
+            <span>{t('tabletop.tokenEdit.label')}</span>
+            <span className="token-display-value">{displayName}</span>
+          </div>
+        )
+      ) : onEditCharacter ? (
+        <button
+          type="button"
+          className="tabletop-token-charcard"
+          onClick={onEditCharacter}
+          aria-label={t('tabletop.tokenEdit.editCharacter')}
+          title={t('tabletop.tokenEdit.editCharacter')}
+        >
+          <span className="tabletop-token-charcard-avatar">
+            {portrait ? (
+              <img src={portrait} alt="" />
+            ) : (
+              <span
+                className="tabletop-token-charcard-initial"
+                style={{ background: playerColor(token.ownerPlayerId) }}
+                aria-hidden="true"
+              >
+                {avatarInitial(displayName)}
+              </span>
+            )}
+          </span>
+          <span className="tabletop-token-charcard-body">
+            <span className="tabletop-token-charcard-name">{displayName}</span>
+            <span className="tabletop-token-charcard-hint">
+              {t('tabletop.tokenEdit.editCharacter')}
+            </span>
+          </span>
+          <span className="tabletop-token-charcard-go" aria-hidden="true">
+            <InfoIcon size={16} />
+          </span>
+        </button>
       ) : (
-        <div className="tabletop-token-popover-row">
-          <span>{token.kind === 'pc' ? t('character.name') : t('tabletop.tokenEdit.label')}</span>
-          <span className="token-display-value">{displayName}</span>
+        <div className="tabletop-token-charcard tabletop-token-charcard-static">
+          <span className="tabletop-token-charcard-avatar">
+            {portrait ? (
+              <img src={portrait} alt="" />
+            ) : (
+              <span
+                className="tabletop-token-charcard-initial"
+                style={{ background: playerColor(token.ownerPlayerId) }}
+                aria-hidden="true"
+              >
+                {avatarInitial(displayName)}
+              </span>
+            )}
+          </span>
+          <span className="tabletop-token-charcard-body">
+            <span className="tabletop-token-charcard-name">{displayName}</span>
+          </span>
         </div>
       )}
 
@@ -2248,13 +2313,6 @@ function TokenPopover({
         </label>
       )}
 
-      {/* Character info button — above size, all PCs */}
-      {token.kind === 'pc' && onEditCharacter && (
-        <button type="button" className="tabletop-toolbar-button outline"
-          onClick={onEditCharacter}>
-          {t('tabletop.tokenEdit.editCharacter')}
-        </button>
-      )}
 
       {/* Size / facing / HP / status: compact one-line rows, each
           expanding to its editor on tap (one open at a time) so the

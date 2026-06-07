@@ -4,6 +4,14 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.108 — **Tappable character card in the token popover**. A PC token's
+  name row is now a miniaturized character card (round portrait + name)
+  that opens the character info on tap — with an accent hint and an info
+  icon so the affordance is obvious. The separate "character info" button
+  is gone, and the popover is a little shorter. GM tokens keep their
+  editable label; a token placed "as the player" (no character) shows a
+  static card.
+
 - v1.107 — **Minimap honours fog of war**. The minimap showed the whole
   map and every token even under fog, spoiling GM-hidden areas for
   players. It now paints fog over unrevealed cells (opaque for players,

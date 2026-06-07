@@ -1144,6 +1144,96 @@
   flex-direction: column;
   gap: 4px;
 }
+/* Mini character card in the PC token popover — a miniaturized
+   `.char-card` (avatar + name) that opens the character info on tap,
+   replacing the old name row + separate "character info" button. The
+   accent-coloured hint + info icon + hover lift signal it is tappable. */
+.tabletop-token-charcard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+button.tabletop-token-charcard:hover {
+  border-color: var(--accent);
+  background: var(--panel);
+}
+button.tabletop-token-charcard:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* The "as the player" fallback (no character to open) is a plain card. */
+.tabletop-token-charcard-static {
+  cursor: default;
+}
+.tabletop-token-charcard-avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tabletop-token-charcard-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tabletop-token-charcard-initial {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.tabletop-token-charcard-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.tabletop-token-charcard-name {
+  font-weight: 600;
+  color: var(--text-h);
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tabletop-token-charcard-hint {
+  color: var(--accent);
+  font-size: 0.74rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tabletop-token-charcard-go {
+  flex-shrink: 0;
+  display: flex;
+  color: var(--text-dim);
+}
+button.tabletop-token-charcard:hover .tabletop-token-charcard-go {
+  color: var(--accent);
+}
+
 /* Collapsible attribute rows (size / facing / HP / status). Each is a
    one-line head (label + current value + caret) that expands its editor
    on tap, so the popover stays short. Mirrors the toolbar's one-panel

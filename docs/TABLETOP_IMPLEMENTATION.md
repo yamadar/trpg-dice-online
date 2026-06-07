@@ -306,10 +306,14 @@ Pinch and drag are never combined in one gesture.
 
 ### 4.2 Token popover
 
-Tapping a token opens a DOM popover anchored to its screen position. The
-GM (or a PC token's owner) gets the editable view: name/label (GM
-tokens), public note, NPC image change, delete, the **private GM note**
-(host only), a "Character info" launcher, and the four token attributes —
+Tapping a token opens a DOM popover anchored to its screen position. For
+a **PC token** the identity row is a *miniaturized character card*
+(round portrait + name) that opens the character info on tap — an accent
+hint + info icon signal the affordance (this replaced the old name row
+plus a separate "character info" button). A **GM token** keeps an
+editable label (operator) or a label display (viewer). The GM (or a PC
+token's owner) also gets: public note, NPC image change, delete, the
+**private GM note** (host only), and the four token attributes —
 **size / facing / HP / status** — as collapsible one-line rows (each
 shows its current value and expands to its editor on tap, one open at a
 time, so the popover stays short). A non-owner gets a read-only view
