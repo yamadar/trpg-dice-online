@@ -63,7 +63,6 @@ export const ko: Dict = {
   'tabletop.gmToken.unreadable': '이미지를 읽을 수 없습니다.',
   'tabletop.gmToken.unlabeled': '(라벨 없음)',
   'tabletop.panel.title': '테이블탑 조작',
-  'tabletop.panel.mapGrid': '맵 & 격자',
   'tabletop.panel.tokens': '토큰',
   'tabletop.panel.nav': '툴바 카테고리',
   'tabletop.panel.close': '패널 닫기',

@@ -63,7 +63,6 @@ export const pl: Dict = {
   'tabletop.gmToken.unreadable': 'Nie udało się odczytać tego obrazu.',
   'tabletop.gmToken.unlabeled': '(bez etykiety)',
   'tabletop.panel.title': 'Sterowanie mapą stołu',
-  'tabletop.panel.mapGrid': 'Mapa i siatka',
   'tabletop.panel.tokens': 'Znaczniki',
   'tabletop.panel.nav': 'Kategorie paska narzędzi',
   'tabletop.panel.close': 'Zamknij panel',

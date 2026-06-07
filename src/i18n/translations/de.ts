@@ -63,7 +63,6 @@ export const de: Dict = {
   'tabletop.gmToken.unreadable': 'Bild konnte nicht gelesen werden.',
   'tabletop.gmToken.unlabeled': '(keine Bezeichnung)',
   'tabletop.panel.title': 'Spieltisch-Steuerung',
-  'tabletop.panel.mapGrid': 'Karte & Raster',
   'tabletop.panel.tokens': 'Marker',
   'tabletop.panel.nav': 'Werkzeugleisten-Kategorien',
   'tabletop.panel.close': 'Panel schließen',

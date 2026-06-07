@@ -63,7 +63,6 @@ export const th: Dict = {
   'tabletop.gmToken.unreadable': 'อ่านรูปนี้ไม่ได้',
   'tabletop.gmToken.unlabeled': '(ไม่มีป้ายชื่อ)',
   'tabletop.panel.title': 'ตัวควบคุมโต๊ะ',
-  'tabletop.panel.mapGrid': 'แผนที่และกริด',
   'tabletop.panel.tokens': 'โทเคน',
   'tabletop.panel.nav': 'หมวดทูลบาร์',
   'tabletop.panel.close': 'ปิดแผง',

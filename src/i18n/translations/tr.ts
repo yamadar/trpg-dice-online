@@ -63,7 +63,6 @@ export const tr: Dict = {
   'tabletop.gmToken.unreadable': 'Bu görsel okunamadı.',
   'tabletop.gmToken.unlabeled': '(etiket yok)',
   'tabletop.panel.title': 'Masa kontrolleri',
-  'tabletop.panel.mapGrid': 'Harita ve ızgara',
   'tabletop.panel.tokens': 'Jetonlar',
   'tabletop.panel.nav': 'Araç çubuğu kategorileri',
   'tabletop.panel.close': 'Paneli kapat',

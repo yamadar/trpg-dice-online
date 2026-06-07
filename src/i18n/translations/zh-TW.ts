@@ -63,7 +63,6 @@ export const zhTW: Dict = {
   'tabletop.gmToken.unreadable': '無法讀取該圖片。',
   'tabletop.gmToken.unlabeled': '(無標籤)',
   'tabletop.panel.title': '桌面控制',
-  'tabletop.panel.mapGrid': '地圖與網格',
   'tabletop.panel.tokens': '棋子',
   'tabletop.panel.nav': '工具列分類',
   'tabletop.panel.close': '關閉面板',

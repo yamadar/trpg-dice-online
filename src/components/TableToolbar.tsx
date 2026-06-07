@@ -33,6 +33,7 @@ import {
   TrashIcon,
 } from './icons'
 import {
+  BackgroundMapIcon,
   CharacterIcon,
   FogIcon,
   HelpIcon,
@@ -49,7 +50,7 @@ import type { ComponentType } from 'react'
 /** Right-side toolbar categories. Each maps to an icon button in the
  *  vertical strip plus the body rendered in the side-expanding panel.
  *  Order = display order in the strip. */
-type CategoryId = 'mapGrid' | 'fog' | 'tokens' | 'scenes' | 'library'
+type CategoryId = 'map' | 'grid' | 'fog' | 'tokens' | 'scenes' | 'library'
 
 /** Background-map source tabs. Defined at module level so the array
  *  identity is stable across renders and the icon components are
@@ -644,7 +645,11 @@ export function TableToolbar({
   }
   const categories: CategoryDef[] = []
   if (isHost) {
-    categories.push({ id: 'mapGrid', Icon: TabletopIcon, labelKey: 'tabletop.panel.mapGrid' })
+    // Map and Grid are separate top-level entries: setting a background
+    // map is the most basic scene action and was hard to discover when
+    // buried under the grid form. Map leads, then grid, then fog.
+    categories.push({ id: 'map', Icon: BackgroundMapIcon, labelKey: 'tabletop.map.title' })
+    categories.push({ id: 'grid', Icon: TabletopIcon, labelKey: 'tabletop.grid.title' })
     categories.push({ id: 'fog', Icon: FogIcon, labelKey: 'tabletop.fog.title' })
   }
   categories.push({ id: 'tokens', Icon: CharacterIcon, labelKey: 'tabletop.panel.tokens' })
@@ -691,9 +696,8 @@ export function TableToolbar({
             </button>
           </header>
           <div className="tabletop-toolbar-panel-body">
-      {expandedCategory === 'mapGrid' && isHost && (
+      {expandedCategory === 'grid' && isHost && (
         <>
-          <h3 className="tabletop-toolbar-title">{t('tabletop.grid.title')}</h3>
           <label className="tabletop-toolbar-row">
             <span>{t('tabletop.grid.kind')}</span>
             <select
@@ -763,9 +767,10 @@ export function TableToolbar({
               label={t('tabletop.grid.snap')}
             />
           </div>
-
-          <hr className="tabletop-toolbar-divider" />
-          <h3 className="tabletop-toolbar-title">{t('tabletop.map.title')}</h3>
+        </>
+      )}
+      {expandedCategory === 'map' && isHost && (
+        <>
           {/* The file input lives at the top level (not inside the
               upload tab panel) so its `mapInputRef` is mounted
               whenever the section is visible — the "replace" button

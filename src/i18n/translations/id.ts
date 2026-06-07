@@ -63,7 +63,6 @@ export const id: Dict = {
   'tabletop.gmToken.unreadable': 'Tidak bisa membaca gambar itu.',
   'tabletop.gmToken.unlabeled': '(tanpa label)',
   'tabletop.panel.title': 'Kontrol tabletop',
-  'tabletop.panel.mapGrid': 'Peta & grid',
   'tabletop.panel.tokens': 'Token',
   'tabletop.panel.nav': 'Kategori toolbar',
   'tabletop.panel.close': 'Tutup panel',

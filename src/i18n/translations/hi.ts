@@ -63,7 +63,6 @@ export const hi: Dict = {
   'tabletop.gmToken.unreadable': 'वह छवि नहीं पढ़ी जा सकी।',
   'tabletop.gmToken.unlabeled': '(कोई लेबल नहीं)',
   'tabletop.panel.title': 'टेबलटॉप नियंत्रण',
-  'tabletop.panel.mapGrid': 'मानचित्र और ग्रिड',
   'tabletop.panel.tokens': 'टोकन',
   'tabletop.panel.nav': 'टूलबार श्रेणियाँ',
   'tabletop.panel.close': 'पैनल बंद करें',
