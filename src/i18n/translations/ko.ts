@@ -112,6 +112,7 @@ export const ko: Dict = {
   'tabletop.playerToken.noCharacters': '먼저 캐릭터를 만들어 토큰을 배치하세요.',
   'tabletop.npcLibrary.title': 'NPC 라이브러리',
   'tabletop.npcLibrary.add': 'Add NPC…',
+  'tabletop.npcLibrary.addShort': '추가',
   'tabletop.npcLibrary.place': '배치',
   'tabletop.npcLibrary.remove': '라이브러리에서 삭제',
   'tabletop.npcLibrary.unreadable': '이미지를 읽을 수 없습니다.',

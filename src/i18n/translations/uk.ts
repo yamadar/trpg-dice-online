@@ -112,6 +112,7 @@ export const uk: Dict = {
   'tabletop.playerToken.noCharacters': 'Спершу створіть персонажа, щоб розмістити фішку.',
   'tabletop.npcLibrary.title': 'Бібліотека NPC',
   'tabletop.npcLibrary.add': 'Add NPC…',
+  'tabletop.npcLibrary.addShort': 'Додати',
   'tabletop.npcLibrary.place': 'Розмістити',
   'tabletop.npcLibrary.remove': 'Видалити з бібліотеки',
   'tabletop.npcLibrary.unreadable': 'Не вдалося прочитати це зображення.',

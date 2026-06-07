@@ -88,6 +88,7 @@ import {
 } from '../tabletop/hostValidation'
 import { loadPresetMap } from '../tabletop/presetMaps'
 import { isValidPingPoint, newPingId, type Ping } from '../tabletop/ping'
+import { nextNpcDef } from '../tabletop/npc'
 import { isValidFacing, normalizeFacing } from '../tabletop/facing'
 import { clampHp, isValidHp, sanitizeStatuses } from '../tabletop/vitals'
 import {
@@ -1650,20 +1651,11 @@ export function useSession(): Session {
       if (roleRef.current === 'client') return
       const existing = tabletopRef.current.npcLibrary.find((d) => d.id === defId)
       if (!existing) return
-      const nextName =
-        updates.name === undefined ? existing.name : updates.name.trim()
-      if (!nextName) return
-      const nextNote =
-        updates.note === undefined ? existing.note : updates.note.trim()
-      const next: NpcDef = {
-        ...existing,
-        name: nextName,
-        ...(updates.image !== undefined ? { image: updates.image } : {}),
-        ...(nextNote ? { note: nextNote } : {}),
-      }
-      if (updates.note !== undefined && !nextNote && 'note' in next) {
-        delete (next as { note?: string }).note
-      }
+      // `nextNpcDef` rejects only an explicit blank-name edit; an image- /
+      // note-only update on a still-unnamed provisional entry goes through
+      // (otherwise changing the image before typing the name is dropped).
+      const next = nextNpcDef(existing, updates)
+      if (!next) return
       applyTabletop({
         ...tabletopRef.current,
         npcLibrary: tabletopRef.current.npcLibrary.map((d) =>

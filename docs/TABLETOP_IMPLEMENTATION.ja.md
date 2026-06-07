@@ -95,6 +95,7 @@
 | `grid.ts` | スクエアのスナップ・座標変換。サイズ対応スナップ（偶数サイズ→セル角、奇数 / サブセル→中心）、非ドリフトな `snapResizeToGrid`、`kind === 'hex'` 時は `hexGrid.ts` へ委譲 |
 | `hexGrid.ts` | フラットトップ hex 計算（odd-q）: 中心 / 多角形 / pixel→cell / ビューポート走査。redblobgames 方式 |
 | `tokens.ts` | PC トークンのライフサイクル・権限: `planPcTokenAdds`・`makeGmToken`・`canMoveToken`・`applyTokenMove/Upsert/Remove`・`defaultPlacementOrigin`（マップ中心→グリッド原点→`pcSpawn`）・4 列折り返しの `placementPosition`・`recenterTokensOnMap`・`snapAllTokensToGrid` |
+| `npc.ts` | `nextNpcDef` — NPC ライブラリの編集ルール（「名前を明示的に空にする」操作のみ弾くので、未命名の暫定エントリにも画像/メモ編集が反映される） |
 | `annotations.ts` | テキスト / ストローク / フォグの適用＋権限判定（`canEditMapText`・`canEraseStroke`）、`setFogCells`・`isCellRevealed`・`nearestRevealedCellCenter`（フォグへ落としたトークンの救済） |
 | `scenes.ts` | 1 セッション複数マップ: `addScene` / `switchScene` / `renameScene` / `deleteScene` / `listScenes`（現在シーンを top-level に置くモデル、単調増加する序数命名つき）。加えてライブラリ橋渡し `allScenes` / `currentSceneOnly` / `stripTemplateScenes`（全シーンの PC＋ペン除去）/ `appendScenes` |
 | `minimap.ts` | ミニマップ幾何: `fitRect`（ワールド矩形をボックスへフィット）・`worldToMinimap` / `minimapToWorld`・`minimapWorldBounds`（パン不変: マップ境界 → トークン bbox → 原点中心・ビューポートサイズのフォールバック）・`fogHidesWorldPoint`（俯瞰図のフォグ開示判定） |

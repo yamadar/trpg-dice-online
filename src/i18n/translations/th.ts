@@ -112,6 +112,7 @@ export const th: Dict = {
   'tabletop.playerToken.noCharacters': 'สร้างตัวละครก่อนเพื่อวางโทเคน',
   'tabletop.npcLibrary.title': 'คลัง NPC',
   'tabletop.npcLibrary.add': 'เพิ่ม NPC',
+  'tabletop.npcLibrary.addShort': 'เพิ่ม',
   'tabletop.npcLibrary.place': 'วาง',
   'tabletop.npcLibrary.remove': 'ลบจากคลัง',
   'tabletop.npcLibrary.unreadable': 'อ่านรูปนี้ไม่ได้',

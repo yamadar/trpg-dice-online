@@ -2980,6 +2980,13 @@ function TokenView({
                   align="center"
                   verticalAlign="middle"
                   fontSize={badgeSize * 0.8}
+                  // Emoji glyphs render high inside the line box, so
+                  // align/verticalAlign alone leaves them toward the top
+                  // of the chip. Nudge down ~8% of the chip to visually
+                  // centre them (the offset is in counter-scaled world
+                  // units, so it holds at any zoom).
+                  y={badgeSize * 0.08}
+                  listening={false}
                 />
               </Group>
             )

@@ -112,6 +112,7 @@ export const ja: Dict = {
   'tabletop.playerToken.noCharacters': 'まずキャラクターを作成してください',
   'tabletop.npcLibrary.title': 'NPC ライブラリ',
   'tabletop.npcLibrary.add': 'NPC を追加',
+  'tabletop.npcLibrary.addShort': '追加',
   'tabletop.npcLibrary.place': '配置',
   'tabletop.npcLibrary.remove': 'ライブラリから削除',
   'tabletop.npcLibrary.unreadable': '画像を読み込めませんでした',

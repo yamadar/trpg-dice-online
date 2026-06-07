@@ -112,6 +112,7 @@ export const hi: Dict = {
   'tabletop.playerToken.noCharacters': 'टोकन रखने के लिए पहले एक पात्र बनाएँ।',
   'tabletop.npcLibrary.title': 'NPC लाइब्रेरी',
   'tabletop.npcLibrary.add': 'NPC जोड़ें…',
+  'tabletop.npcLibrary.addShort': 'जोड़ें',
   'tabletop.npcLibrary.place': 'रखें',
   'tabletop.npcLibrary.remove': 'लाइब्रेरी से हटाएँ',
   'tabletop.npcLibrary.unreadable': 'वह छवि नहीं पढ़ी जा सकी।',

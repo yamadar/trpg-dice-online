@@ -112,6 +112,7 @@ export const ru: Dict = {
   'tabletop.playerToken.noCharacters': 'Сначала создайте персонажа, чтобы поставить фишку.',
   'tabletop.npcLibrary.title': 'Библиотека NPC',
   'tabletop.npcLibrary.add': 'Добавить NPC',
+  'tabletop.npcLibrary.addShort': 'Добавить',
   'tabletop.npcLibrary.place': 'Разместить',
   'tabletop.npcLibrary.remove': 'Убрать из библиотеки',
   'tabletop.npcLibrary.unreadable': 'Не удалось прочитать изображение.',

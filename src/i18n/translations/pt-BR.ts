@@ -112,6 +112,7 @@ export const ptBR: Dict = {
   'tabletop.playerToken.noCharacters': 'Crie um personagem antes de posicionar uma ficha.',
   'tabletop.npcLibrary.title': 'Biblioteca de NPCs',
   'tabletop.npcLibrary.add': 'Adicionar NPC',
+  'tabletop.npcLibrary.addShort': 'Adicionar',
   'tabletop.npcLibrary.place': 'Posicionar',
   'tabletop.npcLibrary.remove': 'Remover da biblioteca',
   'tabletop.npcLibrary.unreadable': 'Não foi possível ler essa imagem.',

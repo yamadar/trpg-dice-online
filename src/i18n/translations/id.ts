@@ -112,6 +112,7 @@ export const id: Dict = {
   'tabletop.playerToken.noCharacters': 'Buat karakter dulu untuk menempatkan token.',
   'tabletop.npcLibrary.title': 'Pustaka NPC',
   'tabletop.npcLibrary.add': 'Tambah NPC…',
+  'tabletop.npcLibrary.addShort': 'Tambah',
   'tabletop.npcLibrary.place': 'Tempatkan',
   'tabletop.npcLibrary.remove': 'Hapus dari pustaka',
   'tabletop.npcLibrary.unreadable': 'Tidak bisa membaca gambar itu.',

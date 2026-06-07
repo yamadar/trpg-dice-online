@@ -112,6 +112,7 @@ export const zhTW: Dict = {
   'tabletop.playerToken.noCharacters': '請先建立角色才能放置棋子。',
   'tabletop.npcLibrary.title': 'NPC 圖庫',
   'tabletop.npcLibrary.add': '新增 NPC…',
+  'tabletop.npcLibrary.addShort': '新增',
   'tabletop.npcLibrary.place': '放置',
   'tabletop.npcLibrary.remove': '從圖庫移除',
   'tabletop.npcLibrary.unreadable': '無法讀取該圖片。',

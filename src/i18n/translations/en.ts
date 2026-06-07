@@ -112,6 +112,7 @@ export const en: Dict = {
   'tabletop.playerToken.noCharacters': 'Create a character first to place a token.',
   'tabletop.npcLibrary.title': 'NPC library',
   'tabletop.npcLibrary.add': 'Add NPC',
+  'tabletop.npcLibrary.addShort': 'Add',
   'tabletop.npcLibrary.place': 'Place',
   'tabletop.npcLibrary.remove': 'Remove from library',
   'tabletop.npcLibrary.unreadable': 'Could not read that image.',
