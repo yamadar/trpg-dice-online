@@ -1857,6 +1857,18 @@ export function TablePanel({
           }}
           onLoadTabletopFromLibrary={session.loadTabletopFromLibrary}
           onAddLibraryAsScenes={session.addLibraryAsScenes}
+          onOverwriteTabletop={(id, kind: TabletopLibraryKind, scope) => {
+            // Templates need a PC spawn point — same viewport-centre
+            // calc as the fresh-save path above; saves ignore it.
+            const viewportCenter =
+              kind === 'template'
+                ? {
+                    x: -stageX / stageScale + size.width / 2 / stageScale,
+                    y: -stageY / stageScale + size.height / 2 / stageScale,
+                  }
+                : undefined
+            return session.overwriteTabletopInLibrary(id, viewportCenter, scope)
+          }}
           onDeleteTabletopFromLibrary={session.deleteTabletopFromLibrary}
           onNotice={onNotice}
           onOpenTutorial={() => setShowTutorial(true)}

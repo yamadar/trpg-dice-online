@@ -392,6 +392,14 @@ export interface Session {
   /** GM-only: splice a saved entry's scene(s) into the current session
    *  as new scenes (keeps existing scenes; switches to the first added). */
   addLibraryAsScenes: (id: string) => Promise<'ok' | 'missing'>
+  /** GM-only: overwrite an existing library entry in place with the
+   *  current table (keeps its id / name / kind; rebuilds its state with
+   *  the same kind-specific transform `saveTabletopAs` uses). */
+  overwriteTabletopInLibrary: (
+    id: string,
+    viewportCenter?: { x: number; y: number },
+    scope?: 'scene' | 'table',
+  ) => Promise<'ok' | 'missing' | 'invalid'>
   /** GM-only: drop an entry from the library. */
   deleteTabletopFromLibrary: (id: string) => Promise<void>
   /**
@@ -1992,6 +2000,47 @@ export function useSession(): Session {
       return 'ok'
     },
     [applySceneOp, tabletopLibrary],
+  )
+
+  /**
+   * GM-only: overwrite an EXISTING library entry in place with the
+   * current table. The entry keeps its id / name / kind / createdAt;
+   * only `state` and `updatedAt` change. The state is rebuilt with the
+   * same transform `saveTabletopAs` applies for that kind (templates
+   * strip PC tokens + strokes and stash the viewport centre as the PC
+   * spawn point; saves keep everything), honouring the same scope
+   * (this scene vs the whole table) the save UI offers.
+   */
+  const overwriteTabletopInLibrary = useCallback(
+    async (
+      id: string,
+      viewportCenter?: { x: number; y: number },
+      scope: 'scene' | 'table' = 'table',
+    ): Promise<'ok' | 'missing' | 'invalid'> => {
+      if (roleRef.current === 'client') return 'invalid'
+      const existing = tabletopLibrary.find((e) => e.id === id)
+      if (!existing) return 'missing'
+      const scoped =
+        scope === 'scene'
+          ? currentSceneOnly(tabletopRef.current)
+          : tabletopRef.current
+      let state: TabletopState =
+        existing.kind === 'template'
+          ? stripTemplateScenes(scoped)
+          : { ...scoped }
+      if (existing.kind === 'template' && viewportCenter) {
+        state = { ...state, pcSpawn: viewportCenter }
+      }
+      const entry: SavedTabletop = {
+        ...existing,
+        state,
+        updatedAt: Date.now(),
+      }
+      await saveLibraryEntry(entry)
+      await refreshTabletopLibrary()
+      return 'ok'
+    },
+    [refreshTabletopLibrary, tabletopLibrary],
   )
 
   /** GM-only: drop a saved entry from the library. The current
@@ -4099,6 +4148,7 @@ export function useSession(): Session {
     saveTabletopAs,
     loadTabletopFromLibrary,
     addLibraryAsScenes,
+    overwriteTabletopInLibrary,
     deleteTabletopFromLibrary,
     addMapText,
     updateMapText,

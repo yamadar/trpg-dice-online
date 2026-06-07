@@ -190,6 +190,14 @@ interface Props {
   /** GM-only: splice a saved entry's scene(s) into the current session
    *  as new scenes (keeps existing scenes). */
   onAddLibraryAsScenes: (id: string) => Promise<'ok' | 'missing'>
+  /** GM-only: overwrite an existing entry in place with the current
+   *  table. `kind` is the entry's own kind (passed so the caller can
+   *  decide whether a viewport-centre spawn is needed). */
+  onOverwriteTabletop: (
+    id: string,
+    kind: TabletopLibraryKind,
+    scope: 'scene' | 'table',
+  ) => Promise<'ok' | 'missing' | 'invalid'>
   /** GM-only: drop one entry from the library. */
   onDeleteTabletopFromLibrary: (id: string) => Promise<void>
   /** GM-only: load a bundled preset map from `public/maps/`. */
@@ -257,6 +265,7 @@ export function TableToolbar({
   onSaveTabletopAs,
   onLoadTabletopFromLibrary,
   onAddLibraryAsScenes,
+  onOverwriteTabletop,
   onDeleteTabletopFromLibrary,
   onLoadPresetMap,
   fog,
@@ -469,6 +478,24 @@ export function TableToolbar({
       onNotice?.(t('tabletop.library.addedAsScenes'), 'success')
     } else {
       onNotice?.(t('tabletop.library.loadFailed'), 'error')
+    }
+  }
+
+  const handleOverwrite = async (
+    id: string,
+    name: string,
+    kind: TabletopLibraryKind,
+  ) => {
+    const ok = await confirm({
+      message: t('tabletop.library.confirmOverwrite', { name }),
+      destructive: true,
+    })
+    if (!ok) return
+    const result = await onOverwriteTabletop(id, kind, saveScope)
+    if (result === 'ok') {
+      onNotice?.(t('tabletop.library.overwritten'), 'success')
+    } else {
+      onNotice?.(t('tabletop.library.saveFailed'), 'error')
     }
   }
 
@@ -1415,6 +1442,9 @@ export function TableToolbar({
               emptyLabel={t('tabletop.library.emptyTemplates')}
               onReplace={(id) => void handleLoad(id)}
               onAddScenes={(id) => void handleAddAsScenes(id)}
+              onOverwrite={(id, name, kind) =>
+                void handleOverwrite(id, name, kind)
+              }
               onDelete={(id, name) => void handleDelete(id, name)}
             />
 
@@ -1427,6 +1457,9 @@ export function TableToolbar({
               emptyLabel={t('tabletop.library.emptySaves')}
               onReplace={(id) => void handleLoad(id)}
               onAddScenes={(id) => void handleAddAsScenes(id)}
+              onOverwrite={(id, name, kind) =>
+                void handleOverwrite(id, name, kind)
+              }
               onDelete={(id, name) => void handleDelete(id, name)}
             />
         </>
@@ -1714,26 +1747,61 @@ function NpcInlineEditor({
 
 /**
  * One library section's entry list (shared by Templates and Snapshots).
- * Each row shows the name, a scene-count badge for multi-scene entries,
- * a delete button, and the two distinct load actions: "Replace table"
- * (swap the whole table) and "Add as scene" (splice into the current
- * session's scenes). Factored out so the two sections do not duplicate
- * the markup.
+ * Each row shows the name and a scene-count badge for multi-scene
+ * entries. Tapping a row opens a popup menu with the per-entry actions
+ * ("Replace table", "Add as scene", "Overwrite", "Delete") rather than
+ * laying every button out permanently — the always-visible buttons were
+ * the main source of visual noise in a long list. Factored out so the
+ * two sections do not duplicate the markup.
  */
 function LibraryList({
   entries,
   emptyLabel,
   onReplace,
   onAddScenes,
+  onOverwrite,
   onDelete,
 }: {
   entries: ReadonlyArray<SavedTabletop>
   emptyLabel: string
   onReplace: (id: string) => void
   onAddScenes: (id: string) => void
+  onOverwrite: (id: string, name: string, kind: TabletopLibraryKind) => void
   onDelete: (id: string, name: string) => void
 }) {
   const { t } = useI18n()
+  // The open entry's popup, anchored to the tapped row's screen-space
+  // rect. `null` = nothing open. Position is FIXED (not absolute inside
+  // the row) so the menu escapes the library list's `overflow:auto`
+  // 160 px cap — an absolute menu taller than that box would be clipped.
+  // `up` flips the menu above the row when there isn't room below.
+  const [menu, setMenu] = useState<{
+    id: string
+    left: number
+    width: number
+    top?: number
+    bottom?: number
+  } | null>(null)
+  const close = () => setMenu(null)
+  // Roughly the menu's height (4 items + padding); used only to decide
+  // whether it fits below the row or should flip above it.
+  const MENU_H = 180
+  const toggle = (id: string, el: HTMLElement) => {
+    if (menu?.id === id) {
+      close()
+      return
+    }
+    const r = el.getBoundingClientRect()
+    const up = window.innerHeight - r.bottom < MENU_H && r.top > MENU_H
+    setMenu({
+      id,
+      left: r.left,
+      width: r.width,
+      ...(up
+        ? { bottom: window.innerHeight - r.top + 4 }
+        : { top: r.bottom + 4 }),
+    })
+  }
   if (entries.length === 0) {
     return <p className="tabletop-toolbar-meta">{emptyLabel}</p>
   }
@@ -1741,12 +1809,26 @@ function LibraryList({
     <ul className="tabletop-toolbar-list">
       {entries.map((entry) => {
         const n = sceneCount(entry.state)
+        const open = menu?.id === entry.id
+        // Each menu action closes the popup first, then runs — so a
+        // confirm dialog (delete / overwrite) is not left behind an open
+        // menu.
+        const pick = (run: () => void) => {
+          close()
+          run()
+        }
         return (
           <li
             key={entry.id}
             className="tabletop-toolbar-list-item tabletop-library-entry"
           >
-            <div className="tabletop-library-entry-head">
+            <button
+              type="button"
+              className="tabletop-library-entry-row"
+              aria-haspopup="menu"
+              aria-expanded={open}
+              onClick={(e) => toggle(entry.id, e.currentTarget)}
+            >
               <span className="tabletop-toolbar-list-label" title={entry.name}>
                 {entry.name}
               </span>
@@ -1755,36 +1837,70 @@ function LibraryList({
                   {t('tabletop.library.sceneCountBadge', { n: String(n) })}
                 </span>
               )}
-              <button
-                type="button"
-                className="icon-btn tabletop-toolbar-list-remove"
-                aria-label={t('tabletop.library.delete')}
-                title={t('tabletop.library.delete')}
-                onClick={() => onDelete(entry.id, entry.name)}
-              >
-                <TrashIcon />
-              </button>
-            </div>
-            <div className="tabletop-library-entry-actions">
-              {/* Both actions are equal, quiet outline buttons — neither
-                  the (near-destructive) replace nor add-as-scene should
-                  shout, and a repeated filled button was the main source
-                  of visual noise in the list. */}
-              <button
-                type="button"
-                className="tabletop-toolbar-list-action outline"
-                onClick={() => onReplace(entry.id)}
-              >
-                {t('tabletop.library.loadReplace')}
-              </button>
-              <button
-                type="button"
-                className="tabletop-toolbar-list-action outline"
-                onClick={() => onAddScenes(entry.id)}
-              >
-                {t('tabletop.library.loadAsScenes')}
-              </button>
-            </div>
+              <span className="tabletop-library-entry-caret" aria-hidden="true">
+                ▾
+              </span>
+            </button>
+            {open && menu && (
+              <>
+                {/* Full-screen backdrop so a tap anywhere off the menu
+                    dismisses it, matching the SettingsMenu pattern. */}
+                <div
+                  className="tabletop-library-menu-backdrop"
+                  onClick={close}
+                />
+                <div
+                  className="tabletop-library-menu"
+                  role="menu"
+                  aria-label={entry.name}
+                  style={{
+                    left: menu.left,
+                    width: menu.width,
+                    ...(menu.top !== undefined ? { top: menu.top } : {}),
+                    ...(menu.bottom !== undefined
+                      ? { bottom: menu.bottom }
+                      : {}),
+                  }}
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="tabletop-library-menu-item"
+                    onClick={() => pick(() => onReplace(entry.id))}
+                  >
+                    {t('tabletop.library.loadReplace')}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="tabletop-library-menu-item"
+                    onClick={() => pick(() => onAddScenes(entry.id))}
+                  >
+                    {t('tabletop.library.loadAsScenes')}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="tabletop-library-menu-item"
+                    onClick={() =>
+                      pick(() =>
+                        onOverwrite(entry.id, entry.name, entry.kind),
+                      )
+                    }
+                  >
+                    {t('tabletop.library.overwrite')}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="tabletop-library-menu-item danger"
+                    onClick={() => pick(() => onDelete(entry.id, entry.name))}
+                  >
+                    {t('tabletop.library.delete')}
+                  </button>
+                </div>
+              </>
+            )}
           </li>
         )
       })}
