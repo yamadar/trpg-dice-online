@@ -21,7 +21,6 @@ export function toolForKey(key: string): KeyTool | null {
   switch (key.toLowerCase()) {
     case '1':
     case 'v':
-    case 's':
       return 'select'
     case '2':
     case 't':
