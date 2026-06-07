@@ -29,6 +29,9 @@
   トークンごとに**公開メモ**（全員編集可）と GM 専用の**非公開メモ**
   （ブロードキャストしない）。任意の**向き（facing）**: ポップオーバーの
   8 方位コンパスでトークンに方向矢印を描く（移動と同じ権限＝オーナー / GM）。
+  任意の**バイタル**: HP プール（`{ current, max }`）をトークン下部に
+  色分けバーで、固定カタログの**状態異常**をトークン上部に絵文字バッジで
+  描く（どちらもオーナー / GM が編集可）。
 - **NPC ライブラリ**: GM が用意する名前付き NPC 定義（名前 + 画像 + メモ）の
   ストック。何度でも配置でき、配置時に画像 / ラベル / メモをインラインに
   コピーするため、後からライブラリを編集しても配置済みトークンは変わらない。
@@ -52,8 +55,8 @@
 
 ### 対象外（Phase 2 以降）
 
-ルーラー（マス距離測定）、HP バー / 状態アイコン、
-1 セッション複数マップ（シーン一覧）、ミニマップ、キーボード移動の完全対応。
+ルーラー（マス距離測定）、1 セッション複数マップ（シーン一覧）、
+ミニマップ、キーボード移動の完全対応。
 §9 参照。
 
 ## 2. モジュール構成
@@ -150,9 +153,10 @@ GM（P2P ホスト）が正本の state を保持し、各クライアントは 
 
 **クライアント → ホスト**（いずれも反映前にホスト側で検証）:
 `tokenMove`・`pcTokenPlaceRequest`・`tokenSizeRequest`・
-`tokenRemoveRequest`・`tokenFacingRequest`・`tokenNoteRequest`・
-`mapTextAddRequest`・`mapTextUpdateRequest`・`mapTextRemoveRequest`・
-`drawStrokeAddRequest`・`drawStrokeRemoveRequest`・`pingRequest`。
+`tokenRemoveRequest`・`tokenFacingRequest`・`tokenHpRequest`・
+`tokenStatusRequest`・`tokenNoteRequest`・`mapTextAddRequest`・
+`mapTextUpdateRequest`・`mapTextRemoveRequest`・`drawStrokeAddRequest`・
+`drawStrokeRemoveRequest`・`pingRequest`。
 
 **ホスト → クライアント**（権威）: `tokenMove`・`tokenUpsert`・
 `tokenRemove`・`gridChange`・`mapMeta`・`mapChunk`・`mapCleared`・
@@ -324,7 +328,8 @@ mount され、Konva の描画クラッシュ時には空白ではなく再試�
 `hostValidation`・`snapshot`・`imageChunk`・`imageBackground`（URL 検証 /
 fetch ガード。テストは `imageBackgroundUrl.test.ts`）・`mapGallery`・
 `presetMaps`・`ping`（座標検証 ＋ さざ波アニメーションのカーブ）・
-`facing`（角度の正規化・画面空間の方向ベクトル・矢じりの幾何）。
+`facing`（角度の正規化・画面空間の方向ベクトル・矢じりの幾何）・
+`vitals`（HP のクランプ / 比率 / バー色と状態カタログのサニタイズ）。
 `src/storage/`: `tabletop`（sanitize ＋ round-trip、fake-indexeddb）・
 `roomExport`・`roomImport`（`table.json` 入りのマニフェスト v6）。
 
@@ -350,10 +355,9 @@ Canvas に依存する描画は意図的に単体テスト対象外。上記の�
 おおよその優先度順（実装済みは除外）:
 
 1. ルーラー（マス距離測定）
-2. HP バー / 状態アイコン
-3. 1 セッション複数マップ（シーン一覧 / 切替）
-4. ミニマップ
-5. キーボード移動・ショートカットの完全対応
+2. 1 セッション複数マップ（シーン一覧 / 切替）
+3. ミニマップ
+4. キーボード移動・ショートカットの完全対応
 
 ## 9. 改訂
 
@@ -372,3 +376,9 @@ Canvas に依存する描画は意図的に単体テスト対象外。上記の�
   方向矢印を追加。`tabletop/facing.ts` 純粋モジュール ＋ テスト。あわせて
   §3.7 のリロードギャップも解消（`sanitizeStoredTabletop` が `size` /
   `note` / `privateNote` / `facing` を往復）。
+- v1.3 — Phase 2: **HP バー / 状態アイコン**。両トークン種別に任意の `hp`
+  （`{ current, max }`）と `statuses`（カタログキー）、`tokenHpRequest` /
+  `tokenStatusRequest` ワイヤメッセージ（`canMoveToken` で検証し、ホスト側で
+  クランプ / サニタイズ）、`TokenView` の HP バー ＋ 絵文字状態バッジ、
+  ポップオーバーの HP 入力 ＋ 状態チップを追加。`tabletop/vitals.ts` 純粋
+  モジュール ＋ テスト。リロードサニタイザも両方を往復する。

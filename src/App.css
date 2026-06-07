@@ -4638,6 +4638,49 @@ button.char-avatar-large:disabled {
   border-color: var(--accent);
 }
 
+/* Token HP: two small number inputs (current / max) with a clear button. */
+.tabletop-token-hp-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tabletop-token-hp-inputs input[type='number'] {
+  width: 56px;
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  text-align: center;
+}
+
+/* Token status conditions: a wrap of emoji toggle chips. Inactive chips
+   are desaturated / dimmed; the active ones light up with the accent. */
+.tabletop-token-status-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tabletop-token-status-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  filter: grayscale(0.7) opacity(0.65);
+}
+.tabletop-token-status-btn.active {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  filter: none;
+}
+
 /* Character-info modal: a compact dialog wrapping the shared
    CharacterEditor, opened from a placed PC token's edit popover. Styled
    like a narrow centred dialog rather than the wide map gallery. */

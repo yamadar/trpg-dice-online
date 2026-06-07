@@ -88,6 +88,7 @@ import {
 import { loadPresetMap } from '../tabletop/presetMaps'
 import { isValidPingPoint, newPingId, type Ping } from '../tabletop/ping'
 import { isValidFacing, normalizeFacing } from '../tabletop/facing'
+import { clampHp, isValidHp, sanitizeStatuses } from '../tabletop/vitals'
 import { fillTabletopDefaults, stripMapBytesForWire, tokenForWire } from '../tabletop/snapshot'
 import { loadTabletop, saveTabletop } from '../storage/tabletop'
 import {
@@ -298,6 +299,17 @@ export interface Session {
    *  host applies directly; a client sends `tokenFacingRequest` and the
    *  host echoes the result via `tokenUpsert`. */
   setTokenFacing: (tokenId: string, facing: number | null) => void
+  /** Set or clear (`null`) a token's HP pool. Permission follows
+   *  `canMoveToken` (own PC or GM); the host clamps the values. Hosts
+   *  apply directly; clients send `tokenHpRequest`. */
+  setTokenHp: (
+    tokenId: string,
+    hp: { current: number; max: number } | null,
+  ) => void
+  /** Replace a token's status-condition list (catalog keys). Permission
+   *  follows `canMoveToken`; the host sanitises the list. Hosts apply
+   *  directly; clients send `tokenStatusRequest`. */
+  setTokenStatuses: (tokenId: string, statuses: string[]) => void
   /**
    * GM-only: add an NPC to the library (host-side stash that can be
    * placed on the map repeatedly). The image is optional at add-time
@@ -1511,6 +1523,61 @@ export function useSession(): Session {
   )
 
   /**
+   * Set or clear a token's HP pool. Permission mirrors move / resize
+   * (`canMoveToken`): a client forwards a `tokenHpRequest`; the host
+   * clamps the values (integer, current in [0, max]) and echoes the
+   * token via `tokenUpsert`. `null` clears the bar.
+   */
+  const setTokenHp = useCallback(
+    (tokenId: string, hp: { current: number; max: number } | null) => {
+      if (roleRef.current === 'client') {
+        roomRef.current?.sendToHost({ t: 'tokenHpRequest', tokenId, hp })
+        return
+      }
+      const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
+      if (!existing) return
+      const next: Token = { ...existing }
+      if (hp === null || !isValidHp(hp)) {
+        delete (next as Token & { hp?: unknown }).hp
+      } else {
+        ;(next as Token & { hp?: { current: number; max: number } }).hp =
+          clampHp(hp)
+      }
+      const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
+      applyTabletop({ ...tabletopRef.current, tokens })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(next) })
+    },
+    [applyTabletop],
+  )
+
+  /**
+   * Replace a token's status-condition list. Permission mirrors move /
+   * resize; the host sanitises the list (known catalog keys only,
+   * de-duped, capped). An empty result drops the field entirely.
+   */
+  const setTokenStatuses = useCallback(
+    (tokenId: string, statuses: string[]) => {
+      if (roleRef.current === 'client') {
+        roomRef.current?.sendToHost({ t: 'tokenStatusRequest', tokenId, statuses })
+        return
+      }
+      const existing = tabletopRef.current.tokens.find((t) => t.id === tokenId)
+      if (!existing) return
+      const clean = sanitizeStatuses(statuses)
+      const next: Token = { ...existing }
+      if (clean.length === 0) {
+        delete (next as Token & { statuses?: string[] }).statuses
+      } else {
+        ;(next as Token & { statuses?: string[] }).statuses = clean
+      }
+      const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
+      applyTabletop({ ...tabletopRef.current, tokens })
+      roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(next) })
+    },
+    [applyTabletop],
+  )
+
+  /**
    * GM-only: add an NPC to the library. The image is downscaled via
    * the same pipeline as in-place NPC tokens. The library entry is
    * NOT placed on the map — it sits in `tabletop.npcLibrary` until
@@ -2483,6 +2550,48 @@ export function useSession(): Session {
             ;(next as Token & { facing?: number }).facing = normalizeFacing(
               msg.facing,
             )
+          }
+          const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
+          applyTabletop({ ...tabletopRef.current, tokens })
+          roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(next) })
+          break
+        }
+        case 'tokenHpRequest': {
+          // Same ownership check as move / resize. The host clamps so a
+          // bad client cannot persist out-of-range / non-integer HP.
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const token = tabletopRef.current.tokens.find(
+            (t) => t.id === msg.tokenId,
+          )
+          if (!token) break
+          if (!canMoveToken(token, { playerId: sender.id, isHost: false })) break
+          const next: Token = { ...token }
+          if (msg.hp === null || !isValidHp(msg.hp)) {
+            delete (next as Token & { hp?: unknown }).hp
+          } else {
+            ;(next as Token & { hp?: { current: number; max: number } }).hp =
+              clampHp(msg.hp)
+          }
+          const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
+          applyTabletop({ ...tabletopRef.current, tokens })
+          roomRef.current?.broadcast({ t: 'tokenUpsert', token: tokenForWire(next) })
+          break
+        }
+        case 'tokenStatusRequest': {
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          const token = tabletopRef.current.tokens.find(
+            (t) => t.id === msg.tokenId,
+          )
+          if (!token) break
+          if (!canMoveToken(token, { playerId: sender.id, isHost: false })) break
+          const clean = sanitizeStatuses(msg.statuses)
+          const next: Token = { ...token }
+          if (clean.length === 0) {
+            delete (next as Token & { statuses?: string[] }).statuses
+          } else {
+            ;(next as Token & { statuses?: string[] }).statuses = clean
           }
           const tokens = applyTokenUpsert(tabletopRef.current.tokens, next)
           applyTabletop({ ...tabletopRef.current, tokens })
@@ -3872,6 +3981,8 @@ export function useSession(): Session {
     updateTokenPrivateNote,
     setTokenSize,
     setTokenFacing,
+    setTokenHp,
+    setTokenStatuses,
     addNpcDef,
     updateNpcDef,
     removeNpcDef,

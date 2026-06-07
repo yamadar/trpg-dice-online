@@ -180,6 +180,18 @@ export type ClientMessage =
    *  facing direction (degrees clockwise from north). Validated with
    *  `canMoveToken` like move / resize, then echoed via `tokenUpsert`. */
   | { t: 'tokenFacingRequest'; tokenId: string; facing: number | null }
+  /** A participant asks the host to set (or clear with `null`) a token's
+   *  HP pool. Validated with `canMoveToken`; the host clamps the values
+   *  and echoes via `tokenUpsert`. */
+  | {
+      t: 'tokenHpRequest'
+      tokenId: string
+      hp: { current: number; max: number } | null
+    }
+  /** A participant asks the host to replace a token's status-condition
+   *  list. Validated with `canMoveToken`; the host sanitises the list
+   *  (known keys only, de-duped, capped) and echoes via `tokenUpsert`. */
+  | { t: 'tokenStatusRequest'; tokenId: string; statuses: string[] }
   /** Any participant asks the host to update the public shared note on any
    *  token. The host validates that the sender is a known participant (no
    *  per-token ownership check — the note is intentionally writable by

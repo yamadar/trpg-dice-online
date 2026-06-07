@@ -4,6 +4,17 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.100 — **HP bar & status conditions**. Tokens can carry an optional
+  HP pool (current / max) drawn as a colour-graded bar under the token
+  (green → amber → red), and a set of status conditions from a fixed
+  catalog (poison, stun, sleep, fear, charm, burn, freeze, bless, shield,
+  haste, bleed, down) drawn as emoji badges above the token. Both are
+  edited from the token dialog (HP inputs + a chip grid) and follow the
+  same `canMoveToken` permission as move / facing, via host-validated
+  `tokenHpRequest` / `tokenStatusRequest` messages (clamped / sanitised
+  host-side). The HP/status math lives in `tabletop/vitals.ts`
+  (unit-tested) and both round-trip through the reload sanitiser.
+
 - v1.99 — **Token facing**. Tokens can carry an optional facing direction.
   The token dialog gains an 8-way compass (plus a clear cell) and the
   canvas draws a small direction arrow just outside the token. Facing

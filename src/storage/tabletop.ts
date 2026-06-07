@@ -42,6 +42,7 @@ import {
   type TokenSize,
 } from '../tabletop/types'
 import { isValidFacing, normalizeFacing } from '../tabletop/facing'
+import { clampHp, isValidHp, sanitizeStatuses } from '../tabletop/vitals'
 
 const TABLETOP = 'sessionTable'
 
@@ -127,8 +128,17 @@ function sanitizeTokenCommon(r: Record<string, unknown>): {
   note?: string
   privateNote?: string
   facing?: number
+  hp?: { current: number; max: number }
+  statuses?: string[]
 } {
-  const out: { size?: TokenSize; note?: string; privateNote?: string; facing?: number } = {}
+  const out: {
+    size?: TokenSize
+    note?: string
+    privateNote?: string
+    facing?: number
+    hp?: { current: number; max: number }
+    statuses?: string[]
+  } = {}
   if (
     typeof r.size === 'number' &&
     (TOKEN_SIZES as ReadonlyArray<number>).includes(r.size)
@@ -140,6 +150,9 @@ function sanitizeTokenCommon(r: Record<string, unknown>): {
   const privateNote = asString(r.privateNote).trim()
   if (privateNote) out.privateNote = privateNote.slice(0, MAX_TOKEN_NOTE)
   if (isValidFacing(r.facing)) out.facing = normalizeFacing(r.facing)
+  if (isValidHp(r.hp)) out.hp = clampHp(r.hp)
+  const statuses = sanitizeStatuses(r.statuses)
+  if (statuses.length > 0) out.statuses = statuses
   return out
 }
 

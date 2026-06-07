@@ -32,7 +32,10 @@
   hold multiple tokens. Per-token **public note** (anyone) plus a
   GM-only **private note** (never broadcast). Optional **facing**: an
   8-way compass in the popover draws a direction arrow on the token
-  (owner / GM, same permission as move).
+  (owner / GM, same permission as move). Optional **vitals**: an HP pool
+  (`{ current, max }`) drawn as a colour-graded bar under the token, and
+  **status conditions** from a fixed catalog drawn as emoji badges above
+  it (both owner / GM editable).
 - **NPC library**: a GM-curated stash of named NPC definitions
   (name + image + note) that can be placed repeatedly; placing copies the
   image/label/note inline so later edits don't mutate placed tokens.
@@ -58,8 +61,8 @@
 
 ### Out of scope (Phase 2+)
 
-Ruler / cell-distance measurement, HP bars / status icons, multiple
-maps per session (scene list), minimap, full keyboard movement. See §9.
+Ruler / cell-distance measurement, multiple maps per session (scene
+list), minimap, full keyboard movement. See §9.
 
 ## 2. Module map
 
@@ -156,9 +159,10 @@ fire-and-forgets `saveTabletop`.
 
 **Client → host** (each validated host-side before it takes effect):
 `tokenMove`, `pcTokenPlaceRequest`, `tokenSizeRequest`,
-`tokenRemoveRequest`, `tokenFacingRequest`, `tokenNoteRequest`,
-`mapTextAddRequest`, `mapTextUpdateRequest`, `mapTextRemoveRequest`,
-`drawStrokeAddRequest`, `drawStrokeRemoveRequest`, `pingRequest`.
+`tokenRemoveRequest`, `tokenFacingRequest`, `tokenHpRequest`,
+`tokenStatusRequest`, `tokenNoteRequest`, `mapTextAddRequest`,
+`mapTextUpdateRequest`, `mapTextRemoveRequest`, `drawStrokeAddRequest`,
+`drawStrokeRemoveRequest`, `pingRequest`.
 
 **Host → clients** (authoritative): `tokenMove`, `tokenUpsert`,
 `tokenRemove`, `gridChange`, `mapMeta`, `mapChunk`, `mapCleared`,
@@ -341,7 +345,8 @@ Implemented across ~40 PRs (#134–#190). Grouped by theme:
 validation / fetch guards, covered by `imageBackgroundUrl.test.ts`) ·
 `mapGallery` · `presetMaps` · `ping` (coordinate validation + the
 expanding-ring animation curve) · `facing` (angle normalisation, the
-screen-space direction vector, and the arrowhead geometry).
+screen-space direction vector, and the arrowhead geometry) · `vitals`
+(HP clamp / ratio / bar colour and the status-catalog sanitiser).
 `src/storage/`: `tabletop` (sanitize + round-trip, fake-indexeddb) ·
 `roomExport` · `roomImport` (manifest v6 with `table.json`).
 
@@ -368,10 +373,9 @@ on <https://yamadar.github.io/trpg-dice-online/>.
 Ordered by rough priority (shipped items removed):
 
 1. Ruler / cell-distance measurement
-2. HP bar / status icons
-3. Multiple maps per session (scene list / switcher)
-4. Minimap
-5. Full keyboard movement & shortcuts
+2. Multiple maps per session (scene list / switcher)
+3. Minimap
+4. Full keyboard movement & shortcuts
 
 ## 9. Revisions
 
@@ -391,3 +395,10 @@ Ordered by rough priority (shipped items removed):
   and a direction arrow on `TokenView`. `tabletop/facing.ts` pure module
   + tests. Also closes the §3.7 reload gap: `sanitizeStoredTabletop` now
   round-trips `size` / `note` / `privateNote` / `facing`.
+- v1.3 — Phase 2: **HP bar / status icons**. Optional `hp`
+  (`{ current, max }`) and `statuses` (catalog keys) on both token kinds,
+  `tokenHpRequest` / `tokenStatusRequest` wire messages (validated with
+  `canMoveToken`, clamped / sanitised host-side), an HP bar + emoji
+  status badges on `TokenView`, and HP inputs + a status chip grid in the
+  popover. `tabletop/vitals.ts` pure module + tests; the reload sanitiser
+  round-trips both.
