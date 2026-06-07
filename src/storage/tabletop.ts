@@ -30,6 +30,7 @@ import {
   MIN_CELL_SIZE,
   MIN_PEN_WIDTH,
   MIN_TEXT_FONT_SIZE,
+  INITIAL_SCENE_ID,
   TOKEN_SIZES,
   type DrawStroke,
   type FogState,
@@ -37,6 +38,7 @@ import {
   type MapBackground,
   type MapText,
   type NpcDef,
+  type Scene,
   type TabletopState,
   type Token,
   type TokenSize,
@@ -291,6 +293,64 @@ function sanitizePcSpawn(raw: unknown): { x: number; y: number } | undefined {
   return { x, y }
 }
 
+function sanitizeTokenArray(raw: unknown): Token[] {
+  const out: Token[] = []
+  if (Array.isArray(raw)) {
+    for (const x of raw) {
+      const t = sanitizeToken(x)
+      if (t) out.push(t)
+    }
+  }
+  return out
+}
+
+function sanitizeTextArray(raw: unknown): MapText[] {
+  const out: MapText[] = []
+  if (Array.isArray(raw)) {
+    for (const x of raw) {
+      const t = sanitizeMapText(x)
+      if (t) out.push(t)
+    }
+  }
+  return out
+}
+
+function sanitizeStrokeArray(raw: unknown): DrawStroke[] {
+  const out: DrawStroke[] = []
+  if (Array.isArray(raw)) {
+    for (const x of raw) {
+      const s = sanitizeDrawStroke(x)
+      if (s) out.push(s)
+    }
+  }
+  return out
+}
+
+/**
+ * Coerce a stored inactive-scene record into a valid `Scene`. Reuses the
+ * per-field sanitisers; a record without an id is dropped (returns null)
+ * so the scene list never carries an unswitchable entry.
+ */
+function sanitizeScene(raw: unknown): Scene | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const r = raw as Record<string, unknown>
+  const id = asString(r.id)
+  if (!id) return null
+  const map = sanitizeMap(r.map)
+  const ord = asNumber(r.ord, NaN)
+  return {
+    id,
+    name: asString(r.name),
+    ...(Number.isFinite(ord) ? { ord } : {}),
+    ...(map ? { map } : {}),
+    grid: sanitizeGrid(r.grid),
+    tokens: sanitizeTokenArray(r.tokens),
+    texts: sanitizeTextArray(r.texts),
+    strokes: sanitizeStrokeArray(r.strokes),
+    fog: sanitizeFog(r.fog),
+  }
+}
+
 /**
  * Coerce arbitrary stored data into a valid `TabletopState`. Used at
  * the load boundary because IndexedDB returns `unknown` and older /
@@ -311,17 +371,15 @@ export function sanitizeStoredTabletop(raw: unknown): TabletopState {
       texts: [],
       strokes: [],
       fog: { ...DEFAULT_FOG },
+      sceneId: INITIAL_SCENE_ID,
+      sceneName: '',
+      sceneOrd: 1,
+      scenes: [],
     }
   }
   const r = raw as Record<string, unknown>
   const map = sanitizeMap(r.map)
-  const tokens: Token[] = []
-  if (Array.isArray(r.tokens)) {
-    for (const raw of r.tokens) {
-      const token = sanitizeToken(raw)
-      if (token) tokens.push(token)
-    }
-  }
+  const tokens = sanitizeTokenArray(r.tokens)
   const npcLibrary: NpcDef[] = []
   if (Array.isArray(r.npcLibrary)) {
     for (const raw of r.npcLibrary) {
@@ -329,22 +387,26 @@ export function sanitizeStoredTabletop(raw: unknown): TabletopState {
       if (def) npcLibrary.push(def)
     }
   }
-  const texts: MapText[] = []
-  if (Array.isArray(r.texts)) {
-    for (const raw of r.texts) {
-      const text = sanitizeMapText(raw)
-      if (text) texts.push(text)
-    }
-  }
-  const strokes: DrawStroke[] = []
-  if (Array.isArray(r.strokes)) {
-    for (const raw of r.strokes) {
-      const stroke = sanitizeDrawStroke(raw)
-      if (stroke) strokes.push(stroke)
-    }
-  }
+  const texts = sanitizeTextArray(r.texts)
+  const strokes = sanitizeStrokeArray(r.strokes)
   const fog = sanitizeFog(r.fog)
   const pcSpawn = sanitizePcSpawn(r.pcSpawn)
+  // Scenes (multiple maps per session). A legacy record without
+  // `sceneId` migrates to a single implicit scene; inactive scenes are
+  // coerced and any without an id are dropped.
+  const sceneId = asString(r.sceneId) || INITIAL_SCENE_ID
+  const sceneName = asString(r.sceneName)
+  const sceneOrd = asNumber(r.sceneOrd, 1)
+  const scenes: Scene[] = []
+  if (Array.isArray(r.scenes)) {
+    for (const raw of r.scenes) {
+      const scene = sanitizeScene(raw)
+      // A stored scene must not collide with the current scene's id.
+      if (scene && scene.id !== sceneId && !scenes.some((s) => s.id === scene.id)) {
+        scenes.push(scene)
+      }
+    }
+  }
   return {
     ...(map ? { map } : {}),
     grid: sanitizeGrid(r.grid),
@@ -354,6 +416,10 @@ export function sanitizeStoredTabletop(raw: unknown): TabletopState {
     strokes,
     fog,
     ...(pcSpawn ? { pcSpawn } : {}),
+    sceneId,
+    sceneName,
+    sceneOrd,
+    scenes,
   }
 }
 

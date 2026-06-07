@@ -250,16 +250,47 @@ export interface FogState {
 }
 
 /**
- * Everything the table renders. `map` is optional: a tabletop with only
- * a grid and tokens (whiteboard mode) is valid. `npcLibrary` is the
- * GM's NPC stash — separate from `tokens` so adding to the library
- * does not auto-place, and placing on the map does not consume the
- * library entry. `pcSpawn` (set by templates) tells new PC token
- * placements where to land — useful so a "load template" call brings
- * PCs to a known starting cluster rather than the world origin.
- * `texts` / `strokes` / `fog` are the PR-12 annotation layers (text
- * labels, pen drawings and fog of war); all three sync host-authoritative
- * like the rest of the table state.
+ * One *inactive* scene's bundle — its own map, grid, tokens and
+ * annotation layers. The *current* scene is always the live top-level
+ * fields of `TabletopState`; `TabletopState.scenes` holds the bundles
+ * for every other scene the GM has prepared. Switching swaps a bundle
+ * in and out of the top-level fields (see `tabletop/scenes.ts`), so a
+ * single source of truth is kept (no scene is stored in two places).
+ *
+ * `npcLibrary` and `pcSpawn` are intentionally *session-global* (they
+ * stay on `TabletopState`, not on `Scene`) so the NPC stash and spawn
+ * point are shared across scenes.
+ */
+export interface Scene {
+  id: string
+  /** GM-given name; '' renders a localized "Scene N" placeholder using
+   *  `ord`. */
+  name: string
+  /** Stable creation ordinal, used for the "Scene N" placeholder so the
+   *  number does not shift as scenes are switched / reordered. */
+  ord?: number
+  map?: MapBackground
+  grid: Grid
+  tokens: Token[]
+  texts: MapText[]
+  strokes: DrawStroke[]
+  fog: FogState
+}
+
+/**
+ * Everything the table renders for the *current* scene. `map` is
+ * optional: a tabletop with only a grid and tokens (whiteboard mode) is
+ * valid. `npcLibrary` is the GM's NPC stash — separate from `tokens` so
+ * adding to the library does not auto-place, and placing on the map does
+ * not consume the library entry. `pcSpawn` (set by templates) tells new
+ * PC token placements where to land. `texts` / `strokes` / `fog` are the
+ * PR-12 annotation layers; all three sync host-authoritative.
+ *
+ * Multiple maps per session ("scenes"): the top-level fields above are
+ * the current scene; `scenes` holds the other prepared scenes and
+ * `sceneId` / `sceneName` identify the current one. Scenes are a
+ * host-only concept on the wire — `scenes` is stripped before broadcast,
+ * so clients only ever mirror the current scene (see `snapshot.ts`).
  */
 export interface TabletopState {
   map?: MapBackground
@@ -273,6 +304,14 @@ export interface TabletopState {
   strokes: DrawStroke[]
   /** Grid-cell fog of war (GM-only edits). */
   fog: FogState
+  /** Id of the current (live) scene. */
+  sceneId?: string
+  /** Name of the current scene ('' → localized "Scene N" placeholder). */
+  sceneName?: string
+  /** Current scene's creation ordinal (for the "Scene N" placeholder). */
+  sceneOrd?: number
+  /** Other prepared scenes (everything except the current one). */
+  scenes?: Scene[]
 }
 
 /**
@@ -321,6 +360,10 @@ export const DEFAULT_FOG: FogState = {
   revealed: [],
 }
 
+/** Stable id of the implicit first scene (a fresh / migrated table).
+ *  Later scenes get minted ids via `newSceneId`. */
+export const INITIAL_SCENE_ID = 'scene-1'
+
 export const EMPTY_TABLETOP_STATE: TabletopState = {
   grid: { ...DEFAULT_GRID },
   tokens: [],
@@ -328,6 +371,10 @@ export const EMPTY_TABLETOP_STATE: TabletopState = {
   texts: [],
   strokes: [],
   fog: { ...DEFAULT_FOG },
+  sceneId: INITIAL_SCENE_ID,
+  sceneName: '',
+  sceneOrd: 1,
+  scenes: [],
 }
 
 /** Default font size for newly-placed map text labels (world px). */
@@ -368,6 +415,10 @@ export function newNpcDefId(): string {
 
 export function newSavedTabletopId(): string {
   return `tbl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+export function newSceneId(): string {
+  return `scn-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 export function newMapTextId(): string {

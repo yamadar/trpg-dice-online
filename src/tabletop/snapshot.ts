@@ -38,16 +38,24 @@ export function tokenForWire(token: Token): Token {
 
 /**
  * Produce the version of a tabletop state that goes onto the wire as
- * part of a welcome or `tabletopState` message. The map's `dataUrl`
- * is replaced with an empty string because a separate chunked
- * transfer is responsible for the actual bytes. All tokens have their
- * GM-private `privateNote` stripped so non-host clients never see it.
+ * part of a welcome or `tabletopState` message. Three pieces of
+ * host-only data are removed:
+ *   - the current map's `dataUrl` (a separate chunked transfer carries
+ *     the bytes);
+ *   - every token's GM-private `privateNote` (via `tokenForWire`);
+ *   - the entire `scenes` array — scenes are a host-only concept, so a
+ *     client only ever mirrors the *current* scene (the top-level
+ *     fields). `sceneId` / `sceneName` are kept so a client can label
+ *     the current scene.
  * The input is never mutated.
  */
 export function stripMapBytesForWire(state: TabletopState): TabletopState {
   const strippedTokens = state.tokens.map(tokenForWire)
   const tokensChanged = strippedTokens.some((t, i) => t !== state.tokens[i])
-  const base = tokensChanged ? { ...state, tokens: strippedTokens } : state
+  let base = tokensChanged ? { ...state, tokens: strippedTokens } : state
+  if (base.scenes && base.scenes.length > 0) {
+    base = { ...base, scenes: [] }
+  }
   if (!base.map) return base
   return { ...base, map: { ...base.map, dataUrl: '' } }
 }
@@ -64,5 +72,8 @@ export function fillTabletopDefaults(state: TabletopState): TabletopState {
     texts: state.texts ?? [],
     strokes: state.strokes ?? [],
     fog: state.fog ?? { ...DEFAULT_FOG },
+    // Clients never receive inactive scenes (stripped before broadcast);
+    // default to an empty list so the shape stays consistent.
+    scenes: state.scenes ?? [],
   }
 }

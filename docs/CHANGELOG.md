@@ -4,6 +4,20 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.102 — **Multiple maps per session (scenes)**. The GM can keep
+  several scenes — each its own map, grid, tokens, annotations and fog —
+  and switch the active one from a new "Scenes" toolbar category (add /
+  rename / delete; the last scene can't be removed). The NPC library and
+  PC spawn point stay shared across scenes. Scenes are a GM-only concept
+  on the wire: the inactive scenes are stripped before broadcast, so a
+  switch just sends the new `tabletopState` and re-streams its map, and
+  clients only ever mirror the current scene. Scenes persist across
+  reload and round-trip through the room export / import (each scene's
+  map externalized to `attachments/maps/`). Implemented with the pure,
+  single-source-of-truth `tabletop/scenes.ts` (current scene stays the
+  live top-level state; `scenes[]` holds the rest) with monotonic scene
+  numbering.
+
 - v1.101 — **Full keyboard movement & shortcuts**. With the tabletop
   focused (and no field being edited): arrow keys move the selected token
   one grid cell at a time; `1`–`5` (and V/T/P/E/G) switch tools;

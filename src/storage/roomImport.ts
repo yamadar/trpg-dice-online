@@ -142,42 +142,54 @@ function parseCharacter(
  * malformed wire data here too. Returns null when the section is
  * absent / unrecognisable so the caller can default to "no tabletop".
  */
+/** Re-inline a manifest map record's bytes from the archive, or
+ *  undefined when the path / bytes are missing (so the sanitizer drops
+ *  it rather than keep an undrawable empty dataUrl). */
+function reinlineMap(
+  raw: unknown,
+  files: Record<string, Uint8Array>,
+): MapBackground | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const m = raw as Record<string, unknown>
+  const id = typeof m.id === 'string' ? m.id : ''
+  const imagePath = typeof m.imagePath === 'string' ? m.imagePath : ''
+  if (!id || !imagePath) return undefined
+  const bytes = files[imagePath]
+  const type = typeof m.imageType === 'string' ? m.imageType : 'image/png'
+  if (!bytes || !type.startsWith('image/')) return undefined
+  return {
+    id,
+    name: typeof m.name === 'string' ? m.name : '',
+    width: typeof m.width === 'number' ? m.width : 0,
+    height: typeof m.height === 'number' ? m.height : 0,
+    dataUrl: bytesToDataUrl(bytes, type),
+  }
+}
+
 function parseTabletop(
   raw: unknown,
   files: Record<string, Uint8Array>,
 ): TabletopState | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
-  // Re-inline the map's image bytes from the archive. If the path is
-  // missing or the bytes are not there, the map record is dropped —
-  // the sanitizer below would otherwise produce a record with an
-  // empty dataUrl that renderers cannot draw.
-  let map: MapBackground | undefined
-  if (r.map && typeof r.map === 'object') {
-    const m = r.map as Record<string, unknown>
-    const id = typeof m.id === 'string' ? m.id : ''
-    const imagePath = typeof m.imagePath === 'string' ? m.imagePath : ''
-    if (id && imagePath) {
-      const bytes = files[imagePath]
-      const type = typeof m.imageType === 'string' ? m.imageType : 'image/png'
-      if (bytes && type.startsWith('image/')) {
-        map = {
-          id,
-          name: typeof m.name === 'string' ? m.name : '',
-          width: typeof m.width === 'number' ? m.width : 0,
-          height: typeof m.height === 'number' ? m.height : 0,
-          dataUrl: bytesToDataUrl(bytes, type),
-        }
-      }
-    }
+  // Re-inline the current map's bytes, and each inactive scene's map.
+  const map = reinlineMap(r.map, files)
+  let scenes: unknown = r.scenes
+  if (Array.isArray(r.scenes)) {
+    scenes = r.scenes.map((sc) => {
+      if (!sc || typeof sc !== 'object') return sc
+      const sceneMap = reinlineMap((sc as Record<string, unknown>).map, files)
+      return { ...(sc as Record<string, unknown>), map: sceneMap }
+    })
   }
   // Hand the rest to the existing sanitizer. It re-derives texts /
-  // strokes / fog / tokens / npcLibrary defensively, so a v6-or-newer
-  // archive that gained additional fields in the future will still
-  // round-trip the bits the current code understands.
+  // strokes / fog / tokens / npcLibrary / scenes defensively, so a
+  // v6-or-newer archive that gained fields still round-trips the bits
+  // the current code understands.
   return sanitizeStoredTabletop({
     ...r,
     ...(map ? { map } : { map: undefined }),
+    ...(scenes !== undefined ? { scenes } : {}),
   })
 }
 

@@ -45,6 +45,13 @@
   room.
 - **Annotation layers**: free-text **labels**, free-hand **pen strokes**,
   and grid-cell **fog of war** (GM-painted; opaque to players).
+- **Scenes (multiple maps per session)**: the GM keeps several scenes,
+  each its own map / grid / tokens / annotations / fog, and switches the
+  active one from a scene list. Scenes are *host-only* on the wire (the
+  inactive `scenes` array is stripped before broadcast), so clients only
+  ever mirror the current scene — switching just broadcasts the new
+  `tabletopState` and re-streams its map. `npcLibrary` / `pcSpawn` stay
+  session-global. Pure logic in `tabletop/scenes.ts`.
 - **Realtime**: host-authoritative / last-write-wins, ~20 Hz throttled
   drag, welcome-snapshot seeding for late joiners, IndexedDB reload
   restore, room export / import.
@@ -66,8 +73,7 @@
 
 ### Out of scope (Phase 2+)
 
-Ruler / cell-distance measurement, multiple maps per session (scene
-list), minimap. See §9.
+Ruler / cell-distance measurement, minimap. See §9.
 
 ## 2. Module map
 
@@ -80,6 +86,7 @@ list), minimap. See §9.
 | `hexGrid.ts` | Flat-top hex math (odd-q offset): centre / polygon / pixel→cell / viewport iteration; redblobgames pipeline |
 | `tokens.ts` | PC-token lifecycle & permissions: `planPcTokenAdds`, `makeGmToken`, `canMoveToken`, `applyTokenMove/Upsert/Remove`, `defaultPlacementOrigin` (map centre → grid origin → `pcSpawn`), grid-wrapping `placementPosition` (4 cols), `recenterTokensOnMap`, `snapAllTokensToGrid` |
 | `annotations.ts` | Text / stroke / fog apply + permission helpers (`canEditMapText`, `canEraseStroke`), `setFogCells`, `isCellRevealed`, and `nearestRevealedCellCenter` (the "dropped a token into fog" rescue) |
+| `scenes.ts` | Multiple maps per session: `addScene` / `switchScene` / `renameScene` / `deleteScene` / `listScenes` over the current-scene-at-top-level model, with monotonic scene ordinals |
 | `hostValidation.ts` | Pure host-side validators for inbound annotation requests; re-stamps `ownerPlayerId` from the trusted connection so a client can't spoof ownership |
 | `snapshot.ts` | Wire helpers: `tokenForWire` / `stripMapBytesForWire` (strip `privateNote` and the map `dataUrl` before broadcast) and `fillTabletopDefaults` (back-fill annotation fields from a pre-PR-12 host) |
 | `imageChunk.ts` | `chunkString` + `ChunkBuffer`: split a data URL into 256 KB chunks and reassemble out-of-order, with progress and a length check |
@@ -353,9 +360,11 @@ expanding-ring animation curve) · `facing` (angle normalisation, the
 screen-space direction vector, and the arrowhead geometry) · `vitals`
 (HP clamp / ratio / bar colour and the status-catalog sanitiser) ·
 `keymap` (key → tool / arrow-delta / zoom / select-step intents + the
-editable-target guard).
-`src/storage/`: `tabletop` (sanitize + round-trip, fake-indexeddb) ·
-`roomExport` · `roomImport` (manifest v6 with `table.json`).
+editable-target guard) · `scenes` (add / switch / rename / delete and the
+monotonic-ordinal naming, with the single-source-of-truth invariant).
+`src/storage/`: `tabletop` (sanitize + round-trip incl. scenes,
+fake-indexeddb) · `roomExport` · `roomImport` (manifest v6 with
+`table.json`, scene maps externalized to `attachments/maps/`).
 
 Canvas-bound rendering is intentionally kept out of the unit path; the
 pure modules above carry the logic that needs coverage.
@@ -380,8 +389,7 @@ on <https://yamadar.github.io/trpg-dice-online/>.
 Ordered by rough priority (shipped items removed):
 
 1. Ruler / cell-distance measurement
-2. Multiple maps per session (scene list / switcher)
-3. Minimap
+2. Minimap
 
 ## 9. Revisions
 
@@ -414,3 +422,11 @@ Ordered by rough priority (shipped items removed):
   letter tool switches, `+`/`-`/`0` zoom, `f` centre, `[`/`]` selection
   cycling, `Delete`, an `Esc` deselect→close, and a `?` `ShortcutsOverlay`
   cheat sheet — all suppressed while typing in a field.
+- v1.5 — Phase 2: **multiple maps per session (scenes)**. `TabletopState`
+  gains `scenes` / `sceneId` / `sceneName` / `sceneOrd`; the current scene
+  stays the live top-level fields and `scenes` holds the rest (single
+  source of truth via `tabletop/scenes.ts`). Host-only on the wire
+  (`stripMapBytesForWire` drops the `scenes` array); scene ops reuse the
+  `tabletopState` broadcast + map-chunk stream. A GM "Scenes" toolbar
+  category switches / adds / renames / deletes. `sanitizeStoredTabletop`
+  and the room export / import round-trip every scene and its map.

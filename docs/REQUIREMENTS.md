@@ -447,6 +447,15 @@ An SPA where players roll TRPG dice and share results with other players in real
   map image streams through the existing `mapMeta` / `mapChunk`
   path so a multi-megabyte background does not block the data
   channel.
+- **Multiple maps per session (scenes)**: the GM can keep several
+  scenes, each with its own map, grid, tokens, annotations and fog, and
+  switch the active one from a "Scenes" list in the toolbar (add /
+  rename / delete; the last scene cannot be deleted). The NPC library
+  and PC spawn point stay shared across scenes. Switching the active
+  scene changes what every participant sees; scenes are otherwise a
+  GM-only concept — the inactive scenes are not sent to clients, who
+  only ever mirror the current scene. Scenes persist across reload and
+  are carried (with every scene's map) in the room export / import.
 - **Ping ("look here")**: any participant can pick the ping tool and tap
   the map to drop a transient attention marker — an expanding ripple in
   their player colour with their name beneath — that is broadcast to
@@ -663,6 +672,7 @@ Commit after each step.
 - [x] Own PC tokens are highlighted in the token list; non-operable tokens on the canvas are shown at reduced opacity
 - [x] The GM can register NPCs in a library (with name, image and note) and place them on the map repeatedly
 - [x] The GM can save the current tabletop as a template / snapshot and load it later
+- [x] The GM can keep multiple scenes (each its own map / tokens / fog) and switch the active one; scenes persist and export
 - [x] Any participant can drop a transient "look here" ping that broadcasts to everyone and fades out
 - [x] Pan and zoom work on both touch and mouse
 - [x] Keyboard shortcuts move the selected token, switch tools, zoom, delete, and show a cheat sheet (?)

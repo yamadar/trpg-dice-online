@@ -36,6 +36,7 @@ import {
   toolForKey,
   zoomActionForKey,
 } from '../tabletop/keymap'
+import { listScenes } from '../tabletop/scenes'
 import {
   DEFAULT_PEN_COLOR,
   DEFAULT_PEN_WIDTH,
@@ -597,6 +598,9 @@ export function TablePanel({
 
   /** Whether the keyboard-shortcuts cheat sheet is open (toggled by `?`). */
   const [showShortcuts, setShowShortcuts] = useState(false)
+
+  /** Scene list (current + inactive) for the GM's scene switcher. */
+  const sceneList = useMemo(() => listScenes(tabletop), [tabletop])
 
   /** Whether the first-paint centring step has already fired this
    *  mount. State (not a ref) so the React 19 lint rule that forbids
@@ -1789,6 +1793,11 @@ export function TablePanel({
           onDeleteTabletopFromLibrary={session.deleteTabletopFromLibrary}
           onNotice={onNotice}
           onOpenTutorial={() => setShowTutorial(true)}
+          scenes={sceneList}
+          onAddScene={session.addScene}
+          onSwitchScene={session.switchScene}
+          onRenameScene={session.renameScene}
+          onDeleteScene={session.deleteScene}
         />
       {chatPanel && overlay === 'chat' && (
         // Chat opens as a `<Sheet>` (same chrome the Dock-launched
