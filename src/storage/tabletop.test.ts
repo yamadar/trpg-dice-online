@@ -64,6 +64,63 @@ describe('sanitizeStoredTabletop', () => {
     expect(sanitizeStoredTabletop(input)).toEqual(input)
   })
 
+  it('round-trips a token\'s optional size / note / privateNote / facing', () => {
+    const result = sanitizeStoredTabletop({
+      tokens: [
+        {
+          id: 'tok-1',
+          kind: 'gm',
+          x: 0,
+          y: 0,
+          image: '',
+          size: 2,
+          note: 'public',
+          privateNote: 'secret',
+          facing: 90,
+        },
+      ],
+    })
+    expect(result.tokens[0]).toMatchObject({
+      size: 2,
+      note: 'public',
+      privateNote: 'secret',
+      facing: 90,
+    })
+  })
+
+  it('normalizes an out-of-range facing into [0, 360)', () => {
+    const result = sanitizeStoredTabletop({
+      tokens: [{ id: 't', kind: 'pc', x: 0, y: 0, ownerPlayerId: 'p', characterId: '', facing: 405 }],
+    })
+    expect((result.tokens[0] as { facing?: number }).facing).toBe(45)
+  })
+
+  it('drops a non-finite facing rather than persisting NaN', () => {
+    const result = sanitizeStoredTabletop({
+      tokens: [{ id: 't', kind: 'pc', x: 0, y: 0, ownerPlayerId: 'p', characterId: '', facing: Infinity }],
+    })
+    expect('facing' in result.tokens[0]).toBe(false)
+  })
+
+  it('drops an out-of-set size and a blank note', () => {
+    const result = sanitizeStoredTabletop({
+      tokens: [
+        { id: 't', kind: 'gm', x: 0, y: 0, image: '', size: 7, note: '   ' },
+      ],
+    })
+    expect('size' in result.tokens[0]).toBe(false)
+    expect('note' in result.tokens[0]).toBe(false)
+  })
+
+  it('caps an overly long token note', () => {
+    const long = 'x'.repeat(5000)
+    const result = sanitizeStoredTabletop({
+      tokens: [{ id: 't', kind: 'gm', x: 0, y: 0, image: '', note: long }],
+    })
+    const note = (result.tokens[0] as { note?: string }).note ?? ''
+    expect(note.length).toBe(500)
+  })
+
   it('drops library entries without an id or name', () => {
     const result = sanitizeStoredTabletop({
       npcLibrary: [

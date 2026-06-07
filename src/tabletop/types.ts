@@ -70,6 +70,9 @@ export interface PcToken {
   privateNote?: string
   /** Token size in grid cells. Missing = default (1). */
   size?: TokenSize
+  /** Facing direction in degrees clockwise from up (north): 0=N, 90=E,
+   *  180=S, 270=W. Missing = no facing indicator. See `tabletop/facing.ts`. */
+  facing?: number
 }
 
 /**
@@ -92,6 +95,9 @@ export interface GmToken {
   note?: string
   /** Token size in grid cells. Missing = default (1). */
   size?: TokenSize
+  /** Facing direction in degrees clockwise from up (north): 0=N, 90=E,
+   *  180=S, 270=W. Missing = no facing indicator. See `tabletop/facing.ts`. */
+  facing?: number
 }
 
 export type Token = PcToken | GmToken

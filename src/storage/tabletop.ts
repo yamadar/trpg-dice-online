@@ -30,6 +30,7 @@ import {
   MIN_CELL_SIZE,
   MIN_PEN_WIDTH,
   MIN_TEXT_FONT_SIZE,
+  TOKEN_SIZES,
   type DrawStroke,
   type FogState,
   type Grid,
@@ -38,7 +39,9 @@ import {
   type NpcDef,
   type TabletopState,
   type Token,
+  type TokenSize,
 } from '../tabletop/types'
+import { isValidFacing, normalizeFacing } from '../tabletop/facing'
 
 const TABLETOP = 'sessionTable'
 
@@ -108,6 +111,38 @@ function sanitizeMap(raw: unknown): MapBackground | undefined {
   }
 }
 
+/** Max characters kept for a token note on reload (matches the UI cap). */
+const MAX_TOKEN_NOTE = 500
+
+/**
+ * Optional fields shared by both token kinds (size, public / private note,
+ * facing). Pulled out so the reload path round-trips them — previously
+ * `size`, `note` and `privateNote` survived live sync but were silently
+ * dropped when the host reloaded from IndexedDB. `facing` is the new
+ * token-facing field. Each value is dropped when absent or malformed so
+ * the token shape stays minimal.
+ */
+function sanitizeTokenCommon(r: Record<string, unknown>): {
+  size?: TokenSize
+  note?: string
+  privateNote?: string
+  facing?: number
+} {
+  const out: { size?: TokenSize; note?: string; privateNote?: string; facing?: number } = {}
+  if (
+    typeof r.size === 'number' &&
+    (TOKEN_SIZES as ReadonlyArray<number>).includes(r.size)
+  ) {
+    out.size = r.size as TokenSize
+  }
+  const note = asString(r.note).trim()
+  if (note) out.note = note.slice(0, MAX_TOKEN_NOTE)
+  const privateNote = asString(r.privateNote).trim()
+  if (privateNote) out.privateNote = privateNote.slice(0, MAX_TOKEN_NOTE)
+  if (isValidFacing(r.facing)) out.facing = normalizeFacing(r.facing)
+  return out
+}
+
 function sanitizeToken(raw: unknown): Token | null {
   if (typeof raw !== 'object' || raw === null) return null
   const r = raw as Record<string, unknown>
@@ -115,6 +150,7 @@ function sanitizeToken(raw: unknown): Token | null {
   if (!id) return null
   const x = asNumber(r.x, 0)
   const y = asNumber(r.y, 0)
+  const common = sanitizeTokenCommon(r)
   if (r.kind === 'pc') {
     const ownerPlayerId = asString(r.ownerPlayerId)
     const characterId = asString(r.characterId)
@@ -137,6 +173,7 @@ function sanitizeToken(raw: unknown): Token | null {
       ownerPlayerId,
       characterId,
       ...(snapshot ? { snapshot } : {}),
+      ...common,
     }
   }
   if (r.kind === 'gm') {
@@ -148,6 +185,7 @@ function sanitizeToken(raw: unknown): Token | null {
       y,
       image: asString(r.image),
       ...(label ? { label } : {}),
+      ...common,
     }
   }
   return null

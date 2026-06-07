@@ -176,6 +176,10 @@ export type ClientMessage =
   /** A participant asks the host to remove a token they can operate.
    *  Validated with `canMoveToken` like the resize request. */
   | { t: 'tokenRemoveRequest'; tokenId: string }
+  /** A participant asks the host to set (or clear with `null`) a token's
+   *  facing direction (degrees clockwise from north). Validated with
+   *  `canMoveToken` like move / resize, then echoed via `tokenUpsert`. */
+  | { t: 'tokenFacingRequest'; tokenId: string; facing: number | null }
   /** Any participant asks the host to update the public shared note on any
    *  token. The host validates that the sender is a known participant (no
    *  per-token ownership check — the note is intentionally writable by

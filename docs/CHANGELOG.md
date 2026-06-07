@@ -4,6 +4,18 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.99 — **Token facing**. Tokens can carry an optional facing direction.
+  The token dialog gains an 8-way compass (plus a clear cell) and the
+  canvas draws a small direction arrow just outside the token. Facing
+  follows the same permission as move / resize (own PC or GM), enforced
+  host-side via a new `tokenFacingRequest` validated with `canMoveToken`.
+  The angle math (normalisation, screen-space vector, arrowhead geometry)
+  lives in `tabletop/facing.ts` (unit-tested). This release also closes a
+  long-standing reload gap: `sanitizeStoredTabletop` now round-trips a
+  token's `size`, `note`, `privateNote` and `facing`, which previously
+  survived live sync but were dropped when the host reloaded from
+  IndexedDB.
+
 - v1.98 — **Ping ("look here") marker**. Any participant can pick the new
   ping tool from the left palette and tap the map to drop a transient
   attention marker — an expanding ripple in their player colour with their
