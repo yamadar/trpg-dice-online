@@ -4,6 +4,12 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.110 — **Centered token popover on mobile**. On a phone (≤ 720 px)
+  the token info panel now floats in the centre of the canvas (height
+  capped, scrollable) instead of anchored to the token, which was often
+  under a finger or off-screen on a small display. Desktop keeps the
+  token-anchored popover.
+
 - v1.109 — **Tabletop polish (4 fixes)**. (1) The minimap no longer
   covers the token info popover — its z-index now sits below it. (2)
   Changing a just-added NPC's image (or note) *before* typing its name

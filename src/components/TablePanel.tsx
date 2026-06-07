@@ -1616,6 +1616,10 @@ export function TablePanel({
                 stageX={stageX}
                 stageY={stageY}
                 stageScale={stageScale}
+                // Mobile: float the panel in the centre of the canvas
+                // instead of anchoring it to the token (which is often
+                // under a finger / off-screen on a small display).
+                centered={isMobile}
                 onClose={() => setSelectedTokenId(null)}
                 canOperate={canOperate}
                 canEditNote
@@ -2006,6 +2010,9 @@ interface TokenPopoverProps {
   stageX: number
   stageY: number
   stageScale: number
+  /** When true, centre the panel in the canvas instead of anchoring it to
+   *  the token's screen position (mobile). */
+  centered?: boolean
   onClose: () => void
   // --- granular permissions ---
   /** Viewer can operate this token (GM for all; PL for own PC). Controls
@@ -2053,6 +2060,7 @@ function TokenPopover({
   stageX,
   stageY,
   stageScale,
+  centered = false,
   onClose,
   canOperate,
   canEditNote,
@@ -2201,8 +2209,14 @@ function TokenPopover({
 
   return (
     <div
-      className="tabletop-token-popover"
-      style={{ left: `${Math.round(screenX)}px`, top: `${Math.round(screenY)}px` }}
+      className={`tabletop-token-popover${centered ? ' tabletop-token-popover-centered' : ''}`}
+      // Anchored to the token on desktop; the centered class positions it
+      // via CSS (left/top 50%) so no inline coordinates are applied there.
+      style={
+        centered
+          ? undefined
+          : { left: `${Math.round(screenX)}px`, top: `${Math.round(screenY)}px` }
+      }
     >
       <header className="tabletop-token-popover-header">
         <span className="tabletop-token-popover-title">
