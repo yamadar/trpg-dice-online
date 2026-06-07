@@ -252,4 +252,9 @@ describe('appendScenes', () => {
     const result = appendScenes(live, saved, ['new-1'])
     expect(result.npcLibrary.map((n) => n.id)).toEqual(['keep'])
   })
+  it('refuses (no-op) when fewer ids than source scenes are supplied', () => {
+    const live = baseState()
+    const saved = addScene(baseState({ sceneName: 'X' }), 'old-y', 'Y') // 2 scenes
+    expect(appendScenes(live, saved, ['only-one'])).toBe(live)
+  })
 })

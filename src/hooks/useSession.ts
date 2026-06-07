@@ -94,6 +94,7 @@ import {
   addScene as addSceneToState,
   appendScenes as appendScenesToState,
   currentSceneOnly,
+  ensureScenes,
   deleteScene as deleteSceneInState,
   renameScene as renameSceneInState,
   sceneCount,
@@ -1939,9 +1940,12 @@ export function useSession(): Session {
       if (roleRef.current === 'client') return 'missing'
       const entry = tabletopLibrary.find((e) => e.id === id)
       if (!entry) return 'missing'
+      // Normalise via `ensureScenes` so a legacy / pre-scenes saved entry
+      // becomes a valid current-scene state on load — the same invariant
+      // the other library paths (currentSceneOnly / appendScenes) hold.
       // Template loads transplant existing PCs to the spawn point so
       // their player owns continuity (no "everyone re-place" friction).
-      let next: TabletopState = { ...entry.state }
+      let next: TabletopState = ensureScenes({ ...entry.state })
       if (entry.kind === 'template') {
         const survivors = tabletopRef.current.tokens.filter(
           (t) => t.kind === 'pc',

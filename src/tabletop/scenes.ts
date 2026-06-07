@@ -235,7 +235,11 @@ export function stripTemplateScenes(state: TabletopState): TabletopState {
  * monotonic ordinal so it never collides with an existing scene; names
  * are carried over. Session-global `npcLibrary` / `pcSpawn` stay as they
  * are on `state` (the import does not merge the source's stash).
- * No-op (returns the same reference) when `source` has no scenes.
+ *
+ * The caller must supply exactly one fresh id per scene in `source`
+ * (`newIds.length === sceneCount(source)`); fewer would mint
+ * undefined-id scenes, so a short list is refused. No-op (returns the
+ * same reference) when `source` has no scenes.
  */
 export function appendScenes(
   state: TabletopState,
@@ -244,11 +248,11 @@ export function appendScenes(
 ): TabletopState {
   const s = ensureScenes(state)
   const incomingRaw = allScenes(source)
-  if (incomingRaw.length === 0) return state
+  if (incomingRaw.length === 0 || newIds.length < incomingRaw.length) return state
   const base = maxOrd(s)
   const incoming = incomingRaw.map((sc, i) => ({
     ...sc,
-    id: newIds[i] ?? `${newIds[0] ?? 'scene'}-${i}`,
+    id: newIds[i],
     ord: base + 1 + i,
   }))
   const stashed = s.scenes!.concat(currentScene(s))
