@@ -4,6 +4,14 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.106 — **Compact token popover**. Adding facing, HP and status
+  conditions had made the token edit popover very tall (an always-open
+  3×3 facing compass plus a 12-chip status grid). Size, facing, HP and
+  status are now collapsible one-line rows — each shows its current value
+  (size number, facing arrow, `cur/max`, status glyphs) and expands to its
+  editor on tap, with only one open at a time, mirroring the toolbar's
+  one-panel metaphor.
+
 - v1.105 — **Minimap crash fix + ping awareness**. Dragging the minimap
   on a map-less scene could fling the camera away (and lock the tab):
   the minimap's world frame included the live viewport, so each recenter

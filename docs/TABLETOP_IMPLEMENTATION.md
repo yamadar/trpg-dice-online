@@ -305,10 +305,13 @@ Pinch and drag are never combined in one gesture.
 
 Tapping a token opens a DOM popover anchored to its screen position. The
 GM (or a PC token's owner) gets the editable view: name/label (GM
-tokens), public note, size picker, NPC image change, delete, plus the
-**private GM note** (host only) and a "Character info" launcher. A
-non-owner gets a read-only view that also names who is permitted to
-operate the token.
+tokens), public note, NPC image change, delete, the **private GM note**
+(host only), a "Character info" launcher, and the four token attributes —
+**size / facing / HP / status** — as collapsible one-line rows (each
+shows its current value and expands to its editor on tap, one open at a
+time, so the popover stays short). A non-owner gets a read-only view
+(size value only; the rest are visible on the token itself) that also
+names who is permitted to operate the token.
 
 ### 4.3 Toolbar & tools
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Circle,
@@ -2110,6 +2110,36 @@ function TokenPopover({
       : [...activeStatuses, key]
     onChangeStatuses(next)
   }
+  // Which attribute editor is expanded. Size / facing / HP / status each
+  // collapse to a single value row; tapping one expands its editor and
+  // collapses the others (mirrors the toolbar's one-panel-open model) so
+  // the popover stays short now that four attributes can be edited.
+  const [openSection, setOpenSection] = useState<
+    'size' | 'facing' | 'hp' | 'status' | null
+  >(null)
+  // Facing summary: snap to the nearest compass cell so ANY valid angle
+  // (incl. non-cardinal values from a future free-angle dial / import,
+  // for which the token still draws an arrow) shows a directional glyph
+  // rather than "—".
+  const facingDeg = isValidFacing(token.facing)
+    ? normalizeFacing(token.facing)
+    : null
+  const facingCell =
+    facingDeg !== null
+      ? FACING_COMPASS.find(
+          (c) => c.dir === (Math.round(facingDeg / 45) * 45) % 360,
+        )
+      : undefined
+  // Status summary: known glyphs only (an unknown key from a newer/older
+  // client contributes nothing); show up to four then "+N" so the count
+  // is never lost to a bare ellipsis.
+  const statusGlyphs = activeStatuses
+    .map((k) => STATUS_CATALOG.find((s) => s.key === k)?.glyph)
+    .filter((g): g is string => !!g)
+  const statusSummary = statusGlyphs.length
+    ? statusGlyphs.slice(0, 4).join('') +
+      (statusGlyphs.length > 4 ? `+${statusGlyphs.length - 4}` : '')
+    : '—'
 
   const displayName =
     (token.kind === 'pc' ? characterName : token.label)?.trim() ||
@@ -2139,6 +2169,23 @@ function TokenPopover({
     const next = await prepareNpcTokenImage(file)
     if (next) onChangeImage(next)
   }
+
+  /** One collapsible attribute row (size / facing / HP / status). */
+  const section = (
+    key: 'size' | 'facing' | 'hp' | 'status',
+    label: string,
+    summary: ReactNode,
+    body: ReactNode,
+  ) => (
+    <TokenAttrSection
+      label={label}
+      summary={summary}
+      open={openSection === key}
+      onToggle={() => setOpenSection((cur) => (cur === key ? null : key))}
+    >
+      {body}
+    </TokenAttrSection>
+  )
 
   return (
     <div
@@ -2206,146 +2253,154 @@ function TokenPopover({
         </button>
       )}
 
-      {/* Size: picker if canOperate, plain text otherwise */}
+      {/* Size / facing / HP / status: compact one-line rows, each
+          expanding to its editor on tap (one open at a time) so the
+          popover stays short. Operators only; a non-operator sees just
+          the size value (the rest are visible on the token itself). */}
       {canOperate ? (
-        <div className="tabletop-token-popover-row">
-          <span>{t('tabletop.tokenEdit.size')}</span>
-          <div className="tabletop-token-size-group" role="radiogroup"
-            aria-label={t('tabletop.tokenEdit.size')}>
-            {TOKEN_SIZES.map((s) => {
-              const active = tokenSize(token) === s
-              return (
-                <button key={s} type="button" role="radio"
-                  aria-checked={active} tabIndex={active ? 0 : -1}
-                  className={`tabletop-token-size-btn${active ? ' active' : ''}`}
-                  onClick={() => onChangeSize(s)}>
-                  {String(s)}
-                </button>
-              )
-            })}
-          </div>
+        <div className="tabletop-token-accordions">
+          {section(
+            'size',
+            t('tabletop.tokenEdit.size'),
+            String(tokenSize(token)),
+            <div
+              className="tabletop-token-size-group"
+              role="radiogroup"
+              aria-label={t('tabletop.tokenEdit.size')}
+            >
+              {TOKEN_SIZES.map((s) => {
+                const active = tokenSize(token) === s
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    tabIndex={active ? 0 : -1}
+                    className={`tabletop-token-size-btn${active ? ' active' : ''}`}
+                    onClick={() => onChangeSize(s)}
+                  >
+                    {String(s)}
+                  </button>
+                )
+              })}
+            </div>,
+          )}
+          {section(
+            'facing',
+            t('tabletop.tokenEdit.facing'),
+            facingCell ? facingCell.glyph : '—',
+            <div
+              className="tabletop-token-facing-grid"
+              role="group"
+              aria-label={t('tabletop.tokenEdit.facing')}
+            >
+              {FACING_COMPASS.map((cell) => {
+                const active =
+                  cell.dir === null
+                    ? !isValidFacing(token.facing)
+                    : isValidFacing(token.facing) &&
+                      normalizeFacing(token.facing) === cell.dir
+                const label =
+                  cell.dir === null
+                    ? t('tabletop.tokenEdit.facingNone')
+                    : t('tabletop.tokenEdit.facingDir', { deg: cell.dir })
+                return (
+                  <button
+                    key={cell.key}
+                    type="button"
+                    aria-pressed={active}
+                    aria-label={label}
+                    title={label}
+                    className={`tabletop-token-facing-btn${
+                      cell.dir === null ? ' clear' : ''
+                    }${active ? ' active' : ''}`}
+                    onClick={() => onChangeFacing(cell.dir)}
+                  >
+                    {cell.glyph}
+                  </button>
+                )
+              })}
+            </div>,
+          )}
+          {section(
+            'hp',
+            t('tabletop.tokenEdit.hp'),
+            tokenHp ? `${tokenHp.current}/${tokenHp.max}` : '—',
+            <div className="tabletop-token-hp-inputs">
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={hpCurDraft}
+                aria-label={t('tabletop.tokenEdit.hpCurrent')}
+                onChange={(e) => setHpCurDraft(e.target.value)}
+                onBlur={commitHp}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                }}
+              />
+              <span aria-hidden="true">/</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={hpMaxDraft}
+                aria-label={t('tabletop.tokenEdit.hpMax')}
+                onChange={(e) => setHpMaxDraft(e.target.value)}
+                onBlur={commitHp}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                }}
+              />
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label={t('tabletop.tokenEdit.hpClear')}
+                title={t('tabletop.tokenEdit.hpClear')}
+                onClick={() => {
+                  setHpCurDraft('')
+                  setHpMaxDraft('')
+                  onChangeHp(null)
+                }}
+              >
+                <CloseIcon size={14} />
+              </button>
+            </div>,
+          )}
+          {section(
+            'status',
+            t('tabletop.tokenEdit.statuses'),
+            statusSummary,
+            <div
+              className="tabletop-token-status-grid"
+              role="group"
+              aria-label={t('tabletop.tokenEdit.statuses')}
+            >
+              {STATUS_CATALOG.map((s) => {
+                const active = activeStatuses.includes(s.key)
+                const label = t(`tabletop.status.${s.key}`)
+                return (
+                  <button
+                    key={s.key}
+                    type="button"
+                    aria-pressed={active}
+                    aria-label={label}
+                    title={label}
+                    className={`tabletop-token-status-btn${active ? ' active' : ''}`}
+                    onClick={() => toggleStatus(s.key)}
+                  >
+                    {s.glyph}
+                  </button>
+                )
+              })}
+            </div>,
+          )}
         </div>
       ) : (
         <div className="tabletop-token-popover-row">
           <span>{t('tabletop.tokenEdit.size')}</span>
           <span className="token-display-value">{String(tokenSize(token))}</span>
-        </div>
-      )}
-
-      {/* Facing: a 3×3 compass (operator only). The centre cell clears
-          the indicator; the eight outer cells set a direction. */}
-      {canOperate && (
-        <div className="tabletop-token-popover-row">
-          <span>{t('tabletop.tokenEdit.facing')}</span>
-          <div
-            className="tabletop-token-facing-grid"
-            role="group"
-            aria-label={t('tabletop.tokenEdit.facing')}
-          >
-            {FACING_COMPASS.map((cell) => {
-              const active =
-                cell.dir === null
-                  ? !isValidFacing(token.facing)
-                  : isValidFacing(token.facing) &&
-                    normalizeFacing(token.facing) === cell.dir
-              const label =
-                cell.dir === null
-                  ? t('tabletop.tokenEdit.facingNone')
-                  : t('tabletop.tokenEdit.facingDir', { deg: cell.dir })
-              return (
-                <button
-                  key={cell.key}
-                  type="button"
-                  aria-pressed={active}
-                  aria-label={label}
-                  title={label}
-                  className={`tabletop-token-facing-btn${
-                    cell.dir === null ? ' clear' : ''
-                  }${active ? ' active' : ''}`}
-                  onClick={() => onChangeFacing(cell.dir)}
-                >
-                  {cell.glyph}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* HP: current / max number inputs + clear (operator only) */}
-      {canOperate && (
-        <div className="tabletop-token-popover-row">
-          <span>{t('tabletop.tokenEdit.hp')}</span>
-          <div className="tabletop-token-hp-inputs">
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              value={hpCurDraft}
-              aria-label={t('tabletop.tokenEdit.hpCurrent')}
-              onChange={(e) => setHpCurDraft(e.target.value)}
-              onBlur={commitHp}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-              }}
-            />
-            <span aria-hidden="true">/</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              value={hpMaxDraft}
-              aria-label={t('tabletop.tokenEdit.hpMax')}
-              onChange={(e) => setHpMaxDraft(e.target.value)}
-              onBlur={commitHp}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-              }}
-            />
-            <button
-              type="button"
-              className="icon-btn"
-              aria-label={t('tabletop.tokenEdit.hpClear')}
-              title={t('tabletop.tokenEdit.hpClear')}
-              onClick={() => {
-                setHpCurDraft('')
-                setHpMaxDraft('')
-                onChangeHp(null)
-              }}
-            >
-              <CloseIcon size={14} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Status conditions: toggle chips (operator only) */}
-      {canOperate && (
-        <div className="tabletop-token-popover-row">
-          <span>{t('tabletop.tokenEdit.statuses')}</span>
-          <div
-            className="tabletop-token-status-grid"
-            role="group"
-            aria-label={t('tabletop.tokenEdit.statuses')}
-          >
-            {STATUS_CATALOG.map((s) => {
-              const active = activeStatuses.includes(s.key)
-              const label = t(`tabletop.status.${s.key}`)
-              return (
-                <button
-                  key={s.key}
-                  type="button"
-                  aria-pressed={active}
-                  aria-label={label}
-                  title={label}
-                  className={`tabletop-token-status-btn${active ? ' active' : ''}`}
-                  onClick={() => toggleStatus(s.key)}
-                >
-                  {s.glyph}
-                </button>
-              )
-            })}
-          </div>
         </div>
       )}
 
@@ -2378,6 +2433,47 @@ function TokenPopover({
             mode="both" onPick={(file) => handleImagePicked(file)} />,
           document.body,
         )}
+    </div>
+  )
+}
+
+/**
+ * One collapsible attribute row in the token popover (size / facing / HP
+ * / status): a head showing the label + current value that expands to its
+ * editor on tap. A real component (not an inline factory) so it can mint
+ * a `useId` for the `aria-controls` ↔ body linkage; the body is always
+ * rendered and `hidden` when collapsed so that association stays valid.
+ */
+function TokenAttrSection({
+  label,
+  summary,
+  open,
+  onToggle,
+  children,
+}: {
+  label: string
+  summary: ReactNode
+  open: boolean
+  onToggle: () => void
+  children: ReactNode
+}) {
+  const bodyId = useId()
+  return (
+    <div className="tabletop-token-accordion">
+      <button
+        type="button"
+        className="tabletop-token-accordion-head"
+        aria-expanded={open}
+        aria-controls={bodyId}
+        onClick={onToggle}
+      >
+        <span className="tabletop-token-accordion-label">{label}</span>
+        <span className="tabletop-token-accordion-value">{summary}</span>
+        <span className="tabletop-token-accordion-caret" aria-hidden="true" />
+      </button>
+      <div id={bodyId} className="tabletop-token-accordion-body" hidden={!open}>
+        {children}
+      </div>
     </div>
   )
 }
