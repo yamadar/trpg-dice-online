@@ -556,6 +556,10 @@ export function TablePanel({
       // as "outside the popover" and close it — taking the picker with
       // it. Treat any click within the picker / gallery layer as inside.
       if (target.closest('.map-gallery-layer')) return
+      // Same for the character-info / read-only modal opened from the
+      // PC token's mini character card: a click inside it must not
+      // deselect the token underneath.
+      if (target.closest('.char-info-layer')) return
       setSelectedTokenId(null)
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -2242,7 +2246,9 @@ function TokenPopover({
           type="button"
           className="tabletop-token-charcard"
           onClick={onEditCharacter}
-          aria-label={t('tabletop.tokenEdit.editCharacter')}
+          // Include the name so screen readers announce *which* character
+          // this opens, not just the generic action.
+          aria-label={`${displayName} — ${t('tabletop.tokenEdit.editCharacter')}`}
           title={t('tabletop.tokenEdit.editCharacter')}
         >
           <span className="tabletop-token-charcard-avatar">
