@@ -1770,10 +1770,38 @@ function LibraryList({
   onDelete: (id: string, name: string) => void
 }) {
   const { t } = useI18n()
-  // Which entry's popup menu is open (null = none). One row's menu at a
-  // time; tapping the row toggles it, and the backdrop / a menu choice
-  // closes it.
-  const [openId, setOpenId] = useState<string | null>(null)
+  // The open entry's popup, anchored to the tapped row's screen-space
+  // rect. `null` = nothing open. Position is FIXED (not absolute inside
+  // the row) so the menu escapes the library list's `overflow:auto`
+  // 160 px cap — an absolute menu taller than that box would be clipped.
+  // `up` flips the menu above the row when there isn't room below.
+  const [menu, setMenu] = useState<{
+    id: string
+    left: number
+    width: number
+    top?: number
+    bottom?: number
+  } | null>(null)
+  const close = () => setMenu(null)
+  // Roughly the menu's height (4 items + padding); used only to decide
+  // whether it fits below the row or should flip above it.
+  const MENU_H = 180
+  const toggle = (id: string, el: HTMLElement) => {
+    if (menu?.id === id) {
+      close()
+      return
+    }
+    const r = el.getBoundingClientRect()
+    const up = window.innerHeight - r.bottom < MENU_H && r.top > MENU_H
+    setMenu({
+      id,
+      left: r.left,
+      width: r.width,
+      ...(up
+        ? { bottom: window.innerHeight - r.top + 4 }
+        : { top: r.bottom + 4 }),
+    })
+  }
   if (entries.length === 0) {
     return <p className="tabletop-toolbar-meta">{emptyLabel}</p>
   }
@@ -1781,8 +1809,7 @@ function LibraryList({
     <ul className="tabletop-toolbar-list">
       {entries.map((entry) => {
         const n = sceneCount(entry.state)
-        const open = openId === entry.id
-        const close = () => setOpenId(null)
+        const open = menu?.id === entry.id
         // Each menu action closes the popup first, then runs — so a
         // confirm dialog (delete / overwrite) is not left behind an open
         // menu.
@@ -1800,7 +1827,7 @@ function LibraryList({
               className="tabletop-library-entry-row"
               aria-haspopup="menu"
               aria-expanded={open}
-              onClick={() => setOpenId(open ? null : entry.id)}
+              onClick={(e) => toggle(entry.id, e.currentTarget)}
             >
               <span className="tabletop-toolbar-list-label" title={entry.name}>
                 {entry.name}
@@ -1814,7 +1841,7 @@ function LibraryList({
                 ▾
               </span>
             </button>
-            {open && (
+            {open && menu && (
               <>
                 {/* Full-screen backdrop so a tap anywhere off the menu
                     dismisses it, matching the SettingsMenu pattern. */}
@@ -1826,6 +1853,14 @@ function LibraryList({
                   className="tabletop-library-menu"
                   role="menu"
                   aria-label={entry.name}
+                  style={{
+                    left: menu.left,
+                    width: menu.width,
+                    ...(menu.top !== undefined ? { top: menu.top } : {}),
+                    ...(menu.bottom !== undefined
+                      ? { bottom: menu.bottom }
+                      : {}),
+                  }}
                 >
                   <button
                     type="button"
