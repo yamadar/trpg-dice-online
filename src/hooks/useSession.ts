@@ -86,6 +86,7 @@ import {
   validateMapTextUpdateRequest,
 } from '../tabletop/hostValidation'
 import { loadPresetMap } from '../tabletop/presetMaps'
+import { isValidPingPoint, newPingId, type Ping } from '../tabletop/ping'
 import { fillTabletopDefaults, stripMapBytesForWire, tokenForWire } from '../tabletop/snapshot'
 import { loadTabletop, saveTabletop } from '../storage/tabletop'
 import {
@@ -423,6 +424,20 @@ export interface Session {
    * so the toolbar can surface one error message.
    */
   setMapFromPreset: (preset: PresetMap) => Promise<'ok' | MapImageError>
+  /**
+   * The most recent transient "look here" ping, or null before any has
+   * fired. Set whenever the local player drops one or one arrives over
+   * the wire; the tabletop renderer watches it (render-phase derived
+   * state, like chat bubbles) and animates each unique `id` for a couple
+   * of seconds. Ephemeral — never persisted or snapshotted.
+   */
+  lastPing: Ping | null
+  /**
+   * Drop a transient ping at a world-space point. Hosts (and the offline
+   * sandbox) render it locally and broadcast it; clients send a
+   * `pingRequest` and render it when the host echoes it back.
+   */
+  sendPing: (x: number, y: number) => void
 }
 
 /** Keep at most `max` items, dropping the oldest. */
@@ -519,6 +534,11 @@ export function useSession(): Session {
    * re-host / resume; seeded from the welcome snapshot on join.
    */
   const [tabletop, setTabletop] = useState<TabletopState>(EMPTY_TABLETOP_STATE)
+  /** Latest transient ping. Carried as plain state (not in the tabletop
+   *  state) because pings are ephemeral — they are never persisted,
+   *  snapshotted or exported. The renderer derives an animation from each
+   *  fresh `id`. */
+  const [lastPing, setLastPing] = useState<Ping | null>(null)
   /**
    * GM-only: the user's named tabletop library (templates + saves).
    * Loaded asynchronously from IndexedDB on mount; the
@@ -822,6 +842,25 @@ export function useSession(): Session {
     setTabletop(next)
     void saveTabletop(sessionIdRef.current, next)
   }, [])
+
+  /**
+   * Drop a transient "look here" ping at a world-space point. Hosts and
+   * the offline sandbox render it locally and broadcast it; clients send
+   * a `pingRequest` and render it only when the host echoes it back (so
+   * the sender does not see it twice). Pings never touch the persisted
+   * tabletop state.
+   */
+  const sendPing = useCallback((x: number, y: number) => {
+    if (!isValidPingPoint(x, y)) return
+    const role = roleRef.current
+    if (role === 'client') {
+      roomRef.current?.sendToHost({ t: 'pingRequest', x, y })
+      return
+    }
+    const ping: Ping = { id: newPingId(), x, y, playerId }
+    setLastPing(ping)
+    roomRef.current?.broadcast({ t: 'ping', ping })
+  }, [playerId])
 
   /**
    * GM-only: change the grid configuration. Updates the local state,
@@ -2541,6 +2580,24 @@ export function useSession(): Session {
           roomRef.current?.broadcast({ t: 'drawStrokeRemove', id })
           break
         }
+        case 'pingRequest': {
+          // Any known participant may ping. Stamp the sender's id from the
+          // trusted connection (so a client cannot spoof someone else's
+          // colour) and re-broadcast. Coordinates are untrusted — drop a
+          // NaN / Infinity before it corrupts a Konva transform.
+          const sender = peerPlayersRef.current.get(peerId)
+          if (!sender) break
+          if (!isValidPingPoint(msg.x, msg.y)) break
+          const ping: Ping = {
+            id: newPingId(),
+            x: msg.x,
+            y: msg.y,
+            playerId: sender.id,
+          }
+          setLastPing(ping)
+          roomRef.current?.broadcast({ t: 'ping', ping })
+          break
+        }
       }
     },
     [
@@ -2874,6 +2931,14 @@ export function useSession(): Session {
             ...tabletopRef.current,
             fog: { ...msg.fog, revealed: msg.fog.revealed.slice() },
           })
+          break
+        }
+        case 'ping': {
+          // Render an incoming ping if its coordinates are sane. This is
+          // also the path the original sender (a client) takes — the host
+          // echoes the ping back so every viewer, the sender included,
+          // animates exactly one marker.
+          if (isValidPingPoint(msg.ping.x, msg.ping.y)) setLastPing(msg.ping)
           break
         }
       }
@@ -3770,5 +3835,7 @@ export function useSession(): Session {
     commitFog,
     setFog,
     setMapFromPreset,
+    lastPing,
+    sendPing,
   }
 }

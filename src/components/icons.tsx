@@ -6,6 +6,7 @@ import {
   ChevronUp,
   Cloud,
   CloudOff,
+  Crosshair,
   Drama,
   Eraser,
   Grid2x2,
@@ -451,6 +452,19 @@ export function PenIcon({ size = 16 }: IconProps) {
 export function EraserIcon({ size = 16 }: IconProps) {
   return (
     <Eraser
+      className="icon-svg"
+      size={size}
+      strokeWidth={STROKE}
+      aria-hidden="true"
+      focusable={false}
+    />
+  )
+}
+
+/** Crosshair for the transient "look here" ping tool. */
+export function PingIcon({ size = 16 }: IconProps) {
+  return (
+    <Crosshair
       className="icon-svg"
       size={size}
       strokeWidth={STROKE}

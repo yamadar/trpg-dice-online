@@ -43,6 +43,11 @@
 - **Realtime**: host-authoritative / last-write-wins, ~20 Hz throttled
   drag, welcome-snapshot seeding for late joiners, IndexedDB reload
   restore, room export / import.
+- **Ping**: any participant can drop a transient "look here" marker — a
+  ripple in their player colour with their name beneath — that
+  broadcasts to everyone and fades after ~2.6 s. Ephemeral by design: it
+  is never persisted, snapshotted or exported, so a late joiner simply
+  does not see pings that fired before they arrived.
 - **Presentation**: full-screen mode (mobile + desktop) with a bottom
   dock, chat / dice as swap-in overlays, an unread-chat dot, a canvas
   **dice-roll animation** launching from the roller's token, chat
@@ -51,9 +56,9 @@
 
 ### Out of scope (Phase 2+)
 
-Ruler / cell-distance measurement, ping ("look here"), token facing, HP
-bars / status icons, multiple maps per session (scene list), minimap,
-full keyboard movement. See §9.
+Ruler / cell-distance measurement, token facing, HP bars / status
+icons, multiple maps per session (scene list), minimap, full keyboard
+movement. See §9.
 
 ## 2. Module map
 
@@ -152,14 +157,22 @@ fire-and-forgets `saveTabletop`.
 `tokenMove`, `pcTokenPlaceRequest`, `tokenSizeRequest`,
 `tokenRemoveRequest`, `tokenNoteRequest`, `mapTextAddRequest`,
 `mapTextUpdateRequest`, `mapTextRemoveRequest`, `drawStrokeAddRequest`,
-`drawStrokeRemoveRequest`.
+`drawStrokeRemoveRequest`, `pingRequest`.
 
 **Host → clients** (authoritative): `tokenMove`, `tokenUpsert`,
 `tokenRemove`, `gridChange`, `mapMeta`, `mapChunk`, `mapCleared`,
 `npcDefUpsert`, `npcDefRemove`, `tabletopState` (wholesale replace, used
 by library load), `mapTextUpsert`, `mapTextRemove`, `drawStrokeAdd`,
-`drawStrokeRemove`, `fogSet`. The welcome `Snapshot` carries an optional
-`tabletop` (map `dataUrl` stripped — see §3.5).
+`drawStrokeRemove`, `fogSet`, `ping`. The welcome `Snapshot` carries an
+optional `tabletop` (map `dataUrl` stripped — see §3.5).
+
+The `ping` pair is the lone *ephemeral* message: a client `pingRequest`
+(world point) is host-validated (sender known, coordinates finite),
+re-stamped with the sender's id and broadcast as `ping`. It never
+touches `TabletopState`, so it is absent from snapshots, IndexedDB and
+the export archive — the marker lives only in `useSession`'s transient
+`lastPing` and the renderer's short-lived animation. The pure
+animation / validation math lives in `tabletop/ping.ts`.
 
 ### 3.4 Token sync (host-authoritative / last-write-wins)
 
@@ -324,7 +337,8 @@ Implemented across ~40 PRs (#134–#190). Grouped by theme:
 `src/tabletop/`: `grid` · `hexGrid` · `tokens` · `annotations` ·
 `hostValidation` · `snapshot` · `imageChunk` · `imageBackground` (URL
 validation / fetch guards, covered by `imageBackgroundUrl.test.ts`) ·
-`mapGallery` · `presetMaps`.
+`mapGallery` · `presetMaps` · `ping` (coordinate validation + the
+expanding-ring animation curve).
 `src/storage/`: `tabletop` (sanitize + round-trip, fake-indexeddb) ·
 `roomExport` · `roomImport` (manifest v6 with `table.json`).
 
@@ -351,12 +365,11 @@ on <https://yamadar.github.io/trpg-dice-online/>.
 Ordered by rough priority (shipped items removed):
 
 1. Ruler / cell-distance measurement
-2. Ping (transient "look here" marker)
-3. Token facing
-4. HP bar / status icons
-5. Multiple maps per session (scene list / switcher)
-6. Minimap
-7. Full keyboard movement & shortcuts
+2. Token facing
+3. HP bar / status icons
+4. Multiple maps per session (scene list / switcher)
+5. Minimap
+6. Full keyboard movement & shortcuts
 
 ## 9. Revisions
 
@@ -365,3 +378,8 @@ Ordered by rough priority (shipped items removed):
   (PRs #134–#190): full module map, wire protocol, data flows,
   persistence (DB v8 / export v6), Konva render tree, delivery history,
   updated risks / tests / Phase-2 list.
+- v1.1 — Phase 2: **ping** (transient "look here" marker). New ephemeral
+  `pingRequest` / `ping` wire pair, `tabletop/ping.ts` pure module +
+  tests, a `ping` tool in the left palette and a self-animating
+  `PingMarker` render layer. Removed from the out-of-scope / Phase-2
+  lists.

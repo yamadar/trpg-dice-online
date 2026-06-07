@@ -227,6 +227,8 @@ export const fr: Dict = {
   'tabletop.tools.text': 'Texte',
   'tabletop.tools.pen': 'Stylo',
   'tabletop.tools.eraser': 'Gomme',
+  'tabletop.tools.ping': 'Ping',
+  'tabletop.tools.pingHint': 'Touchez la carte pour lancer un ping « regardez ici »',
   'tabletop.tools.fogReveal': 'Brouillard : révéler',
   'tabletop.tools.fogConceal': 'Brouillard : couvrir',
   'tabletop.tools.fogDisabled': 'Active d’abord le brouillard de guerre depuis la barre d’outils.',

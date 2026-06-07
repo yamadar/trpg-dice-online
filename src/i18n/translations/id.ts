@@ -227,6 +227,8 @@ export const id: Dict = {
   'tabletop.tools.text': 'Teks',
   'tabletop.tools.pen': 'Pena',
   'tabletop.tools.eraser': 'Penghapus',
+  'tabletop.tools.ping': 'Ping',
+  'tabletop.tools.pingHint': 'Ketuk peta untuk menjatuhkan ping "lihat sini"',
   'tabletop.tools.fogReveal': 'Kabut: buka',
   'tabletop.tools.fogConceal': 'Kabut: tutup',
   'tabletop.tools.fogDisabled': 'Aktifkan kabut perang dari toolbar dulu.',

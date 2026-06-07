@@ -227,6 +227,8 @@ export const ja: Dict = {
   'tabletop.tools.text': 'テキスト',
   'tabletop.tools.pen': 'ペン',
   'tabletop.tools.eraser': '消しゴム',
+  'tabletop.tools.ping': 'ピン',
+  'tabletop.tools.pingHint': 'マップをタップして「ここ！」ピンを送る',
   'tabletop.tools.fogReveal': '霧を晴らす',
   'tabletop.tools.fogConceal': '霧をかける',
   'tabletop.tools.fogDisabled': '先にツールバーからフォグを有効にしてください',

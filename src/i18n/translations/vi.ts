@@ -227,6 +227,8 @@ export const vi: Dict = {
   'tabletop.tools.text': 'Chữ',
   'tabletop.tools.pen': 'Bút',
   'tabletop.tools.eraser': 'Tẩy',
+  'tabletop.tools.ping': 'Ping',
+  'tabletop.tools.pingHint': 'Chạm vào bản đồ để thả ping "nhìn đây"',
   'tabletop.tools.fogReveal': 'Sương mù: lộ ra',
   'tabletop.tools.fogConceal': 'Sương mù: che lại',
   'tabletop.tools.fogDisabled': 'Hãy bật sương mù chiến tranh từ thanh công cụ trước.',

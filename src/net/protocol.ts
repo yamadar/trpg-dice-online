@@ -1,5 +1,6 @@
 import type { RollResult } from '../dice/types'
 import type { Lang } from '../i18n/translations'
+import type { Ping } from '../tabletop/ping'
 import type { Chunk, ChunkSpec } from '../tabletop/imageChunk'
 import type {
   DrawStroke,
@@ -180,6 +181,11 @@ export type ClientMessage =
    *  per-token ownership check — the note is intentionally writable by
    *  everyone) and broadcasts the updated token WITHOUT the privateNote. */
   | { t: 'tokenNoteRequest'; tokenId: string; note: string }
+  /** Any participant drops a transient "look here" ping at a world-space
+   *  point. The host validates the coordinates, stamps the sender's id
+   *  and re-broadcasts it as `ping` to everyone. Ephemeral — never
+   *  persisted, never in a snapshot. */
+  | { t: 'pingRequest'; x: number; y: number }
 
 /** Messages a host sends to clients. */
 export type HostMessage =
@@ -236,6 +242,10 @@ export type HostMessage =
   | { t: 'drawStrokeRemove'; id: string }
   /** GM-authoritative fog of war replacement. */
   | { t: 'fogSet'; fog: FogState }
+  /** A transient "look here" ping (host-stamped sender id), broadcast to
+   *  everyone. Ephemeral — clients render it for a couple of seconds and
+   *  drop it; it is never stored or snapshotted. */
+  | { t: 'ping'; ping: Ping }
 
 export type NetMessage = ClientMessage | HostMessage
 

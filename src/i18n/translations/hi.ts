@@ -227,6 +227,8 @@ export const hi: Dict = {
   'tabletop.tools.text': 'टेक्स्ट',
   'tabletop.tools.pen': 'पेन',
   'tabletop.tools.eraser': 'इरेज़र',
+  'tabletop.tools.ping': 'पिंग',
+  'tabletop.tools.pingHint': 'मानचित्र पर टैप करके "यहाँ देखें" पिंग भेजें',
   'tabletop.tools.fogReveal': 'कोहरा: हटाएँ',
   'tabletop.tools.fogConceal': 'कोहरा: डालें',
   'tabletop.tools.fogDisabled': 'पहले टूलबार से कोहरा सक्षम करें।',

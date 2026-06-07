@@ -4,6 +4,17 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.98 — **Ping ("look here") marker**. Any participant can pick the new
+  ping tool from the left palette and tap the map to drop a transient
+  attention marker — an expanding ripple in their player colour with their
+  name beneath — that broadcasts to everyone and fades after ~2.6 s. The
+  ping is deliberately *ephemeral*: it never enters the tabletop state, so
+  it is not persisted, not part of the welcome snapshot, and not exported.
+  A client sends a host-validated `pingRequest` (sender id re-stamped,
+  coordinates checked) which the host re-broadcasts as `ping`. The pure
+  animation / validation math lives in `tabletop/ping.ts` (unit-tested);
+  the marker self-animates in a new `PingMarker` render layer.
+
 - v1.97 — **Arrange placed tokens in a 4-column grid** instead of a single
   horizontal row. Previously every new token was staggered one cell to the
   right of the last, so a table with many participants could spread the

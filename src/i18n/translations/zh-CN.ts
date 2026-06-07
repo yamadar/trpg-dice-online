@@ -227,6 +227,8 @@ export const zhCN: Dict = {
   'tabletop.tools.text': '文字',
   'tabletop.tools.pen': '画笔',
   'tabletop.tools.eraser': '橡皮擦',
+  'tabletop.tools.ping': '标记',
+  'tabletop.tools.pingHint': '点按地图放置“看这里”标记',
   'tabletop.tools.fogReveal': '迷雾：显示',
   'tabletop.tools.fogConceal': '迷雾：覆盖',
   'tabletop.tools.fogDisabled': '请先从工具栏启用战争迷雾。',

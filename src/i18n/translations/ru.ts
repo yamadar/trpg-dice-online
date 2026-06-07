@@ -227,6 +227,8 @@ export const ru: Dict = {
   'tabletop.tools.text': 'Текст',
   'tabletop.tools.pen': 'Перо',
   'tabletop.tools.eraser': 'Ластик',
+  'tabletop.tools.ping': 'Пинг',
+  'tabletop.tools.pingHint': 'Коснитесь карты, чтобы поставить пинг «смотрите сюда»',
   'tabletop.tools.fogReveal': 'Туман: открыть',
   'tabletop.tools.fogConceal': 'Туман: закрыть',
   'tabletop.tools.fogDisabled': 'Сначала включи туман войны на панели.',

@@ -227,6 +227,8 @@ export const en: Dict = {
   'tabletop.tools.text': 'Text',
   'tabletop.tools.pen': 'Pen',
   'tabletop.tools.eraser': 'Eraser',
+  'tabletop.tools.ping': 'Ping',
+  'tabletop.tools.pingHint': 'Tap the map to drop a "look here" ping',
   'tabletop.tools.fogReveal': 'Fog: reveal',
   'tabletop.tools.fogConceal': 'Fog: conceal',
   'tabletop.tools.fogDisabled': 'Enable fog of war from the toolbar first.',
