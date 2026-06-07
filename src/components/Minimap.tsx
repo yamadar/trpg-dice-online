@@ -83,19 +83,29 @@ export function Minimap({
     const ctx = cv?.getContext('2d')
     if (!ctx) return
     ctx.clearRect(0, 0, BOX_W, BOX_H)
-    if (!fog.enabled || grid.kind === 'none' || tr.scale <= 0) return
-    const revealed = new Set(fog.revealed)
+    if (!fog.enabled || tr.scale <= 0) return
     ctx.fillStyle = FOG_COLOR
     ctx.globalAlpha = isGM ? 0.5 : 1
     const x0 = Math.max(0, Math.floor(tr.offsetX))
     const y0 = Math.max(0, Math.floor(tr.offsetY))
     const x1 = Math.min(BOX_W, Math.ceil(tr.offsetX + tr.width))
     const y1 = Math.min(BOX_H, Math.ceil(tr.offsetY + tr.height))
-    for (let my = y0; my < y1; my++) {
-      for (let mx = x0; mx < x1; mx++) {
-        const w = minimapToWorld(mx + 0.5, my + 0.5, world, tr)
-        const c = cellFromWorld(w.x, w.y, grid)
-        if (!revealed.has(fogCellKey(c.col, c.row))) ctx.fillRect(mx, my, 1, 1)
+    if (grid.kind === 'none' || grid.cellSize <= 0) {
+      // Grid-less "hide everything" panic button: cover the whole content
+      // when nothing is revealed (matches the main canvas FogLayer).
+      if (fog.revealed.length === 0) ctx.fillRect(x0, y0, x1 - x0, y1 - y0)
+    } else {
+      const revealed = new Set(fog.revealed)
+      // Per-pixel: sample each box pixel's centre back to its world cell.
+      // A revealed/fogged boundary can leave a sub-pixel (≤0.5 device px)
+      // sliver of the fogged side uncovered — imperceptible at minimap
+      // scale, so accepted rather than over-covering revealed area.
+      for (let my = y0; my < y1; my++) {
+        for (let mx = x0; mx < x1; mx++) {
+          const w = minimapToWorld(mx + 0.5, my + 0.5, world, tr)
+          const c = cellFromWorld(w.x, w.y, grid)
+          if (!revealed.has(fogCellKey(c.col, c.row))) ctx.fillRect(mx, my, 1, 1)
+        }
       }
     }
     ctx.globalAlpha = 1

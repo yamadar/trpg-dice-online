@@ -112,7 +112,14 @@ describe('fogHidesWorldPoint', () => {
   it('hides nothing when fog is disabled', () => {
     expect(fogHidesWorldPoint({ enabled: false, revealed: [] }, grid, 9999, 9999)).toBe(false)
   })
-  it('hides nothing on a grid-less scene', () => {
+  it('grid-less with some revealed cells hides nothing (cells cannot be painted)', () => {
+    // revealed is non-empty here, so the panic-button cover is off.
     expect(fogHidesWorldPoint(fog, { ...grid, kind: 'none' }, 120, 80)).toBe(false)
+  })
+  it('grid-less "hide everything" panic button hides every point when nothing is revealed', () => {
+    const panic: FogState = { enabled: true, revealed: [] }
+    expect(fogHidesWorldPoint(panic, { ...grid, kind: 'none' }, 120, 80)).toBe(true)
+    // Same for a zero-cell square grid (matches the main canvas FogLayer).
+    expect(fogHidesWorldPoint(panic, { ...grid, cellSize: 0 }, 120, 80)).toBe(true)
   })
 })

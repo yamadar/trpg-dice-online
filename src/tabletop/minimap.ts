@@ -16,8 +16,13 @@ import { isCellRevealed } from './annotations'
  * Whether fog of war hides the world point `(wx, wy)` — i.e. the cell it
  * falls in is not revealed. Used by the minimap to cover fogged terrain
  * and drop token / ping dots in fogged cells for non-GM viewers, so a
- * GM-hidden area is not spoiled by the overview. Returns false when fog
- * is off or the grid is cell-less (`'none'`), matching the main canvas.
+ * GM-hidden area is not spoiled by the overview.
+ *
+ * Mirrors the main canvas `FogLayer` exactly, including its **grid-less /
+ * zero-cell "hide everything" panic button**: when there is no usable
+ * grid, fog hides *everything* if nothing is revealed, and nothing
+ * otherwise (cells cannot be painted without a grid). Returns false when
+ * fog is off.
  */
 export function fogHidesWorldPoint(
   fog: FogState,
@@ -25,7 +30,10 @@ export function fogHidesWorldPoint(
   wx: number,
   wy: number,
 ): boolean {
-  if (!fog.enabled || grid.kind === 'none') return false
+  if (!fog.enabled) return false
+  if (grid.kind === 'none' || grid.cellSize <= 0) {
+    return fog.revealed.length === 0
+  }
   const { col, row } = cellFromWorld(wx, wy, grid)
   return !isCellRevealed(fog, col, row)
 }
