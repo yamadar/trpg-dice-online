@@ -1085,8 +1085,9 @@
 .tabletop-toolbar-list-action:hover {
   filter: brightness(1.1);
 }
-/* "Add as scene" is the lighter, additive action — outline it so it
-   reads as secondary next to the heavier "Replace table". */
+/* Quiet, transparent variant of a list action. The library entry uses it
+   for BOTH load actions (Replace table / Add as scene) so neither shouts;
+   a repeated filled button was the main source of visual noise. */
 .tabletop-toolbar-list-action.outline {
   background: transparent;
   color: var(--text);
