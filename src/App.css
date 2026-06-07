@@ -1161,7 +1161,10 @@
   right: auto;
   transform: translate(-50%, -50%);
   max-width: calc(100vw - 32px);
-  max-height: 80vh;
+  /* Cap against the canvas (the offset parent), not the viewport, so a
+     tall panel centred here never extends under the bottom dock on a
+     short / landscape phone. */
+  max-height: calc(100% - 16px);
   overflow-y: auto;
 }
 .tabletop-token-popover-header {
