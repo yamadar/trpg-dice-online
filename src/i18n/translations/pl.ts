@@ -112,6 +112,7 @@ export const pl: Dict = {
   'tabletop.playerToken.noCharacters': 'Najpierw utwórz postać, aby umieścić znacznik.',
   'tabletop.npcLibrary.title': 'Biblioteka NPC',
   'tabletop.npcLibrary.add': 'Add NPC…',
+  'tabletop.npcLibrary.addShort': 'Dodaj',
   'tabletop.npcLibrary.place': 'Umieść',
   'tabletop.npcLibrary.remove': 'Usuń z biblioteki',
   'tabletop.npcLibrary.unreadable': 'Nie udało się odczytać tego obrazu.',

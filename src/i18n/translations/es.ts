@@ -112,6 +112,7 @@ export const es: Dict = {
   'tabletop.playerToken.noCharacters': 'Crea primero un personaje para colocar una ficha.',
   'tabletop.npcLibrary.title': 'Biblioteca de PNJ',
   'tabletop.npcLibrary.add': 'Añadir PNJ…',
+  'tabletop.npcLibrary.addShort': 'Añadir',
   'tabletop.npcLibrary.place': 'Colocar',
   'tabletop.npcLibrary.remove': 'Quitar de la biblioteca',
   'tabletop.npcLibrary.unreadable': 'No se pudo leer la imagen.',

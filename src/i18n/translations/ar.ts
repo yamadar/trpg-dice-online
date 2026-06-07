@@ -112,6 +112,7 @@ export const ar: Dict = {
   'tabletop.playerToken.noCharacters': 'أنشئ شخصية أولًا لوضع رمز.',
   'tabletop.npcLibrary.title': 'مكتبة NPC',
   'tabletop.npcLibrary.add': 'أضف NPC',
+  'tabletop.npcLibrary.addShort': 'إضافة',
   'tabletop.npcLibrary.place': 'ضع',
   'tabletop.npcLibrary.remove': 'إزالة من المكتبة',
   'tabletop.npcLibrary.unreadable': 'تعذرت قراءة هذه الصورة.',

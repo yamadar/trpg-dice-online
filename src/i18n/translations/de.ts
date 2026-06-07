@@ -112,6 +112,7 @@ export const de: Dict = {
   'tabletop.playerToken.noCharacters': 'Erstelle zuerst einen Charakter, um einen Marker zu platzieren.',
   'tabletop.npcLibrary.title': 'NPC-Bibliothek',
   'tabletop.npcLibrary.add': 'NPC hinzufügen',
+  'tabletop.npcLibrary.addShort': 'Hinzufügen',
   'tabletop.npcLibrary.place': 'Platzieren',
   'tabletop.npcLibrary.remove': 'Aus Bibliothek entfernen',
   'tabletop.npcLibrary.unreadable': 'Bild konnte nicht gelesen werden.',

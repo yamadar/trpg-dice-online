@@ -1139,18 +1139,23 @@ export function TableToolbar({
               {isHost && (
                 <>
                   <hr className="tabletop-toolbar-divider" />
-                  <h3 className="tabletop-toolbar-title">
-                    {t('tabletop.npcLibrary.title')}
-                  </h3>
-                  <button
-                    type="button"
-                    className="icon-btn tabletop-npc-add-btn"
-                    onClick={() => void handleAddNpc()}
-                    aria-label={t('tabletop.npcLibrary.add')}
-                    title={t('tabletop.npcLibrary.add')}
-                  >
-                    <PlusIcon />
-                  </button>
+                  {/* Heading row: title on the left, an "Add" button on the
+                      right whose right edge lines up with the "Place"
+                      buttons of the entries below. */}
+                  <div className="tabletop-toolbar-heading-row">
+                    <h3 className="tabletop-toolbar-title">
+                      {t('tabletop.npcLibrary.title')}
+                    </h3>
+                    <button
+                      type="button"
+                      className="tabletop-toolbar-list-action"
+                      onClick={() => void handleAddNpc()}
+                      aria-label={t('tabletop.npcLibrary.add')}
+                      title={t('tabletop.npcLibrary.add')}
+                    >
+                      {t('tabletop.npcLibrary.addShort')}
+                    </button>
+                  </div>
                   {npcLibrary.length > 0 && (
                     <ul className="tabletop-toolbar-list">
                       {npcLibrary.map((def, index) => {

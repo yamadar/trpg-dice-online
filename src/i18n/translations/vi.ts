@@ -112,6 +112,7 @@ export const vi: Dict = {
   'tabletop.playerToken.noCharacters': 'Hãy tạo nhân vật trước để đặt token.',
   'tabletop.npcLibrary.title': 'Thư viện NPC',
   'tabletop.npcLibrary.add': 'Thêm NPC',
+  'tabletop.npcLibrary.addShort': 'Thêm',
   'tabletop.npcLibrary.place': 'Đặt',
   'tabletop.npcLibrary.remove': 'Bỏ khỏi thư viện',
   'tabletop.npcLibrary.unreadable': 'Không đọc được ảnh đó.',

@@ -4,6 +4,18 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.109 — **Tabletop polish (4 fixes)**. (1) The minimap no longer
+  covers the token info popover — its z-index now sits below it. (2)
+  Changing a just-added NPC's image (or note) *before* typing its name
+  now sticks: the update guard rejected any edit while the name was empty,
+  so the image was silently dropped; the rule is now the pure,
+  unit-tested `tabletop/npc.ts` (`nextNpcDef`) that rejects only an
+  explicit blank-name. (3) The NPC library's **Add** button moved onto the
+  heading row, right-aligned so its edge lines up with the entries'
+  **Place** buttons. (4) Status-condition emoji are nudged down to sit
+  centred on their chip above the token (emoji render high in the line
+  box, leaving them toward the top before).
+
 - v1.108 — **Tappable character card in the token popover**. A PC token's
   name row is now a miniaturized character card (round portrait + name)
   that opens the character info on tap — with an accent hint and an info

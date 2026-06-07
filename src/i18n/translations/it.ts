@@ -112,6 +112,7 @@ export const it: Dict = {
   'tabletop.playerToken.noCharacters': 'Crea prima un personaggio per posizionare un segnalino.',
   'tabletop.npcLibrary.title': 'Libreria PNG',
   'tabletop.npcLibrary.add': 'Add NPC…',
+  'tabletop.npcLibrary.addShort': 'Aggiungi',
   'tabletop.npcLibrary.place': 'Posiziona',
   'tabletop.npcLibrary.remove': 'Rimuovi dalla libreria',
   'tabletop.npcLibrary.unreadable': 'Impossibile leggere quell’immagine.',

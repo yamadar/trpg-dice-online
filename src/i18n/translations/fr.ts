@@ -112,6 +112,7 @@ export const fr: Dict = {
   'tabletop.playerToken.noCharacters': 'Crée d’abord un personnage pour placer un jeton.',
   'tabletop.npcLibrary.title': 'Bibliothèque PNJ',
   'tabletop.npcLibrary.add': 'Ajouter un PNJ…',
+  'tabletop.npcLibrary.addShort': 'Ajouter',
   'tabletop.npcLibrary.place': 'Placer',
   'tabletop.npcLibrary.remove': 'Retirer de la bibliothèque',
   'tabletop.npcLibrary.unreadable': 'Impossible de lire cette image.',

@@ -112,6 +112,7 @@ export const tr: Dict = {
   'tabletop.playerToken.noCharacters': 'Jeton yerleştirmek için önce bir karakter oluştur.',
   'tabletop.npcLibrary.title': 'NPC kütüphanesi',
   'tabletop.npcLibrary.add': 'NPC ekle…',
+  'tabletop.npcLibrary.addShort': 'Ekle',
   'tabletop.npcLibrary.place': 'Yerleştir',
   'tabletop.npcLibrary.remove': 'Kütüphaneden kaldır',
   'tabletop.npcLibrary.unreadable': 'Bu görsel okunamadı.',
