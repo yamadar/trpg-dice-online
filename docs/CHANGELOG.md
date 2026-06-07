@@ -4,6 +4,15 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.111 — **Decluttered the tabletop library panel**. A design critique
+  found the panel led with ~8 lines of low-contrast explanatory text and
+  a filled "Replace table" button repeated on every entry — burying the
+  actual saved list. The explanatory text (what the library is + how
+  save/load work) now collapses behind a "?" help toggle (off by
+  default); the standalone per-section "meaning" lines are folded into it;
+  and both per-entry load actions are equal, quiet outline buttons so the
+  list scans cleanly. No functionality changed.
+
 - v1.110 — **Centered token popover on mobile**. On a phone (≤ 720 px)
   the token info panel now floats in the centre of the canvas (height
   capped, scrollable) instead of anchored to the token, which was often
