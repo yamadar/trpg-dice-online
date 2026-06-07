@@ -1144,6 +1144,62 @@
   flex-direction: column;
   gap: 4px;
 }
+/* Collapsible attribute rows (size / facing / HP / status). Each is a
+   one-line head (label + current value + caret) that expands its editor
+   on tap, so the popover stays short. Mirrors the toolbar's one-panel
+   metaphor. */
+.tabletop-token-accordions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tabletop-token-accordion-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 4px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.tabletop-token-accordion-head:hover {
+  background: var(--panel-2);
+}
+.tabletop-token-accordion-label {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+.tabletop-token-accordion-value {
+  margin-left: auto;
+  color: var(--text);
+  font-size: 0.95rem;
+  max-width: 60%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* Caret: a small triangle that points right when collapsed and rotates
+   down when the row is expanded. */
+.tabletop-token-accordion-caret {
+  flex-shrink: 0;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid var(--text-dim);
+  transition: transform 0.12s ease;
+}
+.tabletop-token-accordion-head[aria-expanded='true'] .tabletop-token-accordion-caret {
+  transform: rotate(90deg);
+}
+.tabletop-token-accordion-body {
+  padding: 4px 4px 8px;
+}
 .tabletop-token-popover-row > span {
   color: var(--text-dim);
   font-size: 0.78rem;
