@@ -435,15 +435,27 @@ An SPA where players roll TRPG dice and share results with other players in real
 - The GM can also save the current tabletop under a name into a
   **tabletop library**. This library is stored globally in IndexedDB
   (`tabletopLibrary` store, DB v8), not per-session, so a GM can
-  prepare scenes ahead of time and load them into any room. Two
-  flavours coexist:
-  - **Template**: the initial layout with PC tokens stripped, plus
-    the viewport centre stashed as `pcSpawn`. Loading re-spawns the
-    GM's existing PCs around `pcSpawn` so switching scenes does not
-    force every player to re-place themselves.
-  - **Snapshot**: the full state including PC tokens. Loading
-    restores everything verbatim.
-  A load broadcasts a fresh `tabletopState` to every client; the
+  prepare scenes ahead of time and load them into any room. It is a
+  reusable, device-wide shelf — distinct from *scenes*, which live only
+  inside the current game (the panel says so up front). Saving has two
+  independent choices:
+  - **Scope** — *this scene* (only the current scene) or *whole table*
+    (every scene). Before scenes existed a save always captured the
+    whole state, silently embedding every other scene; the scope picker
+    makes the unit explicit.
+  - **Kind** — **Template**: a starting layout with PC tokens *and* pen
+    strokes stripped from **every** saved scene (text labels and fog are
+    kept as scenario setup), plus the viewport centre stashed as
+    `pcSpawn`. **Snapshot**: the full state including PC tokens. A
+    multi-scene entry shows a scene-count badge.
+  Each entry offers two distinct loads:
+  - **Replace table** — discards every current scene and swaps in the
+    entry's scene(s).
+  - **Add as scene** — splices the entry's scene(s) into the current
+    session as new scenes (keeping the GM's existing scenes) and
+    switches to the first one — the bridge that lets a GM prepare
+    material in the library and bring it into a live game.
+  Either load broadcasts a fresh `tabletopState` to every client; the
   map image streams through the existing `mapMeta` / `mapChunk`
   path so a multi-megabyte background does not block the data
   channel.

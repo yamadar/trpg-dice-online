@@ -39,10 +39,15 @@
 - **NPC library**: a GM-curated stash of named NPC definitions
   (name + image + note) that can be placed repeatedly; placing copies the
   image/label/note inline so later edits don't mutate placed tokens.
-- **Tabletop library**: named **templates** (PC tokens stripped,
-  `pcSpawn` stashed) and full **snapshots**, stored globally (not
-  per-session) so a GM can prepare scenes ahead and load them into any
-  room.
+- **Tabletop library**: named **templates** (PC tokens + pen strokes
+  stripped from every saved scene, `pcSpawn` stashed) and full
+  **snapshots**, stored globally (not per-session) so a GM can prepare
+  scenes ahead and load them into any room. Saving picks a **scope**
+  (this scene / whole table) and each entry loads two ways — **replace
+  table** (swap everything) or **add as scene** (splice the entry's
+  scene(s) into the live session, keeping current scenes). Distinct from
+  scenes (this-game-only); the panel labels the library as the reusable,
+  device-wide shelf.
 - **Annotation layers**: free-text **labels**, free-hand **pen strokes**,
   and grid-cell **fog of war** (GM-painted; opaque to players).
 - **Scenes (multiple maps per session)**: the GM keeps several scenes,
@@ -90,7 +95,7 @@ Ruler / cell-distance measurement. See §9.
 | `hexGrid.ts` | Flat-top hex math (odd-q offset): centre / polygon / pixel→cell / viewport iteration; redblobgames pipeline |
 | `tokens.ts` | PC-token lifecycle & permissions: `planPcTokenAdds`, `makeGmToken`, `canMoveToken`, `applyTokenMove/Upsert/Remove`, `defaultPlacementOrigin` (map centre → grid origin → `pcSpawn`), grid-wrapping `placementPosition` (4 cols), `recenterTokensOnMap`, `snapAllTokensToGrid` |
 | `annotations.ts` | Text / stroke / fog apply + permission helpers (`canEditMapText`, `canEraseStroke`), `setFogCells`, `isCellRevealed`, and `nearestRevealedCellCenter` (the "dropped a token into fog" rescue) |
-| `scenes.ts` | Multiple maps per session: `addScene` / `switchScene` / `renameScene` / `deleteScene` / `listScenes` over the current-scene-at-top-level model, with monotonic scene ordinals |
+| `scenes.ts` | Multiple maps per session: `addScene` / `switchScene` / `renameScene` / `deleteScene` / `listScenes` over the current-scene-at-top-level model, with monotonic scene ordinals; plus the library-bridge helpers `allScenes` / `currentSceneOnly` / `stripTemplateScenes` (PC+stroke strip across all scenes) / `appendScenes` |
 | `minimap.ts` | Minimap geometry: `fitRect` (fit world rect into the box), `worldToMinimap` / `minimapToWorld`, and `minimapWorldBounds` (map bounds, else token + viewport union) |
 | `hostValidation.ts` | Pure host-side validators for inbound annotation requests; re-stamps `ownerPlayerId` from the trusted connection so a client can't spoof ownership |
 | `snapshot.ts` | Wire helpers: `tokenForWire` / `stripMapBytesForWire` (strip `privateNote` and the map `dataUrl` before broadcast) and `fillTabletopDefaults` (back-fill annotation fields from a pre-PR-12 host) |
@@ -161,8 +166,12 @@ flat set of actions (not a nested object). Grouped:
   `reorderToken`, `syncOwnTokenSnapshots`.
 - **NPC library**: `addNpcDef`, `updateNpcDef`, `removeNpcDef`,
   `reorderNpcDef`, `placeNpcFromLibrary`.
-- **Tabletop library**: `saveTabletopAs(name, kind)`,
-  `loadTabletopFromLibrary(id)`, `deleteTabletopFromLibrary(id)`.
+- **Tabletop library**: `saveTabletopAs(name, kind, viewportCenter?, scope)`
+  (`scope` = `'scene' | 'table'`), `loadTabletopFromLibrary(id)`
+  (replace whole table), `addLibraryAsScenes(id)` (splice in as new
+  scenes), `deleteTabletopFromLibrary(id)`. The save / load scoping is
+  the pure `allScenes` / `currentSceneOnly` / `stripTemplateScenes` /
+  `appendScenes` in `tabletop/scenes.ts`.
 - **Annotations**: `addMapText` / `updateMapText` / `removeMapText`,
   `addDrawStroke` / `removeDrawStroke`, `setFogEnabled`, `paintFog`,
   `commitFog`, `setFog`.

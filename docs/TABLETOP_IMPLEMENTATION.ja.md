@@ -35,10 +35,14 @@
 - **NPC ライブラリ**: GM が用意する名前付き NPC 定義（名前 + 画像 + メモ）の
   ストック。何度でも配置でき、配置時に画像 / ラベル / メモをインラインに
   コピーするため、後からライブラリを編集しても配置済みトークンは変わらない。
-- **テーブルライブラリ**: 名前付きの**テンプレート**（PC トークンを除去し
-  `pcSpawn` を退避）と完全**スナップショット**。セッション横断（per-session
-  でない）でグローバル保存されるので、GM が事前にシーンを準備して任意の
-  ルームに読み込める。
+- **テーブルライブラリ**: 名前付きの**テンプレート**（全保存シーンから
+  PC トークン＋ペン描画を除去し `pcSpawn` を退避）と完全**スナップショット**。
+  セッション横断（per-session でない）でグローバル保存されるので、GM が
+  事前にシーンを準備して任意のルームに読み込める。保存時に**範囲**
+  （このシーン / テーブル全体）を選び、各エントリは 2 通りでロードできる
+  —**テーブルを置換**（全入れ替え）か**シーンとして追加**（現在のシーンを
+  保持したままエントリのシーンを差し込む）。このゲーム内だけのシーンとは別物
+  で、パネルでは端末横断で再利用できる「棚」と明示する。
 - **注釈レイヤ**: フリーテキスト**ラベル**・フリーハンド**ペン描画**・
   グリッドセル単位の**フォグ・オブ・ウォー**（GM が塗る / プレイヤーには不透明）。
 - **シーン（1 セッション複数マップ）**: GM は複数のシーン（各自のマップ /
@@ -83,7 +87,7 @@
 | `hexGrid.ts` | フラットトップ hex 計算（odd-q）: 中心 / 多角形 / pixel→cell / ビューポート走査。redblobgames 方式 |
 | `tokens.ts` | PC トークンのライフサイクル・権限: `planPcTokenAdds`・`makeGmToken`・`canMoveToken`・`applyTokenMove/Upsert/Remove`・`defaultPlacementOrigin`（マップ中心→グリッド原点→`pcSpawn`）・4 列折り返しの `placementPosition`・`recenterTokensOnMap`・`snapAllTokensToGrid` |
 | `annotations.ts` | テキスト / ストローク / フォグの適用＋権限判定（`canEditMapText`・`canEraseStroke`）、`setFogCells`・`isCellRevealed`・`nearestRevealedCellCenter`（フォグへ落としたトークンの救済） |
-| `scenes.ts` | 1 セッション複数マップ: `addScene` / `switchScene` / `renameScene` / `deleteScene` / `listScenes`（現在シーンを top-level に置くモデル、単調増加する序数命名つき） |
+| `scenes.ts` | 1 セッション複数マップ: `addScene` / `switchScene` / `renameScene` / `deleteScene` / `listScenes`（現在シーンを top-level に置くモデル、単調増加する序数命名つき）。加えてライブラリ橋渡し `allScenes` / `currentSceneOnly` / `stripTemplateScenes`（全シーンの PC＋ペン除去）/ `appendScenes` |
 | `minimap.ts` | ミニマップ幾何: `fitRect`（ワールド矩形をボックスへフィット）・`worldToMinimap` / `minimapToWorld`・`minimapWorldBounds`（マップ境界、なければトークン＋ビューポートの和） |
 | `hostValidation.ts` | 受信した注釈リクエストのホスト側バリデータ（純粋関数）。`ownerPlayerId` を信頼できる接続元から再付与し、なりすましを防ぐ |
 | `snapshot.ts` | ワイヤ用ヘルパー: `tokenForWire` / `stripMapBytesForWire`（送信前に `privateNote` とマップ `dataUrl` を除去）、`fillTabletopDefaults`（PR-12 以前のホストの欠落フィールドを補完） |
@@ -154,8 +158,12 @@ GM（P2P ホスト）が正本の state を保持し、各クライアントは 
   `reorderToken`・`syncOwnTokenSnapshots`。
 - **NPC ライブラリ**: `addNpcDef`・`updateNpcDef`・`removeNpcDef`・
   `reorderNpcDef`・`placeNpcFromLibrary`。
-- **テーブルライブラリ**: `saveTabletopAs(name, kind)`・
-  `loadTabletopFromLibrary(id)`・`deleteTabletopFromLibrary(id)`。
+- **テーブルライブラリ**: `saveTabletopAs(name, kind, viewportCenter?, scope)`
+  （`scope` = `'scene' | 'table'`）・`loadTabletopFromLibrary(id)`（テーブル
+  全体を置換）・`addLibraryAsScenes(id)`（新規シーンとして差し込み）・
+  `deleteTabletopFromLibrary(id)`。保存 / ロードの範囲解決は純粋関数
+  `allScenes` / `currentSceneOnly` / `stripTemplateScenes` / `appendScenes`
+  （`tabletop/scenes.ts`）。
 - **注釈**: `addMapText` / `updateMapText` / `removeMapText`・
   `addDrawStroke` / `removeDrawStroke`・`setFogEnabled`・`paintFog`・
   `commitFog`・`setFog`。

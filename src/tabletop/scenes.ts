@@ -178,3 +178,84 @@ export function deleteScene(state: TabletopState, id: string): TabletopState {
   const [target, ...rest] = s.scenes!
   return hydrateFrom(s, target, rest)
 }
+
+// --- Library bridge (save / load to the global tabletop library) ----------
+//
+// A `SavedTabletop.state` is a full `TabletopState`, so it can carry a
+// single scene (the GM saved "this scene") or every scene (they saved
+// "the whole table"). These helpers let the save side narrow the scope
+// and the load side splice a saved entry's scenes into the live session
+// without nuking the GM's current scene list.
+
+/** Every scene in a state, current first, then the inactive ones. Lets
+ *  the library code treat a single- and multi-scene save uniformly. */
+export function allScenes(state: TabletopState): Scene[] {
+  const s = ensureScenes(state)
+  return [currentScene(s), ...s.scenes!]
+}
+
+/**
+ * Reduce a state to just its current scene (drops the inactive `scenes`).
+ * Used when the GM chooses to save "this scene" rather than the whole
+ * table. Session-global `npcLibrary` / `pcSpawn` are kept — they are not
+ * per-scene.
+ */
+export function currentSceneOnly(state: TabletopState): TabletopState {
+  const s = ensureScenes(state)
+  return { ...s, scenes: [] }
+}
+
+/**
+ * Strip PC tokens and pen strokes from EVERY scene (current + inactive).
+ * Templates capture the *initial* layout, so PCs (which re-place
+ * themselves on load) and session-specific sketches are removed; text
+ * labels and fog are kept as deliberate scenario setup. The pre-scenes
+ * code only stripped the current scene, leaving PCs embedded in inactive
+ * scenes of a whole-table template — this fixes that.
+ */
+export function stripTemplateScenes(state: TabletopState): TabletopState {
+  const s = ensureScenes(state)
+  return {
+    ...s,
+    tokens: s.tokens.filter((t) => t.kind !== 'pc'),
+    strokes: [],
+    scenes: s.scenes!.map((sc) => ({
+      ...sc,
+      tokens: sc.tokens.filter((t) => t.kind !== 'pc'),
+      strokes: [],
+    })),
+  }
+}
+
+/**
+ * Append every scene from `source` into `state` as brand-new scenes and
+ * switch to the first one. The previous current scene is stashed, so the
+ * GM's existing scenes are preserved (unlike a wholesale "replace table"
+ * load). Each appended scene gets a fresh id from `newIds` and a fresh
+ * monotonic ordinal so it never collides with an existing scene; names
+ * are carried over. Session-global `npcLibrary` / `pcSpawn` stay as they
+ * are on `state` (the import does not merge the source's stash).
+ *
+ * The caller must supply exactly one fresh id per scene in `source`
+ * (`newIds.length === sceneCount(source)`); fewer would mint
+ * undefined-id scenes, so a short list is refused. No-op (returns the
+ * same reference) when `source` has no scenes.
+ */
+export function appendScenes(
+  state: TabletopState,
+  source: TabletopState,
+  newIds: string[],
+): TabletopState {
+  const s = ensureScenes(state)
+  const incomingRaw = allScenes(source)
+  if (incomingRaw.length === 0 || newIds.length < incomingRaw.length) return state
+  const base = maxOrd(s)
+  const incoming = incomingRaw.map((sc, i) => ({
+    ...sc,
+    id: newIds[i],
+    ord: base + 1 + i,
+  }))
+  const stashed = s.scenes!.concat(currentScene(s))
+  const [first, ...rest] = incoming
+  return hydrateFrom(s, first, [...stashed, ...rest])
+}

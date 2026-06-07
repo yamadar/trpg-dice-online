@@ -4,6 +4,23 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.104 — **Clearer scenes vs. library**. Once scenes existed, the
+  tabletop library and the scene switcher overlapped confusingly, so
+  saving and loading are now explicit. Saving picks a **scope** — *this
+  scene* or *the whole table (all scenes)* — instead of silently
+  capturing every scene; **templates** now strip PC tokens and pen
+  strokes from *every* saved scene (previously only the current one, so
+  inactive scenes leaked their PCs); and each library entry loads two
+  ways — **Replace table** (swap everything) or **Add as scene** (splice
+  the entry's scene(s) into the live session, keeping the current
+  scenes), bridging prepared library material into a running game. A note
+  labels the library as the reusable, device-wide shelf vs. scenes as
+  this-game-only; multi-scene entries show a scene-count badge; and the
+  Japanese UI now says スナップショット to match the English "Snapshot".
+  The scope logic is the pure, unit-tested `tabletop/scenes.ts`
+  (`allScenes` / `currentSceneOnly` / `stripTemplateScenes` /
+  `appendScenes`).
+
 - v1.103 — **Minimap**. A collapsible corner overview of the current
   scene — the background map (or a fitted blank region), a dot per token,
   and a rectangle marking the current viewport. Clicking or dragging the
