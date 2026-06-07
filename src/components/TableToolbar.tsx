@@ -268,6 +268,8 @@ export function TableToolbar({
   // Inline scene rename: which scene id is being edited, and its draft.
   const [editingSceneId, setEditingSceneId] = useState<string | null>(null)
   const [sceneNameDraft, setSceneNameDraft] = useState('')
+  // Set by Escape so the blur it triggers cancels instead of committing.
+  const sceneRenameCancelRef = useRef(false)
   // NPC add flow state: just the name. The portrait is attached after
   // the NPC has been added through the per-row "edit" button so a GM
   // can register a stack of NPCs first and worry about art later.
@@ -1205,6 +1207,13 @@ export function TableToolbar({
               const display = sc.name.trim() || t('tabletop.scenes.defaultName', { n: sc.ord })
               const editing = editingSceneId === sc.id
               const commit = () => {
+                // Escape sets the cancel flag before blurring, so the
+                // blur this fires must not rename — "cancel", not "save".
+                if (sceneRenameCancelRef.current) {
+                  sceneRenameCancelRef.current = false
+                  setEditingSceneId(null)
+                  return
+                }
                 onRenameScene(sc.id, sceneNameDraft)
                 setEditingSceneId(null)
               }
@@ -1225,7 +1234,10 @@ export function TableToolbar({
                       onBlur={commit}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-                        else if (e.key === 'Escape') setEditingSceneId(null)
+                        else if (e.key === 'Escape') {
+                          sceneRenameCancelRef.current = true
+                          ;(e.target as HTMLInputElement).blur()
+                        }
                       }}
                     />
                   ) : (

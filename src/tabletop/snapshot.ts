@@ -45,16 +45,21 @@ export function tokenForWire(token: Token): Token {
  *   - every token's GM-private `privateNote` (via `tokenForWire`);
  *   - the entire `scenes` array — scenes are a host-only concept, so a
  *     client only ever mirrors the *current* scene (the top-level
- *     fields). `sceneId` / `sceneName` are kept so a client can label
- *     the current scene.
+ *     fields). The scene *metadata* (`scenes`, `sceneName`, `sceneOrd`)
+ *     is all GM-only too: it is dropped so a rename that is not
+ *     re-broadcast cannot leave a stale name on a client. `sceneId` is
+ *     kept as a harmless identity.
  * The input is never mutated.
  */
 export function stripMapBytesForWire(state: TabletopState): TabletopState {
   const strippedTokens = state.tokens.map(tokenForWire)
   const tokensChanged = strippedTokens.some((t, i) => t !== state.tokens[i])
   let base = tokensChanged ? { ...state, tokens: strippedTokens } : state
-  if (base.scenes && base.scenes.length > 0) {
-    base = { ...base, scenes: [] }
+  if (base.scenes?.length || base.sceneName || base.sceneOrd !== undefined) {
+    base = { ...base }
+    base.scenes = []
+    delete base.sceneName
+    delete base.sceneOrd
   }
   if (!base.map) return base
   return { ...base, map: { ...base.map, dataUrl: '' } }

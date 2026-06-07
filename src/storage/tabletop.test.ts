@@ -111,6 +111,28 @@ describe('sanitizeStoredTabletop', () => {
     expect(result.scenes![0].tokens).toHaveLength(1)
   })
 
+  it('clamps non-positive / fractional scene ordinals', () => {
+    const result = sanitizeStoredTabletop({
+      sceneOrd: 0,
+      sceneId: 'cur',
+      scenes: [
+        {
+          id: 'a',
+          name: '',
+          ord: -5,
+          grid: { kind: 'square' },
+          tokens: [],
+          texts: [],
+          strokes: [],
+          fog: { enabled: false, revealed: [] },
+        },
+      ],
+    })
+    expect(result.sceneOrd).toBe(1) // 0 → clamped to 1
+    // A negative scene ord is dropped (display then falls back to 1).
+    expect('ord' in result.scenes![0]).toBe(false)
+  })
+
   it('round-trips a token\'s optional size / note / privateNote / facing', () => {
     const result = sanitizeStoredTabletop({
       tokens: [

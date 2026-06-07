@@ -337,11 +337,13 @@ function sanitizeScene(raw: unknown): Scene | null {
   const id = asString(r.id)
   if (!id) return null
   const map = sanitizeMap(r.map)
-  const ord = asNumber(r.ord, NaN)
+  // Ordinal drives the "Scene N" placeholder, so keep it a 1-based
+  // integer; reject 0 / negative / fractional values from corrupt data.
+  const ord = Math.round(asNumber(r.ord, NaN))
   return {
     id,
     name: asString(r.name),
-    ...(Number.isFinite(ord) ? { ord } : {}),
+    ...(Number.isFinite(ord) && ord >= 1 ? { ord } : {}),
     ...(map ? { map } : {}),
     grid: sanitizeGrid(r.grid),
     tokens: sanitizeTokenArray(r.tokens),
@@ -396,7 +398,9 @@ export function sanitizeStoredTabletop(raw: unknown): TabletopState {
   // coerced and any without an id are dropped.
   const sceneId = asString(r.sceneId) || INITIAL_SCENE_ID
   const sceneName = asString(r.sceneName)
-  const sceneOrd = asNumber(r.sceneOrd, 1)
+  // Clamp to a 1-based integer so the "Scene N" placeholder is never
+  // "Scene 0" / "Scene -3" after corrupt storage or import.
+  const sceneOrd = Math.max(1, Math.round(asNumber(r.sceneOrd, 1)))
   const scenes: Scene[] = []
   if (Array.isArray(r.scenes)) {
     for (const raw of r.scenes) {
