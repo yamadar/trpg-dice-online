@@ -17,6 +17,7 @@ import useImage from 'use-image'
 import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import { useDialogEscape } from '../hooks/useDialogEscape'
 import { playerColor } from '../players/colors'
 import { avatarInitial, composeName } from '../players/identity'
 import { characterImagesKey } from '../storage/roomLog'
@@ -2598,18 +2599,10 @@ function CharacterReadOnlyModal({
   // focus to the trigger on close (mirrors the editable CharacterInfoModal).
   useDialogFocus(cardRef)
 
-  // Escape closes without reaching the tabletop Escape handler.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [onClose])
+  // Escape closes without reaching the tabletop Escape handler, and steps
+  // aside for a portrait Lightbox opened from inside so that closes first
+  // (mirrors the editable CharacterInfoModal). See `useDialogEscape`.
+  useDialogEscape(cardRef, onClose)
 
   // Build a minimal Character shape from the available sessionCharacters
   // data. memo and patterns are empty — memo is hidden in readOnly mode

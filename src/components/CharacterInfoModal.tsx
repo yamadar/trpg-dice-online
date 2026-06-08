@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import { useDialogEscape } from '../hooks/useDialogEscape'
 import type { Character, CharacterEdits } from '../characters/types'
 import { CharacterEditor } from './CharacterEditor'
 import { CloseIcon } from './icons'
@@ -28,20 +29,11 @@ export function CharacterInfoModal({ character, onUpdate, onNotice, onClose }: P
   // focus to the token's edit popover on close.
   useDialogFocus(cardRef)
 
-  // Escape closes. Capture phase + stopImmediatePropagation so the
-  // keystroke does not also reach the tabletop's own Escape handler
-  // sitting underneath (which would close the whole tabletop view).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [onClose])
+  // Escape closes — but only this modal. The capture-phase handler swallows
+  // the key so the tabletop's Escape underneath never fires, and steps aside
+  // for a Lightbox / crop dialog opened from inside (a descendant dialog) so
+  // that inner one closes first. See `useDialogEscape`.
+  useDialogEscape(cardRef, onClose)
 
   return (
     <div className="char-info-layer" role="presentation">

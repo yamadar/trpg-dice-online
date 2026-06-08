@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useId, useRef, useState } from 'react'
 import Cropper, { type Area } from 'react-easy-crop'
 import { useI18n } from '../i18n/useI18n'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import { useDialogEscape } from '../hooks/useDialogEscape'
 import { cropImageToDataUrl } from '../characters/cropImage'
 import { CloseIcon } from './icons'
 
@@ -35,23 +36,11 @@ export function CharacterImageCropDialog({ src, onCancel, onConfirm }: Props) {
   // focus to the trigger on close.
   useDialogFocus(dialogRef)
 
-  // Close on Escape. The listener runs in the *capture* phase and calls
-  // `stopImmediatePropagation()` so the key does not also reach the
-  // window-level Escape handler on the Sheet underneath — this dialog is
-  // rendered as a DOM *descendant* of the character Sheet (the editor
-  // opens it inline), so a plain bubbling Escape would close both. Same
-  // pattern as ConfirmDialog / CharacterInfoModal.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        onCancel()
-      }
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [onCancel])
+  // Close on Escape — and only this dialog. It is rendered as a DOM
+  // descendant of the Sheet or token character modal that opened it inline,
+  // so the shared capture-phase handler swallows the key (keeping the layer
+  // underneath open) and, if anything nests deeper, steps aside for it.
+  useDialogEscape(dialogRef, onCancel)
 
   const onCropComplete = useCallback((_cropped: Area, areaPixels: Area) => {
     setPixelCrop(areaPixels)

@@ -4,6 +4,28 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.118 — **Escape on a Lightbox or crop dialog opened from a tabletop
+  token's character modal now closes only that inner dialog**, not the whole
+  modal. From the tabletop, opening a placed PC/NPC token's character modal
+  (`CharacterInfoModal`, or its read-only variant) and then enlarging the
+  portrait in the fullscreen image viewer — or opening the image-crop dialog
+  — then pressing Escape tore down the entire token modal instead of just the
+  inner dialog. v1.117 gave those inner dialogs a capture-phase
+  `stopImmediatePropagation` Escape handler, but the token character modal
+  already had one of its own; with both on `window` in the capture phase,
+  registration order alone decided the winner, and the outer modal (mounted
+  first) fired first and closed the whole stack. A new shared `useDialogEscape`
+  hook now gives every such dialog one correct implementation: an ancestor
+  dialog steps aside when a nested dialog — tagged `data-dialog-focus-trap` by
+  `useDialogFocus` — owns the focus and is contained by it, the same
+  "innermost wins" handoff `useDialogFocus` already does for Tab, so only the
+  innermost open dialog closes on a single Escape (a second Escape then closes
+  the modal). Applied to `ConfirmDialog`, the token character view/edit
+  modals, the map gallery, the fullscreen image viewer, and the crop dialog;
+  the map gallery still dismisses its own nested Lightbox preview (a DOM
+  sibling) first. The yield decision is a pure function with unit tests.
+  Follow-up to v1.117.
+
 - v1.117 — **Escape on a dialog opened inside a Sheet no longer also
   closes the Sheet**. Enlarging a character portrait in the fullscreen
   image viewer, or opening the image-crop dialog, from inside the
