@@ -35,12 +35,17 @@ export function Sheet({ title, titleIcon, children, onClose }: Props) {
   }, [onClose])
 
   return (
-    <div className="sheet-layer" role="dialog" aria-modal="true">
+    <div
+      className="sheet-layer"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={title || titleIcon ? 'sheet-title' : undefined}
+    >
       <div className="sheet-backdrop" onClick={onClose} />
       <div className="sheet">
         <div className="sheet-header">
           {(titleIcon || title) && (
-            <h2 className="sheet-title">
+            <h2 className="sheet-title" id="sheet-title">
               {titleIcon && (
                 <span className="panel-icon" aria-hidden="true">
                   {titleIcon}

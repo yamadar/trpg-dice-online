@@ -1,4 +1,4 @@
-import { useState, type ComponentType } from 'react'
+import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import {
   CharacterIcon,
@@ -75,10 +75,22 @@ export function TabletopTutorial({ onClose }: Props) {
   const isLast = step === STEPS.length - 1
   const current = STEPS[step]
   const CurrentIcon = current.Icon
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  // Move focus into the dialog on open and close on Escape, like a standard
+  // modal — without this, keyboard focus stayed behind the overlay.
+  useEffect(() => {
+    cardRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   return (
-    <div className="tutorial" role="dialog" aria-modal="true">
-      <div className="tutorial-card">
+    <div className="tutorial" role="dialog" aria-modal="true" aria-labelledby="tabletop-tutorial-title">
+      <div className="tutorial-card" ref={cardRef} tabIndex={-1}>
         {!isLast && (
           <button type="button" className="link tutorial-skip" onClick={onClose}>
             {t('tutorial.skip')}
@@ -87,7 +99,7 @@ export function TabletopTutorial({ onClose }: Props) {
         <div className="tutorial-icon" aria-hidden="true">
           <CurrentIcon size={TUTORIAL_ICON_SIZE} />
         </div>
-        <h2>{t(current.titleKey)}</h2>
+        <h2 id="tabletop-tutorial-title">{t(current.titleKey)}</h2>
         <p className="tutorial-body">{t(current.bodyKey)}</p>
 
         <div className="tutorial-dots" aria-hidden="true">

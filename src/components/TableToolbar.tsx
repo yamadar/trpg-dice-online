@@ -903,6 +903,7 @@ export function TableToolbar({
                 type="url"
                 className="tabletop-toolbar-input"
                 placeholder={t('tabletop.mapUrl.placeholder')}
+                aria-label={t('tabletop.mapUrl.placeholder')}
                 value={mapUrlDraft}
                 onChange={(e) => setMapUrlDraft(e.target.value)}
                 onKeyDown={(e) => {
@@ -1387,6 +1388,7 @@ export function TableToolbar({
               type="text"
               className="tabletop-toolbar-input"
               placeholder={t('tabletop.library.namePlaceholder')}
+              aria-label={t('tabletop.library.namePlaceholder')}
               value={libraryName}
               onChange={(e) => setLibraryName(e.target.value)}
               maxLength={48}

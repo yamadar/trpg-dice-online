@@ -139,6 +139,7 @@ export function ChatComposer({ session, broadcastTyping, onNotice }: Props) {
           value={text}
           maxLength={300}
           placeholder={t('chat.placeholder')}
+          aria-label={t('chat.placeholder')}
           onChange={(e) => onType(e.target.value, e.target.selectionStart ?? e.target.value.length)}
           onSelect={(e) => {
             const el = e.currentTarget

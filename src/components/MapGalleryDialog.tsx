@@ -413,6 +413,7 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
             type="search"
             className="map-gallery-search"
             placeholder={t('tabletop.gallery.searchPlaceholder')}
+            aria-label={t('tabletop.gallery.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

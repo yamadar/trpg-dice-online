@@ -1,4 +1,4 @@
-import { Fragment, useState, type ComponentType, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import {
   CharacterIcon,
@@ -85,10 +85,22 @@ export function Tutorial({ onClose }: Props) {
   const isLast = step === STEPS.length - 1
   const current = STEPS[step]
   const CurrentIcon = current.Icon
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  // Move focus into the dialog on open and close on Escape, like a standard
+  // modal — without this, keyboard focus stayed behind the overlay.
+  useEffect(() => {
+    cardRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   return (
-    <div className="tutorial" role="dialog" aria-modal="true">
-      <div className="tutorial-card">
+    <div className="tutorial" role="dialog" aria-modal="true" aria-labelledby="app-tutorial-title">
+      <div className="tutorial-card" ref={cardRef} tabIndex={-1}>
         {!isLast && (
           <button type="button" className="link tutorial-skip" onClick={onClose}>
             {t('tutorial.skip')}
@@ -97,7 +109,7 @@ export function Tutorial({ onClose }: Props) {
         <div className="tutorial-icon" aria-hidden="true">
           <CurrentIcon size={TUTORIAL_ICON_SIZE} />
         </div>
-        <h2>{t(current.titleKey)}</h2>
+        <h2 id="app-tutorial-title">{t(current.titleKey)}</h2>
         <p className="tutorial-body">{renderTutorialBody(t(current.bodyKey))}</p>
 
         <div className="tutorial-dots" aria-hidden="true">

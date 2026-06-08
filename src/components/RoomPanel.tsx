@@ -516,6 +516,7 @@ export function RoomPanel({
                     type="text"
                     value={newRoomName}
                     placeholder={t('room.namePlaceholder')}
+                    aria-label={t('room.name')}
                     maxLength={40}
                     onChange={(e) => setNewRoomName(e.target.value)}
                   />
@@ -536,6 +537,7 @@ export function RoomPanel({
                     className="upper"
                     value={newCode}
                     placeholder={t('room.newCodePlaceholder')}
+                    aria-label={t('room.changeCode')}
                     maxLength={8}
                     onChange={(e) => setNewCode(normalizeRoomCode(e.target.value))}
                   />

@@ -49,11 +49,16 @@ export function CharacterImageCropDialog({ src, onCancel, onConfirm }: Props) {
   }
 
   return (
-    <div className="sheet-layer crop-layer" role="dialog" aria-modal="true">
+    <div
+      className="sheet-layer crop-layer"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="crop-title"
+    >
       <div className="sheet-backdrop" onClick={onCancel} />
       <div className="sheet crop-sheet">
         <div className="sheet-header">
-          <h2 className="sheet-title">{t('character.crop.title')}</h2>
+          <h2 className="sheet-title" id="crop-title">{t('character.crop.title')}</h2>
           <button
             type="button"
             className="sheet-close icon-btn"
