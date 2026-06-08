@@ -81,9 +81,14 @@ interface UseDialogFocusOptions {
  * shared default would fight. Each dialog keeps its own Escape handler.
  *
  * The Tab listener is bound to the container in the *capture* phase so it
- * (a) only fires for keystrokes originating inside this dialog — letting
- * a dialog layered on top trap its own focus without the two fighting —
- * and (b) runs before any descendant that might stop the event bubbling.
+ * (a) only fires for keystrokes originating inside this dialog and (b)
+ * runs before any descendant that might stop the event bubbling. Dialogs
+ * layered as DOM *siblings* (a confirm over a Sheet, the Lightbox over the
+ * map gallery) thus never see each other's keystrokes. For a dialog
+ * rendered as a DOM *descendant* of another (the image-crop dialog or
+ * Lightbox opened from inside a Sheet), each trap tags its container with
+ * `data-dialog-focus-trap`, and an ancestor trap steps aside when a
+ * nested trap owns the focus — so only the innermost trap acts.
  *
  * @param containerRef ref to the dialog element whose descendants the
  *   trap is scoped to (typically the `role="dialog"` node).
@@ -108,15 +113,29 @@ export function useDialogFocus(
       getFocusableElements(container)[0] ??
       container
     // The container is only programmatically focusable if it carries a
-    // tabindex; add a -1 one so the fallback focus actually lands when a
-    // dialog has no focusable controls of its own.
-    if (initial === container && !container.hasAttribute('tabindex')) {
-      container.setAttribute('tabindex', '-1')
-    }
+    // tabindex; add a -1 one (removed on cleanup) so the fallback focus
+    // actually lands when a dialog has no focusable controls of its own.
+    const addedTabIndex =
+      initial === container && !container.hasAttribute('tabindex')
+    if (addedTabIndex) container.setAttribute('tabindex', '-1')
     initial.focus({ preventScroll: true })
+
+    // Tag this container so an ancestor trap can detect that a nested
+    // dialog owns the focus and step aside (see the handler below).
+    container.setAttribute('data-dialog-focus-trap', '')
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
+      // If focus sits inside a nested dialog that runs its own trap —
+      // e.g. the image-crop dialog or Lightbox opened from within a
+      // Sheet, which React renders as a DOM *descendant* rather than a
+      // sibling — let that inner trap handle the key. Otherwise this
+      // outer trap, whose focusable set recursively includes the inner
+      // dialog's controls, could wrap focus to a control behind it.
+      const owner = (document.activeElement as HTMLElement | null)?.closest(
+        '[data-dialog-focus-trap]',
+      )
+      if (owner && owner !== container && container.contains(owner)) return
       const target = getTrapFocusTarget(
         getFocusableElements(container),
         document.activeElement as HTMLElement | null,
@@ -131,6 +150,8 @@ export function useDialogFocus(
 
     return () => {
       container.removeEventListener('keydown', onKeyDown, true)
+      container.removeAttribute('data-dialog-focus-trap')
+      if (addedTabIndex) container.removeAttribute('tabindex')
       // Restore focus to the trigger, but only if it's still in the
       // document — a trigger that itself unmounted (e.g. a token popover
       // that closed behind the dialog) would otherwise throw focus to

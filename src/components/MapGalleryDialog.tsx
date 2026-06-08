@@ -31,7 +31,7 @@
  *
  * [trpg-map-organizer]: https://yamadar.github.io/trpg-map-organizer/
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import type { MapImageError } from '../tabletop/imageBackground'
@@ -135,6 +135,7 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
   const [previewMapId, setPreviewMapId] = useState<number | null>(null)
   const cardRef = useRef<HTMLDivElement | null>(null)
   const closeBtnRef = useRef<HTMLButtonElement | null>(null)
+  const titleId = useId()
   /** Wraps the category row + the expandable chip cluster. Used by
    *  the outside-pointerdown handler so a tap anywhere else in the
    *  grid / footer collapses the chips without needing an extra
@@ -377,11 +378,11 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
         className="map-gallery-card"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="map-gallery-title"
+        aria-labelledby={titleId}
         ref={cardRef}
       >
         <header className="map-gallery-header">
-          <h2 id="map-gallery-title" className="map-gallery-title">
+          <h2 id={titleId} className="map-gallery-title">
             {t('tabletop.gallery.title')}
             {/* Status pill: shows loading / error / count side-by-side
                 with the title rather than carving out a dedicated

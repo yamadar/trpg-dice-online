@@ -2592,6 +2592,11 @@ function CharacterReadOnlyModal({
   playerName: string; onClose: () => void
 }) {
   const { t } = useI18n()
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  // Move focus into the modal on open, trap Tab while open, and restore
+  // focus to the trigger on close (mirrors the editable CharacterInfoModal).
+  useDialogFocus(cardRef)
 
   // Escape closes without reaching the tabletop Escape handler.
   useEffect(() => {
@@ -2630,6 +2635,7 @@ function CharacterReadOnlyModal({
         role="dialog"
         aria-modal="true"
         aria-label={t('tabletop.tokenEdit.editCharacter')}
+        ref={cardRef}
         onClick={(e) => e.stopPropagation()}
       >
         <header className="char-info-header">

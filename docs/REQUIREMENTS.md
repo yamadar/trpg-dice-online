@@ -270,8 +270,8 @@ An SPA where players roll TRPG dice and share results with other players in real
   is restored to the trigger when the dialog closes.
 - Every modal overlay (the onboarding tours, the sheet panels, the
   first-run name gate, the image-crop / image-picker / map-gallery
-  dialogs, the fullscreen image viewer, the token character-edit modal,
-  and the tabletop shortcuts cheat sheet) likewise moves focus into the
+  dialogs, the fullscreen image viewer, the token character view/edit
+  modals, and the tabletop shortcuts cheat sheet) likewise moves focus into the
   dialog on open, keeps Tab / Shift+Tab inside it while open, and
   restores focus to the element that opened it on close.
 - History & chat is the dominant, always-visible view; the header keeps a
