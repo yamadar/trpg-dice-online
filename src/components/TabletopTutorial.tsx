@@ -14,7 +14,7 @@ import {
 const TUTORIAL_ICON_SIZE = 44
 
 /** Step deck specific to the tabletop. Smaller than the app-wide
- *  `Tutorial` (7 steps vs. 9) and focused on the tabletop chrome the
+ *  `Tutorial` (7 steps vs. 10) and focused on the tabletop chrome the
  *  user just opened — pan/zoom, tools, tokens, the right toolbar, the
  *  bottom dock — rather than the broader app flow.
  *  GM-only features are called out inline in the step bodies (see

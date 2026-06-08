@@ -333,6 +333,9 @@ export const es: Dict = {
   'toast.patternUpdated': 'Patrón actualizado',
 
   'settings.help': 'Cómo usar',
+  'tutorial.tabletop.title': 'Shared battle map',
+  'tutorial.tabletop.body':
+    'Tap "Tabletop" in the bottom dock to open a shared tabletop: move tokens on a grid, draw, drop pings, and (as GM) manage fog of war and multiple scenes. It opens with its own quick tour.',
   'tutorial.skip': 'Omitir',
   'tutorial.next': 'Siguiente',
   'tutorial.back': 'Atrás',
