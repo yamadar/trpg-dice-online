@@ -35,14 +35,22 @@ export function CharacterImageCropDialog({ src, onCancel, onConfirm }: Props) {
   // focus to the trigger on close.
   useDialogFocus(dialogRef)
 
-  // Close on Escape — same pattern as the Sheet modal so the dialog
-  // feels native to the rest of the app's chrome.
+  // Close on Escape. The listener runs in the *capture* phase and calls
+  // `stopImmediatePropagation()` so the key does not also reach the
+  // window-level Escape handler on the Sheet underneath — this dialog is
+  // rendered as a DOM *descendant* of the character Sheet (the editor
+  // opens it inline), so a plain bubbling Escape would close both. Same
+  // pattern as ConfirmDialog / CharacterInfoModal.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel()
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        onCancel()
+      }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
   }, [onCancel])
 
   const onCropComplete = useCallback((_cropped: Area, areaPixels: Area) => {
