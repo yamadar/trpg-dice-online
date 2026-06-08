@@ -28,8 +28,9 @@
  * [trpg-chara-image-organizer]:
  *   https://yamadar.github.io/trpg-chara-image-organizer/
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 import {
   CHARA_CATEGORIES,
   type CharaCategory,
@@ -136,8 +137,12 @@ export function ImagePickerDialog({ open, onClose, mode, onPick }: Props) {
   const [pending, setPending] = useState<Pending | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const cardRef = useRef<HTMLDivElement | null>(null)
   const closeBtnRef = useRef<HTMLButtonElement | null>(null)
   const filtersWrapRef = useRef<HTMLDivElement | null>(null)
+  // Per-instance id: this dialog is mounted twice (GM token picker and
+  // the NPC library), so a static id would not be unique.
+  const titleId = useId()
   /** Cancellation flag for an in-flight `onPick`. Toggled by
    *  `handleClose` so a slow library fetch doesn't apply an image
    *  the user already dismissed. */
@@ -165,9 +170,10 @@ export function ImagePickerDialog({ open, onClose, mode, onPick }: Props) {
     }
   }, [open, manifest])
 
-  useEffect(() => {
-    if (open) closeBtnRef.current?.focus({ preventScroll: true })
-  }, [open])
+  // Move focus to the close button on open, trap Tab within the dialog,
+  // and restore focus to the trigger on close. `active: open` engages
+  // the trap only while the (kept-mounted) dialog is actually visible.
+  useDialogFocus(cardRef, { active: open, initialFocusRef: closeBtnRef })
 
   useEffect(() => {
     if (!open) return
@@ -353,10 +359,11 @@ export function ImagePickerDialog({ open, onClose, mode, onPick }: Props) {
         className="map-gallery-card"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="image-picker-title"
+        aria-labelledby={titleId}
+        ref={cardRef}
       >
         <header className="map-gallery-header">
-          <h2 id="image-picker-title" className="map-gallery-title">
+          <h2 id={titleId} className="map-gallery-title">
             {t('tabletop.imagePicker.title')}
             {tab !== 'upload' && manifest && (
               <span className="map-gallery-count" aria-live="polite">

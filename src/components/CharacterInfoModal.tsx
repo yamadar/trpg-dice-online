@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 import type { Character, CharacterEdits } from '../characters/types'
 import { CharacterEditor } from './CharacterEditor'
 import { CloseIcon } from './icons'
@@ -21,6 +22,11 @@ interface Props {
  */
 export function CharacterInfoModal({ character, onUpdate, onNotice, onClose }: Props) {
   const { t } = useI18n()
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  // Move focus into the modal on open, trap Tab while open, and restore
+  // focus to the token's edit popover on close.
+  useDialogFocus(cardRef)
 
   // Escape closes. Capture phase + stopImmediatePropagation so the
   // keystroke does not also reach the tabletop's own Escape handler
@@ -45,6 +51,7 @@ export function CharacterInfoModal({ character, onUpdate, onNotice, onClose }: P
         role="dialog"
         aria-modal="true"
         aria-label={t('tabletop.tokenEdit.editCharacter')}
+        ref={cardRef}
         onClick={(e) => e.stopPropagation()}
       >
         <header className="char-info-header">

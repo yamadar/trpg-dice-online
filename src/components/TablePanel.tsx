@@ -16,6 +16,7 @@ import type { KonvaEventObject } from 'konva/lib/Node'
 import useImage from 'use-image'
 import { useI18n } from '../i18n/useI18n'
 import type { Session } from '../hooks/useSession'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 import { playerColor } from '../players/colors'
 import { avatarInitial, composeName } from '../players/identity'
 import { characterImagesKey } from '../storage/roomLog'
@@ -1945,6 +1946,11 @@ export function TablePanel({
  */
 function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
   const { t } = useI18n()
+  const dialogRef = useRef<HTMLDivElement>(null)
+  // Move focus into the cheat sheet on open, trap Tab within it, and
+  // restore focus to the canvas/control that opened it on close. Escape
+  // is handled by TablePanel's own keyboard handler.
+  useDialogFocus(dialogRef)
   const rows: Array<{ id: string; keys: string; desc: string }> = [
     { id: 'move', keys: '← ↑ → ↓', desc: t('tabletop.shortcuts.move') },
     { id: 'cycle', keys: '[  ]', desc: t('tabletop.shortcuts.cycle') },
@@ -1968,6 +1974,7 @@ function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
         className="tabletop-shortcuts-dialog"
         role="dialog"
         aria-label={t('tabletop.shortcuts.title')}
+        ref={dialogRef}
       >
         <header className="tabletop-shortcuts-header">
           <span>{t('tabletop.shortcuts.title')}</span>
@@ -2585,6 +2592,11 @@ function CharacterReadOnlyModal({
   playerName: string; onClose: () => void
 }) {
   const { t } = useI18n()
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  // Move focus into the modal on open, trap Tab while open, and restore
+  // focus to the trigger on close (mirrors the editable CharacterInfoModal).
+  useDialogFocus(cardRef)
 
   // Escape closes without reaching the tabletop Escape handler.
   useEffect(() => {
@@ -2623,6 +2635,7 @@ function CharacterReadOnlyModal({
         role="dialog"
         aria-modal="true"
         aria-label={t('tabletop.tokenEdit.editCharacter')}
+        ref={cardRef}
         onClick={(e) => e.stopPropagation()}
       >
         <header className="char-info-header">

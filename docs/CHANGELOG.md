@@ -4,6 +4,29 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.116 — **Keyboard focus management for every modal dialog**
+  (`design:accessibility-review`). v1.115 moved focus into the two
+  onboarding tours on open; most other overlays still left keyboard focus
+  stranded behind them — Tab walked through the page underneath and
+  closing a dialog dropped focus at the top of the document. A new
+  `useDialogFocus` hook records the element that opened a dialog, moves
+  focus inside, traps Tab / Shift+Tab within the dialog's focusable
+  controls (wrapping at both ends), and restores focus to the trigger
+  when the dialog closes — WCAG 2.4.3 Focus Order and 2.1.2 No Keyboard
+  Trap. Applied to the app and tabletop tutorials, the Sheet, the
+  first-run name gate, the image-crop dialog, the fullscreen image
+  viewer, the token character view/edit modals, the image picker, the map
+  gallery, and the tabletop shortcuts cheat sheet; `ConfirmDialog` (which
+  already trapped focus) now shares the same trap math. The trap's core
+  wrap logic is a pure function with unit tests; the listener is bound in
+  the capture phase per dialog, so dialogs layered as siblings (the map
+  gallery over the tabletop, a confirm over a Sheet) trap their own focus
+  without fighting, and for a dialog rendered as a DOM descendant of
+  another (the crop dialog / image viewer opened from inside a Sheet) the
+  innermost trap takes precedence. The Sheet, crop dialog, image picker,
+  and map gallery also switched their `aria-labelledby` targets from
+  static ids to `useId()` so two dialogs can safely co-mount.
+
 - v1.115 — **Accessibility pass for readability & operability**
   (`design:accessibility-review`). **Contrast:** on-accent text/icons were
   white in every theme, which failed WCAG AA on the light accents (the

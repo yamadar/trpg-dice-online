@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 import { CloseIcon } from './icons'
 
 /** The minimum the viewer needs to show an image. A `ChatFile` satisfies it. */
@@ -37,10 +38,15 @@ export function Lightbox({
   caption,
 }: Props) {
   const { t } = useI18n()
+  const dialogRef = useRef<HTMLDivElement>(null)
   const touchStartX = useRef<number | null>(null)
   // A swipe also ends with a click event; this flag swallows that click so
   // a navigating swipe does not also close the viewer.
   const swipedRef = useRef(false)
+
+  // Move focus into the viewer on open, trap Tab among its controls, and
+  // restore focus to the thumbnail that opened it on close.
+  useDialogFocus(dialogRef)
 
   const file = images[index]
   const hasPrev = index > 0
@@ -79,6 +85,7 @@ export function Lightbox({
       className="lightbox"
       role="dialog"
       aria-modal="true"
+      ref={dialogRef}
       onClick={() => {
         if (swipedRef.current) swipedRef.current = false
         else onClose()
