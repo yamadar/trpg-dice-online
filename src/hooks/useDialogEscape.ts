@@ -43,8 +43,10 @@ export function shouldYieldEscape<T extends { contains(other: T): boolean }>(
  * dialog (a Lightbox / crop dialog opened from a tabletop token's character
  * modal), which capture-vs-bubble ordering alone cannot resolve.
  *
- * @param containerRef ref to this dialog's container — the same node passed
- *   to `useDialogFocus`, so it carries `data-dialog-focus-trap`.
+ * @param containerRef ref to this dialog's container — usually the same node
+ *   passed to `useDialogFocus`, so it carries `data-dialog-focus-trap`.
+ *   (`ConfirmDialog` is the exception: it runs its own focus trap and is
+ *   never nested inside another dialog, so it omits the tag harmlessly.)
  * @param onClose what closing THIS dialog means. Usually the `onClose` prop;
  *   `MapGalleryDialog` passes a closure that first dismisses its own nested
  *   Lightbox preview (a DOM sibling the contains-check can't reach).

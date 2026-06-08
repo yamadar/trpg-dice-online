@@ -190,12 +190,13 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
     }
   }, [open, manifest, tagDict])
 
-  // Escape: close the dialog — but a Lightbox preview on top closes first.
-  // The shared capture-phase handler swallows the key so the tabletop's
-  // Escape underneath stays put. The preview Lightbox is a DOM *sibling* of
-  // `cardRef` (not a descendant), so the contains-based handoff can't see
-  // it — this closure does the preview-first step itself, and the preview's
-  // own handler covers whichever of the two fires first.
+  // Escape: a Lightbox preview on top closes first, otherwise the dialog
+  // closes. The shared capture-phase handler swallows the key so the
+  // tabletop's Escape underneath stays put. The preview Lightbox is a DOM
+  // *sibling* of `cardRef`, not a descendant, so `shouldYieldEscape` can't
+  // hand off to it; this closure dismisses the preview itself. The Lightbox
+  // also runs its own Escape→`setPreviewMapId(null)`, so whichever capture
+  // handler fires first the outcome is identical (and idempotent).
   const handleEscape = useCallback(() => {
     if (previewMapId !== null) setPreviewMapId(null)
     else onClose()
