@@ -34,6 +34,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import { useDialogEscape } from '../hooks/useDialogEscape'
 import type { MapImageError } from '../tabletop/imageBackground'
 import {
   type GalleryCategory,
@@ -189,26 +190,17 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
     }
   }, [open, manifest, tagDict])
 
-  // Escape: when the gallery is open, swallow the key in the capture
-  // phase so the underlying TablePanel's window-level Escape handler
-  // doesn't also fire and close the whole tabletop sheet behind us.
-  // If a Lightbox preview is up, close that first; otherwise close
-  // the dialog itself.
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      e.preventDefault()
-      e.stopImmediatePropagation()
-      if (previewMapId !== null) {
-        setPreviewMapId(null)
-      } else {
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [open, onClose, previewMapId])
+  // Escape: close the dialog — but a Lightbox preview on top closes first.
+  // The shared capture-phase handler swallows the key so the tabletop's
+  // Escape underneath stays put. The preview Lightbox is a DOM *sibling* of
+  // `cardRef` (not a descendant), so the contains-based handoff can't see
+  // it — this closure does the preview-first step itself, and the preview's
+  // own handler covers whichever of the two fires first.
+  const handleEscape = useCallback(() => {
+    if (previewMapId !== null) setPreviewMapId(null)
+    else onClose()
+  }, [previewMapId, onClose])
+  useDialogEscape(cardRef, handleEscape, open)
 
   // Move focus to the close button on open, trap Tab within the dialog,
   // and restore focus to the trigger on close. `active: open` engages

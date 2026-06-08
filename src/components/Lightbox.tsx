@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import { useDialogEscape } from '../hooks/useDialogEscape'
 import { CloseIcon } from './icons'
 
 /** The minimum the viewer needs to show an image. A `ChatFile` satisfies it. */
@@ -60,23 +61,18 @@ export function Lightbox({
     [index, images.length, onIndexChange],
   )
 
-  // Rebinds only when navigation context changes (not every render).
-  // The listener runs in the *capture* phase, and Escape additionally
-  // calls `stopImmediatePropagation()` so the key does not also reach a
-  // window-level Escape handler on a Sheet sitting underneath. The
-  // Lightbox is often rendered as a DOM *descendant* of that Sheet
-  // (opened from the character editor, a player detail card, or a
-  // feed/chat image), so a plain bubbling Escape would close both. Same
-  // pattern as ConfirmDialog / CharacterInfoModal; standalone (no dialog
-  // underneath) the extra stop is harmless. The arrow keys only need
-  // `preventDefault()` to keep the page behind from scrolling.
+  // Escape closes the viewer — and only the viewer when it sits over
+  // another dialog (a Sheet, or a token's character modal it was opened
+  // from, where it is a descendant dialog). Shared capture-phase handler;
+  // see `useDialogEscape`.
+  useDialogEscape(dialogRef, onClose)
+
+  // Arrow keys page through the images. Capture phase + `preventDefault()`
+  // keeps the page (or a tabletop underneath) from also scrolling on the
+  // same key. Rebinds only when navigation context (`go`) changes.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        onClose()
-      } else if (e.key === 'ArrowLeft') {
+      if (e.key === 'ArrowLeft') {
         e.preventDefault()
         go(-1)
       } else if (e.key === 'ArrowRight') {
@@ -86,7 +82,7 @@ export function Lightbox({
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [go, onClose])
+  }, [go])
 
   if (!file) return null
 

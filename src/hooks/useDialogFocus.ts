@@ -10,6 +10,15 @@ const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 /**
+ * Marker each open dialog's container carries while its trap is active.
+ * Lets an ancestor dialog detect that a nested one owns the focus and step
+ * aside — both for the Tab trap below and for the Escape handler in
+ * `useDialogEscape`, which matches it via `DIALOG_FOCUS_TRAP_SELECTOR`.
+ */
+const DIALOG_FOCUS_TRAP_ATTR = 'data-dialog-focus-trap'
+export const DIALOG_FOCUS_TRAP_SELECTOR = `[${DIALOG_FOCUS_TRAP_ATTR}]`
+
+/**
  * Collect the focusable elements inside `container`, in DOM (tab) order,
  * skipping any that can't actually receive focus right now — chiefly
  * `display:none` controls such as the hidden `<input type="file">` the
@@ -75,10 +84,12 @@ interface UseDialogFocusOptions {
  *   3. traps Tab / Shift+Tab within the dialog's focusable elements, and
  *   4. restores focus to the trigger when the dialog closes.
  *
- * Escape-to-close is intentionally NOT handled here: several callers need
- * bespoke Escape handling (capture phase + `stopImmediatePropagation` so
- * the key doesn't also dismiss a panel sitting underneath), which a
- * shared default would fight. Each dialog keeps its own Escape handler.
+ * Escape-to-close lives in the companion `useDialogEscape`, not here: it
+ * needs capture phase + `stopImmediatePropagation` (so the key doesn't also
+ * dismiss a panel underneath) plus the same nested-dialog handoff this hook
+ * does for Tab. Kept a separate hook so a dialog can opt into either
+ * independently — `ConfirmDialog` runs its own Tab trap but shares the
+ * Escape one. Both pivot on the `data-dialog-focus-trap` marker set below.
  *
  * The Tab listener is bound to the container in the *capture* phase so it
  * (a) only fires for keystrokes originating inside this dialog and (b)
@@ -122,7 +133,7 @@ export function useDialogFocus(
 
     // Tag this container so an ancestor trap can detect that a nested
     // dialog owns the focus and step aside (see the handler below).
-    container.setAttribute('data-dialog-focus-trap', '')
+    container.setAttribute(DIALOG_FOCUS_TRAP_ATTR, '')
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
@@ -133,7 +144,7 @@ export function useDialogFocus(
       // outer trap, whose focusable set recursively includes the inner
       // dialog's controls, could wrap focus to a control behind it.
       const owner = (document.activeElement as HTMLElement | null)?.closest(
-        '[data-dialog-focus-trap]',
+        DIALOG_FOCUS_TRAP_SELECTOR,
       )
       if (owner && owner !== container && container.contains(owner)) return
       const target = getTrapFocusTarget(
@@ -150,7 +161,7 @@ export function useDialogFocus(
 
     return () => {
       container.removeEventListener('keydown', onKeyDown, true)
-      container.removeAttribute('data-dialog-focus-trap')
+      container.removeAttribute(DIALOG_FOCUS_TRAP_ATTR)
       if (addedTabIndex) container.removeAttribute('tabindex')
       // Restore focus to the trigger, but only if it's still in the
       // document — a trigger that itself unmounted (e.g. a token popover

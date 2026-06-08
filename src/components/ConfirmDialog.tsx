@@ -9,6 +9,7 @@ import {
 import { useI18n } from '../i18n/useI18n'
 import { ConfirmContext, type ConfirmFn, type ConfirmOptions } from '../hooks/confirmContext'
 import { getFocusableElements, getTrapFocusTarget } from '../hooks/useDialogFocus'
+import { useDialogEscape } from '../hooks/useDialogEscape'
 import { CloseIcon } from './icons'
 
 interface PendingConfirm {
@@ -150,28 +151,21 @@ export function ConfirmDialog({
   const titleId = `confirm-title-${instanceId}`
   const messageId = `confirm-message-${instanceId}`
 
-  // Keystroke handling: Escape cancels (like a native dialog), Tab and
-  // Shift-Tab cycle focus *within* the dialog. The handler is registered
-  // in the *capture* phase. For Escape it also calls
-  // `stopImmediatePropagation()` so the keystroke does not reach the
-  // window-level Escape handler on a Sheet sitting underneath (which
-  // would close both the confirm and its parent sheet). Tab only needs
-  // `preventDefault()` — the browser is the only other consumer of
-  // Tab here and we just want to override its default focus walk.
+  // Escape cancels, like a native dialog. Shared capture-phase handler (see
+  // `useDialogEscape`) so the key is swallowed before a Sheet underneath
+  // sees it — same behaviour as before, now from one implementation.
+  useDialogEscape(cardRef, onCancel)
+
+  // Tab / Shift-Tab cycle focus *within* the dialog: wrap focus when Tab
+  // tries to leave either end so it never walks to whatever lives behind
+  // the backdrop (which would contradict `aria-modal="true"`). Shares the
+  // same math as `useDialogFocus`, but stays inline — this dialog runs its
+  // own trap rather than calling that hook because `ConfirmProvider` already
+  // manages open/close focus. `preventDefault()` is enough: the browser is
+  // the only other consumer of Tab here.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        onCancel()
-        return
-      }
       if (e.key !== 'Tab') return
-      // Focus trap: wrap focus when Tab tries to leave either end so it
-      // never walks to whatever lives behind the backdrop (which would
-      // contradict `aria-modal="true"`). Shares the same math as
-      // `useDialogFocus`; the listener stays window+capture here so
-      // Escape can be swallowed before a Sheet underneath sees it.
       const card = cardRef.current
       if (!card) return
       const target = getTrapFocusTarget(
@@ -186,7 +180,7 @@ export function ConfirmDialog({
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [onCancel])
+  }, [])
 
   // Focus the safe option on open: the cancel button for destructive
   // confirms (so a hasty Enter doesn't fire the destructive action), and
