@@ -174,7 +174,7 @@ export const en: Dict = {
     'Your shared canvas for the session: move tokens, draw, and drop pings — and, as GM, manage fog of war and multiple scenes. Works on both desktop and mobile.',
   'tabletop.tutorial.viewport.title': 'Move and zoom the map',
   'tabletop.tutorial.viewport.body':
-    'Drag empty space to pan; scroll the wheel or pinch to zoom (25 %–400 %). The minimap in the top-right shows the whole scene — tap or drag it to jump there. Your view is independent — roam freely without moving anyone else. Press ? for the keyboard shortcuts.',
+    'Drag empty space to pan; scroll the wheel or pinch to zoom (25 %–400 %). The minimap in the bottom-left shows the whole scene — tap or drag it to jump there. Your view is independent — roam freely without moving anyone else. Press ? for the keyboard shortcuts.',
   'tabletop.tutorial.tools.title': 'The tool palette (left)',
   'tabletop.tutorial.tools.body':
     'Select/drag, Text, Pen, Eraser and Ping — press 1–5 to switch. Ping drops a “look here” marker anyone can use; Text and Pen let you pick colour and size. GM only: the Fog reveal/conceal brushes show or hide cells one at a time.',
@@ -366,7 +366,7 @@ export const en: Dict = {
     'Change your player name, language and colour theme, and reopen this guide, from Settings (⚙) at the top right.',
   'tutorial.tabletop.title': 'Shared battle map',
   'tutorial.tabletop.body':
-    'Tap "Map" in the bottom dock to open a shared tabletop: move tokens on a grid, draw, drop pings, and (as GM) manage fog of war and multiple scenes. It opens with its own quick tour.',
+    'Tap "Tabletop" in the bottom dock to open a shared tabletop: move tokens on a grid, draw, drop pings, and (as GM) manage fog of war and multiple scenes. It opens with its own quick tour.',
 
   'player.section': 'Player',
   'player.name': 'Player name',

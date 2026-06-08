@@ -335,7 +335,7 @@ export const tr: Dict = {
   'settings.help': 'Nasıl kullanılır',
   'tutorial.tabletop.title': 'Shared battle map',
   'tutorial.tabletop.body':
-    'Tap "Map" in the bottom dock to open a shared tabletop: move tokens on a grid, draw, drop pings, and (as GM) manage fog of war and multiple scenes. It opens with its own quick tour.',
+    'Tap "Tabletop" in the bottom dock to open a shared tabletop: move tokens on a grid, draw, drop pings, and (as GM) manage fog of war and multiple scenes. It opens with its own quick tour.',
   'tutorial.skip': 'Atla',
   'tutorial.next': 'İleri',
   'tutorial.back': 'Geri',
