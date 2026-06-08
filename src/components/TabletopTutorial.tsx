@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 import {
   CharacterIcon,
   ChatIcon,
@@ -75,12 +76,16 @@ export function TabletopTutorial({ onClose }: Props) {
   const isLast = step === STEPS.length - 1
   const current = STEPS[step]
   const CurrentIcon = current.Icon
+  const dialogRef = useRef<HTMLDivElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
 
-  // Move focus into the dialog on open and close on Escape, like a standard
-  // modal — without this, keyboard focus stayed behind the overlay.
+  // Move focus to the card on open, trap Tab within the dialog, and
+  // restore focus to the trigger on close (the card holds focus first so
+  // a screen reader announces the step title before the controls).
+  useDialogFocus(dialogRef, { initialFocusRef: cardRef })
+
+  // Close on Escape, like a standard modal.
   useEffect(() => {
-    cardRef.current?.focus()
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
@@ -89,7 +94,13 @@ export function TabletopTutorial({ onClose }: Props) {
   }, [onClose])
 
   return (
-    <div className="tutorial" role="dialog" aria-modal="true" aria-labelledby="tabletop-tutorial-title">
+    <div
+      className="tutorial"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tabletop-tutorial-title"
+      ref={dialogRef}
+    >
       <div className="tutorial-card" ref={cardRef} tabIndex={-1}>
         {!isLast && (
           <button type="button" className="link tutorial-skip" onClick={onClose}>

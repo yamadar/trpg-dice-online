@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import Cropper, { type Area } from 'react-easy-crop'
 import { useI18n } from '../i18n/useI18n'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 import { cropImageToDataUrl } from '../characters/cropImage'
 import { CloseIcon } from './icons'
 
@@ -25,6 +26,14 @@ export function CharacterImageCropDialog({ src, onCancel, onConfirm }: Props) {
   const [zoom, setZoom] = useState(1)
   const [pixelCrop, setPixelCrop] = useState<Area | null>(null)
   const [busy, setBusy] = useState(false)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  // Per-instance id so the title link is robust if this ever co-mounts
+  // with another dialog rather than colliding on a shared static id.
+  const titleId = useId()
+
+  // Move focus into the dialog on open, trap Tab while open, and restore
+  // focus to the trigger on close.
+  useDialogFocus(dialogRef)
 
   // Close on Escape — same pattern as the Sheet modal so the dialog
   // feels native to the rest of the app's chrome.
@@ -53,12 +62,13 @@ export function CharacterImageCropDialog({ src, onCancel, onConfirm }: Props) {
       className="sheet-layer crop-layer"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="crop-title"
+      aria-labelledby={titleId}
+      ref={dialogRef}
     >
       <div className="sheet-backdrop" onClick={onCancel} />
       <div className="sheet crop-sheet">
         <div className="sheet-header">
-          <h2 className="sheet-title" id="crop-title">{t('character.crop.title')}</h2>
+          <h2 className="sheet-title" id={titleId}>{t('character.crop.title')}</h2>
           <button
             type="button"
             className="sheet-close icon-btn"

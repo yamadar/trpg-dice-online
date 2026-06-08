@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { useI18n } from '../i18n/useI18n'
 import { ConfirmContext, type ConfirmFn, type ConfirmOptions } from '../hooks/confirmContext'
+import { getFocusableElements, getTrapFocusTarget } from '../hooks/useDialogFocus'
 import { CloseIcon } from './icons'
 
 interface PendingConfirm {
@@ -166,28 +167,21 @@ export function ConfirmDialog({
         return
       }
       if (e.key !== 'Tab') return
-      // Focus trap: collect the focusable elements inside the card and
-      // wrap the focus when Tab tries to move out either end. Without
-      // this, Tab would walk to whatever lives behind the backdrop,
-      // which contradicts `aria-modal="true"` and confuses assistive
-      // tech users.
+      // Focus trap: wrap focus when Tab tries to leave either end so it
+      // never walks to whatever lives behind the backdrop (which would
+      // contradict `aria-modal="true"`). Shares the same math as
+      // `useDialogFocus`; the listener stays window+capture here so
+      // Escape can be swallowed before a Sheet underneath sees it.
       const card = cardRef.current
       if (!card) return
-      const focusables = Array.from(
-        card.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
+      const target = getTrapFocusTarget(
+        getFocusableElements(card),
+        document.activeElement as HTMLElement | null,
+        e.shiftKey,
       )
-      if (focusables.length === 0) return
-      const first = focusables[0]
-      const last = focusables[focusables.length - 1]
-      const active = document.activeElement as HTMLElement | null
-      if (e.shiftKey && (active === first || !card.contains(active))) {
+      if (target) {
         e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && (active === last || !card.contains(active))) {
-        e.preventDefault()
-        first.focus()
+        target.focus()
       }
     }
     window.addEventListener('keydown', onKey, true)

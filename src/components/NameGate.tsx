@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 import { BrandIcon } from './icons'
 
 interface Props {
@@ -14,13 +15,24 @@ export function NameGate({ onSubmit }: Props) {
   const { t } = useI18n()
   const [name, setName] = useState('')
   const canSubmit = name.trim().length > 0
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   const submit = () => {
     if (canSubmit) onSubmit(name.trim())
   }
 
+  // Move focus to the name input on open (replacing the bare `autoFocus`)
+  // and trap Tab within the gate — there is nothing behind it to reach.
+  useDialogFocus(dialogRef)
+
   return (
-    <div className="name-gate" role="dialog" aria-modal="true" aria-labelledby="name-gate-title">
+    <div
+      className="name-gate"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="name-gate-title"
+      ref={dialogRef}
+    >
       <div className="name-gate-card">
         <h1 className="brand-heading gradient-heading" id="name-gate-title">
           <BrandIcon className="brand-mark" />
@@ -33,7 +45,6 @@ export function NameGate({ onSubmit }: Props) {
             type="text"
             value={name}
             maxLength={24}
-            autoFocus
             placeholder={t('player.namePlaceholder')}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {

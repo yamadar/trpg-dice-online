@@ -33,6 +33,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 import type { MapImageError } from '../tabletop/imageBackground'
 import {
   type GalleryCategory,
@@ -132,6 +133,7 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
   // it; this is independent of `pickedId` so previewing does not
   // disturb the user's selection.
   const [previewMapId, setPreviewMapId] = useState<number | null>(null)
+  const cardRef = useRef<HTMLDivElement | null>(null)
   const closeBtnRef = useRef<HTMLButtonElement | null>(null)
   /** Wraps the category row + the expandable chip cluster. Used by
    *  the outside-pointerdown handler so a tap anywhere else in the
@@ -207,12 +209,12 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
     return () => window.removeEventListener('keydown', onKey, true)
   }, [open, onClose, previewMapId])
 
-  // Focus the close button when the dialog opens — gives keyboard
-  // users a predictable starting point and prevents focus from being
-  // stuck behind the backdrop.
-  useEffect(() => {
-    if (open) closeBtnRef.current?.focus({ preventScroll: true })
-  }, [open])
+  // Move focus to the close button on open, trap Tab within the dialog,
+  // and restore focus to the trigger on close. `active: open` engages
+  // the trap only while the (kept-mounted) dialog is actually visible.
+  // A Lightbox preview layered on top runs its own trap (scoped to the
+  // sibling `.lightbox`), so the two don't fight.
+  useDialogFocus(cardRef, { active: open, initialFocusRef: closeBtnRef })
 
   // Tap outside the filter row / chip cluster while a category is
   // expanded → collapse it. Without this, a chip strip can swallow
@@ -376,6 +378,7 @@ export function MapGalleryDialog({ open, onClose, onPick, onNotice }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="map-gallery-title"
+        ref={cardRef}
       >
         <header className="map-gallery-header">
           <h2 id="map-gallery-title" className="map-gallery-title">

@@ -1,5 +1,6 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { useI18n } from '../i18n/useI18n'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 import { CloseIcon } from './icons'
 
 interface Props {
@@ -24,6 +25,15 @@ interface Props {
  */
 export function Sheet({ title, titleIcon, children, onClose }: Props) {
   const { t } = useI18n()
+  const dialogRef = useRef<HTMLDivElement>(null)
+  // Per-instance id so the title link is robust if two sheets ever
+  // co-mount (e.g. during a cross-fade) rather than colliding on a
+  // shared static id.
+  const titleId = useId()
+
+  // Move focus into the sheet on open, trap Tab while open, and restore
+  // focus to the trigger on close.
+  useDialogFocus(dialogRef)
 
   // Close on Escape, like a normal dialog.
   useEffect(() => {
@@ -39,13 +49,14 @@ export function Sheet({ title, titleIcon, children, onClose }: Props) {
       className="sheet-layer"
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title || titleIcon ? 'sheet-title' : undefined}
+      aria-labelledby={title || titleIcon ? titleId : undefined}
+      ref={dialogRef}
     >
       <div className="sheet-backdrop" onClick={onClose} />
       <div className="sheet">
         <div className="sheet-header">
           {(titleIcon || title) && (
-            <h2 className="sheet-title" id="sheet-title">
+            <h2 className="sheet-title" id={titleId}>
               {titleIcon && (
                 <span className="panel-icon" aria-hidden="true">
                   {titleIcon}
