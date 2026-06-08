@@ -10,10 +10,11 @@ const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 /**
- * Marker each open dialog's container carries while its trap is active.
- * Lets an ancestor dialog detect that a nested one owns the focus and step
- * aside — both for the Tab trap below and for the Escape handler in
- * `useDialogEscape`, which matches it via `DIALOG_FOCUS_TRAP_SELECTOR`.
+ * The marker attribute that an open dialog's container carries while its
+ * trap is active. It lets an ancestor dialog detect that a nested one owns
+ * the focus and step aside — both for the Tab trap below and for the Escape
+ * handler in `useDialogEscape`, which matches it via
+ * `DIALOG_FOCUS_TRAP_SELECTOR`.
  */
 const DIALOG_FOCUS_TRAP_ATTR = 'data-dialog-focus-trap'
 export const DIALOG_FOCUS_TRAP_SELECTOR = `[${DIALOG_FOCUS_TRAP_ATTR}]`
@@ -89,7 +90,9 @@ interface UseDialogFocusOptions {
  * dismiss a panel underneath) plus the same nested-dialog handoff this hook
  * does for Tab. Kept a separate hook so a dialog can opt into either
  * independently — `ConfirmDialog` runs its own Tab trap but shares the
- * Escape one. Both pivot on the `data-dialog-focus-trap` marker set below.
+ * Escape one. The handoff keys off the `data-dialog-focus-trap` marker this
+ * hook sets; a dialog that takes only the Escape hook (`ConfirmDialog`)
+ * stays unmarked, which is harmless — nothing nests inside it.
  *
  * The Tab listener is bound to the container in the *capture* phase so it
  * (a) only fires for keystrokes originating inside this dialog and (b)
