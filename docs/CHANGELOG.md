@@ -4,6 +4,23 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.117 — **Escape on a dialog opened inside a Sheet no longer also
+  closes the Sheet**. Enlarging a character portrait in the fullscreen
+  image viewer, or opening the image-crop dialog, from inside the
+  character Sheet — and likewise the image viewer in a player's detail
+  card, itself shown in a Sheet — then pressing Escape closed both the
+  inner dialog *and* the whole Sheet at once. Those inner dialogs are
+  rendered as DOM *descendants* of the Sheet, and each registered a plain
+  bubble-phase `window` Escape→close handler with no `stopPropagation`, so
+  a single Escape bubbled to `window` and fired both handlers. The image
+  viewer and the crop dialog now handle Escape in the *capture* phase and
+  call `stopImmediatePropagation()` — the same pattern `ConfirmDialog`, the
+  token character modal, and the map gallery already use — so Escape
+  dismisses only the topmost dialog and leaves the Sheet underneath open
+  (a second Escape then closes the Sheet). Opened standalone, with nothing
+  underneath (an image viewer from a feed/chat image), the extra stop is
+  harmless. Follow-up to v1.116's dialog focus-management work.
+
 - v1.116 — **Keyboard focus management for every modal dialog**
   (`design:accessibility-review`). v1.115 moved focus into the two
   onboarding tours on open; most other overlays still left keyboard focus
