@@ -1772,8 +1772,8 @@ button.tabletop-token-charcard:hover .tabletop-token-charcard-go {
   background: var(--panel);
 }
 .error-fallback-actions > button.primary {
-  background: var(--accent, #3b6ea5);
-  color: #fff;
+  background: var(--accent);
+  color: var(--text-on-accent);
   border-color: transparent;
 }
 .error-fallback-details {
