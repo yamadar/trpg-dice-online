@@ -13,6 +13,19 @@
   --gm: #fbbf24;
   --ok: #34d399;
   --danger: #ef4444;
+  /* Tinted accent background for filled "quiet" controls. Defined via
+     color-mix on --accent so it adapts to every theme automatically
+     (it was previously referenced but never defined, so filled buttons
+     rendered with the default purple tint in ALL themes). */
+  --accent-bg: color-mix(in srgb, var(--accent) 16%, transparent);
+  /* Text/icon colour on a solid --accent fill. */
+  --text-on-accent: #ffffff;
+  /* Border-radius scale (sm: icons/chips, md: default buttons, lg: cards,
+     pill: switches). `--radius` kept = lg for existing consumers. */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
   --radius: 10px;
 
   --sans: system-ui, 'Hiragino Sans', 'Noto Sans JP', 'Segoe UI', Roboto, sans-serif;
@@ -169,7 +182,7 @@ button {
   border: 1px solid var(--border);
   background: var(--panel-2);
   color: var(--text);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 8px 14px;
   transition: filter 0.12s ease, background 0.12s ease;
 }
@@ -177,7 +190,7 @@ button:hover:not(:disabled) {
   filter: brightness(1.15);
 }
 button:disabled {
-  opacity: 0.45;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -202,7 +215,7 @@ select:focus,
 textarea:focus,
 button:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 code {

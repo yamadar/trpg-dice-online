@@ -4,6 +4,20 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.113 — **Unified button & control styling with design tokens**
+  (`design:design-system`). An audit found filled "quiet" buttons
+  referenced an `--accent-bg` token that was never defined, so they fell
+  back to a hardcoded purple tint in *every* theme — forest, ember, etc.
+  showed purple-tinted toolbar/dock/primary buttons instead of their own
+  accent. `--accent-bg` is now defined once via
+  `color-mix(in srgb, var(--accent) 16%, transparent)`, so the tint
+  follows each theme's accent automatically. Added a shared border-radius
+  scale (`--radius-sm/md/lg/pill`) plus a `--text-on-accent` token,
+  snapped one-off control radii (4/5/12px) onto the scale, unified hover
+  brightness and the focus-ring colour (a stray toggle used `--accent-2`),
+  and dropped misleading hardcoded colour fallbacks. No visual change in
+  the default (midnight) theme; the other five themes now tint correctly.
+
 - v1.112 — **Split "Map & grid" into two toolbar entries**. A design
   critique found the background-map picker was buried under seven grid
   controls in the combined panel, so it was hard to discover you could
