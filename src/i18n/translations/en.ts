@@ -171,25 +171,25 @@ export const en: Dict = {
   'tabletop.help': 'Tutorial',
   'tabletop.tutorial.welcome.title': 'Welcome to the tabletop',
   'tabletop.tutorial.welcome.body':
-    'Move tokens, draw annotations, manage fog of war — the tabletop is your shared canvas for the session. Works on both desktop and mobile.',
+    'Your shared canvas for the session: move tokens, draw, and drop pings — and, as GM, manage fog of war and multiple scenes. Works on both desktop and mobile.',
   'tabletop.tutorial.viewport.title': 'Move and zoom the map',
   'tabletop.tutorial.viewport.body':
-    'Drag empty space to pan. Scroll the mouse wheel or pinch with two fingers to zoom (25 %–400 %). Your view is independent — roam freely without moving anyone else.',
+    'Drag empty space to pan; scroll the wheel or pinch to zoom (25 %–400 %). The minimap in the top-right shows the whole scene — tap or drag it to jump there. Your view is independent — roam freely without moving anyone else. Press ? for the keyboard shortcuts.',
   'tabletop.tutorial.tools.title': 'The tool palette (left)',
   'tabletop.tutorial.tools.body':
-    'Select/Drag, Pen, Text, Eraser. Pen and Text let you pick colour and size. The Fog brush (GM only) hides or reveals cells one at a time.',
+    'Select/drag, Text, Pen, Eraser and Ping — press 1–5 to switch. Ping drops a “look here” marker anyone can use; Text and Pen let you pick colour and size. GM only: the Fog reveal/conceal brushes show or hide cells one at a time.',
   'tabletop.tutorial.tokens.title': 'Tokens — move, tap, interact',
   'tabletop.tutorial.tokens.body':
-    'Drag your own token to move it. Tap any token to open its dialog: view character info, read and write the shared note, and (for your own token) resize or remove it. The GM can edit all tokens.',
+    'Drag your token to move it — or select it and nudge with the arrow keys (Del removes it; [ and ] cycle tokens). Tap any token to open its card: a PC token shows a mini character card (tap it for full info) plus a shared note everyone can edit. The owner or GM can also set size, facing, HP and conditions, each on its own row.',
   'tabletop.tutorial.rightPanel.title': 'The right-side panel',
   'tabletop.tutorial.rightPanel.body':
-    'Tap the token icon to see “Tokens on Map” (click any row to spotlight it) and “Add / Setup” (place your character, manage the NPC library). GM-only tabs: map & grid, fog, and the template / save library.',
+    'The icon strip opens setup panels. Everyone has Tokens — place your character, spotlight anyone on the map, and manage NPCs. GM only: Background map, Grid, Fog of war, Scenes and the Tabletop library. Scenes are separate maps — each keeps its own map, tokens and fog, and switching changes what everyone sees.',
   'tabletop.tutorial.dock.title': 'The bottom dock',
   'tabletop.tutorial.dock.body':
     'Chat, your character sheet, and the dice roller. Rolling dice shows an unread dot on the chat icon — no roll ever slips by. On phones, chat and dice share one slot and rolling flips you to chat.',
   'tabletop.tutorial.help.title': 'Re-open this guide anytime',
   'tabletop.tutorial.help.body':
-    'The “?” button at the bottom of the right-side panel re-opens this tour whenever you need a refresher.',
+    'The “?” button at the bottom of the icon strip re-opens this tour whenever you need a refresher. On desktop, press the ? key for the full keyboard-shortcuts list.',
   'tabletop.preset.title': 'Preset map',
   'tabletop.preset.choose': 'Pick a preset…',
   'tabletop.preset.load': 'Load preset',
@@ -364,6 +364,9 @@ export const en: Dict = {
   'tutorial.settings.title': 'Settings & help',
   'tutorial.settings.body':
     'Change your player name, language and colour theme, and reopen this guide, from Settings (⚙) at the top right.',
+  'tutorial.tabletop.title': 'Shared battle map',
+  'tutorial.tabletop.body':
+    'Tap "Map" in the bottom dock to open a shared tabletop: move tokens on a grid, draw, drop pings, and (as GM) manage fog of war and multiple scenes. It opens with its own quick tour.',
 
   'player.section': 'Player',
   'player.name': 'Player name',

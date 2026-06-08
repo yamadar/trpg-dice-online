@@ -4,6 +4,18 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.114 — **Refreshed the onboarding tutorials** (`design:ux-copy`). The
+  tabletop walkthrough had fallen out of date: it listed the tool palette
+  in the wrong order and omitted Ping and the Fog reveal/conceal brushes,
+  never mentioned token facing / HP / conditions or keyboard movement, and
+  predated the Map / Grid / Fog / Tokens / Scenes / Library toolbar split
+  (so it described neither Scenes nor the minimap). All seven steps were
+  rewritten to match the current UI, checked against the live control
+  labels. The app-wide tour also gained a “Shared battle map” step — the
+  tabletop was previously invisible during onboarding. English and
+  Japanese are fully written; the one new key falls back to English in the
+  other 17 locales (full translation deferred to keep cost down).
+
 - v1.113 — **Unified button & control styling with design tokens**
   (`design:design-system`). An audit found filled "quiet" buttons
   referenced an `--accent-bg` token that had been left undefined since the

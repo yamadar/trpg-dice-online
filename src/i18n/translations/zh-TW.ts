@@ -333,6 +333,9 @@ export const zhTW: Dict = {
   'toast.patternUpdated': '已更新範本',
 
   'settings.help': '使用說明',
+  'tutorial.tabletop.title': 'Shared battle map',
+  'tutorial.tabletop.body':
+    'Tap "Map" in the bottom dock to open a shared tabletop: move tokens on a grid, draw, drop pings, and (as GM) manage fog of war and multiple scenes. It opens with its own quick tour.',
   'tutorial.skip': '略過',
   'tutorial.next': '下一步',
   'tutorial.back': '上一步',
