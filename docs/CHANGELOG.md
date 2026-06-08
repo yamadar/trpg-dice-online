@@ -6,8 +6,9 @@ Also available in [日本語](CHANGELOG.ja.md).
 
 - v1.113 — **Unified button & control styling with design tokens**
   (`design:design-system`). An audit found filled "quiet" buttons
-  referenced an `--accent-bg` token that was never defined, so they fell
-  back to a hardcoded purple tint in *every* theme — forest, ember, etc.
+  referenced an `--accent-bg` token that had been left undefined since the
+  UI was first assembled, so they fell back to a hardcoded purple tint in
+  *every* theme — forest, ember, etc.
   showed purple-tinted toolbar/dock/primary buttons instead of their own
   accent. `--accent-bg` is now defined once via
   `color-mix(in srgb, var(--accent) 16%, transparent)`, so the tint
@@ -15,8 +16,9 @@ Also available in [日本語](CHANGELOG.ja.md).
   scale (`--radius-sm/md/lg/pill`) plus a `--text-on-accent` token,
   snapped one-off control radii (4/5/12px) onto the scale, unified hover
   brightness and the focus-ring colour (a stray toggle used `--accent-2`),
-  and dropped misleading hardcoded colour fallbacks. No visual change in
-  the default (midnight) theme; the other five themes now tint correctly.
+  and dropped misleading hardcoded colour fallbacks. Negligible change in
+  the default (midnight) theme (the .12/.15/.18 tint alphas unify to 16%);
+  the other five themes now tint their filled controls correctly.
 
 - v1.112 — **Split "Map & grid" into two toolbar entries**. A design
   critique found the background-map picker was buried under seven grid

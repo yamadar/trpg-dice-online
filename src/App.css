@@ -4293,7 +4293,7 @@ button.char-avatar-large:disabled {
 }
 .map-gallery-mode-btn.active {
   background: var(--accent);
-  color: var(--text-on-accent, #fff);
+  color: var(--text-on-accent);
 }
 .map-gallery-cat-row {
   /* Fixed row of four category toggles. The chip cluster below
@@ -4321,7 +4321,7 @@ button.char-avatar-large:disabled {
 }
 .map-gallery-cat-toggle.active {
   background: var(--accent);
-  color: var(--text-on-accent, #fff);
+  color: var(--text-on-accent);
   border-color: var(--accent);
 }
 .map-gallery-cat-count {
@@ -4352,7 +4352,7 @@ button.char-avatar-large:disabled {
 }
 .map-gallery-chip.active {
   background: var(--accent);
-  color: var(--text-on-accent, #fff);
+  color: var(--text-on-accent);
   border-color: var(--accent);
 }
 .map-gallery-clear {
@@ -4839,7 +4839,7 @@ button.char-avatar-large:disabled {
 }
 .tabletop-token-size-btn.active {
   background: var(--accent);
-  color: var(--text-on-accent, #fff);
+  color: var(--text-on-accent);
 }
 
 /* Token facing: a 3×3 compass picker. The eight outer cells set a
@@ -4876,7 +4876,7 @@ button.char-avatar-large:disabled {
 }
 .tabletop-token-facing-btn.active {
   background: var(--accent);
-  color: var(--text-on-accent, #fff);
+  color: var(--text-on-accent);
   border-color: var(--accent);
 }
 
