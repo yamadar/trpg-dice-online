@@ -20,9 +20,9 @@ export function NameGate({ onSubmit }: Props) {
   }
 
   return (
-    <div className="name-gate" role="dialog" aria-modal="true">
+    <div className="name-gate" role="dialog" aria-modal="true" aria-labelledby="name-gate-title">
       <div className="name-gate-card">
-        <h1 className="brand-heading gradient-heading">
+        <h1 className="brand-heading gradient-heading" id="name-gate-title">
           <BrandIcon className="brand-mark" />
           <span>{t('app.title')}</span>
         </h1>

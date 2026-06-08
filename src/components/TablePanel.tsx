@@ -3399,6 +3399,7 @@ function TextDraftInput({
           }
         }}
         placeholder={t('tabletop.tools.textPlaceholder')}
+        aria-label={t('tabletop.tools.textPlaceholder')}
         style={{
           color,
           fontSize: `${Math.max(12, fontSize * stageScale)}px`,

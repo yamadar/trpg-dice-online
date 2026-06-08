@@ -4,6 +4,22 @@ Per-version revisions for [Dice & Chat](REQUIREMENTS.md). Latest first.
 
 Also available in [日本語](CHANGELOG.ja.md).
 
+- v1.115 — **Accessibility pass for readability & operability**
+  (`design:accessibility-review`). **Contrast:** on-accent text/icons were
+  white in every theme, which failed WCAG AA on the light accents (the
+  "Open Room"/"Next" button measured ~3.3:1 in forest, the active toolbar
+  icon ~1.7:1). `--text-on-accent` is now theme-aware — near-black on the
+  dark themes' light accents, white on the light themes' dark accents — so
+  every solid-accent control clears AA (≥4.5:1 text, ≥3:1 icons; verified
+  4.57–7.9:1 across all six themes). The daylight and parchment secondary
+  text colour (`--text-dim`) was darkened to clear 4.5:1 on its light
+  surfaces (was ~3.7–4.1:1). **Operability:** added accessible names to the
+  chat input, the Sheet / NameGate / image-crop dialogs, and the
+  placeholder-only map-URL / library / canvas-text / gallery-search inputs;
+  the two onboarding tours now move focus into the dialog on open and close
+  on Escape; and the minimap collapse button grew from 18×18 to 24×24
+  (WCAG 2.5.8 minimum target size).
+
 - v1.114 — **Refreshed the onboarding tutorials** (`design:ux-copy`). The
   tabletop walkthrough had fallen out of date: it listed the tool palette
   in the wrong order and omitted Ping and the Fog reveal/conceal brushes,

@@ -4177,6 +4177,10 @@ button.char-avatar-large:disabled {
 }
 .tutorial-card {
   position: relative;
+  /* Focused programmatically (tabIndex -1) only to move screen-reader focus
+     into the dialog on open; it is not a keyboard-tabbable control, so it
+     needs no focus ring of its own — the buttons inside keep theirs. */
+  outline: none;
   width: 360px;
   max-width: 100%;
   background: var(--panel);
@@ -5170,8 +5174,8 @@ button.char-avatar-large:disabled {
   position: absolute;
   top: 2px;
   right: 2px;
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

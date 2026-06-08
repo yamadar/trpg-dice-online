@@ -18,8 +18,12 @@
      (it was previously referenced but never defined, so filled buttons
      rendered with the default purple tint in ALL themes). */
   --accent-bg: color-mix(in srgb, var(--accent) 16%, transparent);
-  /* Text/icon colour on a solid --accent fill. */
-  --text-on-accent: #ffffff;
+  /* Text/icon colour on a solid accent fill. The dark themes (this default
+     plus forest/ember/rose) have LIGHT accents, so on-accent text must be
+     near-black to clear WCAG AA — white on e.g. forest #4ade80 was ~1.7:1.
+     The two light themes (daylight, parchment) have DARK accents and
+     override this back to white below. */
+  --text-on-accent: #000000;
   /* Border-radius scale (sm: icons/chips, md: default buttons, lg: cards,
      pill: switches). `--radius` kept = lg for existing consumers. */
   --radius-sm: 6px;
@@ -120,10 +124,14 @@
   --panel-2: #e7eaf2;
   --border: #cfd4e1;
   --text: #2f3342;
-  --text-dim: #677087;
+  /* Darkened from #677087 so secondary text clears WCAG AA (4.5:1) on the
+     light surfaces — the old value was ~4.1:1 on --panel-2. */
+  --text-dim: #5c6379;
   --text-h: #161922;
   --accent: #4f46e5;
   --accent-2: #4338ca;
+  /* Dark accents → white on-accent text (see :root note). */
+  --text-on-accent: #ffffff;
   --damage: #dc2626;
   --judgment: #2563eb;
   --gm: #f59e0b;
@@ -137,10 +145,14 @@
   --panel-2: #e9e0cb;
   --border: #d4c8ad;
   --text: #3c3526;
-  --text-dim: #7c7058;
+  /* Darkened from #7c7058 so secondary text clears WCAG AA on the cream
+     surfaces — the old value was ~3.7:1 on --panel-2. */
+  --text-dim: #645a44;
   --text-h: #241f15;
   --accent: #0f766e;
   --accent-2: #115e59;
+  /* Dark accents → white on-accent text (see :root note). */
+  --text-on-accent: #ffffff;
   --damage: #b91c1c;
   --judgment: #1d4ed8;
   --gm: #d97706;

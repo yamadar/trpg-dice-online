@@ -498,6 +498,7 @@ export function ImagePickerDialog({ open, onClose, mode, onPick }: Props) {
                 type="search"
                 className="map-gallery-search"
                 placeholder={t('tabletop.imagePicker.searchPlaceholder')}
+                aria-label={t('tabletop.imagePicker.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
